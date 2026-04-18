@@ -26,21 +26,35 @@ footer {
   margin: 0 auto;
 }
 
-.hero {
-  padding: 3rem 0 1rem;
-  text-align: center;
-}
+
 
 h1,
 h2 {
   margin: 0 0 0.5rem;
 }
 
-.hero p,
 .albums p,
 .more-content p {
   color: var(--muted);
   margin-top: 0;
+}
+
+.hero p {
+  color: darkblue;
+}
+
+.hero {
+  background-image: url("../images/logo-removebg-preview.png");
+  background-size: contain;   /* show the full image */
+  background-position: center;
+  background-repeat: no-repeat;
+
+  min-height: 240px;          /* gives the image room to display */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
 }
 
 section,
