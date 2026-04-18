@@ -11,6 +11,7 @@
     <meta property="og:image" content="https://princess8815.github.io/PrincessTGMusic/images/logo avatar.png">
     <meta property="og:url" content="https://princess8815.github.io/PrincessTGMusic/">
     <meta property="og:type" content="website">
+    <script src="./script/menu.js" defer></script>
   </head>
   <body>
     <header class="hero">
@@ -19,7 +20,27 @@
 
     <main>
       <section aria-labelledby="streaming-links">
-        <h2 id="streaming-links">Listen on Your Favorite Platform</h2>
+        <div class="section-header">
+            <h2 id="streaming-links">Listen on Your Favorite Platform</h2>
+
+            <div class="menu-wrapper">
+                <button
+                    class="menu-toggle"
+                    aria-label="Open platform menu"
+                    aria-expanded="false"
+                    aria-controls="platform-menu"
+                    type="button"
+                >
+                    ☰
+                </button>
+
+                <div class="dropdown-menu" id="platform-menu">
+                    <a href="./pages/about-the-author.html">About Me</a>
+                </div>
+            </div>
+        </div>
+
+
         <div class="icon-grid music-platforms">
           <a href="https://music.amazon.com/artists/B0GQL5MNFF/princesstg" aria-label="Amazon Music">
             <img src="https://img.icons8.com/color/1200/amazon-music--v3.jpg" alt="Amazon Music" />

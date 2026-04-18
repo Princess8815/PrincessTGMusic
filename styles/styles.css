@@ -66,6 +66,21 @@ footer {
   margin-bottom: 1rem;
 }
 
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+
+
+.menu-toggle:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-hover);
+}
+
 .icon-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -132,3 +147,45 @@ footer {
   display: block;
 }
 
+.menu-wrapper {
+  position: relative;
+}
+
+.menu-toggle {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--accent);
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.2rem;
+}
+
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  min-width: 180px;
+  background: var(--card);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  overflow: hidden;
+  z-index: 1000;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+}
+
+.dropdown-menu.show {
+  display: block;
+}
+
+.dropdown-menu a {
+  display: block;
+  padding: 0.85rem 1rem;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.dropdown-menu a:hover {
+  background: rgba(255, 255, 255, 0.08);
+}

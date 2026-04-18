@@ -1,0 +1,67 @@
+:root {
+  --bg: #11131a;
+  --card: #1d2230;
+  --text: #f3f5ff;
+  --muted: #b9bfd4;
+  --accent: #9f7bff;
+  --accent-hover: #bda7ff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: linear-gradient(160deg, #0d1018, #171d2a 45%, #11131a);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.hero,
+.about-page {
+  width: min(960px, 92vw);
+  margin: 0 auto;
+}
+
+.hero {
+  background-image: url("../images/logo-removebg-preview.png");
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  min-height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.about-page {
+  padding-bottom: 2rem;
+}
+
+.intro-card,
+.content-card {
+  background: rgba(29, 34, 48, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+h1,
+h2 {
+  margin: 0 0 0.5rem;
+}
+
+.intro-card p,
+.content-card p {
+  color: var(--muted);
+  margin-top: 0;
+}
+
+.content-card p:last-child,
+.intro-card p:last-child {
+  margin-bottom: 0;
+}
