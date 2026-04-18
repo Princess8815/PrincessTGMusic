@@ -65,3 +65,9 @@ h2 {
 .intro-card p:last-child {
   margin-bottom: 0;
 }
+
+.about-page pre {
+  font-family: inherit;
+  white-space: pre-wrap;
+}
+
