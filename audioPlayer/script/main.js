@@ -1,11 +1,4 @@
-const AUDIO_ROOT_CANDIDATES = [
-  "audio/",
-  "../audio/",
-  "../../audio/",
-  "/audio/"
-];
-
-const AUDIO_EXTENSIONS = [".mp3", ".wav", ".ogg", ".m4a", ".aac", ".flac", ".webm"];
+const AUDIO_INDEX = "audio/index.json";
 const ORDER_STORAGE_KEY = "audio-player-order-v1";
 
 const playlistElement = document.getElementById("playlist");
@@ -19,125 +12,11 @@ const refreshButton = document.getElementById("refreshBtn");
 let tracks = [];
 let currentIndex = -1;
 let isStopped = true;
-let resolvedAudioRoot = null;
-let audioRootUrl = null;
 
 const prettifyName = (path) => {
   const fileName = decodeURIComponent(path.split("/").pop() ?? path);
   return fileName.replace(/\.[^.]+$/, "");
 };
-
-const isAudioPath = (path) =>
-  AUDIO_EXTENSIONS.some((ext) => path.toLowerCase().endsWith(ext));
-
-async function resolveAudioRoot() {
-  for (const candidate of AUDIO_ROOT_CANDIDATES) {
-    const url = new URL(candidate, window.location.href);
-
-    try {
-      const response = await fetch(url.toString(), { cache: "no-store" });
-      if (!response.ok) {
-        continue;
-      }
-
-      const contentType = response.headers.get("content-type") || "";
-      const text = await response.text();
-
-      const looksLikeDirectoryListing =
-        contentType.includes("text/html") &&
-        /<a\s/i.test(text);
-
-      if (looksLikeDirectoryListing) {
-        resolvedAudioRoot = candidate;
-        audioRootUrl = new URL(candidate, window.location.href);
-        return { root: candidate, html: text };
-      }
-    } catch {
-      // try next candidate
-    }
-  }
-
-  throw new Error(
-    `Could not locate a readable audio folder. Tried: ${AUDIO_ROOT_CANDIDATES.join(", ")}`
-  );
-}
-
-const normalizeAudioPath = (href, base) => {
-  const url = new URL(href, base);
-
-  if (url.origin !== window.location.origin) {
-    return null;
-  }
-
-  if (!audioRootUrl) {
-    return null;
-  }
-
-  if (!url.pathname.startsWith(audioRootUrl.pathname)) {
-    return null;
-  }
-
-  return `${url.pathname.slice(audioRootUrl.pathname.length - resolvedAudioRoot.length)}${url.search}`;
-};
-
-async function fetchDirectoryHtml(relativePath) {
-  const dirUrl = new URL(relativePath, window.location.href);
-  const response = await fetch(dirUrl.toString(), { cache: "no-store" });
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
-  }
-
-  return await response.text();
-}
-
-async function crawlDirectory(relativePath = resolvedAudioRoot, seen = new Set(), prefetchedHtml = null) {
-  const dirUrl = new URL(relativePath, window.location.href);
-  const canonicalKey = `${dirUrl.pathname}${dirUrl.search}`;
-
-  if (seen.has(canonicalKey)) {
-    return [];
-  }
-  seen.add(canonicalKey);
-
-  let html;
-  try {
-    html = prefetchedHtml ?? (await fetchDirectoryHtml(relativePath));
-  } catch (error) {
-    throw new Error(
-      `Cannot read "${relativePath}". The audio folder path was found, but directory listing failed. (${error.message})`
-    );
-  }
-
-  const doc = new DOMParser().parseFromString(html, "text/html");
-  const links = [...doc.querySelectorAll("a[href]")].map((a) => a.getAttribute("href"));
-
-  const nested = [];
-  const found = [];
-
-  for (const href of links) {
-    if (!href || href.startsWith("?") || href.startsWith("#")) {
-      continue;
-    }
-
-    const normalized = normalizeAudioPath(href, dirUrl);
-    if (!normalized) {
-      continue;
-    }
-
-    if (normalized.endsWith("/")) {
-      nested.push(normalized);
-    } else if (isAudioPath(normalized)) {
-      found.push(normalized);
-    }
-  }
-
-  for (const next of nested) {
-    found.push(...(await crawlDirectory(next, seen)));
-  }
-
-  return found;
-}
 
 function applySavedOrder(paths) {
   const savedOrder = JSON.parse(localStorage.getItem(ORDER_STORAGE_KEY) ?? "[]");
@@ -156,7 +35,10 @@ function applySavedOrder(paths) {
 }
 
 function saveOrder() {
-  localStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(tracks.map((track) => track.path)));
+  localStorage.setItem(
+    ORDER_STORAGE_KEY,
+    JSON.stringify(tracks.map((track) => track.path))
+  );
 }
 
 function setStatus(message) {
@@ -219,7 +101,13 @@ function goToNextTrack() {
 }
 
 function reorderTracks(fromIndex, toIndex) {
-  if (fromIndex === toIndex || Number.isNaN(fromIndex) || Number.isNaN(toIndex) || fromIndex < 0 || toIndex < 0) {
+  if (
+    fromIndex === toIndex ||
+    Number.isNaN(fromIndex) ||
+    Number.isNaN(toIndex) ||
+    fromIndex < 0 ||
+    toIndex < 0
+  ) {
     return;
   }
 
@@ -300,21 +188,24 @@ function renderPlaylist() {
 }
 
 async function loadTracks() {
-  setStatus("Scanning audio folders...");
+  setStatus("Loading audio index...");
 
   try {
-    const resolved = await resolveAudioRoot();
-    const allFound = await crawlDirectory(resolved.root, new Set(), resolved.html);
-    const uniquePaths = [...new Set(allFound)].sort((a, b) => a.localeCompare(b));
-    const orderedPaths = applySavedOrder(uniquePaths);
+    const response = await fetch(AUDIO_INDEX, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const paths = await response.json();
+    const orderedPaths = applySavedOrder(paths);
 
     tracks = orderedPaths.map((path) => ({
       path,
-      title: prettifyName(path)
+      title: prettifyName(path),
     }));
 
     if (!tracks.length) {
-      setStatus(`No audio files found in ${resolved.root}`);
+      setStatus("No audio files found in audio/index.json.");
       playlistElement.innerHTML = "";
       return;
     }
@@ -324,12 +215,12 @@ async function loadTracks() {
     }
 
     renderPlaylist();
-    setStatus(`Loaded ${tracks.length} track${tracks.length === 1 ? "" : "s"} from ${resolved.root}`);
+    setStatus(`Loaded ${tracks.length} track${tracks.length === 1 ? "" : "s"}.`);
   } catch (error) {
     tracks = [];
     currentIndex = -1;
     renderPlaylist();
-    setStatus(error.message);
+    setStatus(`Could not load audio/index.json. (${error.message})`);
   }
 }
 
