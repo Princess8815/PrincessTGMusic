@@ -131,6 +131,7 @@ function renderPlaylist() {
 
   tracks.forEach((track, index) => {
     const item = document.createElement("li");
+
     const row = document.createElement("div");
     row.className = "track";
     row.draggable = true;
@@ -148,6 +149,9 @@ function renderPlaylist() {
 
     title.append(strong, pathLine);
 
+    const actions = document.createElement("div");
+    actions.className = "track__actions";
+
     const play = document.createElement("button");
     play.type = "button";
     play.className = "track__play";
@@ -157,7 +161,17 @@ function renderPlaylist() {
       loadTrack(index, true);
     });
 
-    row.append(title, play);
+    const details = document.createElement("button");
+    details.type = "button";
+    details.className = "track__details";
+    details.textContent = "Details";
+    details.addEventListener("click", () => {
+      const encoded = encodeURIComponent(track.title);
+      window.location.href = `pages/page-display.html?title=${encoded}`;
+    });
+
+    actions.append(play, details);
+    row.append(title, actions);
     item.appendChild(row);
     playlistElement.appendChild(item);
 

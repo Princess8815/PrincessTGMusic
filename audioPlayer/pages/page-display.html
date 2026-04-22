@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="pageTitle">Song</title>
+  <link rel="stylesheet" href="../styles/main.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="app__header">
+      <h1 id="songTitle">Song Title</h1>
+      <p class="status">Song details page</p>
+    </header>
+
+    <section class="now-playing">
+      <h2>Description</h2>
+      <p id="songDescription">
+        Song description goes here.
+      </p>
+    </section>
+
+    <section class="now-playing">
+      <h2>Album</h2>
+      <p id="songAlbum">Album name goes here.</p>
+    </section>
+
+    <section class="now-playing">
+      <h2>Release Date</h2>
+      <p id="songDate">YYYY-MM-DD</p>
+    </section>
+
+    <section class="now-playing">
+        <button id="playSong">Play</button>
+        <button id="stopSong">Stop</button>
+
+        <audio id="songPlayer" controls style="width:100%; margin-top:10px;"></audio>
+    </section>
+  </main>
+
+  <script src="../script/songlist.js"></script>
+</body>
+</html>

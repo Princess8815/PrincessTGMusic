@@ -1,0 +1,16 @@
+[
+  {
+    "path": "audio/Back In Time.mp3",
+    "title": "Back In Time",
+    "description": "A song about reflecting on the past and wishing to go back in time to change things. It explores themes of regret, nostalgia, and the desire for a second chance.",
+    "album": "Hope",
+    "releaseDate": "2024-06-15"
+  },
+  {
+    "path": "audio/Becoming Her.mp3",
+    "title": "Becoming Her",
+    "description": "A song about self-discovery and empowerment. It celebrates the journey of becoming the best version of oneself.",
+    "album": "Hope",
+    "releaseDate": "2024-06-15" 
+  }
+]
