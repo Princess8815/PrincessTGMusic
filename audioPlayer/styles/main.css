@@ -59,7 +59,7 @@ button:hover {
   background: var(--accent);
 }
 
-#stopBtn {
+#stopBtn, #orderResetBtn {
   background: var(--danger);
 }
 

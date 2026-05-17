@@ -1,3 +1,5 @@
+/* global strFormat buildElemTree */
+
 const AUDIO_INDEX = "audio/index.json";
 const ORDER_STORAGE_KEY = "audio-player-order-v1";
 
@@ -8,241 +10,255 @@ const statusElement = document.getElementById("status");
 const playButton = document.getElementById("playBtn");
 const stopButton = document.getElementById("stopBtn");
 const refreshButton = document.getElementById("refreshBtn");
+const resetOrderButton = document.getElementById("orderResetBtn");
 
 let tracks = [];
 let currentIndex = -1;
 let isStopped = true;
 
+/*
+	Please note this function may not work correctly if there is no leading
+	path or no file extension
+*/
 const prettifyName = (path) => {
-  const fileName = decodeURIComponent(path.split("/").pop() ?? path);
-  return fileName.replace(/\.[^.]+$/, "");
+	const slashIdx = path.lastIndexOf('/');
+	const dotIdx = path.lastIndexOf('.');
+	return path.substring(slashIdx + 1, dotIdx);
 };
 
-function applySavedOrder(paths) {
-  const savedOrder = JSON.parse(localStorage.getItem(ORDER_STORAGE_KEY) ?? "[]");
-  const rank = new Map(savedOrder.map((p, index) => [p, index]));
+const applySavedOrder = (paths) => {
+	const savedOrder = JSON.parse(localStorage.getItem(ORDER_STORAGE_KEY) ?? "[]");
+	const rank = new Map(savedOrder.map((p, index) => [p, index]));
 
-  return [...paths].sort((a, b) => {
-    const aRank = rank.has(a) ? rank.get(a) : Number.MAX_SAFE_INTEGER;
-    const bRank = rank.has(b) ? rank.get(b) : Number.MAX_SAFE_INTEGER;
+	return [...paths].sort((a, b) => {
+		const aRank = rank.has(a) ? rank.get(a) : Number.MAX_SAFE_INTEGER;
+		const bRank = rank.has(b) ? rank.get(b) : Number.MAX_SAFE_INTEGER;
 
-    if (aRank !== bRank) {
-      return aRank - bRank;
-    }
+		if (aRank !== bRank) {
+			return aRank - bRank;
+		}
 
-    return a.localeCompare(b);
-  });
-}
+		return a.localeCompare(b);
+	});
+};
 
-function saveOrder() {
-  localStorage.setItem(
-    ORDER_STORAGE_KEY,
-    JSON.stringify(tracks.map((track) => track.path))
-  );
-}
+const saveOrder = ()  => {
+	localStorage.setItem(
+		ORDER_STORAGE_KEY,
+		JSON.stringify(tracks.map((track) => track.path))
+	);
+};
 
-function setStatus(message) {
-  statusElement.textContent = message;
-}
+const setStatus = (message) => {
+	statusElement.textContent = message;
+};
 
-function updateActiveTrack() {
-  [...playlistElement.querySelectorAll(".track")].forEach((row, index) => {
-    row.classList.toggle("active", index === currentIndex && !isStopped);
-  });
-}
+const updateActiveTrack = () => {
+	[...playlistElement.querySelectorAll(".track")].forEach((row, index) => {
+		row.classList.toggle("active", index === currentIndex && !isStopped);
+	});
+};
 
-function loadTrack(index, autoplay = true) {
-  if (!tracks.length || index < 0 || index >= tracks.length) {
-    return;
-  }
+const loadTrack = (index, autoplay = true) => {
+	if (!tracks.length || index < 0 || index >= tracks.length) {
+		return;
+	}
 
-  currentIndex = index;
-  const track = tracks[currentIndex];
+	currentIndex = index;
+	const track = tracks[currentIndex];
 
-  playerElement.src = track.path;
-  nowPlayingElement.textContent = `${track.title} (${track.path})`;
-  updateActiveTrack();
+	playerElement.src = track.path;
+	nowPlayingElement.textContent = `${track.title} (${track.path})`;
+	updateActiveTrack();
 
-  if (autoplay) {
-    void playerElement.play();
-  }
-}
+	if (autoplay) {
+		void playerElement.play();
+	}
+};
 
-function stopPlayback() {
-  isStopped = true;
-  playerElement.pause();
-  playerElement.currentTime = 0;
-  nowPlayingElement.textContent = "Stopped";
-  updateActiveTrack();
-}
+const stopPlayback = () => {
+	isStopped = true;
+	playerElement.pause();
+	playerElement.currentTime = 0;
+	nowPlayingElement.textContent = "Stopped";
+	updateActiveTrack();
+};
 
-function playFromCurrentOrTop() {
-  if (!tracks.length) {
-    setStatus("No tracks available.");
-    return;
-  }
+const playFromCurrentOrTop = () => {
+	if (!tracks.length) {
+		setStatus("No tracks available.");
+		return;
+	}
 
-  isStopped = false;
+	isStopped = false;
 
-  if (currentIndex < 0 || currentIndex >= tracks.length) {
-    currentIndex = 0;
-  }
+	if (currentIndex < 0 || currentIndex >= tracks.length) {
+		currentIndex = 0;
+	}
 
-  loadTrack(currentIndex, true);
-}
+	loadTrack(currentIndex, true);
+};
 
-function goToNextTrack() {
-  if (!tracks.length) {
-    return;
-  }
+const goToNextTrack = () => {
+	if (!tracks.length) {
+		return;
+	}
 
-  currentIndex = (currentIndex + 1) % tracks.length;
-  loadTrack(currentIndex, !isStopped);
-}
+	currentIndex = (currentIndex + 1) % tracks.length;
+	loadTrack(currentIndex, !isStopped);
+};
 
-function reorderTracks(fromIndex, toIndex) {
-  if (
-    fromIndex === toIndex ||
-    Number.isNaN(fromIndex) ||
-    Number.isNaN(toIndex) ||
-    fromIndex < 0 ||
-    toIndex < 0
-  ) {
-    return;
-  }
+const reorderTracks = (fromIndex, toIndex) => {
+	if (
+		fromIndex === toIndex ||
+		Number.isNaN(fromIndex) ||
+		Number.isNaN(toIndex) ||
+		fromIndex < 0 ||
+		toIndex < 0
+	) {
+		return;
+	}
 
-  const [moved] = tracks.splice(fromIndex, 1);
-  tracks.splice(toIndex, 0, moved);
+	const [moved] = tracks.splice(fromIndex, 1);
+	tracks.splice(toIndex, 0, moved);
 
-  if (currentIndex === fromIndex) {
-    currentIndex = toIndex;
-  } else if (fromIndex < currentIndex && toIndex >= currentIndex) {
-    currentIndex -= 1;
-  } else if (fromIndex > currentIndex && toIndex <= currentIndex) {
-    currentIndex += 1;
-  }
+	if (currentIndex === fromIndex) {
+		currentIndex = toIndex;
+	} else if (fromIndex < currentIndex && toIndex >= currentIndex) {
+		currentIndex -= 1;
+	} else if (fromIndex > currentIndex && toIndex <= currentIndex) {
+		currentIndex += 1;
+	}
 
-  renderPlaylist();
-  saveOrder();
-}
+	renderPlaylist();
+	saveOrder();
+};
 
-function renderPlaylist() {
-  playlistElement.innerHTML = "";
+// I'm not even sure if I like what I did here but whatever
+const trackTree = [
+	"li", [
+		[
+			"div", { className: "track", draggable: true }, [
+				[
+					"div", { className: "track__title" }, [
+						["strong"],
+						["div", { className: "track__path" }]
+					]
+				],
+				[
+					"div", { className: "track__actions" }, [
+						["button", { className: "track__play", textContent: "Play" }],
+						["button", { className: "track__details", textContent: "Details" }]
+					]
+				]
+			]
+		]
+	]
+];
 
-  tracks.forEach((track, index) => {
-    const item = document.createElement("li");
+const renderPlaylist = () => {
+	playlistElement.innerHTML = "";
 
-    const row = document.createElement("div");
-    row.className = "track";
-    row.draggable = true;
-    row.dataset.index = String(index);
+	tracks.forEach((track, index) => {
+		const item = buildElemTree(trackTree);
+		const row = item.querySelector(".track");
+		const pathLine = item.querySelector(".track__path");
+		const play = item.querySelector(".track__play");
+		const details = item.querySelector(".track__details");
+		const strong = item.querySelector(".track__title strong");
+		row.dataset.index = String(index);
+		strong.textContent = track.title;
+		pathLine.textContent = track.path;
+		play.addEventListener("click", () => {
+			isStopped = false;
+			loadTrack(index, true);
+		});
+		// Seems to work without encoding
+		details.addEventListener("click", () => {
+			//const encoded = encodeURIComponent(track.title);
+			window.location.href = `pages/page-display.html?title=${track.title}`;
+		});
 
-    const title = document.createElement("div");
-    title.className = "track__title";
+		playlistElement.appendChild(item);
 
-    const strong = document.createElement("strong");
-    strong.textContent = track.title;
+		row.addEventListener("dragstart", (event) => {
+			row.classList.add("dragging");
+			event.dataTransfer?.setData("text/plain", row.dataset.index ?? "");
+			event.dataTransfer.effectAllowed = "move";
+		});
 
-    const pathLine = document.createElement("div");
-    pathLine.className = "track__path";
-    pathLine.textContent = track.path;
+		row.addEventListener("dragend", () => {
+			row.classList.remove("dragging");
+		});
 
-    title.append(strong, pathLine);
+		row.addEventListener("dragover", (event) => {
+			event.preventDefault();
+			event.dataTransfer.dropEffect = "move";
+		});
 
-    const actions = document.createElement("div");
-    actions.className = "track__actions";
+		row.addEventListener("drop", (event) => {
+			event.preventDefault();
+			const fromIndex = Number(event.dataTransfer?.getData("text/plain"));
+			const toIndex = Number(row.dataset.index);
+			reorderTracks(fromIndex, toIndex);
+		});
+	});
 
-    const play = document.createElement("button");
-    play.type = "button";
-    play.className = "track__play";
-    play.textContent = "Play";
-    play.addEventListener("click", () => {
-      isStopped = false;
-      loadTrack(index, true);
-    });
+	updateActiveTrack();
+};
 
-    const details = document.createElement("button");
-    details.type = "button";
-    details.className = "track__details";
-    details.textContent = "Details";
-    details.addEventListener("click", () => {
-      const encoded = encodeURIComponent(track.title);
-      window.location.href = `pages/page-display.html?title=${encoded}`;
-    });
+const loadTracks = async () => {
+	setStatus("Loading audio index...");
 
-    actions.append(play, details);
-    row.append(title, actions);
-    item.appendChild(row);
-    playlistElement.appendChild(item);
+	try {
+		const response = await fetch(AUDIO_INDEX, { cache: "no-store" });
+		if (!response.ok) {
+			throw new Error(`HTTP error, status (${response.status})`);
+		}
+		
+		const paths = await response.json();
+		
+		if(!paths || paths.length === 0) {
+			throw new Error("No audio files found in audio/index.json");
+		}
+		
+		const orderedPaths = applySavedOrder(paths);
 
-    row.addEventListener("dragstart", (event) => {
-      row.classList.add("dragging");
-      event.dataTransfer?.setData("text/plain", row.dataset.index ?? "");
-      event.dataTransfer.effectAllowed = "move";
-    });
+		tracks = orderedPaths.map((path) => ({
+			path,
+			title: prettifyName(path),
+		}));
 
-    row.addEventListener("dragend", () => {
-      row.classList.remove("dragging");
-    });
+		if (currentIndex >= tracks.length) {
+			currentIndex = -1;
+		}
 
-    row.addEventListener("dragover", (event) => {
-      event.preventDefault();
-      event.dataTransfer.dropEffect = "move";
-    });
+		renderPlaylist();
 
-    row.addEventListener("drop", (event) => {
-      event.preventDefault();
-      const fromIndex = Number(event.dataTransfer?.getData("text/plain"));
-      const toIndex = Number(row.dataset.index);
-      reorderTracks(fromIndex, toIndex);
-    });
-  });
+		const suffix = tracks.length === 1 ? "" : "s";
+		setStatus(`Loaded ${tracks.length} track${suffix}.`);
 
-  updateActiveTrack();
-}
-
-async function loadTracks() {
-  setStatus("Loading audio index...");
-
-  try {
-    const response = await fetch(AUDIO_INDEX, { cache: "no-store" });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const paths = await response.json();
-    const orderedPaths = applySavedOrder(paths);
-
-    tracks = orderedPaths.map((path) => ({
-      path,
-      title: prettifyName(path),
-    }));
-
-    if (!tracks.length) {
-      setStatus("No audio files found in audio/index.json.");
-      playlistElement.innerHTML = "";
-      return;
-    }
-
-    if (currentIndex >= tracks.length) {
-      currentIndex = -1;
-    }
-
-    renderPlaylist();
-    setStatus(`Loaded ${tracks.length} track${tracks.length === 1 ? "" : "s"}.`);
-  } catch (error) {
-    tracks = [];
-    currentIndex = -1;
-    renderPlaylist();
-    setStatus(`Could not load audio/index.json. (${error.message})`);
-  }
-}
+	} catch (error) {
+		tracks = [];
+		currentIndex = -1;
+		renderPlaylist();
+		setStatus(`Error: (${error.message})`);
+		return;
+	}
+};
 
 playButton.addEventListener("click", playFromCurrentOrTop);
 stopButton.addEventListener("click", stopPlayback);
 refreshButton.addEventListener("click", () => {
-  void loadTracks();
+	void loadTracks();
 });
 playerElement.addEventListener("ended", goToNextTrack);
+resetOrderButton.addEventListener("click", () => {
+	localStorage.setItem(
+		ORDER_STORAGE_KEY,
+		"[]"
+	);
+	void loadTracks();
+});
 
 void loadTracks();
