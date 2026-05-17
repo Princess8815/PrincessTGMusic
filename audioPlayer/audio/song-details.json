@@ -1,17 +1,394 @@
 [
   {
-    "path": "audio/Back In Time.mp3",
     "title": "Back In Time",
+    "file": "../audio/Back In Time.mp3",
     "description": "A song about reflecting on the past and wishing to go back in time to change things. It explores themes of regret, nostalgia, and the desire for a second chance.",
     "album": "Hope",
-    "releaseDate": "2026-06-15"
+    "releaseDate": "2026-06-15",
+    "lyrics": ""
   },
   {
-    "path": "audio/Becoming Her.mp3",
-    "title": "Becoming Her",
+    "title": "Becomming Her",
+    "file": "../audio/Becomming Her.mp3",
     "description": "A song about self-discovery and empowerment. It celebrates the journey of becoming the best version of oneself.",
     "album": "Hope",
     "releaseDate": "2026-06-15",
     "lyrics": "test\ntest2"
+  },
+  {
+    "title": "Before It’s Too Late",
+    "file": "../audio/Before It’s Too Late.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Behind Every Line",
+    "file": "../audio/Behind Every Line.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Believe in You",
+    "file": "../audio/Believe in You.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Better Than You",
+    "file": "../audio/Better Than You.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Call Out To Heaven",
+    "file": "../audio/Call Out To Heaven.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Can You Hear Me Calling",
+    "file": "../audio/Can You Hear Me Calling.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Carry All The Pain",
+    "file": "../audio/Carry All The Pain.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Carry My Name",
+    "file": "../audio/Carry My Name.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "echoes",
+    "file": "../audio/echoes.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Endless Scream",
+    "file": "../audio/Endless Scream.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Eternal Rest",
+    "file": "../audio/Eternal Rest.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Every Girl, Every Boy",
+    "file": "../audio/Every Girl, Every Boy.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Find the Light",
+    "file": "../audio/Find the Light.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Ghosts",
+    "file": "../audio/Ghosts.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "girl i am",
+    "file": "../audio/girl i am.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "God Made Me",
+    "file": "../audio/God Made Me.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Hollow Night",
+    "file": "../audio/Hollow Night.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "I Am The Storm",
+    "file": "../audio/I Am The Storm.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "If I Break",
+    "file": "../audio/If I Break.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "If i Dont Come Home",
+    "file": "../audio/If i Dont Come Home.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Im Not Broken",
+    "file": "../audio/Im Not Broken.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "invisible",
+    "file": "../audio/invisible.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Journey To Me",
+    "file": "../audio/Journey To Me.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Lables",
+    "file": "../audio/Lables.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "let me be",
+    "file": "../audio/let me be.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Let Me End",
+    "file": "../audio/Let Me End.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Love Me Forever",
+    "file": "../audio/Love Me Forever.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Love til the end",
+    "file": "../audio/Love til the end.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Music is My Creation",
+    "file": "../audio/Music is My Creation.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Not A Danger",
+    "file": "../audio/Not A Danger.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Now I know",
+    "file": "../audio/Now I know.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Rejection",
+    "file": "../audio/Rejection.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Rising up",
+    "file": "../audio/Rising up.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "scream to heaven",
+    "file": "../audio/scream to heaven.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Shadows",
+    "file": "../audio/Shadows.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "silent battles",
+    "file": "../audio/silent battles.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Snowy Nights",
+    "file": "../audio/Snowy Nights.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Storm She Made",
+    "file": "../audio/Storm She Made.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Take Me To A Better Place",
+    "file": "../audio/Take Me To A Better Place.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "This is Me",
+    "file": "../audio/This is Me.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Touch the Sky",
+    "file": "../audio/Touch the Sky.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Watch Me Fall",
+    "file": "../audio/Watch Me Fall.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "we'll be Alright",
+    "file": "../audio/we'll be Alright.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "When I'M Gone(non-dance)",
+    "file": "../audio/When I'M Gone(non-dance).mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Will The Smoke Clear",
+    "file": "../audio/Will The Smoke Clear.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "Wish That I Would Die",
+    "file": "../audio/Wish That I Would Die.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
+  },
+  {
+    "title": "You don’t get to define me",
+    "file": "../audio/You don’t get to define me.mp3",
+    "description": "",
+    "album": "",
+    "releaseDate": "",
+    "lyrics": ""
   }
 ]
