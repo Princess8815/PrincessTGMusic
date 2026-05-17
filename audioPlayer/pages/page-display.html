@@ -30,12 +30,22 @@
       <p id="songDate">YYYY-MM-DD</p>
     </section>
 
+      <section class="now-playing">
+      <details class="lyrics-dropdown">
+        <summary>Lyrics</summary>
+
+        <pre id="songLyrics">Lyrics go here.</pre>
+      </details>
+    </section>
+
     <section class="now-playing">
         <button id="playSong">Play</button>
         <button id="stopSong">Stop</button>
 
         <audio id="songPlayer" controls style="width:100%; margin-top:10px;"></audio>
     </section>
+
+
   </main>
 
   <script src="../script/songlist.js"></script>

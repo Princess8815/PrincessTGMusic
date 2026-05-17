@@ -41,7 +41,9 @@ async function loadSongDetails() {
       const desc = document.getElementById("songDescription");
       const album = document.getElementById("songAlbum");
       const date = document.getElementById("songDate");
+      const lyrics = document.getElementById("songLyrics");
 
+      if (lyrics) lyrics.textContent = song.lyrics || "No lyrics available.";
       if (titleElement) titleElement.textContent = song.title;
       if (desc) desc.textContent = song.description || "";
       if (album) album.textContent = song.album || "";
