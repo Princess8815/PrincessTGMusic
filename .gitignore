@@ -1,0 +1,5 @@
+/node_modules
+/.vscode
+eslint.config.mjs
+pnpm-lock.yaml
+package.json

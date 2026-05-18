@@ -15,7 +15,6 @@
     <section class="controls" aria-label="Playback controls">
       <button id="playBtn" type="button">Play</button>
       <button id="stopBtn" type="button">Stop</button>
-      <button id="refreshBtn" type="button">Refresh List</button>
       <button id="back" type="button"><a href="../index.html">Back to Main Page</a></button>
       <p id="status" class="status">Loading tracks…</p>
     </section>
@@ -26,12 +25,17 @@
       <audio id="player" controls preload="metadata"></audio>
     </section>
 
-    <section>
-      <h2>Playlist (drag to reorder)</h2>
+    <section class="song-list">
+      <h2>Song list (drag to reorder)</h2>
+      <section class="controls" aria-label="Song list controls">
+        <button id="refreshBtn" type="button">Refresh songs</button>
+        <button id="orderResetBtn" type="button">Reset order</button>
+      </section>
       <ol id="playlist" class="playlist"></ol>
     </section>
   </main>
 
+  <script src="../script/global_util.js" defer></script>
   <script src="script/main.js" defer></script>
 </body>
 </html>
