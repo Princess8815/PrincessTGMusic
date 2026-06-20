@@ -27,9 +27,28 @@
 
     <section class="song-list">
       <h2>Song list (drag to reorder)</h2>
-      <section class="controls" aria-label="Song list controls">
-        <button id="refreshBtn" type="button">Refresh songs</button>
-        <button id="orderResetBtn" type="button">Reset order</button>
+      <section class="controls controls--stacked" aria-label="Song list controls">
+        <div class="control-group">
+          <label for="playlistSelect">Playlist</label>
+          <select id="playlistSelect"></select>
+          <input id="newPlaylistName" type="text" placeholder="New playlist name" />
+          <button id="createPlaylistBtn" type="button">Create playlist</button>
+          <button id="deletePlaylistBtn" type="button">Delete playlist</button>
+        </div>
+        <p id="playlistHelp" class="status"></p>
+        <div class="control-group">
+          <label for="albumFilter">Album</label>
+          <select id="albumFilter"></select>
+          <label for="sortSelect">Sort by</label>
+          <select id="sortSelect">
+            <option value="custom">Custom order</option>
+            <option value="title">Title</option>
+            <option value="album">Album</option>
+            <option value="releaseDate">Release date</option>
+          </select>
+          <button id="refreshBtn" type="button">Refresh songs</button>
+          <button id="orderResetBtn" type="button">Reset order</button>
+        </div>
       </section>
       <ol id="playlist" class="playlist"></ol>
     </section>
