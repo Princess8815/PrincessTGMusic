@@ -50,10 +50,15 @@ const prettifyName = (path) => {
 	return path.substring(slashIdx + 1, dotIdx);
 };
 
-const normalizeAlbum = (album) => {
-	const trimmed = (album ?? "").trim();
-	return trimmed || UNCATEGORIZED_ALBUM;
+const normalizeAlbums = (album) => {
+	const albums = (album ?? "")
+		.split(",")
+		.map((item) => item.trim())
+		.filter(Boolean);
+	return albums.length ? albums : [UNCATEGORIZED_ALBUM];
 };
+
+const formatAlbums = (albums) => albums.join(", ");
 
 const normalizeMainAudioPath = (path) => path.replace(/^\.\.\//, "");
 
@@ -112,7 +117,7 @@ const loadTrackByPath = (path, autoplay = true) => {
 	currentPath = track.path;
 	isStopped = false;
 	playerElement.src = track.path;
-	nowPlayingElement.textContent = `${track.title} — ${track.album}`;
+	nowPlayingElement.textContent = `${track.title} — ${formatAlbums(track.albums)}`;
 	updateActiveTrack();
 
 	if (autoplay) {
@@ -160,7 +165,7 @@ const sortTracks = (trackList) => {
 
 	return [...trackList].sort((a, b) => {
 		if (currentSort === "album") {
-			return a.album.localeCompare(b.album) || a.title.localeCompare(b.title);
+			return formatAlbums(a.albums).localeCompare(formatAlbums(b.albums)) || a.title.localeCompare(b.title);
 		}
 
 		if (currentSort === "releaseDate") {
@@ -172,7 +177,7 @@ const sortTracks = (trackList) => {
 };
 
 const updateVisibleTracks = () => {
-	visibleTracks = sortTracks(tracks.filter((track) => currentAlbumFilter === "all" || track.album === currentAlbumFilter));
+	visibleTracks = sortTracks(tracks.filter((track) => currentAlbumFilter === "all" || track.albums.includes(currentAlbumFilter)));
 };
 
 const saveDisabledTracks = () => {
@@ -188,7 +193,7 @@ const saveSelectedPlaylist = () => {
 };
 
 const renderAlbumOptions = () => {
-	const albums = [...new Set(tracks.map((track) => track.album))].sort((a, b) => a.localeCompare(b));
+	const albums = [...new Set(tracks.flatMap((track) => track.albums))].sort((a, b) => a.localeCompare(b));
 	albumFilterElement.innerHTML = "";
 	albumFilterElement.append(new Option("All albums", "all"));
 	albums.forEach((album) => albumFilterElement.append(new Option(album, album)));
@@ -245,7 +250,7 @@ const createTrackRow = (track, index) => {
 	playlistLabel.className = "track__toggle";
 
 	title.textContent = track.title;
-	meta.textContent = `${track.album}${track.releaseDate ? ` • ${track.releaseDate}` : ""} • ${track.path}`;
+	meta.textContent = `${formatAlbums(track.albums)}${track.releaseDate ? ` • ${track.releaseDate}` : ""} • ${track.path}`;
 
 	enabledInput.type = "checkbox";
 	enabledInput.checked = !disabledTracks.has(track.path);
@@ -369,7 +374,7 @@ const loadTracks = async () => {
 			return {
 				path,
 				title: detail.title || title,
-				album: normalizeAlbum(detail.album),
+				albums: normalizeAlbums(detail.album),
 				releaseDate: detail.releaseDate || "",
 			};
 		}));
