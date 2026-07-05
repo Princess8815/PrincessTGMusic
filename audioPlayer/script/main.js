@@ -44,6 +44,14 @@ const saveJsonStorage = (key, value) => {
 	localStorage.setItem(key, JSON.stringify(value));
 };
 
+
+const slugifyTitle = (title) => title
+	.toLowerCase()
+	.normalize("NFKD")
+	.replace(/[\u0300-\u036f]/g, "")
+	.replace(/[^a-z0-9]+/g, "-")
+	.replace(/^-+|-+$/g, "") || "song";
+
 const prettifyName = (path) => {
 	const slashIdx = path.lastIndexOf("/");
 	const dotIdx = path.lastIndexOf(".");
@@ -295,7 +303,7 @@ const createTrackRow = (track, index) => {
 	details.type = "button";
 	details.textContent = "Details";
 	details.addEventListener("click", () => {
-		window.location.href = `pages/page-display.html?title=${encodeURIComponent(track.title)}`;
+		window.location.href = `pages/${slugifyTitle(track.title)}.html`;
 	});
 
 	titleBlock.append(title, meta);

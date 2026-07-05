@@ -1,22 +1,43 @@
-async function loadSongs() {
-  const response = await fetch("audio/index.json");
-  const songs = await response.json();
-
-  console.log(songs);
-}
+const SITE_URL = "https://princess8815.github.io/PrincessTGMusic";
+const LOGO_URL = `${SITE_URL}/images/logo%20avatar.png`;
 
 const params = new URLSearchParams(window.location.search);
-const title = params.get("title");
-
+const title = params.get("title") || document.body.dataset.songTitle;
 const titleElement = document.getElementById("songTitle");
+
+const setMetaContent = (selector, content) => {
+  const element = document.querySelector(selector);
+  if (element && content) {
+    element.setAttribute("content", content);
+  }
+};
+
+const updateSongMeta = ({ title: songTitle, description, url }) => {
+  const pageTitle = `${songTitle} by PrincessTG`;
+  const metaDescription = description || `Listen to ${songTitle} by PrincessTG.`;
+
+  document.title = pageTitle;
+  setMetaContent('meta[name="description"]', metaDescription);
+  setMetaContent('meta[property="og:title"]', pageTitle);
+  setMetaContent('meta[property="og:description"]', metaDescription);
+  setMetaContent('meta[property="og:url"]', url);
+  setMetaContent('meta[property="og:image"]', LOGO_URL);
+  setMetaContent('meta[name="twitter:title"]', pageTitle);
+  setMetaContent('meta[name="twitter:description"]', metaDescription);
+  setMetaContent('meta[name="twitter:image"]', LOGO_URL);
+};
 
 if (titleElement && title) {
   titleElement.textContent = title;
+  updateSongMeta({
+    title,
+    url: window.location.href,
+  });
 }
 
 async function loadSongDetails() {
   const params = new URLSearchParams(window.location.search);
-  const titleFromUrl = params.get("title");
+  const titleFromUrl = params.get("title") || document.body.dataset.songTitle;
 
   if (!titleFromUrl) return;
 
@@ -48,6 +69,12 @@ async function loadSongDetails() {
       if (desc) desc.textContent = song.description || "";
       if (album) album.textContent = song.album || "";
       if (date) date.textContent = song.releaseDate || "";
+
+      updateSongMeta({
+        title: song.title,
+        description: song.description,
+        url: window.location.href,
+      });
     }
 
     const playBtn = document.getElementById("playSong");
@@ -62,12 +89,11 @@ async function loadSongDetails() {
     }
 
     if (stopBtn && player) {
-        stopBtn.addEventListener("click", () => {
-            player.pause();
-            player.currentTime = 0;
-        });
+      stopBtn.addEventListener("click", () => {
+        player.pause();
+        player.currentTime = 0;
+      });
     }
-
   } catch {
     /* silent fail */
   }
