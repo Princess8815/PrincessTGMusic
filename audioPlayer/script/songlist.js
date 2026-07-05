@@ -1,8 +1,10 @@
 const SITE_URL = "https://princess8815.github.io/PrincessTGMusic";
 const LOGO_URL = `${SITE_URL}/images/logo%20avatar.png`;
+const SITE_URL = "https://princess8815.github.io/PrincessTGMusic";
+const LOGO_URL = `${SITE_URL}/images/logo%20avatar.png`;
 
 const params = new URLSearchParams(window.location.search);
-const title = params.get("title");
+const title = params.get("title") || document.body.dataset.songTitle;
 const titleElement = document.getElementById("songTitle");
 
 const setMetaContent = (selector, content) => {
@@ -37,7 +39,7 @@ if (titleElement && title) {
 
 async function loadSongDetails() {
   const params = new URLSearchParams(window.location.search);
-  const titleFromUrl = params.get("title");
+  const titleFromUrl = params.get("title") || document.body.dataset.songTitle;
 
   if (!titleFromUrl) return;
 
