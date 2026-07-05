@@ -3,25 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wish That I Would Die by PrincessTG</title>
-  <meta name="description" content="Listen to Wish That I Would Die by PrincessTG." />
-  <meta property="og:title" content="Wish That I Would Die by PrincessTG" />
-  <meta property="og:description" content="Listen to Wish That I Would Die by PrincessTG." />
-  <meta property="og:image" content="https://princess8815.github.io/PrincessTGMusic/images/logo%20avatar.png" />
-  <meta property="og:url" content="https://princess8815.github.io/PrincessTGMusic/audioPlayer/pages/wish-that-i-would-die.html" />
+  <title>{{PAGE_TITLE}}</title>
+  <meta name="description" content="{{META_DESCRIPTION}}" />
+  <meta property="og:title" content="{{PAGE_TITLE}}" />
+  <meta property="og:description" content="{{META_DESCRIPTION}}" />
+  <meta property="og:image" content="{{LOGO_URL}}" />
+  <meta property="og:url" content="{{PAGE_URL}}" />
   <meta property="og:type" content="music.song" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Wish That I Would Die by PrincessTG" />
-  <meta name="twitter:description" content="Listen to Wish That I Would Die by PrincessTG." />
-  <meta name="twitter:image" content="https://princess8815.github.io/PrincessTGMusic/images/logo%20avatar.png" />
+  <meta name="twitter:title" content="{{PAGE_TITLE}}" />
+  <meta name="twitter:description" content="{{META_DESCRIPTION}}" />
+  <meta name="twitter:image" content="{{LOGO_URL}}" />
   <link rel="icon" type="image/png" href="../../images/logo avatar.png" />
   <link rel="stylesheet" href="../styles/main.css" />
 </head>
-<body data-song-id="wish-that-i-would-die" data-song-title="Wish That I Would Die">
+<body data-song-id="{{PAGE_ID}}" data-song-title="{{SONG_TITLE}}">
   <main class="app">
     <button id="back" type="button"><a href="../index.html">Back to Song List</a></button>
     <header class="app__header">
-      <h1 id="songTitle">Wish That I Would Die</h1>
+      <h1 id="songTitle">{{SONG_TITLE}}</h1>
       <p class="status">Song details page</p>
     </header>
 
@@ -33,23 +33,23 @@
 
     <section class="now-playing">
       <h2>Description</h2>
-      <p id="songDescription"></p>
+      <p id="songDescription">{{SONG_DESCRIPTION}}</p>
     </section>
 
     <section class="now-playing">
       <h2>Album</h2>
-      <p id="songAlbum"></p>
+      <p id="songAlbum">{{SONG_ALBUM}}</p>
     </section>
 
     <section class="now-playing">
       <h2>Release Date</h2>
-      <p id="songDate"></p>
+      <p id="songDate">{{RELEASE_DATE}}</p>
     </section>
 
     <section class="now-playing">
       <details class="lyrics-dropdown">
         <summary>Lyrics</summary>
-        <pre id="songLyrics">No lyrics available.</pre>
+        <pre id="songLyrics">{{SONG_LYRICS}}</pre>
       </details>
     </section>
   </main>

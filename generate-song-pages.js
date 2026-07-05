@@ -6,10 +6,10 @@ const logoUrl = `${siteUrl}/images/logo%20avatar.png`;
 const audioPlayerDir = path.join(__dirname, "audioPlayer");
 const detailsFile = path.join(audioPlayerDir, "audio", "song-details.json");
 const pagesDir = path.join(audioPlayerDir, "pages");
-const templateFile = path.join(pagesDir, "page-display.html");
+const templateFile = path.join(pagesDir, "template.html");
 
 function slugify(title) {
-  return title
+  return String(title ?? "")
     .toLowerCase()
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -25,82 +25,78 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;");
 }
 
-function renderSongPage(song) {
+function makeUniquePageId(title, usedPageIds) {
+  const basePageId = slugify(title);
+  let pageId = basePageId;
+  let suffix = 2;
+
+  while (usedPageIds.has(pageId)) {
+    pageId = `${basePageId}-${suffix}`;
+    suffix += 1;
+  }
+
+  usedPageIds.add(pageId);
+  return pageId;
+}
+
+function getSongPageId(song, usedPageIds) {
+  if (!song.pageId) {
+    return slugify(song.title);
+  }
+
+  const savedPageId = slugify(song.pageId);
+  if (savedPageId && !usedPageIds.has(savedPageId)) {
+    usedPageIds.add(savedPageId);
+    return savedPageId;
+  }
+
+  return makeUniquePageId(song.title, usedPageIds);
+}
+
+function renderTemplate(template, replacements) {
+  return template.replace(/{{([A-Z_]+)}}/g, (match, token) => {
+    if (!Object.prototype.hasOwnProperty.call(replacements, token)) {
+      return match;
+    }
+
+    return replacements[token];
+  });
+}
+
+function cleanMultilineText(value) {
+  return String(value ?? "").split("\n").map((line) => line.trimEnd()).join("\n");
+}
+
+function renderSongPage(song, pageId, template) {
   const title = song.title;
   const description = song.description || `Listen to ${title} by PrincessTG.`;
-  const url = `${siteUrl}/audioPlayer/pages/${slugify(title)}.html`;
+  const pageTitle = `${title} by PrincessTG`;
+  const url = `${siteUrl}/audioPlayer/pages/${pageId}.html`;
 
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${escapeHtml(title)} by PrincessTG</title>
-  <meta name="description" content="${escapeHtml(description)}" />
-  <meta property="og:title" content="${escapeHtml(title)} by PrincessTG" />
-  <meta property="og:description" content="${escapeHtml(description)}" />
-  <meta property="og:image" content="${logoUrl}" />
-  <meta property="og:url" content="${url}" />
-  <meta property="og:type" content="music.song" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="${escapeHtml(title)} by PrincessTG" />
-  <meta name="twitter:description" content="${escapeHtml(description)}" />
-  <meta name="twitter:image" content="${logoUrl}" />
-  <link rel="icon" type="image/png" href="../../images/logo avatar.png" />
-  <link rel="stylesheet" href="../styles/main.css" />
-</head>
-<body data-song-title="${escapeHtml(title)}">
-  <main class="app">
-    <button id="back" type="button"><a href="../index.html">Back to Song List</a></button>
-    <header class="app__header">
-      <h1 id="songTitle">${escapeHtml(title)}</h1>
-      <p class="status">Song details page</p>
-    </header>
-
-    <section class="now-playing">
-      <audio id="songPlayer" controls style="width:100%; margin-top:10px;"></audio>
-      <button id="playSong">Play</button>
-      <button id="stopSong">Stop</button>
-    </section>
-
-    <section class="now-playing">
-      <h2>Description</h2>
-      <p id="songDescription">Song description goes here.</p>
-    </section>
-
-    <section class="now-playing">
-      <h2>Album</h2>
-      <p id="songAlbum">Album name goes here.</p>
-    </section>
-
-    <section class="now-playing">
-      <h2>Release Date</h2>
-      <p id="songDate">YYYY-MM-DD</p>
-    </section>
-
-    <section class="now-playing">
-      <details class="lyrics-dropdown">
-        <summary>Lyrics</summary>
-        <pre id="songLyrics">Lyrics go here.</pre>
-      </details>
-    </section>
-  </main>
-
-  <script src="../script/songlist.js"></script>
-</body>
-</html>
-`;
+  return renderTemplate(template, {
+    LOGO_URL: logoUrl,
+    META_DESCRIPTION: escapeHtml(description),
+    PAGE_ID: escapeHtml(pageId),
+    PAGE_TITLE: escapeHtml(pageTitle),
+    PAGE_URL: escapeHtml(url),
+    RELEASE_DATE: escapeHtml(song.releaseDate || ""),
+    SONG_ALBUM: escapeHtml(song.album || ""),
+    SONG_DESCRIPTION: escapeHtml(song.description || ""),
+    SONG_LYRICS: escapeHtml(cleanMultilineText(song.lyrics || "No lyrics available.")),
+    SONG_TITLE: escapeHtml(title),
+  });
 }
 
 const songs = JSON.parse(fs.readFileSync(detailsFile, "utf8"));
-const seen = new Set();
+const template = fs.readFileSync(templateFile, "utf8");
+const usedPageIds = new Set();
+const writtenPageIds = new Set();
 
 for (const song of songs) {
   if (!song.title) continue;
-  const slug = slugify(song.title);
-  if (seen.has(slug)) continue;
-  seen.add(slug);
-  fs.writeFileSync(path.join(pagesDir, `${slug}.html`), renderSongPage(song), "utf8");
+  const pageId = getSongPageId(song, usedPageIds);
+  fs.writeFileSync(path.join(pagesDir, `${pageId}.html`), renderSongPage(song, pageId, template), "utf8");
+  writtenPageIds.add(pageId);
 }
 
-console.log(`Wrote ${seen.size} song pages to ${pagesDir}`);
+console.log(`Wrote ${writtenPageIds.size} song pages to ${pagesDir} using ${templateFile}`);

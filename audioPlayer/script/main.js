@@ -303,7 +303,7 @@ const createTrackRow = (track, index) => {
 	details.type = "button";
 	details.textContent = "Details";
 	details.addEventListener("click", () => {
-		window.location.href = `pages/${slugifyTitle(track.title)}.html`;
+		window.location.href = `pages/${track.pageId || slugifyTitle(track.title)}.html`;
 	});
 
 	titleBlock.append(title, meta);
@@ -382,6 +382,7 @@ const loadTracks = async () => {
 			return {
 				path,
 				title: detail.title || title,
+				pageId: detail.pageId || slugifyTitle(detail.title || title),
 				albums: normalizeAlbums(detail.album),
 				releaseDate: detail.releaseDate || "",
 			};

@@ -3,6 +3,7 @@ const LOGO_URL = `${SITE_URL}/images/logo%20avatar.png`;
 
 
 const params = new URLSearchParams(window.location.search);
+const pageId = params.get("pageId") || document.body.dataset.songId;
 const title = params.get("title") || document.body.dataset.songTitle;
 const titleElement = document.getElementById("songTitle");
 
@@ -38,9 +39,10 @@ if (titleElement && title) {
 
 async function loadSongDetails() {
   const params = new URLSearchParams(window.location.search);
+  const pageIdFromUrl = params.get("pageId") || document.body.dataset.songId;
   const titleFromUrl = params.get("title") || document.body.dataset.songTitle;
 
-  if (!titleFromUrl) return;
+  if (!pageIdFromUrl && !titleFromUrl) return;
 
   try {
     const response = await fetch("../audio/song-details.json");
@@ -48,9 +50,13 @@ async function loadSongDetails() {
 
     const songs = await response.json();
 
-    const song = songs.find(
-      (s) => s.title.toLowerCase() === titleFromUrl.toLowerCase()
-    );
+    const normalizedPageId = pageIdFromUrl?.toLowerCase();
+    const normalizedTitle = titleFromUrl?.toLowerCase();
+    const song = songs.find((s) => {
+      const songPageId = s.pageId?.toLowerCase();
+      const songTitle = s.title?.toLowerCase();
+      return (normalizedPageId && songPageId === normalizedPageId) || (normalizedTitle && songTitle === normalizedTitle);
+    });
 
     let filePath = `../audio/${titleFromUrl}.mp3`;
 

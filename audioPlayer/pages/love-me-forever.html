@@ -17,7 +17,7 @@
   <link rel="icon" type="image/png" href="../../images/logo avatar.png" />
   <link rel="stylesheet" href="../styles/main.css" />
 </head>
-<body data-song-title="Love Me Forever">
+<body data-song-id="love-me-forever" data-song-title="Love Me Forever">
   <main class="app">
     <button id="back" type="button"><a href="../index.html">Back to Song List</a></button>
     <header class="app__header">
@@ -27,29 +27,29 @@
 
     <section class="now-playing">
       <audio id="songPlayer" controls style="width:100%; margin-top:10px;"></audio>
-      <button id="playSong">Play</button>
-      <button id="stopSong">Stop</button>
+      <button id="playSong" type="button">Play</button>
+      <button id="stopSong" type="button">Stop</button>
     </section>
 
     <section class="now-playing">
       <h2>Description</h2>
-      <p id="songDescription">Song description goes here.</p>
+      <p id="songDescription"></p>
     </section>
 
     <section class="now-playing">
       <h2>Album</h2>
-      <p id="songAlbum">Album name goes here.</p>
+      <p id="songAlbum"></p>
     </section>
 
     <section class="now-playing">
       <h2>Release Date</h2>
-      <p id="songDate">YYYY-MM-DD</p>
+      <p id="songDate"></p>
     </section>
 
     <section class="now-playing">
       <details class="lyrics-dropdown">
         <summary>Lyrics</summary>
-        <pre id="songLyrics">Lyrics go here.</pre>
+        <pre id="songLyrics">No lyrics available.</pre>
       </details>
     </section>
   </main>

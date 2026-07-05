@@ -3,6 +3,33 @@ const readline = require("readline");
 
 const FILE = "./audioPlayer/audio/song-details.json";
 
+function slugify(title) {
+  return String(title ?? "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "song";
+}
+
+function makeUniquePageId(title, songs) {
+  const basePageId = slugify(title);
+  const usedPageIds = new Set(
+    songs
+      .map((song) => slugify(song.pageId || song.title))
+      .filter(Boolean)
+  );
+  let pageId = basePageId;
+  let suffix = 2;
+
+  while (usedPageIds.has(pageId)) {
+    pageId = `${basePageId}-${suffix}`;
+    suffix += 1;
+  }
+
+  return pageId;
+}
+
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout
@@ -46,6 +73,7 @@ async function main() {
 
     const newSong = {
       title,
+      pageId: makeUniquePageId(title, songs),
       file: `../audio/${title}.mp3`,
       description,
       album,
@@ -57,7 +85,7 @@ async function main() {
 
     fs.writeFileSync(FILE, JSON.stringify(songs, null, 2), "utf8");
 
-    console.log("\nSong added successfully.");
+    console.log(`\nSong added successfully. Page file: audioPlayer/pages/${newSong.pageId}.html`);
   } catch (err) {
     console.error("Error:", err);
   } finally {
