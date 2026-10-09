@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Browse and listen to every album by PrincessTG.">
+  <title>All Albums | PrincessTG Music</title>
+  <style>
+    :root {
+      --bg: #11131a;
+      --card: #1d2230;
+      --text: #f3f5ff;
+      --muted: #b9bfd4;
+      --accent: #9f7bff;
+      --accent-hover: #bda7ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(160deg, #0d1018, #171d2a 45%, #11131a);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    .hero, main, footer { width: min(960px, 92vw); margin: 0 auto; }
+    .hero {
+      background: url("../images/logo-removebg-preview.png") center / contain no-repeat;
+      min-height: 240px;
+      display: flex;
+    }
+    .hero a { width: 100%; min-height: 240px; border-radius: 16px; }
+    section, footer {
+      background: rgba(29, 34, 48, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    h1, h2 { margin: 0 0 0.5rem; overflow-wrap: anywhere; }
+    h1 { font-size: clamp(1.8rem, 6vw, 2.8rem); }
+    h2 { font-size: 1.35rem; }
+    p { margin: 0.5rem 0; }
+    .muted, .song-count, .page-status { color: var(--muted); }
+    .eyebrow { color: var(--accent-hover); margin-top: 0; }
+    a { color: var(--accent); }
+    a:hover { color: var(--accent-hover); }
+    .back-link { display: inline-block; text-decoration: none; margin-bottom: 1rem; }
+    .search-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.25rem; }
+    input, button { font: inherit; }
+    input[type="search"] {
+      background: #101521;
+      color: var(--text);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      min-height: 44px;
+      padding: 0.65rem 0.9rem;
+      width: min(100%, 390px);
+      flex: 1 1 200px;
+    }
+    input::placeholder { color: var(--muted); }
+    button, .open-album {
+      display: inline-block;
+      background: var(--accent);
+      color: #101521;
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      min-height: 44px;
+      padding: 0.65rem 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    button:hover, .open-album:hover { background: var(--accent-hover); color: #101521; }
+    button:disabled { opacity: 0.5; cursor: default; }
+    a:focus-visible, input:focus-visible, button:focus-visible {
+      outline: 3px solid var(--accent-hover);
+      outline-offset: 3px;
+    }
+    .album-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 1rem; }
+    .album-card {
+      background: #101521;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.45rem;
+    }
+    .album-card:hover { border-color: var(--accent-hover); }
+    .album-card h2 { margin: 0; }
+    .album-card .song-count { margin: 0 0 0.65rem; }
+    .album-card .open-album { margin-top: auto; }
+    .page-status { margin: auto 0 0; font-size: 0.9rem; }
+    footer { margin-bottom: 2rem; color: var(--muted); }
+    [hidden] { display: none !important; }
+    @media (max-width: 480px) {
+      .hero, .hero a { min-height: 180px; }
+      section, footer, .album-card { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero"><a href="../index.html" aria-label="PrincessTG Music home"></a></header>
+  <main>
+    <a class="back-link" href="../index.html">← Back to main page</a>
+    <section aria-labelledby="page-title">
+      <p class="eyebrow">PrincessTG Music</p>
+      <h1 id="page-title">All albums</h1>
+      <p class="muted">Find an album and explore its songs.</p>
+      <div class="search-row">
+        <label for="search">Search albums</label>
+        <input id="search" type="search" placeholder="Album name…" disabled>
+        <button id="reload" type="button">Refresh</button>
+      </div>
+      <p id="status" class="muted" role="status" aria-live="polite">Loading albums…</p>
+    </section>
+    <section aria-label="Album collection">
+      <div id="album-grid" class="album-grid"></div>
+      <p id="empty" class="muted" hidden>No albums found.</p>
+      <noscript><p>Enable JavaScript to browse the album collection.</p></noscript>
+    </section>
+  </main>
+  <footer>PrincessTG Music · <a href="../index.html">Home</a> · <a href="../audioPlayer/index.html">All songs</a></footer>
+  <script>
+    (() => {
+      "use strict";
+      const grid = document.getElementById("album-grid");
+      const search = document.getElementById("search");
+      const status = document.getElementById("status");
+      const empty = document.getElementById("empty");
+      const reload = document.getElementById("reload");
+      let cards = [];
+
+      function matchName(value) {
+        return value.normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase();
+      }
+      function slugify(name) {
+        let slug = name.normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 100);
+        if (!slug) slug = "album";
+        if (/^(con|prn|aux|nul|com[0-9]|lpt[0-9])$/i.test(slug)) slug += "-album";
+        if (slug === "index") slug = "index-album";
+        return slug;
+      }
+      function filterAlbums() {
+        const query = matchName(search.value);
+        let visible = 0;
+        let songs = 0;
+        for (const item of cards) {
+          item.card.hidden = !matchName(item.name).includes(query);
+          if (!item.card.hidden) { visible++; songs += item.count; }
+        }
+        empty.hidden = visible > 0;
+        empty.textContent = query ? "No albums match your search." : "No albums yet.";
+        status.textContent = visible + (visible === 1 ? " album" : " albums") +
+          " · " + songs + (songs === 1 ? " song" : " songs");
+      }
+      function createCard(album) {
+        const card = document.createElement("article");
+        card.className = "album-card";
+        const title = document.createElement("h2");
+        title.textContent = album.name;
+        const count = document.createElement("p");
+        count.className = "song-count";
+        count.textContent = album.count + (album.count === 1 ? " song" : " songs");
+        const link = document.createElement("a");
+        link.className = "open-album";
+        link.href = "./" + slugify(album.name) + ".html";
+        link.textContent = "Open album";
+        link.setAttribute("aria-label", "Open " + album.name);
+        const note = document.createElement("p");
+        note.className = "page-status";
+        note.textContent = "Album page not available yet.";
+        note.hidden = true;
+        card.append(title, count, link, note);
+        grid.append(card);
+        return { ...album, card, link, note };
+      }
+      async function checkPages(items) {
+        let next = 0;
+        async function worker() {
+          while (next < items.length) {
+            const item = items[next++];
+            try {
+              const response = await fetch(item.link.href, { method: "HEAD", cache: "no-store" });
+              if (response.status === 404 || response.status === 410) {
+                item.link.hidden = true;
+                item.note.hidden = false;
+              }
+            } catch { /* Keep the link available when a page check fails. */ }
+          }
+        }
+        await Promise.all(Array.from({ length: Math.min(4, items.length) }, worker));
+      }
+      async function loadAlbums() {
+        reload.disabled = true;
+        search.disabled = true;
+        status.textContent = "Loading albums…";
+        grid.replaceChildren();
+        cards = [];
+        empty.hidden = true;
+        try {
+          const response = await fetch("../audioPlayer/audio/song-details.json", { cache: "no-store" });
+          if (!response.ok) throw new Error("Catalog could not be loaded.");
+          const data = await response.json();
+          const songs = Array.isArray(data) ? data : data && data.songs;
+          if (!Array.isArray(songs)) throw new Error("Invalid song catalog.");
+          const albums = new Map();
+          for (const song of songs) {
+            if (!song || typeof song.album !== "string" || !song.album.trim()) continue;
+            const key = matchName(song.album);
+            if (!albums.has(key)) albums.set(key, { name: song.album.trim(), count: 0 });
+            albums.get(key).count++;
+          }
+          cards = Array.from(albums.values())
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map(createCard);
+          search.disabled = false;
+          filterAlbums();
+          void checkPages(cards);
+        } catch {
+          status.textContent = "Albums could not be loaded. Try Refresh.";
+          empty.hidden = false;
+          empty.textContent = "The album collection is temporarily unavailable.";
+        } finally { reload.disabled = false; }
+      }
+      search.addEventListener("input", filterAlbums);
+      reload.addEventListener("click", loadAlbums);
+      void loadAlbums();
+    })();
+  </script>
+</body>
+</html>

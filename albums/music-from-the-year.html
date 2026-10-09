@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Listen to Music From The Year by PrincessTG.">
+  <title>Music From The Year | PrincessTG Music</title>
+  <style>
+:root {
+  --bg: #11131a;
+  --card: #1d2230;
+  --text: #f3f5ff;
+  --muted: #b9bfd4;
+  --accent: #9f7bff;
+  --accent-hover: #bda7ff;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: linear-gradient(160deg, #0d1018, #171d2a 45%, #11131a);
+  color: var(--text);
+  line-height: 1.5;
+}
+.hero, main, footer { width: min(960px, 92vw); margin: 0 auto; }
+.hero {
+  background: url("../images/logo-removebg-preview.png") center / contain no-repeat;
+  min-height: 240px;
+  display: flex;
+  align-items: stretch;
+}
+.hero a { width: 100%; min-height: 240px; border-radius: 16px; }
+section, footer {
+  background: rgba(29, 34, 48, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+h1, h2 { margin: 0 0 0.5rem; overflow-wrap: anywhere; }
+h1 { font-size: clamp(1.8rem, 6vw, 2.8rem); }
+p { margin: 0.5rem 0; }
+.eyebrow, .release, .description, .muted, .status { color: var(--muted); }
+.eyebrow { margin-top: 0; color: var(--accent-hover); }
+.description, #song-description { white-space: pre-wrap; overflow-wrap: anywhere; }
+.back-link, footer a { color: var(--accent); }
+.back-link { display: inline-block; margin-bottom: 1rem; text-decoration: none; }
+a:hover { color: var(--accent-hover); }
+button, input { font: inherit; }
+button {
+  background: #101521;
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--accent-hover); }
+button:disabled, input:disabled { opacity: 0.5; cursor: default; }
+button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visible {
+  outline: 3px solid var(--accent-hover);
+  outline-offset: 3px;
+}
+#play { background: var(--accent); border-color: var(--accent); color: #101521; font-weight: bold; }
+#play:hover { background: var(--accent-hover); }
+.controls, .volume-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.65rem; }
+.controls { margin: 1rem 0; }
+.progress { display: flex; gap: 0.75rem; align-items: center; margin: 1rem 0; }
+.progress span { min-width: 3.25rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.progress span:last-child { text-align: right; }
+input[type="range"] { accent-color: var(--accent); min-width: 0; cursor: pointer; }
+#seek { flex: 1; width: 100%; }
+#volume { width: min(150px, 32vw); }
+.repeat { margin-left: auto; cursor: pointer; }
+.repeat input { accent-color: var(--accent); width: 1.1rem; height: 1.1rem; vertical-align: middle; }
+.status { min-height: 1.5em; }
+audio { width: 100%; display: block; margin: 1rem 0; }
+audio:not([controls]) { display: none; }
+.track-list { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: 0.55rem; }
+.track-list button {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  text-align: left;
+  width: 100%;
+}
+.track-list .active button { border-color: var(--accent); background: rgba(159, 123, 255, 0.12); }
+.track-number, .track-state { color: var(--muted); }
+.track-state { font-size: 0.85rem; }
+.track-title { overflow-wrap: anywhere; }
+summary { cursor: pointer; color: var(--accent-hover); padding: 0.5rem 0; }
+.lyrics {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: var(--text);
+  background: #101521;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin: 0.5rem 0 0;
+}
+footer { margin-bottom: 2rem; color: var(--muted); }
+[hidden] { display: none !important; }
+@media (max-width: 480px) {
+  .hero, .hero a { min-height: 180px; }
+  section, footer { padding: 1rem; }
+  .controls button { flex: 1 1 calc(50% - 0.65rem); }
+  .repeat { margin-left: 0; width: 100%; }
+  .track-list button { gap: 0.35rem; padding: 0.65rem; }
+}
+</style>
+</head>
+<body>
+  <header class="hero"><a href="../index.html" aria-label="PrincessTG Music home"></a></header>
+  <main>
+    <a class="back-link" href="./index.html">← All albums</a>
+    <section aria-labelledby="album-title">
+      <p class="eyebrow">PrincessTG Music</p>
+      <h1 id="album-title">Music From The Year</h1>
+      <p class="release"><strong>Release date:</strong> TBD</p>
+      
+    </section>
+    <section aria-labelledby="now-title">
+      <p class="muted">Now playing</p>
+      <h2 id="now-title">January</h2>
+      <p class="muted" id="track-position">Track 1 of 12</p>
+      <audio id="audio" controls preload="metadata" src="../audioPlayer/audio/January.mp3">Your browser does not support audio playback.</audio>
+      <div id="custom-controls" hidden>
+        <div class="controls">
+          <button id="previous" type="button" aria-label="Previous track">Previous</button>
+          <button id="play" type="button" aria-pressed="false">Play</button>
+          <button id="stop" type="button">Stop</button>
+          <button id="next" type="button" aria-label="Next track">Next</button>
+        </div>
+        <div class="progress">
+          <span id="elapsed">0:00</span>
+          <input id="seek" type="range" min="0" max="1" step="0.1" value="0" aria-label="Seek in current track" disabled>
+          <span id="duration">--:--</span>
+        </div>
+        <div class="volume-row">
+          <button id="mute" type="button" aria-pressed="false">Mute</button>
+          <label for="volume">Volume</label>
+          <input id="volume" type="range" min="0" max="1" step="0.05" value="1">
+          <span id="volume-value">100%</span>
+          <label class="repeat"><input id="repeat" type="checkbox"> Repeat album</label>
+        </div>
+      </div>
+      <p id="status" class="status" role="status" aria-live="polite">Choose Play to start the album.</p>
+      <noscript><p>The native audio controls play the first track. Enable JavaScript for the full playlist.</p></noscript>
+    </section>
+    <section aria-labelledby="tracks-heading">
+      <h2 id="tracks-heading">Album tracks</h2>
+      <p class="muted">12 songs · Select a song to play it.</p>
+      <ol id="track-list" class="track-list">
+        <li><button type="button" aria-label="Play January"><span class="track-number">1</span><span class="track-title">January</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Febuary"><span class="track-number">2</span><span class="track-title">Febuary</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play March"><span class="track-number">3</span><span class="track-title">March</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play April"><span class="track-number">4</span><span class="track-title">April</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play May"><span class="track-number">5</span><span class="track-title">May</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play June"><span class="track-number">6</span><span class="track-title">June</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play July"><span class="track-number">7</span><span class="track-title">July</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play August"><span class="track-number">8</span><span class="track-title">August</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play September"><span class="track-number">9</span><span class="track-title">September</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play October"><span class="track-number">10</span><span class="track-title">October</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play November"><span class="track-number">11</span><span class="track-title">November</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play December"><span class="track-number">12</span><span class="track-title">December</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+      </ol>
+    </section>
+    <section id="song-info" aria-labelledby="song-heading">
+      <h2 id="song-heading">Song details</h2>
+      <p id="song-description" hidden></p>
+      <details id="lyrics-panel">
+        <summary>Lyrics</summary>
+        <pre id="lyrics" class="lyrics">A new year has started and a new me begins
+A time where the cold that i long for to end
+I set forward the goals of the year
+And try to let go of all of my fears
+
+January opens a door i&#39;ve never seen,
+To a thousand possibilities of who i could be.
+I new year has started
+Now its time to be me
+
+This is my year, this is my time
+A thousand new mountains are waiting to climb
+I&#39;ll face every storm and reach for the sky
+No matter how hard, i&#39;ll continue to try
+
+January&#39;s here, and i&#39;m starting anew
+With twelve months ahead and so much to do
+The past is behind me, my future is bright
+This is my year, and i&#39;m ready to fight
+
+The winter winds are blowing through the night
+As i search for a way to make things right
+The snow keeps falling on the frozen ground
+While dreams of tomorrow are waiting to be found
+
+I know this year won&#39;t always go my way
+But i&#39;ll keep moving forward every day
+January reminds me there&#39;s still time to grow
+And so many things about myself i&#39;ve yet to know
+
+Thirty-one days to begin something new
+Thirty-one chances to see it through
+The road may be long and the future unclear
+But i won&#39;t let my doubts take control of this year
+
+I made my promises, now i&#39;ll see what they bring
+Even in winter, my heart wants to sing
+The first chapter closes, but this isn&#39;t the end
+There&#39;s another tomorrow just around the bend
+
+The days of january are fading away
+But the dreams that i started are here to stay
+One month behind me, eleven to go
+There&#39;s still so much more of myself i will know
+
+The calendar turns and a new page appears
+Another new chapter, another month&#39;s here
+January&#39;s ending, but my journey&#39;s not through
+February is waiting with something brand new</pre>
+      </details>
+    </section>
+  </main>
+  <footer>PrincessTG Music · <a href="./index.html">All albums</a> · <a href="../index.html">Home</a></footer>
+  <script id="album-data" type="application/json">{"tracks":[{"title":"January","src":"../audioPlayer/audio/January.mp3","description":"","lyrics":"A new year has started and a new me begins\nA time where the cold that i long for to end\nI set forward the goals of the year\nAnd try to let go of all of my fears\n\nJanuary opens a door i've never seen,\nTo a thousand possibilities of who i could be.\nI new year has started\nNow its time to be me\n\nThis is my year, this is my time\nA thousand new mountains are waiting to climb\nI'll face every storm and reach for the sky\nNo matter how hard, i'll continue to try\n\nJanuary's here, and i'm starting anew\nWith twelve months ahead and so much to do\nThe past is behind me, my future is bright\nThis is my year, and i'm ready to fight\n\nThe winter winds are blowing through the night\nAs i search for a way to make things right\nThe snow keeps falling on the frozen ground\nWhile dreams of tomorrow are waiting to be found\n\nI know this year won't always go my way\nBut i'll keep moving forward every day\nJanuary reminds me there's still time to grow\nAnd so many things about myself i've yet to know\n\nThirty-one days to begin something new\nThirty-one chances to see it through\nThe road may be long and the future unclear\nBut i won't let my doubts take control of this year\n\nI made my promises, now i'll see what they bring\nEven in winter, my heart wants to sing\nThe first chapter closes, but this isn't the end\nThere's another tomorrow just around the bend\n\nThe days of january are fading away\nBut the dreams that i started are here to stay\nOne month behind me, eleven to go\nThere's still so much more of myself i will know\n\nThe calendar turns and a new page appears\nAnother new chapter, another month's here\nJanuary's ending, but my journey's not through\nFebruary is waiting with something brand new"},{"title":"Febuary","src":"../audioPlayer/audio/Febuary.mp3","description":"","lyrics":"The world is painted red and pink\nBut i don't know what to feel or think\nEverywhere i turn there's love to see\nAnd i wonder if there's any left for me\n\nThe windows glow with hearts of red\nWhile memories keep running through my head\nI see the couples walking hand in hand\nAnd wonder why my heart can't understand\n\nFebruary, why does love feel so far away?\nWhen everyone has someone at the end of the day\nI'm surrounded by hearts but i'm standing alone\nSearching for somewhere that feels like home\n\nI want to believe there's a love i can find\nSomeone who sees what's inside of my mind\nBut while the world celebrates love all around\nI'm still waiting for mine to be found\n\nA box of chocolates sits upon the shelf\nI wonder if i should just buy one for myself\nA thousand roses bloom inside the store\nBut i don't know who they're waiting for\n\nThe days keep passing and the nights grow long\nI try to find a place where i belong\nI know that love is more than what i see\nBut sometimes i just wish someone wanted me\n\nI held on to a love i was afraid to let go,\nBut february left my heart buried in snow.\n\nAnd underneath the frozen ground\nAre all the dreams i haven't found\nI know that hearts can heal with time\nBut that doesn't mean the hurt isn't mine\n\nFebruary, why does love feel so far away?\nWhen everyone has someone at the end of the day\nI'm surrounded by hearts but i'm standing alone\nSearching for somewhere that feels like home\n\nBut love is more than roses on a day\nAnd loneliness won't take my heart away\nI'll carry all the kindness i still know\nEven when there's nowhere for it to go\n\nThe paper hearts are coming down\nThe roses fade all over town\nAnother month has come and gone\nAnd somehow i am moving on\n\nThe snow still covers everything\nBut somewhere birds begin to sing\nI feel a change upon the breeze\nAs winter slowly starts to leave"},{"title":"March","src":"../audioPlayer/audio/March.mp3","description":"","lyrics":"The winter hasn't left me yet\nThere are things i wish i could forget\nThe world keeps turning every day\nBut some things never fade away\n\nI thought the hardest days were in the past\nThat all the pain i felt would never last\nBut life has ways of testing what we know\nAnd sometimes there's nowhere else to go\n\nI don't know what tomorrow has in store\nOr how much more i'll have to endure\nBut somewhere deep inside of me\nThere's still a girl who wants to be free\n\nI won't surrender everything i've gained\nOr let the world convince me i'm to blame\nI've come too far to turn around today\nAnd i won't let them take my dreams away\n\nMarch is here and i am standing strong\nEven when the road ahead feels long\nI may be frightened of what lies ahead\nBut i will face these battles instead\n\nThe days grow warmer but the nights stay cold\nAnd every passing day brings stories untold\nNot every fight is something i can win\nBut losing doesn't mean i can't begin\n\nThe winds of change came roaring through\nAnd march brought battles i never knew\nI never asked for all these fights\nOr all these lonely, sleepless nights\n\nI don't need to conquer every fear\nOr prove my strength through every tear\nSometimes the bravest thing i'll do\nIs simply make it through\n\nI won't surrender everything i've gained\nEven when my heart is filled with pain\nThe road ahead may never be quite clear\nBut i refuse to disappear\n\nMarch has taught me how to stand\nWhen everything is slipping through my hands\nI may not win the battles that i face\nBut i still deserve to have my place\n\nThe frozen earth begins to wake\nAs winter's hold begins to break\nAs march gives way to something new\nI wonder what the spring will bring me through"},{"title":"April","src":"../audioPlayer/audio/April.mp3","description":"","lyrics":"The sky is turning shades of gray\nAnd all the sunlight fades away\nI hear the rain against my door\nAnd wonder what i'm crying for\n\nI've spent so long pretending i'm alright\nHolding back the tears throughout the night\nEvery little thing i tried to hide\nHas become a storm i feel inside\n\nThe clouds are gathering above my head\nWith all the words i wish i'd never said\nI watch the rain run down the glass\nAnd think about the moments past\n\nLet it rain\nLet it fall\nLet it wash away it all\n\nApril never promised me a sunny day\nJust enough rain to wash my tears away\nAnd if the skies must open up tonight\nI'll let them take the pain i've held so tight\n\nSometimes the rain is what i need\nTo let the hurting heart inside me breathe\nAnd when the storm has finally passed\nI'll find a little peace at last\n\nThe streets are shining in the rain\nI used to think that tears meant pain\nBut every tear reminds me i can feel\nAnd feeling means there's something left to heal\n\nLet it rain\nLet it pour\nI can't hold it back anymore\n\nNot every storm is meant to break\nNot every tear is a mistake\nThe flowers need the rain to grow\nAnd there's so much i don't yet know\n\nI've carried winter in my heart\nAnd watched my world fall apart\nBut maybe i can learn to see\nThat even storms can set me free\n\nApril never promised me a sunny day\nJust enough rain to wash my tears away\nI won't pretend that everything's okay\nOr force the clouds inside my heart away\n\nThere's beauty in the tears i cry\nAnd healing underneath a cloudy sky\nI don't need to hide the hurt in me\nTo be the girl i want to be\n\nThe rain grows quiet as evening falls\nAnd sunlight finds its way across the walls\nThe flowers lift their heads toward the sky\nAs the final clouds go drifting by"},{"title":"May","src":"../audioPlayer/audio/May.mp3","description":"","lyrics":"For so long i walked with my head held low\nAfraid of the places i wanted to go\nBut something is changing inside of me\nAnd i'm starting to see who i want to be\n\nThe world tried to tell me which road i should take\nAnd every decision that i shouldn't make\nI followed the voices that told me to hide\nWhile losing the girl i was keeping inside\n\nBut somewhere beneath all the fear and the doubt\nA voice in my heart was beginning to shout\nI looked in the mirror and finally knew\nThe girl looking back was the girl i grew into\n\nI'm done with the shadows\nI'm done with the fear\nThe girl i've been searching for\nIs finally here\n\nThis is my moment, i'm breaking free\nBecoming the girl i was meant to be\nNo more hiding, no more shame\nI'm taking back my life and name\n\nMay is the month where i finally see\nThat nobody else gets to define me\nI've spent so long trying to survive\nBut now i'm ready to feel alive\n\nThe flowers are blooming along every street\nAnd sunlight is warming the ground at my feet\nBut strength isn't something that comes without fear\nIt's finding the courage to still persevere\n\nI won't disappear\nI won't turn away\nI won't let my fears\nDecide who i am today\n\nI found my wings and learned to fly,\nAs may brought flowers reaching for the sky.\n\nAnd now i'm rising above the ground\nBeyond the walls that held me down\nI never needed permission to be\nThe girl who was always living in me\n\nI am the girl i was searching to find\nLeaving the weight of the past behind\nAnd every step that i take from today\nIs one more reason to stay this way\n\nThis is my moment, i'm finally free\nAnd i'm proud of the girl i've grown to be\nNo more hiding, no more shame\nThe world will know me by my name\n\nMay has shown me how far i can go\nAnd there's still so much about myself to know\nI'm not the girl who was afraid to try\nI've found my wings and i'm ready to fly\n\nThe flowers sway beneath the sun\nAnother chapter has begun\nMay is fading into yesterday\nBut the girl i've found is here to stay"},{"title":"June","src":"../audioPlayer/audio/June.mp3","description":"","lyrics":"The summer sun is shining down\nAnd i can feel the world around\nFor once i'm not afraid to see\nThe life that's waiting here for me\n\nI spent so many years behind a wall\nAfraid that being me would make me fall\nI let the voices tell me what was right\nAnd kept my dreams away from others' sight\n\nBut something changed when i began to see\nThat no one else could live this life for me\nThe chains i wore were never mine to keep\nAnd now i'm waking from a restless sleep\n\nI'm free to live, i'm free to be\nThe girl that i was always meant to be\nI won't apologize for who i am\nOr live my life according to their plan\n\nJune is here and i can i can finally breathe\nThere's nothing left that i must hide beneath\nThe world can try to tell me what to do\nBut i will always live my life as true\n\nNo more walls\nNo more chains\nNo more living\nThrough the pain\n\nThis is my life\nThis is my choice\nAnd now the world\nWill hear my voice\n\nI walk beneath the bright and open sky\nNo longer asking anyone else why\nI have the right to find my happiness\nAnd live a life that i can call my best\n\nI broke away from yesterday,\nAnd found my freedom in the warmth of june.\n\nI left behind the things that held me down\nAnd found the strength to finally stand my ground\nI won't return to who they wanted me to be\nBecause the girl i am deserves to live free\n\nLet them talk\nLet them stare\nI have every right\nTo be standing here\n\nLet them shout\nLet them try\nThey don't get to choose\nHow i live my life\n\nI'm free to love, i'm free to grow\nAnd there's still so much of life i want to know\nI won't surrender all that i have gained\nOr let them put me back inside those chains\n\nJune has shown me what it means to fly\nWithout the fear of falling from the sky\nI've found a life that finally feels like mine\nAnd i will let my own light shine\nWill let my own light shine\n\nThe longest days are passing by\nBeneath a warm and endless sky\nThe sunlight slowly starts to fade\nBut not the freedom i have made"},{"title":"July","src":"../audioPlayer/audio/July.mp3","description":"","lyrics":"Turn up the music\nOpen the door\nThere's a whole world waiting\nAnd i want so much more\n\nThe morning sun is rising over town\nAnd i refuse to let another day go down\nWithout a single memory to make\nOr finding something new for me to undertake\n\nThe streets are filled with laughter everywhere\nThe summer wind is dancing through my hair\nI've spent too many days just getting by\nNow i want to see how high my dreams can fly\n\nI want to live every moment i can\nMake all the memories i never had planned\nLaugh with my friends till the stars fill the sky\nAnd find a thousand reasons why\n\nJuly is here and the world's alive\nAnd i'm not just trying to survive\nThere's so much more that i want to do\nSo many dreams i want to pursue\nI want to pursue\n\nThe afternoons are filled with endless light\nAnd summer seems to stretch into the night\nWe take the roads that lead us somewhere new\nAnd find another adventure to pursue\n\nOne more laugh\nOne more day\nOne more memory\nAlong the way\n\nJuly set the summer sky on fire,\nAnd filled my restless heart with new desire.\n\nI want to feel the sunlight on my face\nAnd find the beauty hiding in each place\nTo take the chances i was scared to take\nAnd make the kind of memories time can't break\n\nI don't want to watch my life go by\nI want to reach for everything and try\nTo find the joy in every little thing\nAnd hear the songs that every moment brings\n\nI'm gonna live with everything i've got\nAnd treasure all the moments i've been taught\nThat life is more than simply getting through\nThere's so much more i've always wanted to do\n\nJuly has given me a chance to see\nThe kind of life that's waiting here for me\nAnd even when these summer days are gone\nThe memories i've made will carry on\n\nThe days of july are slipping away\nBut all of these memories are here to stay\nAnd as another month begins anew\nI wonder what the summer has left to do"},{"title":"August","src":"../audioPlayer/audio/August.mp3","description":"","lyrics":"What if the life i've come to know\nIs only part of how far i can go?\nWhat if the dreams i left behind\nAre still somewhere inside my mind?\n\nThe summer heat is pressing on my skin\nBut there's a different kind of fire burning within\nI've spent so long becoming who i am\nYet there's still so much i don't understand\n\nWhat if i'm not finished yet?\nWhat if there's more i can't forget?\nWhat if the dreams i left behind\nAre waiting for another time?\n\nI opened up a box from years before\nAnd found the dreams i'd hidden in a drawer\nA thousand little plans i never tried\nAnd all the hopes i pushed so far aside\n\nAugust is calling me to change\nTo find the things i thought were out of range\nTo take the chances i was scared to take\nAnd build a life that only i can make\n\nI won't forget the girl i used to know\nOr all the dreams she wanted me to grow\nThe past may be a place i can't return\nBut there's still so much more for me to learn\n\nThe truth i held was buried deep,\nBut august woke the dreams i'd put to sleep.\n\nAnd suddenly the world feels wide\nWith all the things i've kept inside\nI never knew how much i'd lost\nBy letting fear decide the cost\n\nI am not finished\nI am not through\nThere's still a world\nOf things i want to do\n\nI have a future\nI have a choice\nAnd i will follow\nMy own voice\n\nAugust has shown me what i've missed\nThe dreams i thought would never exist\nI'm not afraid to start again\nOr find a road i've never been\n\nI won't forget the girl i used to be\nBecause her dreams are still a part of me\nThe turning point was never letting go\nIt was remembering how much i want to grow\n\nThe summer sun is sinking low\nAnd cooler winds begin to blow\nI close the box and walk away\nBut keep the dreams i found today"},{"title":"September","src":"../audioPlayer/audio/September.mp3","description":"","lyrics":"I thought i had it figured out\nA life without so much doubt\nBut something changed along the way\nAnd now i don't know what to say\n\nThe summer days are slowly disappearing\nAnd all the things i feared are reappearing\nI try to keep my feet upon the ground\nBut everything is spinning all around\n\nI'm holding on with everything i have\nTo all the little pieces of the past\nBut every time i think i've found my way\nAnother piece of life just slips away\n\nI'm losing control of the world i know\nWatching everything fall apart so slow\nI try to hold on but it's slipping through\nAnd i don't know what i'm supposed to do\n\nSeptember, why is everything changing?\nWhy does every day feel so rearranging?\nI thought that i was finally standing tall\nBut now i'm terrified of another fall\n\nThe leaves are turning colors in the trees\nAnd falling gently with the autumn breeze\nI watch them drift away without a care\nWhile wondering how much more i can bear\n\nOne more day\nOne more try\nOne more tear\nI cannot hide\n\nEverything i trusted began to fray,\nAs the colors of september faded away.\n\nI don't need another mountain i must climb\nI only need a little peace of mind\nBut even that feels further out of reach\nWith every lesson life is trying to teach\n\nI'm losing control and i don't know why\nNo matter how much i struggle and try\nThe world keeps moving beyond my hands\nAnd nothing is going according to plan\n\nSeptember, i wish that i could see\nA way to make this life feel right for me\nBut maybe i don't need to know it all\nOr have the strength to never fall\n\nThe leaves keep falling to the ground\nAnd silence settles all around\nI watch the daylight disappear\nAs colder evenings slowly draw near"},{"title":"October","src":"../audioPlayer/audio/October.mp3","description":"","lyrics":"The morning comes, i close my eyes\nNot ready for another sunrise\nThe world outside begins to wake\nWhile i wonder how much more i'll take\n\nThe autumn leaves are falling to the ground\nAnd silence seems to follow me around\nI wake up tired before the day begins\nAnd wonder if there's any way to win\n\nOctober isn't asking me to win the fight,\nJust make it through another lonely night.\n\nI don't have to conquer all my fears\nOr find a way to stop these falling tears\nIf all i do is make it through today\nThen maybe that is enough for me to say\n\nI'm still here\nI'm still trying\nEven when\nI feel like crying\n\nThe nights grow longer as the days grow cold\nAnd i feel so much older than i'm told\nThe things i used to love feel far away\nLike memories from some forgotten day\n\nOne more breath\nOne more hour\nI don't need\nAnother mountain to devour\n\nI don't need someone telling me to fight\nOr promising that everything's alright\nSometimes i only need a hand to hold\nWhen all the world around me feels so cold\n\nOctober isn't asking me to be so strong\nOr prove that i can carry on for long\nI don't have to find a reason why\nOr hide the tears that gather in my eyes\n\nIf all i have is one more day to give\nThen that's the day i'll find a way to live\nI may not know what waits beyond tonight\nBut i can rest before another fight\n\nThe trees are bare beneath the moon\nAnd winter will be coming soon\nThe final leaves are swept away\nAs october reaches its last day"},{"title":"November","src":"../audioPlayer/audio/November.mp3","description":"","lyrics":"The pieces are scattered across the floor\nFrom all the things i believed before\nI don't know where they all belong\nBut maybe i can still move on\n\nThe morning light is shining through the glass\nAnd i find myself reflecting on the past\nThe things i lost are never coming back\nBut i can choose what memories i unpack\n\nI'm picking up the pieces one by one\nRemembering the battles i've begun\nI cannot change the things that came before\nBut i can find a reason to want more\n\nNovember, let me find another way\nTo take the broken pieces of yesterday\nAnd build a life that i can call my own\nEven if i have to start alone\n\nSome memories are harder to release\nAnd some will never offer me their peace\nBut i don't have to carry every stone\nOr let the weight of yesterday be known\n\nPiece by piece\nDay by day\nI'm finding what\nI want to save\n\nNot every scar\nWill disappear\nBut there's a future\nWaiting here\n\nI counted every lesson hidden in the pain,\nWhile november washed my memories with rain.\n\nThe broken pieces may not fit the same\nAnd some of them may never have a name\nBut i can make a picture that is new\nFrom everything that i have made it through\n\nI'm picking up the pieces of my life\nAnd finding little reasons left to try\nI don't need everything to be the same\nOr keep on carrying every bit of blame\n\nNovember, i am learning how to grow\nAnd finding things about myself i didn't know\nThe past will always be a part of me\nBut it won't decide the girl i'm going to be\n\nThe final leaves are resting on the ground\nAnd winter's silence settles all around\nI look at everything that i have saved\nAnd all the little changes that i've made"},{"title":"December","src":"../audioPlayer/audio/December.mp3","description":"","lyrics":"Twelve months\nSo many lessons learned\nA year of stories\nThat became a part of me\n\nI started out with dreams i couldn't see\nAnd wondered who i was supposed to be\nI learned that love could sometimes leave a scar\nAnd finding strength could take me twice as far\n\nI faced the fears that kept me standing still\nAnd found the courage to discover my own will\nI learned to spread my wings and finally fly\nAnd chase the life i'd watched go passing by\n\nThis is the story of the year i've known\nOf all the ways i've changed and grown\nThe days i laughed, the nights i cried\nThe times i fell but still i tried\n\nDecember, let me look behind\nAt all the memories left in my mind\nThe year is ending, but i finally see\nEvery chapter made a part of me\n\nI found the joy in moments big and small\nAnd dreams i thought i'd lost beyond recall\nThen watched the world i trusted come undone\nAnd struggled just to face another sun\n\nSome days were beautiful\nSome nights were long\nSome moments broke me\nSome made me strong\n\nChristmas lights are shining through the snow\nAnd family gathers in their gentle glow\nAround the table, stories fill the air\nAnd i'm reminded of the love we share\n\nThe chapters close beneath the winter light,\nAs december brings another year to its final night.\n\nAnd though the future isn't clear\nI made it through another year\nWith every scar and memory\nThere's still so much ahead of me\n\nThis is the story of the year i've lived\nOf all the love i've had to give\nThe times i hurt, the times i grew\nThe things i lost, the dreams i knew\n\nDecember, i can finally say\nThat every month has shaped me in its way\nThe year is ending, but i'm not through\nThere's still a world of things i want to do\n\nThe clock strikes twelve\nThe old year ends\nA brand-new story\nNow begins\n\nA new year has started\nAnd a new me begins\nThe pages turn, the journey starts again\nAnd here we go again\nAnd here we go again"}]}</script>
+  <script>
+(() => {
+  "use strict";
+  const { tracks } = JSON.parse(document.getElementById("album-data").textContent);
+  const get = (id) => document.getElementById(id);
+  const audio = get("audio");
+  const play = get("play");
+  const seek = get("seek");
+  const volume = get("volume");
+  const rows = Array.from(get("track-list").children);
+  let current = 0;
+  let playRequest = 0;
+  let stopped = false;
+
+  const status = (message) => { get("status").textContent = message; };
+  function time(seconds) {
+    if (!Number.isFinite(seconds)) return "--:--";
+    seconds = Math.max(0, Math.floor(seconds));
+    return Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0");
+  }
+  function updateProgress() {
+    const ready = Number.isFinite(audio.duration) && audio.duration > 0;
+    seek.disabled = !ready;
+    seek.max = ready ? audio.duration : 1;
+    seek.value = ready ? audio.currentTime : 0;
+    get("elapsed").textContent = time(audio.currentTime);
+    get("duration").textContent = time(audio.duration);
+    seek.setAttribute("aria-valuetext", time(audio.currentTime) + " of " + time(audio.duration));
+  }
+  function updateButtons() {
+    const playing = !audio.paused && !audio.ended;
+    play.textContent = playing ? "Pause" : "Play";
+    play.setAttribute("aria-pressed", String(playing));
+    rows.forEach((row, index) => {
+      const selected = index === current;
+      row.classList.toggle("active", selected);
+      const button = row.querySelector("button");
+      if (selected) button.setAttribute("aria-current", "true");
+      else button.removeAttribute("aria-current");
+      row.querySelector(".track-state").textContent = selected ? (playing ? "Playing" : "Selected") : "Play";
+    });
+  }
+  function updateVolume() {
+    volume.value = audio.volume;
+    const muted = audio.muted || audio.volume === 0;
+    get("mute").textContent = muted ? "Unmute" : "Mute";
+    get("mute").setAttribute("aria-pressed", String(muted));
+    get("volume-value").textContent = Math.round((muted ? 0 : audio.volume) * 100) + "%";
+  }
+  async function startPlayback() {
+    const request = ++playRequest;
+    try { await audio.play(); }
+    catch (error) {
+      if (request !== playRequest || error.name === "AbortError") return;
+      status(error.name === "NotAllowedError"
+        ? "Press Play to start the music."
+        : "Unable to play this track. Try another track or reload the page.");
+      updateButtons();
+    }
+  }
+  function selectTrack(index, autoplay) {
+    ++playRequest;
+    audio.pause();
+    current = index;
+    stopped = false;
+    const track = tracks[current];
+    audio.src = track.src;
+    audio.load();
+    get("now-title").textContent = track.title;
+    get("track-position").textContent = "Track " + (current + 1) + " of " + tracks.length;
+    get("song-description").textContent = track.description;
+    get("song-description").hidden = !track.description;
+    get("lyrics").textContent = track.lyrics;
+    get("lyrics-panel").hidden = !track.lyrics;
+    get("song-info").hidden = !track.description && !track.lyrics;
+    status("Ready to play " + track.title + ".");
+    updateProgress();
+    updateButtons();
+    if (autoplay) void startPlayback();
+  }
+  function skip(direction) {
+    const wasPlaying = !audio.paused && !audio.ended;
+    if (direction < 0 && audio.currentTime > 3) {
+      audio.currentTime = 0;
+      updateProgress();
+      return;
+    }
+    selectTrack((current + direction + tracks.length) % tracks.length, wasPlaying);
+  }
+
+  play.addEventListener("click", () => {
+    if (audio.paused) {
+      stopped = false;
+      if (audio.ended) audio.currentTime = 0;
+      void startPlayback();
+    } else { ++playRequest; audio.pause(); }
+  });
+  get("stop").addEventListener("click", () => {
+    ++playRequest;
+    stopped = true;
+    audio.pause();
+    audio.currentTime = 0;
+    updateProgress();
+    updateButtons();
+    status("Stopped. Press Play to restart " + tracks[current].title + ".");
+  });
+  get("previous").addEventListener("click", () => skip(-1));
+  get("next").addEventListener("click", () => skip(1));
+  rows.forEach((row, index) => row.querySelector("button").addEventListener("click", () => selectTrack(index, true)));
+  seek.addEventListener("input", () => {
+    if (!seek.disabled) audio.currentTime = Number(seek.value);
+    updateProgress();
+  });
+  volume.addEventListener("input", () => {
+    audio.volume = Number(volume.value);
+    if (audio.volume > 0) audio.muted = false;
+  });
+  get("mute").addEventListener("click", () => {
+    if (audio.muted || audio.volume === 0) { audio.muted = false; if (audio.volume === 0) audio.volume = 1; }
+    else audio.muted = true;
+  });
+  audio.addEventListener("volumechange", updateVolume);
+  ["loadedmetadata", "durationchange", "timeupdate", "emptied"].forEach((event) => audio.addEventListener(event, updateProgress));
+  audio.addEventListener("play", () => { updateButtons(); status("Playing " + tracks[current].title + "."); });
+  audio.addEventListener("pause", () => {
+    updateButtons();
+    if (!audio.ended && !stopped) status("Paused: " + tracks[current].title + ".");
+  });
+  audio.addEventListener("ended", () => {
+    if (current + 1 < tracks.length) selectTrack(current + 1, true);
+    else if (get("repeat").checked) selectTrack(0, true);
+    else { updateButtons(); status("Album finished. Choose a track to listen again."); }
+  });
+  audio.addEventListener("error", () => {
+    updateButtons();
+    status("Could not load " + tracks[current].title + ". Try another track.");
+  });
+
+  // Keep native controls as a fallback if JavaScript is disabled.
+  audio.controls = false;
+  get("custom-controls").hidden = false;
+  get("previous").disabled = tracks.length < 2;
+  get("next").disabled = tracks.length < 2;
+  selectTrack(0, false);
+  updateVolume();
+})();
+</script>
+</body>
+</html>
