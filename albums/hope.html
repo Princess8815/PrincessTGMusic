@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Listen to Hope by PrincessTG.">
+  <title>Hope | PrincessTG Music</title>
+  <style>
+:root {
+  --bg: #11131a;
+  --card: #1d2230;
+  --text: #f3f5ff;
+  --muted: #b9bfd4;
+  --accent: #9f7bff;
+  --accent-hover: #bda7ff;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: linear-gradient(160deg, #0d1018, #171d2a 45%, #11131a);
+  color: var(--text);
+  line-height: 1.5;
+}
+.hero, main, footer { width: min(960px, 92vw); margin: 0 auto; }
+.hero {
+  background: url("../images/logo-removebg-preview.png") center / contain no-repeat;
+  min-height: 240px;
+  display: flex;
+  align-items: stretch;
+}
+.hero a { width: 100%; min-height: 240px; border-radius: 16px; }
+section, footer {
+  background: rgba(29, 34, 48, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+h1, h2 { margin: 0 0 0.5rem; overflow-wrap: anywhere; }
+h1 { font-size: clamp(1.8rem, 6vw, 2.8rem); }
+p { margin: 0.5rem 0; }
+.eyebrow, .release, .description, .muted, .status { color: var(--muted); }
+.eyebrow { margin-top: 0; color: var(--accent-hover); }
+.description, #song-description { white-space: pre-wrap; overflow-wrap: anywhere; }
+.back-link, footer a { color: var(--accent); }
+.back-link { display: inline-block; margin-bottom: 1rem; text-decoration: none; }
+a:hover { color: var(--accent-hover); }
+button, input { font: inherit; }
+button {
+  background: #101521;
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--accent-hover); }
+button:disabled, input:disabled { opacity: 0.5; cursor: default; }
+button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visible {
+  outline: 3px solid var(--accent-hover);
+  outline-offset: 3px;
+}
+#play { background: var(--accent); border-color: var(--accent); color: #101521; font-weight: bold; }
+#play:hover { background: var(--accent-hover); }
+.controls, .volume-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.65rem; }
+.controls { margin: 1rem 0; }
+.progress { display: flex; gap: 0.75rem; align-items: center; margin: 1rem 0; }
+.progress span { min-width: 3.25rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.progress span:last-child { text-align: right; }
+input[type="range"] { accent-color: var(--accent); min-width: 0; cursor: pointer; }
+#seek { flex: 1; width: 100%; }
+#volume { width: min(150px, 32vw); }
+.repeat { margin-left: auto; cursor: pointer; }
+.repeat input { accent-color: var(--accent); width: 1.1rem; height: 1.1rem; vertical-align: middle; }
+.status { min-height: 1.5em; }
+audio { width: 100%; display: block; margin: 1rem 0; }
+audio:not([controls]) { display: none; }
+.track-list { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: 0.55rem; }
+.track-list button {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  text-align: left;
+  width: 100%;
+}
+.track-list .active button { border-color: var(--accent); background: rgba(159, 123, 255, 0.12); }
+.track-number, .track-state { color: var(--muted); }
+.track-state { font-size: 0.85rem; }
+.track-title { overflow-wrap: anywhere; }
+summary { cursor: pointer; color: var(--accent-hover); padding: 0.5rem 0; }
+.lyrics {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: var(--text);
+  background: #101521;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin: 0.5rem 0 0;
+}
+footer { margin-bottom: 2rem; color: var(--muted); }
+[hidden] { display: none !important; }
+@media (max-width: 480px) {
+  .hero, .hero a { min-height: 180px; }
+  section, footer { padding: 1rem; }
+  .controls button { flex: 1 1 calc(50% - 0.65rem); }
+  .repeat { margin-left: 0; width: 100%; }
+  .track-list button { gap: 0.35rem; padding: 0.65rem; }
+}
+</style>
+</head>
+<body>
+  <header class="hero"><a href="../index.html" aria-label="PrincessTG Music home"></a></header>
+  <main>
+    <a class="back-link" href="./index.html">← All albums</a>
+    <section aria-labelledby="album-title">
+      <p class="eyebrow">PrincessTG Music</p>
+      <h1 id="album-title">Hope</h1>
+      <p class="release"><strong>Release date:</strong> 2026-6-15</p>
+      
+    </section>
+    <section aria-labelledby="now-title">
+      <p class="muted">Now playing</p>
+      <h2 id="now-title">Behind Every Line</h2>
+      <p class="muted" id="track-position">Track 1 of 21</p>
+      <audio id="audio" controls preload="metadata" src="../audioPlayer/audio/Behind%20Every%20Line.mp3">Your browser does not support audio playback.</audio>
+      <div id="custom-controls" hidden>
+        <div class="controls">
+          <button id="previous" type="button" aria-label="Previous track">Previous</button>
+          <button id="play" type="button" aria-pressed="false">Play</button>
+          <button id="stop" type="button">Stop</button>
+          <button id="next" type="button" aria-label="Next track">Next</button>
+        </div>
+        <div class="progress">
+          <span id="elapsed">0:00</span>
+          <input id="seek" type="range" min="0" max="1" step="0.1" value="0" aria-label="Seek in current track" disabled>
+          <span id="duration">--:--</span>
+        </div>
+        <div class="volume-row">
+          <button id="mute" type="button" aria-pressed="false">Mute</button>
+          <label for="volume">Volume</label>
+          <input id="volume" type="range" min="0" max="1" step="0.05" value="1">
+          <span id="volume-value">100%</span>
+          <label class="repeat"><input id="repeat" type="checkbox"> Repeat album</label>
+        </div>
+      </div>
+      <p id="status" class="status" role="status" aria-live="polite">Choose Play to start the album.</p>
+      <noscript><p>The native audio controls play the first track. Enable JavaScript for the full playlist.</p></noscript>
+    </section>
+    <section aria-labelledby="tracks-heading">
+      <h2 id="tracks-heading">Album tracks</h2>
+      <p class="muted">21 songs · Select a song to play it.</p>
+      <ol id="track-list" class="track-list">
+        <li><button type="button" aria-label="Play Behind Every Line"><span class="track-number">1</span><span class="track-title">Behind Every Line</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Call Out To Heaven"><span class="track-number">2</span><span class="track-title">Call Out To Heaven</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Rebirth"><span class="track-number">3</span><span class="track-title">Rebirth</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Find the Light"><span class="track-number">4</span><span class="track-title">Find the Light</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Ghosts"><span class="track-number">5</span><span class="track-title">Ghosts</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Hollow Night"><span class="track-number">6</span><span class="track-title">Hollow Night</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play I Am The Storm"><span class="track-number">7</span><span class="track-title">I Am The Storm</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play If I Break"><span class="track-number">8</span><span class="track-title">If I Break</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play If i Dont Come Home"><span class="track-number">9</span><span class="track-title">If i Dont Come Home</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Love Me Forever"><span class="track-number">10</span><span class="track-title">Love Me Forever</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Love til the end"><span class="track-number">11</span><span class="track-title">Love til the end</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Music is My Creation"><span class="track-number">12</span><span class="track-title">Music is My Creation</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Where It All Begins"><span class="track-number">13</span><span class="track-title">Where It All Begins</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play silent battles"><span class="track-number">14</span><span class="track-title">silent battles</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Watch Me Fall"><span class="track-number">15</span><span class="track-title">Watch Me Fall</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Let me be the Girl Inside"><span class="track-number">16</span><span class="track-title">Let me be the Girl Inside</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Searching For You"><span class="track-number">17</span><span class="track-title">Searching For You</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play This Is Our Pride"><span class="track-number">18</span><span class="track-title">This Is Our Pride</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Back In Time"><span class="track-number">19</span><span class="track-title">Back In Time</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Back In Time"><span class="track-number">20</span><span class="track-title">Back In Time</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Becomming Her"><span class="track-number">21</span><span class="track-title">Becomming Her</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+      </ol>
+    </section>
+    <section id="song-info" aria-labelledby="song-heading" hidden>
+      <h2 id="song-heading">Song details</h2>
+      <p id="song-description" hidden></p>
+      <details id="lyrics-panel" hidden>
+        <summary>Lyrics</summary>
+        <pre id="lyrics" class="lyrics"></pre>
+      </details>
+    </section>
+  </main>
+  <footer>PrincessTG Music · <a href="./index.html">All albums</a> · <a href="../index.html">Home</a></footer>
+  <script id="album-data" type="application/json">{"tracks":[{"title":"Behind Every Line","src":"../audioPlayer/audio/Behind%20Every%20Line.mp3","description":"","lyrics":""},{"title":"Call Out To Heaven","src":"../audioPlayer/audio/Call%20Out%20To%20Heaven.mp3","description":"","lyrics":""},{"title":"Rebirth","src":"../audioPlayer/audio/Carry%20All%20The%20Pain.mp3","description":"","lyrics":""},{"title":"Find the Light","src":"../audioPlayer/audio/Find%20the%20Light.mp3","description":"","lyrics":""},{"title":"Ghosts","src":"../audioPlayer/audio/Ghosts.mp3","description":"","lyrics":""},{"title":"Hollow Night","src":"../audioPlayer/audio/Hollow%20Night.mp3","description":"","lyrics":""},{"title":"I Am The Storm","src":"../audioPlayer/audio/I%20Am%20The%20Storm.mp3","description":"","lyrics":""},{"title":"If I Break","src":"../audioPlayer/audio/If%20I%20Break.mp3","description":"","lyrics":""},{"title":"If i Dont Come Home","src":"../audioPlayer/audio/If%20i%20Dont%20Come%20Home.mp3","description":"","lyrics":""},{"title":"Love Me Forever","src":"../audioPlayer/audio/Love%20Me%20Forever.mp3","description":"","lyrics":""},{"title":"Love til the end","src":"../audioPlayer/audio/Love%20til%20the%20end.mp3","description":"","lyrics":""},{"title":"Music is My Creation","src":"../audioPlayer/audio/Music%20is%20My%20Creation.mp3","description":"","lyrics":""},{"title":"Where It All Begins","src":"../audioPlayer/audio/Where%20It%20All%20Begins.mp3","description":"","lyrics":""},{"title":"silent battles","src":"../audioPlayer/audio/silent%20battles.mp3","description":"","lyrics":""},{"title":"Watch Me Fall","src":"../audioPlayer/audio/Watch%20Me%20Fall.mp3","description":"","lyrics":""},{"title":"Let me be the Girl Inside","src":"../audioPlayer/audio/Let%20me%20be%20the%20Girl%20Inside.mp3","description":"This song is simply about me wanting to be the girl I know I am inside.","lyrics":"let me be the girl inside...\n\nlet me be the girl inside\n\nI know I speak too much about the pain I carry\nMaybe people scroll away, maybe they grow weary\nBut silence never saved me when the darkness closed me in\nAnd I’ve been fighting battles no one else has ever seen\n\nI didn’t choose this aching, didn’t choose this endless war\nDidn’t choose to stand outside while everyone shuts the door\nI only wanted something simple, something others take for free\nTo look into the world and have it looking back at me\n\nI’m tired of pretending I can carry all this weight\nTired of acting stronger while I slowly break\n\nWhy do I have to beg to just exist\nWhy can’t they simply see the girl that lives in this\nWhy does my heart have to scream just to be believed\nWhy does the world keep taking away the right to just be me\n\nI don’t want your war, I don’t want your blame\nI just want to be seen as the girl I’ve always been\n\nThey say there’s good people, I know that must be true\nBut good gets drowned by voices that keep tearing straight through\nEvery cruel opinion cuts a little deeper still\nTill survival starts to feel less like living than a drill\n\nI don’t want to be a lesson, don’t want to be debate\nDon’t want strangers thinking they should get to choose my fate\nI don’t want to be reduced to words they throw around\nI just want to feel like I belong here on this ground\n\nI want to wake up, look inside, and finally feel at peace\nNot question every mirror, begging all the hurt to cease\nI don’t want to only survive while everyone decides\nIf I deserve the right to live the truth I hold inside\n\nI’m crying out from somewhere I don’t recognize\nWith shattered little prayers and swollen sleepless eyes\nIf there’s a place where I can breathe, then tell me where to run\nCause I can’t keep calling this a life when all I do is come undone\n\nI don’t want to be seen as pain\nDon’t want to be seen as some debate\nI just want to be her in every space\nAnd not feel fear written across my face\n\nWhy does kindness feel so far away\nWhy does hatred always get the loudest things to say\nWhy do I have to prove my soul is real\n\nWhy can’t the world just let me be the girl I already feel\nI don’t need everyone to understand every scar\nI just need one place where I can be exactly who I am\n\nlet me be the girl inside\nlet me be the girl inside"},{"title":"Searching For You","src":"../audioPlayer/audio/Searching%20For%20You.mp3","description":"A song about searching for your love whoever that may be someones out there","lyrics":"Where have you gone\nWhere are you now\nI'm looking for answers\nThat may never come\n\nI'm looking far\nAnd looking near\nI want to see you\nStanding right here\n\nI'll travel far and I'll search so wide\nIn hopes to see you standing by my side\nI don't know if you're real\nBut I know what I feel\n\nSo if you are out there\nI'll be waiting right here\n\nThe stars above\nStill shine so bright\nI wonder if you\nSee the same tonight\n\nThough time moves on\nMy hope stays clear\nOne day I'll find you\nAnd hold you near\n\nEvery new face is a chance to see\nIf you're the one who's been missing from me\nI've waited so long\nFor a place to belong\n\nMaybe you're searching too\nFor a heart that is true\n\nI'll cross every ocean\nAscend every hill\nChasing the feeling\nThat lingers still\n\nSomewhere out there\nOur paths will align\nAnd all of this searching\nWill lead you to mine\n\nMaybe tomorrow\nMaybe next year\nMaybe you'll find me\nAnd make it all clear\n\nAll of this longing\nAll of this time\nWill finally lead me\nTo your hand in mine\n\nSo if you can hear me\nWherever you are\nI'll keep searching for you\nNo matter how far\n"},{"title":"This Is Our Pride","src":"../audioPlayer/audio/This%20Is%20Our%20Pride.mp3","description":"A song about Pride Always be you","lyrics":"This is our pride\nBurning through the darkest night\nWe are still alive\n\nThey told us we were shadows\nThey told us not to speak\nTried to turn our colors\nInto something small and weak\n\nBut every scar's a story\nEvery tear became a flame\nAnd no matter what they call us\nWe still know our names\n\nThis is our pride\nStanding in the light\nAfter every battle\nAfter every fight\n\nWe were never broken\nWe were born to shine\nThis is our moment\nThis is our pride\n\nTo every trans girl dreaming\nTo every trans boy too\nTo every soul still searching\nFor a way to make it through\n\nTo every gay and lesbian\nTo every bi heart strong\nYou deserve a future\nYou deserve to belong\n\nThis is our pride\nRising with the dawn\nEven when the cold winds\nTell us to move on\n\nWe are still standing\nStill reaching for the sky\nWith love beside us\nThis is our pride\n\nWhen the world feels heavy\nAnd hope is hard to find\nTake my hand beside you\nLeave the fear behind\n\nYou are not a burden\nYou are not alone\nThere's a place that's waiting\nA place to call your home\n\nThis is our pride\nLouder than before\nEvery heart united\nOpening the door\n\nTrans and gay and lesbian\nBi and so much more\nWe will keep on rising\nLike waves against the shore\n\nNo matter who you are\nNo matter where you hide\nYou deserve your future\nYou deserve your pride\n\nThis is our pride\nAnd we'll carry it\nThrough the night\nUntil the morning light\n"},{"title":"Back In Time","src":"../audioPlayer/audio/Back%20In%20Time.mp3","description":"A song about reflecting on the past and wishing to go back in time to change things. It explores themes of regret, nostalgia, and the desire for a second chance.","lyrics":"If I saw her before she knew\nThe girl inside would soon be true\n\nI walk a mile every day\nWondering why it is this way\nEvery thought returns to you\nThe girl I never let shine through\n\nId go back to make it right \nTo help her win her inner fight\n\nI see her standing in the light\nThe life I hid just out of sight\nEvery step I took away\nLeft the truth I couldn't say\n\nIF I COULD TAKE ME BACK IN TIME\nID BE THE GIRL THAT WAS INSIDE\nBODY MIND AND SOUL ALINE \nID HAVE BEEN THE GIRL ALL THIS TIME\n\nBut time moves on and won’t rewind\nThe past is carved inside my mind\nStill every step I take today\nBrings her a little more my way\n\nIf I saw her before she knew\nThe girl inside would soon be true\nId go back to make it right \nTo help her win her inner fight\n\nIF I COULD TAKE ME BACK IN TIME\nID BE THE GIRL THAT WAS INSIDE\nBODY MIND AND SOUL ALINE \nID HAVE BEEN THE GIRL ALL THIS TIME\n\nI hear the echoes of her voice\nA quiet dream without a choice\nShe waited deep beneath the skin\nFor years I never let her in\n\nI tried to bury what was true\nPretending I just saw it wrong\nBut every mirror held the proof\nThe girl was there my whole life long\n\nI walked through days I couldn't claim\nLiving inside a borrowed name\nBut every step I take tonight\nFeels closer to a truer light\n\nThe past may live inside my mind\nBut now I know what I must be\nThe girl I hid for all that time\nIs finally waking up in me\n\nNo more hiding in the dark\nNo more tearing me apart\nAll the years I pushed away\nEnd right here, right now, today\n\nHear me rising from the pain\nI won’t bury her again\nEvery truth I tried to hide\nNow stands screaming from inside\n\nI can’t return to yesterday\nThe road behind won’t fade away\nBut I can stand here in the light\nAnd help someone else win their fight\n\nIf she’s afraid to speak her name\nI’ll show her she’s not wrong to change\nThe past may be my silent scar\nBut I’ll make sure she goes farther"},{"title":"Back In Time","src":"../audioPlayer/audio/Back%20In%20Time.mp3","description":"A song about reflecting on the past and wishing to go back in time to change things. It explores themes of regret, nostalgia, and the desire for a second chance.","lyrics":"If I saw her before she knew\nThe girl inside would soon be true\n\nI walk a mile every day\nWondering why it is this way\nEvery thought returns to you\nThe girl I never let shine through\n\nId go back to make it right \nTo help her win her inner fight\n\nI see her standing in the light\nThe life I hid just out of sight\nEvery step I took away\nLeft the truth I couldn't say\n\nIF I COULD TAKE ME BACK IN TIME\nID BE THE GIRL THAT WAS INSIDE\nBODY MIND AND SOUL ALINE \nID HAVE BEEN THE GIRL ALL THIS TIME\n\nBut time moves on and won’t rewind\nThe past is carved inside my mind\nStill every step I take today\nBrings her a little more my way\n\nIf I saw her before she knew\nThe girl inside would soon be true\nId go back to make it right \nTo help her win her inner fight\n\nIF I COULD TAKE ME BACK IN TIME\nID BE THE GIRL THAT WAS INSIDE\nBODY MIND AND SOUL ALINE \nID HAVE BEEN THE GIRL ALL THIS TIME\n\nI hear the echoes of her voice\nA quiet dream without a choice\nShe waited deep beneath the skin\nFor years I never let her in\n\nI tried to bury what was true\nPretending I just saw it wrong\nBut every mirror held the proof\nThe girl was there my whole life long\n\nI walked through days I couldn't claim\nLiving inside a borrowed name\nBut every step I take tonight\nFeels closer to a truer light\n\nThe past may live inside my mind\nBut now I know what I must be\nThe girl I hid for all that time\nIs finally waking up in me\n\nNo more hiding in the dark\nNo more tearing me apart\nAll the years I pushed away\nEnd right here, right now, today\n\nHear me rising from the pain\nI won’t bury her again\nEvery truth I tried to hide\nNow stands screaming from inside\n\nI can’t return to yesterday\nThe road behind won’t fade away\nBut I can stand here in the light\nAnd help someone else win their fight\n\nIf she’s afraid to speak her name\nI’ll show her she’s not wrong to change\nThe past may be my silent scar\nBut I’ll make sure she goes farther"},{"title":"Becomming Her","src":"../audioPlayer/audio/Becomming%20Her.mp3","description":"A song about self-discovery and empowerment. It celebrates the journey of becoming the best version of oneself.","lyrics":"She lived beneath a painted sky\nA girl who learned to laugh and lie\nThe mirror whispered soft and cold\n“You’re not the one you wish to hold”\n\nShe wore the name they gave with pride\nBut something in her broke inside\nEach breath she took, each smile she made\nFelt like a dream that slowly frayed\n\nShe prayed at night to feel the same\nTo fit the skin that wore her name\nBut every prayer returned in flame\nAn echo calling through the pain\n\n“This isn’t me,” her heart would cry\n“I need to live before I die”\nThe silence answered cold and bare\nHer broken voice hung in the air\n\nBut deep inside a spark still burned\nThrough every scar and every hurt\n“I am the girl you cannot kill\nI breathe, I burn, I always will”\n\nThe world grew sharp, the voices cruel\nHer tears became a quiet fuel\nShe bit her tongue, she held her breath\nAnd danced too close to thoughts of death\n\nYet somewhere in the dark remained\nA stubborn truth that still proclaimed\n“Stand up and fight through all the fear\nThe girl you are is already here”\n\nShe faced the mirror once again\nThrough every scar and every pain\nThe lies she wore began to fall\nThe truth inside outshined them all\n\n“This isn’t me,” her heart would cry\n“I need to live before I die”\nThe silence cracked beneath her voice\nAt last she knew she had a choice\n\nAnd deep inside that fire burned\nThrough all she lost and all she learned\n“I am the girl you cannot kill\nI breathe, I burn, I always will”\n\nShe rose from scars the world had drawn\nA phoenix wrapped in blood and dawn\nHer heart still cracked, her voice still raw\nBut she became her truest law\n\nShe whispered to the glass one night\n“You don’t control my life or fight”\nThen tore away the lies she’d worn\nAnd from the pain a girl was born\n\nNow this is me, she stands and cries\nNo longer trapped beneath the lies\nThe storm still lives inside her chest\nBut now it roars instead of rests\n\nThe fire inside will never fade\nThrough every scar the world once made\n“I am the girl you cannot kill\nI breathe, I burn, I always will”\n\nNow calm returns but not the same\nThe storm no longer burns in flame\nShe stands where once her silence bled\nAlive, reborn, no longer dead"}]}</script>
+  <script>
+(() => {
+  "use strict";
+  const { tracks } = JSON.parse(document.getElementById("album-data").textContent);
+  const get = (id) => document.getElementById(id);
+  const audio = get("audio");
+  const play = get("play");
+  const seek = get("seek");
+  const volume = get("volume");
+  const rows = Array.from(get("track-list").children);
+  let current = 0;
+  let playRequest = 0;
+  let stopped = false;
+
+  const status = (message) => { get("status").textContent = message; };
+  function time(seconds) {
+    if (!Number.isFinite(seconds)) return "--:--";
+    seconds = Math.max(0, Math.floor(seconds));
+    return Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0");
+  }
+  function updateProgress() {
+    const ready = Number.isFinite(audio.duration) && audio.duration > 0;
+    seek.disabled = !ready;
+    seek.max = ready ? audio.duration : 1;
+    seek.value = ready ? audio.currentTime : 0;
+    get("elapsed").textContent = time(audio.currentTime);
+    get("duration").textContent = time(audio.duration);
+    seek.setAttribute("aria-valuetext", time(audio.currentTime) + " of " + time(audio.duration));
+  }
+  function updateButtons() {
+    const playing = !audio.paused && !audio.ended;
+    play.textContent = playing ? "Pause" : "Play";
+    play.setAttribute("aria-pressed", String(playing));
+    rows.forEach((row, index) => {
+      const selected = index === current;
+      row.classList.toggle("active", selected);
+      const button = row.querySelector("button");
+      if (selected) button.setAttribute("aria-current", "true");
+      else button.removeAttribute("aria-current");
+      row.querySelector(".track-state").textContent = selected ? (playing ? "Playing" : "Selected") : "Play";
+    });
+  }
+  function updateVolume() {
+    volume.value = audio.volume;
+    const muted = audio.muted || audio.volume === 0;
+    get("mute").textContent = muted ? "Unmute" : "Mute";
+    get("mute").setAttribute("aria-pressed", String(muted));
+    get("volume-value").textContent = Math.round((muted ? 0 : audio.volume) * 100) + "%";
+  }
+  async function startPlayback() {
+    const request = ++playRequest;
+    try { await audio.play(); }
+    catch (error) {
+      if (request !== playRequest || error.name === "AbortError") return;
+      status(error.name === "NotAllowedError"
+        ? "Press Play to start the music."
+        : "Unable to play this track. Try another track or reload the page.");
+      updateButtons();
+    }
+  }
+  function selectTrack(index, autoplay) {
+    ++playRequest;
+    audio.pause();
+    current = index;
+    stopped = false;
+    const track = tracks[current];
+    audio.src = track.src;
+    audio.load();
+    get("now-title").textContent = track.title;
+    get("track-position").textContent = "Track " + (current + 1) + " of " + tracks.length;
+    get("song-description").textContent = track.description;
+    get("song-description").hidden = !track.description;
+    get("lyrics").textContent = track.lyrics;
+    get("lyrics-panel").hidden = !track.lyrics;
+    get("song-info").hidden = !track.description && !track.lyrics;
+    status("Ready to play " + track.title + ".");
+    updateProgress();
+    updateButtons();
+    if (autoplay) void startPlayback();
+  }
+  function skip(direction) {
+    const wasPlaying = !audio.paused && !audio.ended;
+    if (direction < 0 && audio.currentTime > 3) {
+      audio.currentTime = 0;
+      updateProgress();
+      return;
+    }
+    selectTrack((current + direction + tracks.length) % tracks.length, wasPlaying);
+  }
+
+  play.addEventListener("click", () => {
+    if (audio.paused) {
+      stopped = false;
+      if (audio.ended) audio.currentTime = 0;
+      void startPlayback();
+    } else { ++playRequest; audio.pause(); }
+  });
+  get("stop").addEventListener("click", () => {
+    ++playRequest;
+    stopped = true;
+    audio.pause();
+    audio.currentTime = 0;
+    updateProgress();
+    updateButtons();
+    status("Stopped. Press Play to restart " + tracks[current].title + ".");
+  });
+  get("previous").addEventListener("click", () => skip(-1));
+  get("next").addEventListener("click", () => skip(1));
+  rows.forEach((row, index) => row.querySelector("button").addEventListener("click", () => selectTrack(index, true)));
+  seek.addEventListener("input", () => {
+    if (!seek.disabled) audio.currentTime = Number(seek.value);
+    updateProgress();
+  });
+  volume.addEventListener("input", () => {
+    audio.volume = Number(volume.value);
+    if (audio.volume > 0) audio.muted = false;
+  });
+  get("mute").addEventListener("click", () => {
+    if (audio.muted || audio.volume === 0) { audio.muted = false; if (audio.volume === 0) audio.volume = 1; }
+    else audio.muted = true;
+  });
+  audio.addEventListener("volumechange", updateVolume);
+  ["loadedmetadata", "durationchange", "timeupdate", "emptied"].forEach((event) => audio.addEventListener(event, updateProgress));
+  audio.addEventListener("play", () => { updateButtons(); status("Playing " + tracks[current].title + "."); });
+  audio.addEventListener("pause", () => {
+    updateButtons();
+    if (!audio.ended && !stopped) status("Paused: " + tracks[current].title + ".");
+  });
+  audio.addEventListener("ended", () => {
+    if (current + 1 < tracks.length) selectTrack(current + 1, true);
+    else if (get("repeat").checked) selectTrack(0, true);
+    else { updateButtons(); status("Album finished. Choose a track to listen again."); }
+  });
+  audio.addEventListener("error", () => {
+    updateButtons();
+    status("Could not load " + tracks[current].title + ". Try another track.");
+  });
+
+  // Keep native controls as a fallback if JavaScript is disabled.
+  audio.controls = false;
+  get("custom-controls").hidden = false;
+  get("previous").disabled = tracks.length < 2;
+  get("next").disabled = tracks.length < 2;
+  selectTrack(0, false);
+  updateVolume();
+})();
+</script>
+</body>
+</html>

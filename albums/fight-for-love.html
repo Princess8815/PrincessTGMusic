@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Listen to Fight For Love by PrincessTG.">
+  <title>Fight For Love | PrincessTG Music</title>
+  <style>
+:root {
+  --bg: #11131a;
+  --card: #1d2230;
+  --text: #f3f5ff;
+  --muted: #b9bfd4;
+  --accent: #9f7bff;
+  --accent-hover: #bda7ff;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: linear-gradient(160deg, #0d1018, #171d2a 45%, #11131a);
+  color: var(--text);
+  line-height: 1.5;
+}
+.hero, main, footer { width: min(960px, 92vw); margin: 0 auto; }
+.hero {
+  background: url("../images/logo-removebg-preview.png") center / contain no-repeat;
+  min-height: 240px;
+  display: flex;
+  align-items: stretch;
+}
+.hero a { width: 100%; min-height: 240px; border-radius: 16px; }
+section, footer {
+  background: rgba(29, 34, 48, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+h1, h2 { margin: 0 0 0.5rem; overflow-wrap: anywhere; }
+h1 { font-size: clamp(1.8rem, 6vw, 2.8rem); }
+p { margin: 0.5rem 0; }
+.eyebrow, .release, .description, .muted, .status { color: var(--muted); }
+.eyebrow { margin-top: 0; color: var(--accent-hover); }
+.description, #song-description { white-space: pre-wrap; overflow-wrap: anywhere; }
+.back-link, footer a { color: var(--accent); }
+.back-link { display: inline-block; margin-bottom: 1rem; text-decoration: none; }
+a:hover { color: var(--accent-hover); }
+button, input { font: inherit; }
+button {
+  background: #101521;
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--accent-hover); }
+button:disabled, input:disabled { opacity: 0.5; cursor: default; }
+button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visible {
+  outline: 3px solid var(--accent-hover);
+  outline-offset: 3px;
+}
+#play { background: var(--accent); border-color: var(--accent); color: #101521; font-weight: bold; }
+#play:hover { background: var(--accent-hover); }
+.controls, .volume-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.65rem; }
+.controls { margin: 1rem 0; }
+.progress { display: flex; gap: 0.75rem; align-items: center; margin: 1rem 0; }
+.progress span { min-width: 3.25rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.progress span:last-child { text-align: right; }
+input[type="range"] { accent-color: var(--accent); min-width: 0; cursor: pointer; }
+#seek { flex: 1; width: 100%; }
+#volume { width: min(150px, 32vw); }
+.repeat { margin-left: auto; cursor: pointer; }
+.repeat input { accent-color: var(--accent); width: 1.1rem; height: 1.1rem; vertical-align: middle; }
+.status { min-height: 1.5em; }
+audio { width: 100%; display: block; margin: 1rem 0; }
+audio:not([controls]) { display: none; }
+.track-list { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: 0.55rem; }
+.track-list button {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  text-align: left;
+  width: 100%;
+}
+.track-list .active button { border-color: var(--accent); background: rgba(159, 123, 255, 0.12); }
+.track-number, .track-state { color: var(--muted); }
+.track-state { font-size: 0.85rem; }
+.track-title { overflow-wrap: anywhere; }
+summary { cursor: pointer; color: var(--accent-hover); padding: 0.5rem 0; }
+.lyrics {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: var(--text);
+  background: #101521;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin: 0.5rem 0 0;
+}
+footer { margin-bottom: 2rem; color: var(--muted); }
+[hidden] { display: none !important; }
+@media (max-width: 480px) {
+  .hero, .hero a { min-height: 180px; }
+  section, footer { padding: 1rem; }
+  .controls button { flex: 1 1 calc(50% - 0.65rem); }
+  .repeat { margin-left: 0; width: 100%; }
+  .track-list button { gap: 0.35rem; padding: 0.65rem; }
+}
+</style>
+</head>
+<body>
+  <header class="hero"><a href="../index.html" aria-label="PrincessTG Music home"></a></header>
+  <main>
+    <a class="back-link" href="./index.html">← All albums</a>
+    <section aria-labelledby="album-title">
+      <p class="eyebrow">PrincessTG Music</p>
+      <h1 id="album-title">Fight For Love</h1>
+      <p class="release"><strong>Release date:</strong> 2026-9-19</p>
+      
+    </section>
+    <section aria-labelledby="now-title">
+      <p class="muted">Now playing</p>
+      <h2 id="now-title">could have saved me</h2>
+      <p class="muted" id="track-position">Track 1 of 14</p>
+      <audio id="audio" controls preload="metadata" src="../audioPlayer/audio/could%20have%20saved%20me.mp3">Your browser does not support audio playback.</audio>
+      <div id="custom-controls" hidden>
+        <div class="controls">
+          <button id="previous" type="button" aria-label="Previous track">Previous</button>
+          <button id="play" type="button" aria-pressed="false">Play</button>
+          <button id="stop" type="button">Stop</button>
+          <button id="next" type="button" aria-label="Next track">Next</button>
+        </div>
+        <div class="progress">
+          <span id="elapsed">0:00</span>
+          <input id="seek" type="range" min="0" max="1" step="0.1" value="0" aria-label="Seek in current track" disabled>
+          <span id="duration">--:--</span>
+        </div>
+        <div class="volume-row">
+          <button id="mute" type="button" aria-pressed="false">Mute</button>
+          <label for="volume">Volume</label>
+          <input id="volume" type="range" min="0" max="1" step="0.05" value="1">
+          <span id="volume-value">100%</span>
+          <label class="repeat"><input id="repeat" type="checkbox"> Repeat album</label>
+        </div>
+      </div>
+      <p id="status" class="status" role="status" aria-live="polite">Choose Play to start the album.</p>
+      <noscript><p>The native audio controls play the first track. Enable JavaScript for the full playlist.</p></noscript>
+    </section>
+    <section aria-labelledby="tracks-heading">
+      <h2 id="tracks-heading">Album tracks</h2>
+      <p class="muted">14 songs · Select a song to play it.</p>
+      <ol id="track-list" class="track-list">
+        <li><button type="button" aria-label="Play could have saved me"><span class="track-number">1</span><span class="track-title">could have saved me</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Close My Eyes"><span class="track-number">2</span><span class="track-title">Close My Eyes</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Begin Again"><span class="track-number">3</span><span class="track-title">Begin Again</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Dead By Dawn"><span class="track-number">4</span><span class="track-title">Dead By Dawn</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Amen"><span class="track-number">5</span><span class="track-title">Amen</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Storm"><span class="track-number">6</span><span class="track-title">Storm</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play See The Sign"><span class="track-number">7</span><span class="track-title">See The Sign</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Take My Hand"><span class="track-number">8</span><span class="track-title">Take My Hand</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play The Last Walk"><span class="track-number">9</span><span class="track-title">The Last Walk</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play See Me"><span class="track-number">10</span><span class="track-title">See Me</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play You Are Right For Me"><span class="track-number">11</span><span class="track-title">You Are Right For Me</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Just A Girl"><span class="track-number">12</span><span class="track-title">Just A Girl</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play To Simply Be"><span class="track-number">13</span><span class="track-title">To Simply Be</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play beyond the door"><span class="track-number">14</span><span class="track-title">beyond the door</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+      </ol>
+    </section>
+    <section id="song-info" aria-labelledby="song-heading">
+      <h2 id="song-heading">Song details</h2>
+      <p id="song-description">about wondering if i could have been saved had i been able to be me sooner</p>
+      <details id="lyrics-panel">
+        <summary>Lyrics</summary>
+        <pre id="lyrics" class="lyrics">
+What if I had found myself before the world found me?
+Before the silence built a prison no one else could see.
+Would I have learned to love the girl I always knew I&#39;d be?
+Would hope have had a chance before it slipped away from me?
+
+I keep reaching through the years,
+Trying to touch forgotten dreams.
+I can&#39;t stop wondering...
+
+Why couldn&#39;t I have started younger?
+Why couldn&#39;t I become that girl back then?
+Maybe I would&#39;ve found the courage
+To open up and let somebody in.
+
+Maybe laughter would&#39;ve filled the empty spaces,
+Maybe lonely nights would&#39;ve been less cold.
+Maybe I would&#39;ve carried lighter burdens,
+Instead of watching all that weight take hold.
+
+I wonder if the road would&#39;ve been different,
+If my heart had finally felt at home.
+Not a promise written into history,
+Just another path I&#39;ll never know.
+
+So many moments tied together,
+Threads that never came undone.
+Sometimes one beginning
+Changes everything that follows.
+
+What if I had found myself before the world found me?
+Before the silence built a prison no one else could see.
+Would I have learned to love the girl I always knew I&#39;d be?
+Would hope have had a chance before it slipped away from me?
+
+I keep reaching through the years,
+Trying to touch forgotten dreams.
+I can&#39;t stop wondering...
+Could it have saved me?
+Could it have saved me?
+
+The isolation echoed louder,
+Every season felt the same.
+Searching for a place to belong
+While forgetting how to say my name.
+
+Maybe I never would&#39;ve fallen
+Into a battle with myself.
+Maybe my body would&#39;ve carried
+Less of the damage that I felt.
+
+These last few years of living honestly,
+A gift I&#39;ll never throw away.
+But some scars were already written
+Long before I found my way.
+
+Still I don&#39;t hate the ones around me.
+Even when the hurt runs deep.
+I only wish the child I once was
+Had been allowed her chance to breathe.
+
+If I could whisper through the years,
+I&#39;d tell that little girl,
+&quot;You aren&#39;t broken.
+You aren&#39;t pretending.
+You aren&#39;t alone.&quot;
+
+I&#39;d tell her to hold on.
+One day she&#39;ll hear her own name,
+And it will sound like home.
+
+But I can&#39;t rewrite yesterday.
+I can&#39;t know who I might&#39;ve been.
+I only know
+Some pieces were lost
+Before I ever had the chance to find them.
+
+Maybe things would&#39;ve been different.
+Maybe they wouldn&#39;t.
+I&#39;ll never know.
+
+But every child deserves the chance
+To become themselves
+Before the world teaches them
+They&#39;re someone else.
+
+What if I had found myself before the world found me?
+Before the silence built a prison no one else could see.
+I&#39;ll never know the life that waited
+Just beyond those missing years,
+But I&#39;ll always hear the question
+Echoing through every tear.
+
+Could I have laughed more?
+Could I have loved more?
+Could I have lived more?
+
+I&#39;ll never know...
+
+But I&#39;ll never stop wondering
+If getting to be myself sooner
+Could have saved me.
+
+Could have saved me.</pre>
+      </details>
+    </section>
+  </main>
+  <footer>PrincessTG Music · <a href="./index.html">All albums</a> · <a href="../index.html">Home</a></footer>
+  <script id="album-data" type="application/json">{"tracks":[{"title":"could have saved me","src":"../audioPlayer/audio/could%20have%20saved%20me.mp3","description":"about wondering if i could have been saved had i been able to be me sooner","lyrics":"\nWhat if I had found myself before the world found me?\nBefore the silence built a prison no one else could see.\nWould I have learned to love the girl I always knew I'd be?\nWould hope have had a chance before it slipped away from me?\n\nI keep reaching through the years,\nTrying to touch forgotten dreams.\nI can't stop wondering...\n\nWhy couldn't I have started younger?\nWhy couldn't I become that girl back then?\nMaybe I would've found the courage\nTo open up and let somebody in.\n\nMaybe laughter would've filled the empty spaces,\nMaybe lonely nights would've been less cold.\nMaybe I would've carried lighter burdens,\nInstead of watching all that weight take hold.\n\nI wonder if the road would've been different,\nIf my heart had finally felt at home.\nNot a promise written into history,\nJust another path I'll never know.\n\nSo many moments tied together,\nThreads that never came undone.\nSometimes one beginning\nChanges everything that follows.\n\nWhat if I had found myself before the world found me?\nBefore the silence built a prison no one else could see.\nWould I have learned to love the girl I always knew I'd be?\nWould hope have had a chance before it slipped away from me?\n\nI keep reaching through the years,\nTrying to touch forgotten dreams.\nI can't stop wondering...\nCould it have saved me?\nCould it have saved me?\n\nThe isolation echoed louder,\nEvery season felt the same.\nSearching for a place to belong\nWhile forgetting how to say my name.\n\nMaybe I never would've fallen\nInto a battle with myself.\nMaybe my body would've carried\nLess of the damage that I felt.\n\nThese last few years of living honestly,\nA gift I'll never throw away.\nBut some scars were already written\nLong before I found my way.\n\nStill I don't hate the ones around me.\nEven when the hurt runs deep.\nI only wish the child I once was\nHad been allowed her chance to breathe.\n\nIf I could whisper through the years,\nI'd tell that little girl,\n\"You aren't broken.\nYou aren't pretending.\nYou aren't alone.\"\n\nI'd tell her to hold on.\nOne day she'll hear her own name,\nAnd it will sound like home.\n\nBut I can't rewrite yesterday.\nI can't know who I might've been.\nI only know\nSome pieces were lost\nBefore I ever had the chance to find them.\n\nMaybe things would've been different.\nMaybe they wouldn't.\nI'll never know.\n\nBut every child deserves the chance\nTo become themselves\nBefore the world teaches them\nThey're someone else.\n\nWhat if I had found myself before the world found me?\nBefore the silence built a prison no one else could see.\nI'll never know the life that waited\nJust beyond those missing years,\nBut I'll always hear the question\nEchoing through every tear.\n\nCould I have laughed more?\nCould I have loved more?\nCould I have lived more?\n\nI'll never know...\n\nBut I'll never stop wondering\nIf getting to be myself sooner\nCould have saved me.\n\nCould have saved me."},{"title":"Close My Eyes","src":"../audioPlayer/audio/Close%20My%20Eyes.mp3","description":"A song about wanting love as i die","lyrics":"Can you hold me tight\nCarry me to the light\nAs I close my eyes\nAnd my soul leaves Earth tonight\n\nI walked us through the storm as the darkness grew around\nWe knew this day would come but my soul must leave the ground\nI hope you'll hold me close as I fade away\nPromise me you'll stay 'til the night turns into day\n\nHold me close tonight\nPromise you'll be alright\nI ask you not to cry\nEven as I die\n\nCan you hold me tight\nCarry me to the light\nAs I close my eyes\nAnd my soul leaves Earth tonight\n\nI don't know what there will be\nI just hope to go there happily\nThere's no knowing who or why\nPlease hold me as I die\n\nThe wind will sing my name across the open sky\nThe dawn will keep its promise as the days go by\nThough my journey carries far beyond what we can see\nThe love we built together lives in you and me\n\nWhen morning greets your eyes\nPlease don't believe love dies\nCarry my heart with you\nIn everything you do\n\nCan you hold me tight\nCarry me to the light\nAs I close my eyes\nAnd my soul leaves Earth tonight\n\nI don't know what there will be\nI just hope to go there happily\nThere's no knowing who or why\nPlease hold me as I die\n\nIf this is where the road must end,\nPlease stay here by my side.\nHold my hand a little longer,\nDon't let go tonight.\n\nThough my voice may fade to silence,\nAnd my eyes no longer see,\nLet your love become the light\nThat gently carries me.\n\nCan you hold me tight\nCarry me to the light\nAs I close my eyes\nAnd my soul leaves Earth tonight\n\nI know this is the end\nBut I'm sure to see you again\nOne last smile before goodbye\nAs I enter the afterlife"},{"title":"Begin Again","src":"../audioPlayer/audio/Begin%20Again.mp3","description":"a song about starting over","lyrics":"I will find a way\nI will seize this day\nTonight\n\n(TONIGHT)\n\nWe will carve our paths\nThrough the thick and thin\nWe will make it to the end\n\nAnd we will all begin again\n\nIn the darkest hour\nWhen it all feels sour\nThere's still light I see ahead\n\nAs the world falls down\nAnd we hit the ground\nWe will all rise up and win\n\nNo matter how fast the darkness can grow\nThe life we live will show\n\nI will find a way\nI will seize this day\nTonight\n\n(TONIGHT)\n\nWe will carve our paths\nThrough the thick and thin\nWe will make it to the end\n\nAnd we will all begin again\n\nTHE DARKNESS COMES\nBUT I STILL STAND\nAS THE END MAY NEAR\nAND TAKE MY HAND\n\nI WILL FIGHT IT 'TIL THE END\nAND SHOULD I FAIL\nAND INSTEAD FALL\nI WILL BEGIN AGAIN\n\nI WILL BEGIN AGAIN\n\nI will find a way\nI will seize this day\nTonight\n\n(TONIGHT)\n\nWe will carve our paths\nThrough the thick and thin\nWe will make it to the end\n\nI will find a way\nI will seize this day\nTonight\n\n(TONIGHT)\n\nWe will carve our paths\nThrough the thick and thin\nWe will make it to the end\n\nAnd we will all begin again\n\nAnd we will all begin again"},{"title":"Dead By Dawn","src":"../audioPlayer/audio/Dead%20By%20Dawn.mp3","description":"a song about my suicide attempt before i transitioned","lyrics":"\n\ni was supposed to be dead by dawn\nBut now I walk the earth as one\nI WAS READY TO BE GONE\nBecause my life, it felt all wrong\n\nThe years were blending together\nI was trying to find myself\nNothing felt that easy\nAs I walked the world alone\n\nThey told me I couldn't be\nThe girl I knew I was\nBut the life they wanted for me\nWas never my life at all\n\nIn the darkest hours\nI couldn't find myself\nI wanted it all over\nSo I tried to end it all\n\nI WAS SUPPOSED TO BE DEAD BY DAWN\nBut now I walk the earth as one\nI WAS READY TO BE GONE\nBecause my life, it felt all wrong\n\nBut when the morning rose\nI saw her standing there\nIn the mirror she froze\nLooking back at me\n\nI was supposed to be dead by dawn\nBut now I can finally see\n\nMy road was never easy\nIt was met with pain and hate\nNo one told me I could be\nThe girl they couldn't see\n\nI spent my whole life looking\nFor what the whole world took from me\nAs I walk the world today\nI realize that I needed to be free\n\nBut in the darkest moment\nI almost lost it all\nEvery breath became a fight\nI was supposed to be...\n\nDEAD BY DAWN\nWhere my story almost met its end\nDEAD BY DAWN\nThey couldn't see the girl within\n\nEvery waking moment\nWas a pain I can't describe\nLonging to be a girl\nBut only told I had to hide\n\ndead by dawn\noooooo\ndead\nby\ndawn\n\nI WAS SUPPOSED TO BE DEAD BY DAWN (Dead by dawn)\nBut now I walk the earth as one\nI WAS READY TO BE GONE (To be gone)\nBecause my life, it felt all wrong\n\nDead by dawn\nThis was supposed to be my end\nReady to be gone\nBut now I'm born again\n\nBut when the morning rose\nI saw her standing there\nIn the mirror she froze\nLooking back at me\n\nI was supposed to be dead by dawn\nBut now I can finally see"},{"title":"Amen","src":"../audioPlayer/audio/Amen.mp3","description":"A prayer for hope","lyrics":"\nThe fire rises high\nInto the midnight sky\nAs I lift above the world\nI'm only asking why\n\nI want to cry\nI wish I could die\nAnd through the pain\nPlease lift me high\n\nI'm praying to the heavens\nI'm calling out to You\nI'm asking You to save me\nAnd make my life feel true\n\nPlease guide me through the darkness\nAnd help me stand again\nWrap me in Your endless grace\nI whisper now, Amen\n\nAs I'm walking through the fire\nAnd I try to find my place\nI pray You'll lift me higher\nAnd bring me forward in this race\n\nI want to live\nBut without pain\nI hope You'll give\nA way for me to gain\n\nI'm praying to the heavens\nI'm calling out to You\nI'm asking You to save me\nAnd make my life feel true\n\nPlease guide me through the darkness\nAnd help me stand again\nWrap me in Your endless grace\nI whisper now, Amen\n\nLord, You showed the girl I am\nNow please don't let me lose my way\nWhen all I feel is fear and pain\nPlease help me see another day\n\nLift this burden from my soul\nHelp my broken heart to mend\nI'm placing all my hope in You\nIn Jesus' holy name, Amen\n\nI'm praying to the heavens\nI'm calling out to You\nI know that You will save me\nAnd make my life feel true\n\nThe darkness will soon fade\nI'm with You to the end\nI'll stay with You forever\nIn Jesus' name, Amen"},{"title":"Storm","src":"../audioPlayer/audio/Storm.mp3","description":"a song about standing strong threw a storm","lyrics":"The wind is picking up\nAnd the trees sway all around\nAs the dark clouds approach\nWe get down to the ground\n\nWe ask, will the storm take us\nWe ask if we'll be safe\nWe pray for those around us\nEven when we do not know their names\n\nBut in this night of horror\nI'm walking out the door\nI will not live in fear\nNot here, not anymore\n\nThe storm is now approaching\nBut I am standing still\nI will not bow before it\nCome lightning, rain, or chill\n\nI'm here to stand my ground\nEven if it takes my life\nNo matter what it does\nUntil my final night\n\nNow the wind is blowing fast\nAnd the trees are falling down\nI don't know where this will take me\nBut I'm standing for my town\n\nWe hope the storm will spare us\nWe wish for it to pass\nBut somewhere deep inside us\nWe know that we can last\n\nThe storm is here at last\nAs it rips apart our home\nWe all hold each other's hands\nSo we never feel alone\n\nIt takes away our belongings\nIt takes everything that's near\nBut as I look around us\nWe are all still standing here\n\nAs the storm passes\nAnd the wind fades away\nWe hold each other closer\nAnd we tell them all to stay\n\nWe stood against the storm\nAnd we are stronger than before\nWe may have lost our stuff\nBut we'll rebuild once more\n\nThe storm cannot destroy us\nWe'll rebuild once more"},{"title":"See The Sign","src":"../audioPlayer/audio/See%20The%20Sign.mp3","description":"a song hoping to be saved","lyrics":"Will everything be fine\nWill I see a sign\nWill I make it right tonight\n\nWill I find a way\nTo be alright\nAt the end of time\nWill I see it through\nOr will my life become untrue\n\nI can only hope for a better day\nBut I don't see past what's in my way\nI can pray for life to be made right\nBut I don't know what to do\n\nSo I'm waiting here for You\n\nI don't know if I will make it\nAll I know is I will try\nI'm fighting through my pain\nEven though I want to die\n\nI'm hoping Someone will save me\nAnd carry me past it all\nBut I don't know if I will make it\nSo please catch me if I fall\n\nI know You hear me call\nEven when it's through the wall\nHold me when the night is long\nHelp me find where I belong\n\nIf tomorrow never finds me\nLet today not be in vain\nTake these shattered pieces\nAnd breathe life into my pain\n\nWhen I can't keep standing\nBe the strength I cannot see\nIf I lose my way completely\nPlease don't ever give up on me\n\nI'm hoping Someone will save me\nAnd carry me past it all\nEven if I'm barely breathing\nPlease catch me if I fall\n\nI know You hear me call\nEven when it's through the wall\nAnd though the road is dark tonight\nI'll keep reaching for Your light\n\nWill everything be fine\nWill I see a sign\nUntil that day I'll hold on tight\nAnd keep believing there is light"},{"title":"Take My Hand","src":"../audioPlayer/audio/Take%20My%20Hand.mp3","description":"A song for reaching out","lyrics":"No matter what\nAnd no matter why\nI'll hold you closer\nIf you need to cry\n\nWhen the world feels cold\nAnd the colors fade away\nYou don't have to carry\nAll that weight today\n\nEvery scar tells a story\nEvery tear has its place\nEven in the darkest moments\nLove can light the way\n\nSo take my hand\nYou don't have to fight alone\nWhen your heart feels broken\nYou still have a home\n\nWhen tomorrow feels too far\nWe'll make it through tonight\nI'll stay beside you\nUntil you find the light\n\nI know the road\nCan steal your breath away\nLeave you wondering\nIf hope forgot your name\n\nBut every sunrise waiting\nBeyond the longest night\nIs proof that even shadows\nCan't silence all the light\n\nIf your strength is fading\nYou can borrow some of mine\nWe'll face every mountain\nOne step at a time\n\nNo storm lasts forever\nNo winter owns the sky\nSo lean a little closer\nYou don't have to hide\n\nTake my hand\nYou don't have to fight alone\nEvery beat that's breaking\nStill deserves a song\n\nWhen tomorrow feels too far\nWe'll make it through tonight\nNo matter what\nI'll help you find the light\n\nNo matter what\nAnd no matter why\nI'll hold you closer\nIf you need to cry"},{"title":"The Last Walk","src":"../audioPlayer/audio/The%20Last%20Walk.mp3","description":"a song about leaving someone you love","lyrics":"The world is falling down\nAs I go all around\nI just want you to know\nIt is my time to go\n\nAs I'm falling down\n towards the rising sea\nAll there ever was \nleft me farther from my destiny\n\nI don't know where to go\nI don't know what to do\n\nI just wish that I could still be here by you\n\nIt's not you, it's me\nI need to be set free\nI hope as the time passes that you can truly see\n\nThe world is falling down\nAs I go all around\nI just want you to know\nIt is my time to go\n\nThis is the path I walk\nEven in the dark\nYou will never leave my mind\nYou were always just so kind\n\nI tried to take it slow\nBut now it's time to go\n\nThe memories we had \nwill always be held near\nAll the times you held me \nthrough my deepest fear\n\nIt's hard to say goodbye\nIt feels like I might die\n\nI wish there was a way \nthat we could simply stay\n\nThe love we had was real\nBut in time this will heal\n\nI just want you to know\nI didn't want to let you go\nBut our paths aren't the same\nI don't want to play this game\n\nIn time you'll be alright\nYou can win your fight\nMy hurt will always show\nBut I need to let you go\n\nPromise me one thing \nas you head into the night\nRemember all the days \nthat made you shine so bright\n\nOur love tonight must end\nBut I promise you one thing\nYour heart will someday mend\nAnd I hope when that day comes\nThat you will still be a friend"},{"title":"See Me","src":"../audioPlayer/audio/See%20Me.mp3","description":"about being seen","lyrics":"\nWhere do I go in the darkest hour\nHow do I show where my heart is at\nHow do I help them see my truth now\nWill they see me for who I am\n\nThey hate me now though I've done no wrong\nI am here just writing my song\n\nThis is not freedom, it is fear\nAnd I face it every year\n\nJust give me a chance to live now\nAs the girl I need to be\n\nI just want the world to see\nThere's nothing wrong with being me\nEvery scar and every tear\nBrought me to this moment here\n\nYou won't erase the life I've found\nYou can't keep dragging me back down\nThis is my life, this is my truth\nAnd I'll keep fighting to make it through\n\nHow many tears must fall like rain\nHow many years must hold this pain\nHow do I show I'm just a person\nTrying to find a place to breathe\n\nI've lost enough to know what's real\nNo one can change the way I feel\n\nThese are my scars and this is me\nAt last my heart can finally live free\n\nEvery dream and hope I twirl\nI was always meant to be a girl\n\nI just want the world to see\nThere's nothing wrong with being me\nEvery scar and every tear\nBrought me to this moment here\n\nYou won't erase the life I've found\nYou can't keep dragging me back down\nThis is my life, this is my truth\nAnd I'll keep fighting to make it through\n\nCan you hear me through the noise\nPast the anger and the voice\nI'm still standing here somehow\nWill you finally see me now\n\nI'm not asking to be changed\nOnly loved instead of blamed\nPlease don't turn and walk away\nSee the girl who's here today\n\nI don't need the world to see\nI finally believe in me\nEvery scar and every tear\nCouldn't make me disappear\n\nYou may never call my name\nBut my heart remains the same\nThis is my life, this is my truth\nI was always meant to bloom\n\nNo matter what this world may see\nI'll always be the girl in me"},{"title":"You Are Right For Me","src":"../audioPlayer/audio/You%20Are%20Right%20For%20Me.mp3","description":"a love song","lyrics":"Now I see the world is calling out for something new\nBut all I'm really wanting is to be with you\n\n\n(I want you...)\n\nCan't you see the future that we both can have\n\n(I need you...)\n\nI want you in my life\nI want you in my heart\nWe can go away and have a brand new start\n(I want you, I need you...)\n\nSo hold my hand tonight\nWe will be alright\nListen to your heart\nDo not let me leave your sight\n\nLife is one more battle\nBut with you we'll win the fight\n\n\nI want you, I need you\nCan't you see\nYou are right for me\n\nLook at what we have\nLook at what we did\nTogether we can show this world that love will always win\n\nEvery road that we may take may not be paved in gold\nBut standing here beside you, I'll never feel alone\n\nEvery dream we chase is waiting up ahead\n\nNo matter where we go\nNo matter what we face\nI know we'll find tomorrow if we keep this steady pace\n\nSo don't let go tonight\nWe'll make it through somehow\nEven if the stars all fade\nI'll still be with you now\n\nLife is one more battle\nBut together we'll stand proud\n\nI want you in my life\nI need you next to me\nCalling out for you in hopes to hear my plea\n\nEvery beat inside my heart\nHas always known your name\nNothing in this world could ever make me feel the same\n\nStay with me tonight\nPlease don't set me free\nHear my crying out\n\nYou are right for me\n(You are right for me)\n\nRaise your voice with mine\nLet the silence fall\nTogether we are stronger\nThan the fear of it all\n\nWe were never broken\nOnly finding where\nTwo hearts meant forever\nFinally could share\n\nThis is where we stand\nThis is where we'll be\nUntil forever ends\nYou're my destiny"},{"title":"Just A Girl","src":"../audioPlayer/audio/Just%20A%20Girl.mp3","description":"","lyrics":"I spent so many years being told who I should be\nWhile somewhere deep inside, the girl was calling me\nI looked in the mirror at a face that wasn’t mine\nAnd learned to wear a smile and tell the world I’m fine\n\nAnd I won’t leave her there again\nBehind the glass, behind the pain\nI found the words I couldn’t say\nAnd I’m taking back my name\n\nSo call me a girl, let me finally hear it said\nFor the little girl who lived inside my heart and in my head\nIt’s more than just a word, it’s the missing part of my world\nAfter all these years, I’m proud to call myself a girl\n\nI know that I’m a woman and that word belongs to me\nBut “girl” holds something precious that the whole world couldn’t see\nIt holds the years I never had, the childhood left behind\nA chance to meet the younger me I never got to find\n\nNo, I won’t leave her there again\nShe made it through, she always did\nThe world can never take away\nThe girl I’ve always been\n\nSo call me a girl, let me finally hear it said\nFor the little girl who lived inside my heart and in my head\nIt’s more than just a word, it’s the missing part of my world\nAfter all these years, I’m proud to call myself a girl\n\nTransition never made me someone strange or new\nIt opened up the door and let the real me wander through\nI didn’t become someone else\nI finally became myself\n\nWoman tells you what I am\nBut girl tells you my world\nThat little girl survived it all\nShe finally gets to hear\n\nSo CALL ME A GIRL, let the whole damn world hear\nI carried her inside of me through every stolen year\nI’m a woman, and I’ll wear that word with pride\nBut the girl I never got to be is finally alive"},{"title":"To Simply Be","src":"../audioPlayer/audio/To%20Simply%20Be.mp3","description":"","lyrics":"Whose dreams am I carrying\nWhile mine starve at the door?\nHow much of me must disappear\nBefore you ask for more?\n\nWhy does sorrow know my name\nBetter than love ever could?\nWhy do I have to earn my place\nWhen being here should be enough?\n\nI don't need a kingdom\nI don't need the stars\nI don't need the whole wide world\nTo understand my scars\n\nI just wanna live without fear\nBreathe without saying I'm sorry I'm here\nI wanna love, I wanna be loved\nWithout waiting for the door to shut\n\nTell me, am I really too much?\nIs wanting to exist asking too much?\nI've spent my whole life fighting just to be\nDo I not deserve the same right to be free?\n\nI've stood before a thousand walls\nBuilt by hands that never climbed\nThey tell me I should carry on\nWhile leaving all my dreams behind\n\nEvery shadow knows my footsteps\nEvery locked door knows my face\nAnd I'm tired of begging people\nJust to leave me a little space\n\nI don't need a kingdom\nI don't need the stars\nI only want a life that's mine\nWithout collecting scars\n\nI just wanna live without fear\nBreathe without saying I'm sorry I'm here\nI wanna love, I wanna be loved\nWithout waiting for the door to shut\n\nTell me, am I really too much?\nIs wanting to exist asking too much?\nI've spent my whole life fighting just to be\nDo I not deserve the same right to be free?\n\nWhy must I be sad\nWhen I only wanted love?\nWhy must existing feel\nLike I'm never enough?\n\nMaybe I was never too much\nMaybe these walls were just too high\nMaybe I was never meant to spend\nMy whole sad life asking why\n\nI just wanna live without fear\nBreathe without wishing I could disappear\nI wanna love, I wanna be loved\nWithout wondering when I've had enough\n\nNo, I am not asking too much\nI'm only asking for what everyone wants\nBeneath every shadow, there's still a heart in me\nStill asking for the right to simply be\n\nWhose dreams am I carrying\nWhile mine starve at the door?\nI don't want another kingdom\n\nI just don't want\nto beg anymore."},{"title":"beyond the door","src":"../audioPlayer/audio/beyond%20the%20door.mp3","description":"","lyrics":"Sometimes I cry when the sun goes down\nWhen my face slowly turns into a frown\nI look to the sky and I ask if there’s more\nHoping someone will show me a door\n\nI search far and wide, just longing to be\nThe girl that exists deep inside me\nBut all of the hatred wants me to hide\nTo bury that girl somewhere deep inside\n\nHow long do I have to wait?\nHow long do I carry this weight?\nI’m calling out into the blue\nHoping my voice can reach someone like you\n\nWhy must I be sad while everyone can live?\nWhen I have a heart full of love left to give\nCan you hear me as I call out to you?\nCan you help me finally live as what is true?\n\nI don’t want to spend my whole life afraid\nWatching the person I am slowly fade\nI’ve been waiting so long just to be free\nTo finally become the girl that is me\n\nSometimes the mirror feels colder than stone\nAnd somehow I’m surrounded but still feel alone\nI’ve carried these tears where nobody sees\nWhile begging the world just to let me be me\n\nThey tell me to hide, they tell me I’m wrong\nBut I’ve buried myself for far too long\nThere’s still a small light underneath every scar\nReminding my heart of the girl that we are\n\nI’ve spent too long afraid\nWatching pieces of myself slowly fade\nSo even if my trembling hands still shake\nThere’s a life out there that I have to take\n\nWhy must I be sad while everyone can live?\nWhen I have a heart full of love left to give\nCan you hear me as I call out to you?\nCan you help me finally live as what is true?\n\nI don’t want to spend my whole life afraid\nWatching the person I am slowly fade\nI’ve been waiting so long just to be free\nTo finally become the girl that is me\n\nMaybe no one will open the door\nMaybe I don’t need to wait anymore\nMaybe the answer I begged them to give\nWas simply believing I deserved to live\n\nSo through every tear and every doubt\nI’ll reach for the girl they tried to shut out\nShe waited through darkness, she waited through hell\nNow I’m finally taking her down from the shelf\n\nI don’t have to be sad just to prove I can live\nI still have a heart full of love left to give\nAnd if you hear me, I’m calling out true\nI finally know what I have to do\n\nI must move on and become myself\nAnd finally take that girl off the shelf\nI’ll stand in the light as the girl that I was\nAnd now I’ll live free as everyone does\n\nSometimes I still cry when the sun goes down\nSometimes that smile still turns to a frown\nBut now when I look to the sky up above\nI know I’m a girl who deserves to be loved."}]}</script>
+  <script>
+(() => {
+  "use strict";
+  const { tracks } = JSON.parse(document.getElementById("album-data").textContent);
+  const get = (id) => document.getElementById(id);
+  const audio = get("audio");
+  const play = get("play");
+  const seek = get("seek");
+  const volume = get("volume");
+  const rows = Array.from(get("track-list").children);
+  let current = 0;
+  let playRequest = 0;
+  let stopped = false;
+
+  const status = (message) => { get("status").textContent = message; };
+  function time(seconds) {
+    if (!Number.isFinite(seconds)) return "--:--";
+    seconds = Math.max(0, Math.floor(seconds));
+    return Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0");
+  }
+  function updateProgress() {
+    const ready = Number.isFinite(audio.duration) && audio.duration > 0;
+    seek.disabled = !ready;
+    seek.max = ready ? audio.duration : 1;
+    seek.value = ready ? audio.currentTime : 0;
+    get("elapsed").textContent = time(audio.currentTime);
+    get("duration").textContent = time(audio.duration);
+    seek.setAttribute("aria-valuetext", time(audio.currentTime) + " of " + time(audio.duration));
+  }
+  function updateButtons() {
+    const playing = !audio.paused && !audio.ended;
+    play.textContent = playing ? "Pause" : "Play";
+    play.setAttribute("aria-pressed", String(playing));
+    rows.forEach((row, index) => {
+      const selected = index === current;
+      row.classList.toggle("active", selected);
+      const button = row.querySelector("button");
+      if (selected) button.setAttribute("aria-current", "true");
+      else button.removeAttribute("aria-current");
+      row.querySelector(".track-state").textContent = selected ? (playing ? "Playing" : "Selected") : "Play";
+    });
+  }
+  function updateVolume() {
+    volume.value = audio.volume;
+    const muted = audio.muted || audio.volume === 0;
+    get("mute").textContent = muted ? "Unmute" : "Mute";
+    get("mute").setAttribute("aria-pressed", String(muted));
+    get("volume-value").textContent = Math.round((muted ? 0 : audio.volume) * 100) + "%";
+  }
+  async function startPlayback() {
+    const request = ++playRequest;
+    try { await audio.play(); }
+    catch (error) {
+      if (request !== playRequest || error.name === "AbortError") return;
+      status(error.name === "NotAllowedError"
+        ? "Press Play to start the music."
+        : "Unable to play this track. Try another track or reload the page.");
+      updateButtons();
+    }
+  }
+  function selectTrack(index, autoplay) {
+    ++playRequest;
+    audio.pause();
+    current = index;
+    stopped = false;
+    const track = tracks[current];
+    audio.src = track.src;
+    audio.load();
+    get("now-title").textContent = track.title;
+    get("track-position").textContent = "Track " + (current + 1) + " of " + tracks.length;
+    get("song-description").textContent = track.description;
+    get("song-description").hidden = !track.description;
+    get("lyrics").textContent = track.lyrics;
+    get("lyrics-panel").hidden = !track.lyrics;
+    get("song-info").hidden = !track.description && !track.lyrics;
+    status("Ready to play " + track.title + ".");
+    updateProgress();
+    updateButtons();
+    if (autoplay) void startPlayback();
+  }
+  function skip(direction) {
+    const wasPlaying = !audio.paused && !audio.ended;
+    if (direction < 0 && audio.currentTime > 3) {
+      audio.currentTime = 0;
+      updateProgress();
+      return;
+    }
+    selectTrack((current + direction + tracks.length) % tracks.length, wasPlaying);
+  }
+
+  play.addEventListener("click", () => {
+    if (audio.paused) {
+      stopped = false;
+      if (audio.ended) audio.currentTime = 0;
+      void startPlayback();
+    } else { ++playRequest; audio.pause(); }
+  });
+  get("stop").addEventListener("click", () => {
+    ++playRequest;
+    stopped = true;
+    audio.pause();
+    audio.currentTime = 0;
+    updateProgress();
+    updateButtons();
+    status("Stopped. Press Play to restart " + tracks[current].title + ".");
+  });
+  get("previous").addEventListener("click", () => skip(-1));
+  get("next").addEventListener("click", () => skip(1));
+  rows.forEach((row, index) => row.querySelector("button").addEventListener("click", () => selectTrack(index, true)));
+  seek.addEventListener("input", () => {
+    if (!seek.disabled) audio.currentTime = Number(seek.value);
+    updateProgress();
+  });
+  volume.addEventListener("input", () => {
+    audio.volume = Number(volume.value);
+    if (audio.volume > 0) audio.muted = false;
+  });
+  get("mute").addEventListener("click", () => {
+    if (audio.muted || audio.volume === 0) { audio.muted = false; if (audio.volume === 0) audio.volume = 1; }
+    else audio.muted = true;
+  });
+  audio.addEventListener("volumechange", updateVolume);
+  ["loadedmetadata", "durationchange", "timeupdate", "emptied"].forEach((event) => audio.addEventListener(event, updateProgress));
+  audio.addEventListener("play", () => { updateButtons(); status("Playing " + tracks[current].title + "."); });
+  audio.addEventListener("pause", () => {
+    updateButtons();
+    if (!audio.ended && !stopped) status("Paused: " + tracks[current].title + ".");
+  });
+  audio.addEventListener("ended", () => {
+    if (current + 1 < tracks.length) selectTrack(current + 1, true);
+    else if (get("repeat").checked) selectTrack(0, true);
+    else { updateButtons(); status("Album finished. Choose a track to listen again."); }
+  });
+  audio.addEventListener("error", () => {
+    updateButtons();
+    status("Could not load " + tracks[current].title + ". Try another track.");
+  });
+
+  // Keep native controls as a fallback if JavaScript is disabled.
+  audio.controls = false;
+  get("custom-controls").hidden = false;
+  get("previous").disabled = tracks.length < 2;
+  get("next").disabled = tracks.length < 2;
+  selectTrack(0, false);
+  updateVolume();
+})();
+</script>
+</body>
+</html>

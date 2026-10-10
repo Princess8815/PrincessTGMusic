@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Listen to Hope, 7 songs 7 days by PrincessTG.">
+  <title>Hope, 7 songs 7 days | PrincessTG Music</title>
+  <style>
+:root {
+  --bg: #11131a;
+  --card: #1d2230;
+  --text: #f3f5ff;
+  --muted: #b9bfd4;
+  --accent: #9f7bff;
+  --accent-hover: #bda7ff;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: linear-gradient(160deg, #0d1018, #171d2a 45%, #11131a);
+  color: var(--text);
+  line-height: 1.5;
+}
+.hero, main, footer { width: min(960px, 92vw); margin: 0 auto; }
+.hero {
+  background: url("../images/logo-removebg-preview.png") center / contain no-repeat;
+  min-height: 240px;
+  display: flex;
+  align-items: stretch;
+}
+.hero a { width: 100%; min-height: 240px; border-radius: 16px; }
+section, footer {
+  background: rgba(29, 34, 48, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+h1, h2 { margin: 0 0 0.5rem; overflow-wrap: anywhere; }
+h1 { font-size: clamp(1.8rem, 6vw, 2.8rem); }
+p { margin: 0.5rem 0; }
+.eyebrow, .release, .description, .muted, .status { color: var(--muted); }
+.eyebrow { margin-top: 0; color: var(--accent-hover); }
+.description, #song-description { white-space: pre-wrap; overflow-wrap: anywhere; }
+.back-link, footer a { color: var(--accent); }
+.back-link { display: inline-block; margin-bottom: 1rem; text-decoration: none; }
+a:hover { color: var(--accent-hover); }
+button, input { font: inherit; }
+button {
+  background: #101521;
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--accent-hover); }
+button:disabled, input:disabled { opacity: 0.5; cursor: default; }
+button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visible {
+  outline: 3px solid var(--accent-hover);
+  outline-offset: 3px;
+}
+#play { background: var(--accent); border-color: var(--accent); color: #101521; font-weight: bold; }
+#play:hover { background: var(--accent-hover); }
+.controls, .volume-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.65rem; }
+.controls { margin: 1rem 0; }
+.progress { display: flex; gap: 0.75rem; align-items: center; margin: 1rem 0; }
+.progress span { min-width: 3.25rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.progress span:last-child { text-align: right; }
+input[type="range"] { accent-color: var(--accent); min-width: 0; cursor: pointer; }
+#seek { flex: 1; width: 100%; }
+#volume { width: min(150px, 32vw); }
+.repeat { margin-left: auto; cursor: pointer; }
+.repeat input { accent-color: var(--accent); width: 1.1rem; height: 1.1rem; vertical-align: middle; }
+.status { min-height: 1.5em; }
+audio { width: 100%; display: block; margin: 1rem 0; }
+audio:not([controls]) { display: none; }
+.track-list { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: 0.55rem; }
+.track-list button {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  text-align: left;
+  width: 100%;
+}
+.track-list .active button { border-color: var(--accent); background: rgba(159, 123, 255, 0.12); }
+.track-number, .track-state { color: var(--muted); }
+.track-state { font-size: 0.85rem; }
+.track-title { overflow-wrap: anywhere; }
+summary { cursor: pointer; color: var(--accent-hover); padding: 0.5rem 0; }
+.lyrics {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: var(--text);
+  background: #101521;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin: 0.5rem 0 0;
+}
+footer { margin-bottom: 2rem; color: var(--muted); }
+[hidden] { display: none !important; }
+@media (max-width: 480px) {
+  .hero, .hero a { min-height: 180px; }
+  section, footer { padding: 1rem; }
+  .controls button { flex: 1 1 calc(50% - 0.65rem); }
+  .repeat { margin-left: 0; width: 100%; }
+  .track-list button { gap: 0.35rem; padding: 0.65rem; }
+}
+</style>
+</head>
+<body>
+  <header class="hero"><a href="../index.html" aria-label="PrincessTG Music home"></a></header>
+  <main>
+    <a class="back-link" href="./index.html">← All albums</a>
+    <section aria-labelledby="album-title">
+      <p class="eyebrow">PrincessTG Music</p>
+      <h1 id="album-title">Hope, 7 songs 7 days</h1>
+      <p class="release"><strong>Release date:</strong> 2026-6-15</p>
+      
+    </section>
+    <section aria-labelledby="now-title">
+      <p class="muted">Now playing</p>
+      <h2 id="now-title">Journey To Me</h2>
+      <p class="muted" id="track-position">Track 1 of 7</p>
+      <audio id="audio" controls preload="metadata" src="../audioPlayer/audio/Journey%20To%20Me.mp3">Your browser does not support audio playback.</audio>
+      <div id="custom-controls" hidden>
+        <div class="controls">
+          <button id="previous" type="button" aria-label="Previous track">Previous</button>
+          <button id="play" type="button" aria-pressed="false">Play</button>
+          <button id="stop" type="button">Stop</button>
+          <button id="next" type="button" aria-label="Next track">Next</button>
+        </div>
+        <div class="progress">
+          <span id="elapsed">0:00</span>
+          <input id="seek" type="range" min="0" max="1" step="0.1" value="0" aria-label="Seek in current track" disabled>
+          <span id="duration">--:--</span>
+        </div>
+        <div class="volume-row">
+          <button id="mute" type="button" aria-pressed="false">Mute</button>
+          <label for="volume">Volume</label>
+          <input id="volume" type="range" min="0" max="1" step="0.05" value="1">
+          <span id="volume-value">100%</span>
+          <label class="repeat"><input id="repeat" type="checkbox"> Repeat album</label>
+        </div>
+      </div>
+      <p id="status" class="status" role="status" aria-live="polite">Choose Play to start the album.</p>
+      <noscript><p>The native audio controls play the first track. Enable JavaScript for the full playlist.</p></noscript>
+    </section>
+    <section aria-labelledby="tracks-heading">
+      <h2 id="tracks-heading">Album tracks</h2>
+      <p class="muted">7 songs · Select a song to play it.</p>
+      <ol id="track-list" class="track-list">
+        <li><button type="button" aria-label="Play Journey To Me"><span class="track-number">1</span><span class="track-title">Journey To Me</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Take Me To A Better Place"><span class="track-number">2</span><span class="track-title">Take Me To A Better Place</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play You don’t get to define me"><span class="track-number">3</span><span class="track-title">You don’t get to define me</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Endless Scream"><span class="track-number">4</span><span class="track-title">Endless Scream</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Will It Be Worth It"><span class="track-number">5</span><span class="track-title">Will It Be Worth It</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Every Thing Is Alright"><span class="track-number">6</span><span class="track-title">Every Thing Is Alright</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play 7 songs in 7 days"><span class="track-number">7</span><span class="track-title">7 songs in 7 days</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+      </ol>
+    </section>
+    <section id="song-info" aria-labelledby="song-heading" hidden>
+      <h2 id="song-heading">Song details</h2>
+      <p id="song-description" hidden></p>
+      <details id="lyrics-panel" hidden>
+        <summary>Lyrics</summary>
+        <pre id="lyrics" class="lyrics"></pre>
+      </details>
+    </section>
+  </main>
+  <footer>PrincessTG Music · <a href="./index.html">All albums</a> · <a href="../index.html">Home</a></footer>
+  <script id="album-data" type="application/json">{"tracks":[{"title":"Journey To Me","src":"../audioPlayer/audio/Journey%20To%20Me.mp3","description":"","lyrics":""},{"title":"Take Me To A Better Place","src":"../audioPlayer/audio/Take%20Me%20To%20A%20Better%20Place.mp3","description":"","lyrics":""},{"title":"You don’t get to define me","src":"../audioPlayer/audio/You%20don%E2%80%99t%20get%20to%20define%20me.mp3","description":"A song about empowerment and reclaiming ownership of my life, reminding others that my path is mine alone. In the end, no one gets to define who you are, because your life belongs to you.","lyrics":"you dont get to define me\n\nYou studied me like broken language\nLike I was something to explain\nSpoke in cold and borrowed answers\nNever touched an ounce of pain\n\nEvery mirror held a stranger\nEvery birthday felt like loss\nLearned to hide inside the silence\nLearned exactly what it costs\n\nYou only saw the smoke\nNever where the fire began\n\nI am not your war to fight\nNot your fear to weaponize\nNot a target for your anger\nJust because I chose my life\n\nI bled to become this person\nThrough every scar you left behind\nSay whatever helps you sleep\nYou don’t get to define me\n\nyou dont get to define me\n\nYou disguise contempt as concern\nWrap your cruelty up as care\nNever seeing what your words do\nNever feeling what lives there\n\nHow many break behind closed doorways\nTrying hard to just survive?\nHow many learn to hate their breathing\nJust to keep your world alive?\n\nYour black-and-white world never fit\nA heart that had to fight to live\n\nI am not your war to fight\nNot your fear to weaponize\nNot a target for your anger\nJust because I chose my life\n\nI bled to become this person\nThrough every scar you left behind\nSay whatever helps you sleep\nYou don’t get to define me\n\nyou dont get to define me\n\nThere were nights I begged for silence\nThought disappearing meant relief\nBut the voice beneath the wreckage\nStill refused to leave me\n\nI AM NOT YOUR WAR TO FIGHT\nNOT YOUR FEAR TO WEAPONIZE\nI SURVIVED YOUR EXPECTATIONS\nAND I CAME OUT ALIVE\n\nI bled to become this person\nI won’t disappear this time\nSay whatever helps you sleep\nYou don’t get to define me\n\nyou dont get to define me"},{"title":"Endless Scream","src":"../audioPlayer/audio/Endless%20Scream.mp3","description":"A song about the long-term effects of torture, inspired by an idea I originally developed into a poem.","lyrics":"Can you hear it...\nStill screaming...\n\nBeneath the weight of fractured skies\nI felt the end behind my eyes\nA thousand sparks beneath my skin\nLike something vile was crawling in\n\nThe seconds twisted out of shape\nNo waking from this screaming state\nA single breath became a war\nA moment stretched forevermore\n\nThe ceiling cracked, the shadows bent\nReality was torn and spent\nThe hands of time refused to move\nYet every nerve had more to prove\n\nThe darkness pressed against my chest\nNo mercy offered, no release, no rest\nI begged the silence just to speak\nBut silence only watched me bleed\n\nAnd every pulse became a knife\nCarving deeper into life\n\nI am the echo in the endless scream\nA shattered ghost inside a dying dream\nNo dawn will rise, no light will call my name\nI burn alive inside this endless flame\n\nI hear the walls, I hear them breathing near\nA thousand voices feeding on my fear\nNo peace remains, no ending left to claim\nI am the echo in the endless scream\n\nThe hours melted into black\nNo sense of forward, no way back\nMy body trembled thread by thread\nHalf alive and mostly dead\n\nThe nerves ignited one by one\nLike dying stars that came undone\nElectric agony in waves\nA prison made beneath my veins\n\nThe mirror showed a thing unknown\nA hollow shell of twitch and bone\nNo face I knew was staring through\nJust something pain had molded to\n\nI tried to speak but lost the sound\nMy voice collapsed into the ground\nStill somewhere buried deep inside\nA fractured part of me still cried\n\nAnd every breath became a chain\nDragging me through endless pain\n\nI am the echo in the endless scream\nA shattered ghost inside a dying dream\nNo dawn will rise, no light will call my name\nI burn alive inside this endless flame\n\nI hear the walls, I hear them breathing near\nA thousand voices feeding on my fear\nNo peace remains, no ending left to claim\nI am the echo in the endless scream\n\nDid time forget me here\nOr was I never real\nWas I a soul to save\nOr something built to feel\n\nNow every nerve is singing\nEvery vein is howling\nEvery memory dissolving\nEvery shadow crawling\n\nI am the echo in the endless scream\nThe last reflection of what I used to be\nNo dawn will rise, no hands will pull me free\nThis cage of flesh was never meant to heal me\n\nI hear the walls, I hear eternity\nThe sound of something feeding deep in me\nNo death will come, no final mercy seen\nForever trapped inside the endless scream\n\nStill breathing...\nStill screaming...\n\nStill...\nscreaming..."},{"title":"Will It Be Worth It","src":"../audioPlayer/audio/Will%20It%20Be%20Worth%20It.mp3","description":"This song is a callout to those who support political movements and parties that actively harm vulnerable people while dismissing the human cost. It asks a simple but painful question: what was the price of that support, and was it ever truly worth it? For those whose rights, safety, and futures are treated as bargaining chips, the damage is never theoretical.","lyrics":"Will it be worth it...\nWill it be worth it...\n\nA headline flickers across the screen\nAnother promise sold as something clean\nCheaper living, cheaper lies\nWhile fear is burning in our eyes\n\nA few more dollars in a shopping cart\nBut ripped apart another beating heart\nTrans kids learning how to hide their names\nWhile strangers cheer political games\n\nWill it be worth it when the silence screams\nWhen freedom dies inside abandoned dreams\nWhen all the ones you swore you’d never break\nAre crushed beneath the choices that you make\n\nWill it be worth it when the damage shows\nWhen history remembers who chose not to know\nYou saved a little while the world came undone\nTell me... was the bargain worth what we've become?\n\nTell me...\nwas the bargain worth what we've become?\n\nPages vanish from the classroom shelves\nTruth gets buried to protect themselves\nVoices silenced, stories burned away\nDarkness dressed up as a safer day\n\nThe oceans rise beneath a poisoned sky\nChildren asking simply why\nSmoke-filled lungs and summers set ablaze\nStill we trade tomorrow for today's\n\nWill it be worth it when the silence screams\nWhen freedom dies inside abandoned dreams\nWhen all the ones you swore you’d never break\nAre crushed beneath the choices that you make\n\nWill it be worth it when the damage shows\nWhen history remembers who chose not to know\nYou saved a little while the world came undone\nTell me... was the bargain worth what we've become?\n\nworth what we become\n\nWomen standing in a courtroom cold\nListening while ancient men take hold\nBodies treated like they’re not their own\nPower speaking through a heart of stone\n\nHate gets louder marching through the streets\nWrapped in slogans, lies, and practiced speech\nNeighbors turn while saying \"not my fight\"\nAs shadows swallow every ounce of light\n\nAnd when the children ask us where we stood\nWill \"I wanted cheaper gas\" sound good?\nWhen names are written on memorial walls\nWill comfort matter after freedom falls?\n\nYou watched the warning signs ignite\nYou saw the truth and killed the light\nNo price tag ever bought back souls\nNo empire built on hate survives the toll\nsurvives the toll\n\nWill it be worth it when the silence screams\nWhen freedom dies inside abandoned dreams\nWhen every fractured life becomes the cost\nAnd all the things that mattered have been lost\n\nWill it be worth it when the final page\nWrites down our silence, cowardice, and rage\nYou gained so little while destroying everyone\n\nTell me...\nWAS IT WORTH IT?!\n\nWill it be worth it...\nWhen there’s no one left to ask..."},{"title":"Every Thing Is Alright","src":"../audioPlayer/audio/Every%20Thing%20Is%20Alright.mp3","description":"A song about surviving hatred, betrayal, and pain while refusing to be broken by it. The lyrics follow a journey from resilience and self-discovery to open defiance, transforming emotional wounds into strength, unity, and resistance. It centers on perseverance, reclaiming identity, and standing unshaken against those who tried to silence or destroy you.","lyrics":"Now i know that everything is alright\nIn the end we will win this fight\nOpen your heart and let the silence scream\nHold onto hope and dare to chase the dream\n\nThrough every scar we found a reason to rise\nEven through darkness we still reached for the skies\nNo more hiding from the truth we always knew\nThe fire inside is breaking brightly through\n\nScream it louder till the heavens shake\nWe are the ones that hatred could not break\nEvery wound became the armor that we wear\nYou tried to end us, but we're still standing here\n\nLight up the night like a battle cry\nWe hit the ground but refused to die\nFrom the ashes of the pain you left behind\nWe are relentless, we are undefined\n\nThey told us we were shadows passing by\nJust fragile hearts too broken to survive\nBut every word they threw became our steel\nAnd every scar became a way to heal\n\nWe took the pain and turned it into sound\nA rising force that shakes the hollow ground\nNo force of hate can drag us to our knees\nWe are the storm, we are the reckoning breeze\n\nRaise your voices till the skyline breaks\nThis is the sound that a revolution makes\nEvery chain you forged is turning into flame\nYou tried to silence us, remember our name\n\nWe walked through fire with our heads held high\nLearned how to live when they left us to die\nTurned every wound into a battle cry\nNow watch us rise and lift the sky up high\n\nFeel the thunder in the hearts you scarred\nWe became stronger from the battles fought\nNo more shadows, no more fading from the light\nWe are the ones who came prepared to fight\n\nHEAR US SCREAM\nFROM THE ROOF ABOVE\nWE ARE NOT LEAVING\nTIL THE WORLD SHOWS LOVE\n\nNO MORE FEAR\nNO MORE RUNNING AWAY\nWE FOUGHT TOO LONG\nTO BE SILENCED TODAY\n\nSO HEAR OUR VOICES\nECHO THROUGH THE NIGHT\nWE ARE STILL STANDING\nAND WE WON THIS FIGHT\n\nWe are still standing...\n\nAnd we won this fight"},{"title":"7 songs in 7 days","src":"../audioPlayer/audio/7%20songs%20in%207%20days.mp3","description":"Written as the final chapter of a personal seven songs in seven days challenge, this song captures the emotional weight of pushing through doubt, exhaustion, pain, and self-discovery to reach the finish line. Each verse reflects a different day of the journey, turning moments of struggle into music, until the final track becomes both a celebration of survival and a message to anyone fighting their own hard days: keep going.","lyrics":"Seven songs in seven days and here we are\nListen as my heart made it this far\n\nDay one I made a song to take me away\nWish they could take me to a better place\nDay two I was screaming the endless scream\nWith pain so deep it felt like a dream\n\nBy day three I took the journey to me\nWhere I showed my life 'til I was finally free\nBut every note kept pulling me ahead\nLike stitching broken thoughts inside my head\n\nSeven songs in seven days and here we are\nListen as my heart made it this far\nNo turning back today I'm here to stay\nCause I'm making seven songs in seven days\n\nThe reckoning has come\nThe challenge near complete\nStill I fought my way\nI turned my pain into seven songs in seven days\n\nDay four came about for all to see\nAs I told the world you dont get to define me\nDay five I asked the question that was best fit\nI asked them all will it be worth it\n\nDay six came exhaustion through the night\nBut I told the world everything is all right\nNow here we are with 1 last song\nTaking you through the journey of it all\n\nSeven songs in seven days and here we are\nListen as my heart made it this far\nNo turning back today I'm here to stay\nCause I'm making seven songs in seven days\n\nNow the fire has come\nThe challenge stands complete\nStill I carved my way\nCause I turned my pain into seven songs in seven days\n\nSeven days of pouring out my soul\nTurning every fracture into something whole\nEvery sleepless night, every restless drive\nLed me here somehow, still feeling alive\n\nI was breaking just to build it up again\nFound my voice somewhere beneath my skin\nEvery song a mirror, every line my name\nBy the end of this, I won’t be the same\n\nSo if you’ve been lost inside your own hard days\nCounting down the hours just to find your way\nThis last note is proof I made it through\nAnd if I can stand, then so can you\n\nSeven songs, seven days, the story’s done\nBut the echoes of this fight have just begun\nOne last breath, one last chord to carry through\nSeven songs in seven days… and I made it through"}]}</script>
+  <script>
+(() => {
+  "use strict";
+  const { tracks } = JSON.parse(document.getElementById("album-data").textContent);
+  const get = (id) => document.getElementById(id);
+  const audio = get("audio");
+  const play = get("play");
+  const seek = get("seek");
+  const volume = get("volume");
+  const rows = Array.from(get("track-list").children);
+  let current = 0;
+  let playRequest = 0;
+  let stopped = false;
+
+  const status = (message) => { get("status").textContent = message; };
+  function time(seconds) {
+    if (!Number.isFinite(seconds)) return "--:--";
+    seconds = Math.max(0, Math.floor(seconds));
+    return Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0");
+  }
+  function updateProgress() {
+    const ready = Number.isFinite(audio.duration) && audio.duration > 0;
+    seek.disabled = !ready;
+    seek.max = ready ? audio.duration : 1;
+    seek.value = ready ? audio.currentTime : 0;
+    get("elapsed").textContent = time(audio.currentTime);
+    get("duration").textContent = time(audio.duration);
+    seek.setAttribute("aria-valuetext", time(audio.currentTime) + " of " + time(audio.duration));
+  }
+  function updateButtons() {
+    const playing = !audio.paused && !audio.ended;
+    play.textContent = playing ? "Pause" : "Play";
+    play.setAttribute("aria-pressed", String(playing));
+    rows.forEach((row, index) => {
+      const selected = index === current;
+      row.classList.toggle("active", selected);
+      const button = row.querySelector("button");
+      if (selected) button.setAttribute("aria-current", "true");
+      else button.removeAttribute("aria-current");
+      row.querySelector(".track-state").textContent = selected ? (playing ? "Playing" : "Selected") : "Play";
+    });
+  }
+  function updateVolume() {
+    volume.value = audio.volume;
+    const muted = audio.muted || audio.volume === 0;
+    get("mute").textContent = muted ? "Unmute" : "Mute";
+    get("mute").setAttribute("aria-pressed", String(muted));
+    get("volume-value").textContent = Math.round((muted ? 0 : audio.volume) * 100) + "%";
+  }
+  async function startPlayback() {
+    const request = ++playRequest;
+    try { await audio.play(); }
+    catch (error) {
+      if (request !== playRequest || error.name === "AbortError") return;
+      status(error.name === "NotAllowedError"
+        ? "Press Play to start the music."
+        : "Unable to play this track. Try another track or reload the page.");
+      updateButtons();
+    }
+  }
+  function selectTrack(index, autoplay) {
+    ++playRequest;
+    audio.pause();
+    current = index;
+    stopped = false;
+    const track = tracks[current];
+    audio.src = track.src;
+    audio.load();
+    get("now-title").textContent = track.title;
+    get("track-position").textContent = "Track " + (current + 1) + " of " + tracks.length;
+    get("song-description").textContent = track.description;
+    get("song-description").hidden = !track.description;
+    get("lyrics").textContent = track.lyrics;
+    get("lyrics-panel").hidden = !track.lyrics;
+    get("song-info").hidden = !track.description && !track.lyrics;
+    status("Ready to play " + track.title + ".");
+    updateProgress();
+    updateButtons();
+    if (autoplay) void startPlayback();
+  }
+  function skip(direction) {
+    const wasPlaying = !audio.paused && !audio.ended;
+    if (direction < 0 && audio.currentTime > 3) {
+      audio.currentTime = 0;
+      updateProgress();
+      return;
+    }
+    selectTrack((current + direction + tracks.length) % tracks.length, wasPlaying);
+  }
+
+  play.addEventListener("click", () => {
+    if (audio.paused) {
+      stopped = false;
+      if (audio.ended) audio.currentTime = 0;
+      void startPlayback();
+    } else { ++playRequest; audio.pause(); }
+  });
+  get("stop").addEventListener("click", () => {
+    ++playRequest;
+    stopped = true;
+    audio.pause();
+    audio.currentTime = 0;
+    updateProgress();
+    updateButtons();
+    status("Stopped. Press Play to restart " + tracks[current].title + ".");
+  });
+  get("previous").addEventListener("click", () => skip(-1));
+  get("next").addEventListener("click", () => skip(1));
+  rows.forEach((row, index) => row.querySelector("button").addEventListener("click", () => selectTrack(index, true)));
+  seek.addEventListener("input", () => {
+    if (!seek.disabled) audio.currentTime = Number(seek.value);
+    updateProgress();
+  });
+  volume.addEventListener("input", () => {
+    audio.volume = Number(volume.value);
+    if (audio.volume > 0) audio.muted = false;
+  });
+  get("mute").addEventListener("click", () => {
+    if (audio.muted || audio.volume === 0) { audio.muted = false; if (audio.volume === 0) audio.volume = 1; }
+    else audio.muted = true;
+  });
+  audio.addEventListener("volumechange", updateVolume);
+  ["loadedmetadata", "durationchange", "timeupdate", "emptied"].forEach((event) => audio.addEventListener(event, updateProgress));
+  audio.addEventListener("play", () => { updateButtons(); status("Playing " + tracks[current].title + "."); });
+  audio.addEventListener("pause", () => {
+    updateButtons();
+    if (!audio.ended && !stopped) status("Paused: " + tracks[current].title + ".");
+  });
+  audio.addEventListener("ended", () => {
+    if (current + 1 < tracks.length) selectTrack(current + 1, true);
+    else if (get("repeat").checked) selectTrack(0, true);
+    else { updateButtons(); status("Album finished. Choose a track to listen again."); }
+  });
+  audio.addEventListener("error", () => {
+    updateButtons();
+    status("Could not load " + tracks[current].title + ". Try another track.");
+  });
+
+  // Keep native controls as a fallback if JavaScript is disabled.
+  audio.controls = false;
+  get("custom-controls").hidden = false;
+  get("previous").disabled = tracks.length < 2;
+  get("next").disabled = tracks.length < 2;
+  selectTrack(0, false);
+  updateVolume();
+})();
+</script>
+</body>
+</html>

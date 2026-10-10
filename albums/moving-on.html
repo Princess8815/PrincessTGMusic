@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Listen to Moving On by PrincessTG.">
+  <title>Moving On | PrincessTG Music</title>
+  <style>
+:root {
+  --bg: #11131a;
+  --card: #1d2230;
+  --text: #f3f5ff;
+  --muted: #b9bfd4;
+  --accent: #9f7bff;
+  --accent-hover: #bda7ff;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: linear-gradient(160deg, #0d1018, #171d2a 45%, #11131a);
+  color: var(--text);
+  line-height: 1.5;
+}
+.hero, main, footer { width: min(960px, 92vw); margin: 0 auto; }
+.hero {
+  background: url("../images/logo-removebg-preview.png") center / contain no-repeat;
+  min-height: 240px;
+  display: flex;
+  align-items: stretch;
+}
+.hero a { width: 100%; min-height: 240px; border-radius: 16px; }
+section, footer {
+  background: rgba(29, 34, 48, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+h1, h2 { margin: 0 0 0.5rem; overflow-wrap: anywhere; }
+h1 { font-size: clamp(1.8rem, 6vw, 2.8rem); }
+p { margin: 0.5rem 0; }
+.eyebrow, .release, .description, .muted, .status { color: var(--muted); }
+.eyebrow { margin-top: 0; color: var(--accent-hover); }
+.description, #song-description { white-space: pre-wrap; overflow-wrap: anywhere; }
+.back-link, footer a { color: var(--accent); }
+.back-link { display: inline-block; margin-bottom: 1rem; text-decoration: none; }
+a:hover { color: var(--accent-hover); }
+button, input { font: inherit; }
+button {
+  background: #101521;
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--accent-hover); }
+button:disabled, input:disabled { opacity: 0.5; cursor: default; }
+button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visible {
+  outline: 3px solid var(--accent-hover);
+  outline-offset: 3px;
+}
+#play { background: var(--accent); border-color: var(--accent); color: #101521; font-weight: bold; }
+#play:hover { background: var(--accent-hover); }
+.controls, .volume-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.65rem; }
+.controls { margin: 1rem 0; }
+.progress { display: flex; gap: 0.75rem; align-items: center; margin: 1rem 0; }
+.progress span { min-width: 3.25rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.progress span:last-child { text-align: right; }
+input[type="range"] { accent-color: var(--accent); min-width: 0; cursor: pointer; }
+#seek { flex: 1; width: 100%; }
+#volume { width: min(150px, 32vw); }
+.repeat { margin-left: auto; cursor: pointer; }
+.repeat input { accent-color: var(--accent); width: 1.1rem; height: 1.1rem; vertical-align: middle; }
+.status { min-height: 1.5em; }
+audio { width: 100%; display: block; margin: 1rem 0; }
+audio:not([controls]) { display: none; }
+.track-list { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: 0.55rem; }
+.track-list button {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  text-align: left;
+  width: 100%;
+}
+.track-list .active button { border-color: var(--accent); background: rgba(159, 123, 255, 0.12); }
+.track-number, .track-state { color: var(--muted); }
+.track-state { font-size: 0.85rem; }
+.track-title { overflow-wrap: anywhere; }
+summary { cursor: pointer; color: var(--accent-hover); padding: 0.5rem 0; }
+.lyrics {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: var(--text);
+  background: #101521;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin: 0.5rem 0 0;
+}
+footer { margin-bottom: 2rem; color: var(--muted); }
+[hidden] { display: none !important; }
+@media (max-width: 480px) {
+  .hero, .hero a { min-height: 180px; }
+  section, footer { padding: 1rem; }
+  .controls button { flex: 1 1 calc(50% - 0.65rem); }
+  .repeat { margin-left: 0; width: 100%; }
+  .track-list button { gap: 0.35rem; padding: 0.65rem; }
+}
+</style>
+</head>
+<body>
+  <header class="hero"><a href="../index.html" aria-label="PrincessTG Music home"></a></header>
+  <main>
+    <a class="back-link" href="./index.html">← All albums</a>
+    <section aria-labelledby="album-title">
+      <p class="eyebrow">PrincessTG Music</p>
+      <h1 id="album-title">Moving On</h1>
+      <p class="release"><strong>Release date:</strong> 2026-11-1</p>
+      
+    </section>
+    <section aria-labelledby="now-title">
+      <p class="muted">Now playing</p>
+      <h2 id="now-title">This Is Good Bye</h2>
+      <p class="muted" id="track-position">Track 1 of 14</p>
+      <audio id="audio" controls preload="metadata" src="../audioPlayer/audio/This%20Is%20Good%20Bye.mp3">Your browser does not support audio playback.</audio>
+      <div id="custom-controls" hidden>
+        <div class="controls">
+          <button id="previous" type="button" aria-label="Previous track">Previous</button>
+          <button id="play" type="button" aria-pressed="false">Play</button>
+          <button id="stop" type="button">Stop</button>
+          <button id="next" type="button" aria-label="Next track">Next</button>
+        </div>
+        <div class="progress">
+          <span id="elapsed">0:00</span>
+          <input id="seek" type="range" min="0" max="1" step="0.1" value="0" aria-label="Seek in current track" disabled>
+          <span id="duration">--:--</span>
+        </div>
+        <div class="volume-row">
+          <button id="mute" type="button" aria-pressed="false">Mute</button>
+          <label for="volume">Volume</label>
+          <input id="volume" type="range" min="0" max="1" step="0.05" value="1">
+          <span id="volume-value">100%</span>
+          <label class="repeat"><input id="repeat" type="checkbox"> Repeat album</label>
+        </div>
+      </div>
+      <p id="status" class="status" role="status" aria-live="polite">Choose Play to start the album.</p>
+      <noscript><p>The native audio controls play the first track. Enable JavaScript for the full playlist.</p></noscript>
+    </section>
+    <section aria-labelledby="tracks-heading">
+      <h2 id="tracks-heading">Album tracks</h2>
+      <p class="muted">14 songs · Select a song to play it.</p>
+      <ol id="track-list" class="track-list">
+        <li><button type="button" aria-label="Play This Is Good Bye"><span class="track-number">1</span><span class="track-title">This Is Good Bye</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Better Without You"><span class="track-number">2</span><span class="track-title">Better Without You</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Midnight Sun"><span class="track-number">3</span><span class="track-title">Midnight Sun</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Lonely Night"><span class="track-number">4</span><span class="track-title">Lonely Night</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Moving on"><span class="track-number">5</span><span class="track-title">Moving on</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Afterlife"><span class="track-number">6</span><span class="track-title">Afterlife</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play When To Say Goodbye"><span class="track-number">7</span><span class="track-title">When To Say Goodbye</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Wish I Could Love"><span class="track-number">8</span><span class="track-title">Wish I Could Love</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Barely Hanging On"><span class="track-number">9</span><span class="track-title">Barely Hanging On</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Dysphoria"><span class="track-number">10</span><span class="track-title">Dysphoria</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play The Last Stand"><span class="track-number">11</span><span class="track-title">The Last Stand</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play When The Rain Falls Down"><span class="track-number">12</span><span class="track-title">When The Rain Falls Down</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Breathing"><span class="track-number">13</span><span class="track-title">Breathing</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Land Beyond"><span class="track-number">14</span><span class="track-title">Land Beyond</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+      </ol>
+    </section>
+    <section id="song-info" aria-labelledby="song-heading">
+      <h2 id="song-heading">Song details</h2>
+      <p id="song-description">A good bye to my father nothing more to say about it</p>
+      <details id="lyrics-panel">
+        <summary>Lyrics</summary>
+        <pre id="lyrics" class="lyrics">No matter the pain that may make us cry
+Im sorry to say that this is good bye
+
+I loved the little things you did, I know you tried
+But every act of kindness had a thorn inside
+I liked that you respected me and said my name
+But you stood beside the ones who left me in the flames
+
+You said you cared for me, but care should not excuse
+The people who kept leaving me with open wounds
+So even if the good still shines the way it should
+The bad burned brighter than the good ever could
+
+I know your hurting i am to
+I only wish we could stay true
+I know this grief will pass in time
+Im sorry to say this is good bye
+
+I held on longer than I should
+I tried to find the missing good
+But some wounds never tell a lie
+The hurt is real so this is goodbye
+
+I reached for you when I was breaking down
+But all your anger did was teach me how to drown
+I needed dad, not someone cold behind a wall
+You told me “get help” while you never helped at all
+
+I watched your bad days like a storm I had to hide
+While all my pain was pushed and buried to the side
+I begged for comfort, but you left me asking why
+You never held me, so I learned to say goodbye
+
+This is goodbye
+I know in time
+You will see why
+I had to fight
+
+To stay alive
+I had to cry
+I had to try
+So this is goodbye
+
+There’s nothing left for us to mend
+I can’t keep breaking just to bend
+I wanted love, I needed light
+But I was lonely every night
+
+I hope one day you understand
+Why I let go of your hand
+I have to live, I have to fly
+The hurt is real, so this is goodbye
+
+The hurt is real, so this is goodbye</pre>
+      </details>
+    </section>
+  </main>
+  <footer>PrincessTG Music · <a href="./index.html">All albums</a> · <a href="../index.html">Home</a></footer>
+  <script id="album-data" type="application/json">{"tracks":[{"title":"This Is Good Bye","src":"../audioPlayer/audio/This%20Is%20Good%20Bye.mp3","description":"A good bye to my father nothing more to say about it","lyrics":"No matter the pain that may make us cry\nIm sorry to say that this is good bye\n\nI loved the little things you did, I know you tried\nBut every act of kindness had a thorn inside\nI liked that you respected me and said my name\nBut you stood beside the ones who left me in the flames\n\nYou said you cared for me, but care should not excuse\nThe people who kept leaving me with open wounds\nSo even if the good still shines the way it should\nThe bad burned brighter than the good ever could\n\nI know your hurting i am to\nI only wish we could stay true\nI know this grief will pass in time\nIm sorry to say this is good bye\n\nI held on longer than I should\nI tried to find the missing good\nBut some wounds never tell a lie\nThe hurt is real so this is goodbye\n\nI reached for you when I was breaking down\nBut all your anger did was teach me how to drown\nI needed dad, not someone cold behind a wall\nYou told me “get help” while you never helped at all\n\nI watched your bad days like a storm I had to hide\nWhile all my pain was pushed and buried to the side\nI begged for comfort, but you left me asking why\nYou never held me, so I learned to say goodbye\n\nThis is goodbye\nI know in time\nYou will see why\nI had to fight\n\nTo stay alive\nI had to cry\nI had to try\nSo this is goodbye\n\nThere’s nothing left for us to mend\nI can’t keep breaking just to bend\nI wanted love, I needed light\nBut I was lonely every night\n\nI hope one day you understand\nWhy I let go of your hand\nI have to live, I have to fly\nThe hurt is real, so this is goodbye\n\nThe hurt is real, so this is goodbye"},{"title":"Better Without You","src":"../audioPlayer/audio/Better%20Without%20You.mp3","description":"a song about being better off without the 1 that brought you down even if you feel you loved them","lyrics":"When our love fell apart\nLike a tear in my heart\nI expected to collapse\nBut I learned I could restart\n\nWhile you were here\nI thought you were my need\nBut now that you are gone\nI can finally see...\n\nI'm better without you\nCause you held me down\nMy life was being bound\nBy a trust I didn't need\n\nI found the strength inside me\nThe truth I never knew\nNow I can breathe again\nI'm better without you\n\nYou held me back\nFrom what I needed the most\nKept me from seeing\nHow much I could grow\n\nTold me to trust\nThat you'd take care of me\nBut now that you're gone\nI was able to see...\n\nI'm better without you\nI found my way alone\nThe chains I thought were comfort\nWere keeping me from home\n\nI'm rising from the silence\nI'm stronger than I knew\nNow I can finally choose me\nI'm better without you\n\nYour love blinded me\nFor it was only hate\nYou sought to control\nBut now I am free\n\nI will never mourn\nI will never grieve\nOur love was never true\nI'm better without you\n\nI won't miss sleep\nI am better off now\nI don't need your promises\nI don't need your truth\n\nI found my own reflection\nPast the shadow of you\nI'm better without you\nI'm better without you\n\nI'm better without you\nBetter without you\n\nI'm better without you\nBetter without yoooou\n\nI'm better without you\nBetter without you\n\nI'm better without yoooou...\n\nBetter...\nWithout...\nYou..."},{"title":"Midnight Sun","src":"../audioPlayer/audio/Midnight%20Sun.mp3","description":"a song about moving on ","lyrics":"I know its you\nI see it to\nBut in this night\nWe must make it threw\n\nEvery one is looking at us\nWondering what must be done\nSearching for a way to run\nTo see the midnight sun\n\nWe left the past where shadows cling\nLet silence teach our hearts to sing\nNo more chains and no more numb\nWe’re moving toward the midnight sun\n\nWhen The midnight sun arises\nWe will not be where we stand\nFor the past is now behind us \nWe will find us brand new land\n\nThrough the dark we’ll take our chance\nWith tomorrow in our hands\nIf the old world comes undone\nWe’ll still chase the midnight sun\n\nWe packed our fears in paper bags\nLeft them where the old road cracked\nThe voices from our yesterday\nCould not convince us both to stay\n\nA softer dawn began to grow\nIn places we were scared to go\nAnd step by step we learned to run\nBeneath the rising midnight sun\n\nlet it burn let it break\nwe are more than our mistakes\nraise our voices to the sky\nwe were always meant to fly\n\nif the world says we are done\nwe'll become the midnight sun\nevery fear we had to outrun\nturns to fire in our lungs\n\n\nNow the horizon opens wide\nWe are leaving hurt behind\nAll the dreams we thought were gone\nBloom again where we belong\n\nNo more running from the dawn\nNo more breaking just to hold on\nAfter all the night has done\nWe rise into the morning sun\n\nWe rise into the morning sun\n"},{"title":"Lonely Night","src":"../audioPlayer/audio/Lonely%20Night.mp3","description":"A raw emotional pop rock song about feeling unheard, using music as a lifeline, and fighting to be seen without being erased","lyrics":"Here you go, princess:\n\nIm looking for someone in this lonely night\nEveryones missing when they turn out the light\n\nI stand in rooms where voices blur\nTrying to speak but the words won’t stir\nMy heart keeps knocking behind my skin\nBut no one hears when I’m locked within\n\nI make my songs from the ache I hide\nTurn every scar into sound and light\nIf I can’t say it, I’ll let it sing\nLet every note become my wings\n\nI’m reaching out through a wall of glass\nWatching the whole world walk right past\nI don’t need fame, I just need you\nTo hear the girl I turned into\n\nThis is my voice through wires and light\nMy broken words taking flight tonight\nThe machine may carry what I can't sing\nBut I'm the heart inside everything\n\nThese are my scars, my hands, my name\nMy art still burns through every frame\nI made this light from all my pain\nSo don't you dare erase my flame\n\nI still care for the ones who cut me deep\nStill lose my rest when they can’t sleep\nI give my heart till my hands run dry\nThen hide the tears I’m scared to cry\n\nI wish they knew what I hold inside\nHow hard I love, how hard I try\nI’m not the storm they say they see\nI’m just a girl begging to be free\n\nI build my world from every bruise\nStill offer light to those who choose\nTo turn away and call me wrong\nWhen all I wanted was to belong\n\nCan anybody hear me breaking\nI am tired of always aching\nI don’t want to fight tonight\nI just want to feel alright\n\nLove me louder than the thunder\nPull me back before I go under\nI’m not asking for a crown\nJust don’t let me hit the ground\n\nGive me peace, give me air\nGive me someone standing there\nI am screaming through this song\nPlease just tell me I belong\n\nThis is my voice through wires and light\nMy broken words taking flight tonight\nThe machine may carry what I can't sing\nBut I'm the heart inside everything\n\nThese are my scars, my hands, my name\nMy art still burns through every frame\nI made this light from all my pain\nSo don't you dare erase my flame\n\nI’m still searching for the light\nStill holding on through lonely nights\nEven when the silence starts to fall\nAt the end of the day I love you all\n"},{"title":"Moving on","src":"../audioPlayer/audio/Moving%20on.mp3","description":"a song about leaving the past behind us","lyrics":"The past is now behind us\nAnd the future's yet to come\nI'm standing here beside you\nThere's no need for us to run\n(I'm moving on)\n\nLet the music guide you\nLet my heart shine through\nListen to the wisdom\nOf the wind as it blows through\n(I'm moving on)\n\nIn the hours coming\nAs we push through all the pain\nWe will find our peace\nAnd we will make it rain\n\nI'm moving on to a better life\nAs the past behind me fades\nThe future is full of uncertainty\nBut we must find a way\n\nEvery step is shaking\nBut I'm still holding strong\nIf the road keeps breaking\nI'll keep moving on\n\nI used to fear the silence\nWhen the night would call my name\nBut now I hear a promise\nBurning brighter than the shame\n\nThe tears became a river\nThat carried me along\nNow I'm learning how to breathe\nAnd turn my pain into a song\n\nThrough the rain and thunder\nWe can still become the flame\nEvery scar behind us\nWill no longer speak our name\n\nI won't run from what has hurt me\nI won't hide from what I feel\nThere is power in the breaking\nThere is hope in what can heal\n\nLet the thunder roll behind me\nLet the rain wash through my bones\nI am more than what I carried\nI am more than what I've known\n\nNow the clouds are breaking open\nNow the night is almost gone\nI can feel my spirit waking\nI was born for moving on\n\nI won't let the past control me\nAnd the future is unset\nI walk off in the morning\nAnd I never will forget\n\nPain is what will make us\nBut break us when we're not strong\nI'm moving on to save the life\nthat started out so wrong"},{"title":"Afterlife","src":"../audioPlayer/audio/Afterlife.mp3","description":"a song asking if there is life after death","lyrics":"When the light is fading slow\nAnd the darkness starts to show\nEvery thing we did goes by\nAs the memories start to die\n\nAnd the world begins to fade\nLike a ghost who lost its way\nIs all that we have done now lost\nOr is there hope waiting for us all\n\nWhen our bodies collapse to the ground\nAnd the smiles become a frown\nIs there hope up in the sky\nWhen its time for us to die\n\nWhen our families are asking why\nWill our soul be climbing high\nWill the stars still shine their light\nIs there an afterlife\n\nWhen the pain is finally gone\nWill there be peace all along\nWill i watch the world go by\nWill i see the people cry\n\nI long to understand\nThe pain that shapes my hand\nWas there a reason for it all\nOr are we all just doomed to fall\n\nWhen the silence fills the room\nAnd the flowers start to bloom\nWill we wake beyond the night\nIn a place of endless light\n\nWhen the tears begin to fall\nWill love still remain through it all\nWill the stars still shine their light\nIs there an afterlife\n\nIf there’s a door beyond the pain\nWill it open when we call\nIf every tear became the rain\nWould it wash away it all\n\nI’m not asking for forever\nJust a reason to believe\nThat the love we leave behind us\nIs not all we ever leave\n\nIf my heart could hear the answer\nWould it finally be all right\nWill the dark become the morning\nWhen we step into the light\n\nGive me something I can hold\nWhen this world feels dark and cold\nGive me proof beyond this breath\nIs there life after death\n\nI am begging for a sign\nThat our souls survive the night\nTell me love is not the end\nLet us live and love again\n\nGive me one more spark of light\nIs there an afterlife\n"},{"title":"When To Say Goodbye","src":"../audioPlayer/audio/When%20To%20Say%20Goodbye.mp3","description":"a song about when its time to stop trying to save someone and instead say goodbye","lyrics":"You were always smiling for the crowd\nHiding every storm behind the sound\nEvery time we asked if you were fine\nYou would paint a sunset over every warning sign\n\nWe tried to lift the weight upon your heart\nGathering the pieces falling apart\nBut some wounds run deeper than they seem\nAnd some battles rage beyond our reach\n\nWe searched for every road\nWe carried every hope\nBut the night kept holding on\n\nWhen do we learn to say goodbye\nWhen do we stop asking why\nWhen every tear and every prayer\nStill can't take away what's there\n\nWhen all the strength we've given fades\nAnd every promise starts to break\nWe stand beside you through the night\nLearning when to say goodbye\n\nThe days grew heavy, the years moved slow\nYou carried burdens no one should know\nStill you fought with everything you had\nEven when tomorrow looked so sad\n\nAnd though we wished that love could heal it all\nSome mountains never truly fall\nWe stayed beside you through the rain\nTrying to shelter you from all the pain\n\nWe searched for every light\nWe stayed through every fight\nBut the dawn was growing near\n\nWhen do we learn to say goodbye\nWhen do we stop asking why\nWhen every tear and every prayer\nStill can't take away what's there\n\nWhen all the strength we've given fades\nAnd every promise starts to break\nWe stand beside you through the night\nLearning when to say goodbye\n\nNow the room is quiet\nAnd we're holding your hand\nNo more fear between us\nNo more need to pretend\n\nYou don't have to carry\nEvery shadow alone\nWe'll be right here beside you\nAs you journey home\n\nNow we've learned to say goodbye\nThough it breaks us deep inside\nAnd every memory remains\nLike sunlight shining through the rain\n\nWe'll carry every laugh you gave\nEvery moment that you made\nStanding by you through the night\nHolding on until the light\n\nAnd as we whisper one last time\nWith trembling hearts and tear-filled eyes\nWe stand beside you, hand in hand\nAnd let you know you're loved tonight\n\nWhen the stars begin to shine\nWe'll remember your light\nAnd though we had to say goodbye\nYou'll never leave our lives."},{"title":"Wish I Could Love","src":"../audioPlayer/audio/Wish%20I%20Could%20Love.mp3","description":"A song wishing i was able to love","lyrics":"When the sun rises im waking alone\nI wish there was someone to answer my phone\nNo one to hold me to stand by my side\nIm losing my will to even survive\n\nMy hands start shaking whenever I try\nI run from the chance before saying hi\nI want to be loved but I panic inside\nSo I bury my heart and pretend that I’m fine\n\nI wish i could love\nLike im living above\nSharing my heart\nHoping i am enough\n\nBut I freeze when I try\nAnd I don’t know why\nI’m scared of the fall\nAnd i want to just cry\n\nI want someone near\nBut I drown in my fear\nI reach for the light\nThen hope they dont hear\n\nI wish life wasnt rough\nI wish i could love\n\nI want a girl who will listen to me\nWho feels safe enough to speak honestly\nNot chasing my body or showing me off\nJust holding my hand when the world feels too rough\n\nI wish I knew how to let someone in\nTo hug without feeling so strange in my skin\nI need a connection that doesn’t feel wrong\nA place I can rest where my heart can belong\n\nI WISH I COULD LOVE\nBUT IM FALLING APART\nTHE PAIN THATS INSIDE\nIS DESTROYING MY HEART\n\ni wish atleast someone\nWould give me a chance\nAnd see past my failures\nAnd accept this 1 dance\n\nI wish i could love\nI would hold them so tight\nMake them feel safe\nMake it all feel right\n\nI wish i could love\nAnd find someone like me\nWho needs that same hand\nAnd finally be free\n\nI wish i could love\n\nI wish i could be free\n\nI wish i could love"},{"title":"Barely Hanging On","src":"../audioPlayer/audio/Barely%20Hanging%20On.mp3","description":"a cry out that ppl dont use my pain against trans ppl","lyrics":"They see a headline, not a human face\nTurn a tragedy into a talking point race\nEvery number has a heartbeat underneath\nBut they never stop to ask what grief can be\n\nI'm carrying weight that nobody can see\nYears of fear still hanging onto me\nA voice that echoes memories I can't outrun\nAnd a body still recovering from what was done\n\nI don't regret becoming who I am\nI don't regret finally taking a stand\nBut I'm so tired of being used as proof\nFor stories that were never mine to lose\n\nYou know what's sickening about all the hate\nAnd the misuse of the trans suicide rate\nIf a trans person dies for any reason at all\nSomeone tries to use their pain to make us fall\n\nAnd every time they do, another wound appears\nAnother kid grows up surrounded by fear\nAnother life gets reduced to a debate\nWhile we're left carrying the weight\n\nI'm not sleeping\nI'm not eating\nI'm barely hanging on\n\nEvery morning feels like climbing\nThrough a storm that's never gone\n\nI'm still breathing\nStill believing\nThough the road has been so long\n\nI'm not sleeping\nI'm not eating\nI'm barely hanging on\n\nThey think the story starts and ends with being trans\nLike nothing else could ever shape these hands\nBut they don't see the disabilities I fight\nOr the lonely endless battles every night\n\nThe autism\nThe trauma\nThe exhaustion in my chest\n\nThe feeling that my body's breaking down\nWhile I'm trying to keep my head above the ground\n\nVery little of this pain is who I am\nIt's the mountains that I never chose to stand on\nAnd if I disappear they'll write the story wrong\nAnd use my scars to hurt the ones still holding on\n\nI don't wish I never transitioned\n\nNo\n\nI wish I never had to hurt this much\n\nI wish I wasn't trapped by things I can't control\n\nI wish I could grab my keys\nDrive away\nMeet my friends\nSee the world\n\nI wish getting out there\nWasn't so hard\n\nwasnt so hard\n\nI'm not sleeping\nI'm not eating\nI'm barely hanging on\n\nTrying to find a life worth living\nWhen the nights feel far too long\n\nStill reaching\nStill dreaming\nThough the fight has taken all I've got\n\nI'm not sleeping\nI'm not eating\nI'm barely hanging on\n\nSo if you hear my story\nDon't turn it into a war\n\nDon't use my pain against the people\nWho are already hurting\n\nSee the girl behind the headline\n\nSee the person\n\nSee the hope\n\nif im gone tomorrow\n\nDon't use my death to invoke"},{"title":"Dysphoria","src":"../audioPlayer/audio/Dysphoria.mp3","description":"a song about battling gender dysphoria","lyrics":"Dysphoria...\n\nThey call it sadness.\n\nDysphoria...\n\nThey think it'll pass.\n\nDysphoria...\n\nBut they never hear\nThe silence inside me.\n\nWhen you're waking up inside\nBut the mirror makes you hide\nThe truth is buried deep\nIt haunts me in my sleep\n\nNo one sees your face\n'Cause a mask sits in your place\nAnd all you want to be\nIs the person they can't see\n\nDysphoria it's like a darkness deep inside\nHanging on for a long ride\nDysphoria when you cannot see your face\nAnd you feel like you lost the race\n\nBut you know it's not the end\n'Cause transition can let you win\nAnd the darkness fades away\nAnd you feel like you can stay\n\nDysphoria\nDysphoria\n\nEvery photograph I find\nFeels like someone else's life\nEvery word that leaves my lips\nCuts a little like a knife\n\nI keep searching through the glass\nFor the girl I've always known\nWaiting for the day I see\nA face that finally feels like home\n\nYou'll never see the girl you're trying so hard to find.\n\nThen I'll keep walking forward one step at a time.\n\nEvery single mirror proves that you'll always be wrong.\n\nEvery single change I make proves I can still grow strong.\n\nYou'll spend your whole life chasing something you'll never reach.\n\nThen watch me keep on climbing higher with every dream.\n\nYou're tired of fighting, so why don't you finally let go?\n\nBecause I've come too far to stop becoming who I know.\n\nI'll always follow...\n\nThen watch me outgrow you.\n\nYou can fill my nights with fear.\nYou can drown my voice in doubt.\nBut every day I choose myself...\nIs one more day you fade out.\n\nDysphoria has lost its power over me\nI'm finally who I am and I will be set free\nDysphoria I have suffered long enough\nYou made me out of touch\nI'm moving on alone away from who I have outgrown\n\nDysphoria\nDysphoria"},{"title":"The Last Stand","src":"../audioPlayer/audio/The%20Last%20Stand.mp3","description":"A song about a battle with yourself as you fight threw","lyrics":"Please let me fly high in the sky\n(But you need to stay here and slowly die)\nI want to just live laugh and then love\n(But nobody wants you, just give it up)\n\nI want to keep fighting i want to believe...\n(But you're not who you want so why not just leave)\nI can not do that i need to stay strong\n(But you know deep down that you are all wrong)\n\nYour power will fade and i must prevail\n(You try and fight it you know you will fail)\nIm waking up you're falling fast\nI will fight you and youll leave me at last\n\nI will not listen to the words that you say\nIt's time for you to just go away\nI will defeat you and ill be me all a long\n(You think you will win...)\n\nI already have\nYour power is fading\nIm making my stand\nThe light is breaking through the haze\n\n(You'll lose it all in just a few days)\nI finally see beyond your lies\n(Just close your eyes and say goodbye...)\nYour voice grows weaker every day\n\n(...I'm still here im here to stay...)\nNo, not today, you'll fade away\nIts time you are gone from this land\n(Please don't leave... I'm all you've known...)\n\nYou are not my heart, you are not my home.\n(Without me you'll fall, you'll never survive...)\nI was born to live, not just stay alive.\n(Please hear me out, don't shut me away...)\n\nI won't be your prisoner another day.\n(Please... don't...)\nYou have no more power.\nYou have no more say.\n\nNow that you're gone i am free at last\nNothing to hold me or carry me back\nYou are now gone and silence is here\nIm moving forward past all these years\n\nNo matter the burden no matter the pain\nIll find a way to make it my gain\nNow i will fly as i said before\nLifting my wings and letting me soar"},{"title":"When The Rain Falls Down","src":"../audioPlayer/audio/When%20The%20Rain%20Falls%20Down.mp3","description":"A song about enduring overwhelming pain, surviving the storm, and finally finding hope, self-acceptance, and happiness, princess.","lyrics":"The rain is falling down\nAnd I fear that I may drown\n(I may drown)\nI'm just looking for the light\nThat says I'll be alright\n\nWhen the rain falls down\nAnd the sun won't shine\nCan we all move on\nAnd leave the past behind\n\nWill the whole world flood\nAnd wash away my pain\nOr will I never find\nAn end to suffering\n\nWhen the rain falls down\nAnd the sun won't shine\nCan we all move on\nAnd leave the past behind\n\nOr will eternity\nNever set us free\nIs it all for nothing\nAs we become a sea\n\nAs the rain falls down\nAnd the dark clouds roll\nIs this the end\nOf all that we know\n\nThe waves are growing still\nAs they reach beyond the hill\nI can feel the rising dawn\nThough the darkest night lives on\n\nEvery breath becomes a fight\nStill I'm reaching for the light\nMaybe after all this rain\nI can learn to live again\n\nThe storm now breaks\nAnd we see the light\nThe truth is now\nWithin our sight\n\nThe rain is falling down\nBut I can clearly see\nThat who I am inside\nIs who I need to be\n\nThe storm once stood before me\nBut now that it has passed\nI can move forward now\nAnd find happiness at last"},{"title":"Breathing","src":"../audioPlayer/audio/Breathing.mp3","description":"a song about breathing threw tough times","lyrics":"\nI'm breathing in tonight\nHoping to be alright\nAs the air flows through my veins\nI'm hoping I can stay sane\n\nAs the darkest hour comes\nAnd the air fills up my lungs\nI must learn to let it go\nSo I'm breathing out to show\n\nI'm breathing in\nHoping peace will settle in\nSearching for peace somehow\nBefore the darkness takes me now\n\nHolding on through fear and doubt\nTrying to figure this all out\nOne more breath, that's what it's about\nI'm breathing out\n\nThe morning slowly finds my eyes\nBeyond the fear, beyond the lies\nEach step may shake beneath my feet\nBut I refuse to face defeat\n\nThe wind may try to pull me down\nYet I won't let myself just drown\nWith every breath I find my way\nI'm stronger than I was today\n\nI'm breathing in\nHoping peace will settle in\nSearching for peace somehow\nBefore the darkness takes me now\n\nHolding on through fear and doubt\nTrying to figure this all out\nOne more breath, that's what it's about\nI'm breathing out\n\nTHE NIGHT KEPT CALLING\nMY NAME AGAIN\nIT TRIED TO PULL ME\nBACK WHERE I'VE BEEN\n\nBUT I'M STILL BREATHING\nI'm STILL RIGHT HERE\nI WON'T LET DARKNESS\nBECOME MY FEAR\n\nTHE DAWN IS BREAKING\nIT FILLS MY EYES\nI FEEL THE LIGHT NOW\nBEGIN TO RISE\n\nI'm breathing in tonight\nThen I'm breathing out alright\nDon't know what the future may bring\nBut tonight I hope to sing\n\nWhen all is said and done\nNo battle is ever truly won\nSo I'm breathing in tonight\nAnd I'm breathing out just right\n\nI'm breathing in tonight\nAnd I'm...\nBreathing out...\nAlright"},{"title":"Land Beyond","src":"../audioPlayer/audio/Land%20Beyond.mp3","description":"A song about mortality and ending","lyrics":"Here I come to the land beyond\nI don't know how it will be\nBut the life I have is near the end\nI just hope to truly be free\n\nAs the light inside my eyes begins to fade\nI look into the shadows for what remains\nEvery one and every dream I left behind\nI pray that they will keep moving on just fine\n\nNo one ever really escapes their true fate\nWe just hope to live long enough to create\nI lived my life through all the pain even as I cry\nBut all lives end when it is time for us to die\n\nHere I come to the land beyond\nI don't know how it will be\nBut the life I have is near the end\nI just hope to truly be free\n\nThe road ahead I cannot see\nStill I walk it faithfully\nWhatever waits beyond the door\nI'll fear this journey nevermore\n\nThe stars now whisper names I've never known\nLike scattered seeds through winds that have been blown\nEach memory drifts like leaves across the stream\n\nHalf forgotten, yet alive inside each dream\nThe echoes fade but never disappear\nThey linger softly, always drawing near\nIf every ending births a path untrod\nPerhaps the final step still leads to awe\n\nIf this is where the story finds its end\nThen let my soul go where the heavens bend\nNo fear remains within these weary bones\nNo chains remain to claim me as their own\n\nThe silence sings a song I've never heard\nA thousand truths beyond a single word\nThe weight I carried slowly falls away\nLike morning mist before the break of day\n\nSo if tomorrow never comes for me\nRemember who I chose to be\nAnd when the final curtain has been drawn\nDon't mourn the night, remember every dawn\n\nMy story fades into the silent sky\nNo more questions asking who or why\nI've given all this weary heart could give\nAnd treasured every chance I had to live\n\nSo let the final page be written true\nWith one last thought I leave with you\n\nI hope this truth doesn't make you cry\nBecause now it is the time for me to die"}]}</script>
+  <script>
+(() => {
+  "use strict";
+  const { tracks } = JSON.parse(document.getElementById("album-data").textContent);
+  const get = (id) => document.getElementById(id);
+  const audio = get("audio");
+  const play = get("play");
+  const seek = get("seek");
+  const volume = get("volume");
+  const rows = Array.from(get("track-list").children);
+  let current = 0;
+  let playRequest = 0;
+  let stopped = false;
+
+  const status = (message) => { get("status").textContent = message; };
+  function time(seconds) {
+    if (!Number.isFinite(seconds)) return "--:--";
+    seconds = Math.max(0, Math.floor(seconds));
+    return Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0");
+  }
+  function updateProgress() {
+    const ready = Number.isFinite(audio.duration) && audio.duration > 0;
+    seek.disabled = !ready;
+    seek.max = ready ? audio.duration : 1;
+    seek.value = ready ? audio.currentTime : 0;
+    get("elapsed").textContent = time(audio.currentTime);
+    get("duration").textContent = time(audio.duration);
+    seek.setAttribute("aria-valuetext", time(audio.currentTime) + " of " + time(audio.duration));
+  }
+  function updateButtons() {
+    const playing = !audio.paused && !audio.ended;
+    play.textContent = playing ? "Pause" : "Play";
+    play.setAttribute("aria-pressed", String(playing));
+    rows.forEach((row, index) => {
+      const selected = index === current;
+      row.classList.toggle("active", selected);
+      const button = row.querySelector("button");
+      if (selected) button.setAttribute("aria-current", "true");
+      else button.removeAttribute("aria-current");
+      row.querySelector(".track-state").textContent = selected ? (playing ? "Playing" : "Selected") : "Play";
+    });
+  }
+  function updateVolume() {
+    volume.value = audio.volume;
+    const muted = audio.muted || audio.volume === 0;
+    get("mute").textContent = muted ? "Unmute" : "Mute";
+    get("mute").setAttribute("aria-pressed", String(muted));
+    get("volume-value").textContent = Math.round((muted ? 0 : audio.volume) * 100) + "%";
+  }
+  async function startPlayback() {
+    const request = ++playRequest;
+    try { await audio.play(); }
+    catch (error) {
+      if (request !== playRequest || error.name === "AbortError") return;
+      status(error.name === "NotAllowedError"
+        ? "Press Play to start the music."
+        : "Unable to play this track. Try another track or reload the page.");
+      updateButtons();
+    }
+  }
+  function selectTrack(index, autoplay) {
+    ++playRequest;
+    audio.pause();
+    current = index;
+    stopped = false;
+    const track = tracks[current];
+    audio.src = track.src;
+    audio.load();
+    get("now-title").textContent = track.title;
+    get("track-position").textContent = "Track " + (current + 1) + " of " + tracks.length;
+    get("song-description").textContent = track.description;
+    get("song-description").hidden = !track.description;
+    get("lyrics").textContent = track.lyrics;
+    get("lyrics-panel").hidden = !track.lyrics;
+    get("song-info").hidden = !track.description && !track.lyrics;
+    status("Ready to play " + track.title + ".");
+    updateProgress();
+    updateButtons();
+    if (autoplay) void startPlayback();
+  }
+  function skip(direction) {
+    const wasPlaying = !audio.paused && !audio.ended;
+    if (direction < 0 && audio.currentTime > 3) {
+      audio.currentTime = 0;
+      updateProgress();
+      return;
+    }
+    selectTrack((current + direction + tracks.length) % tracks.length, wasPlaying);
+  }
+
+  play.addEventListener("click", () => {
+    if (audio.paused) {
+      stopped = false;
+      if (audio.ended) audio.currentTime = 0;
+      void startPlayback();
+    } else { ++playRequest; audio.pause(); }
+  });
+  get("stop").addEventListener("click", () => {
+    ++playRequest;
+    stopped = true;
+    audio.pause();
+    audio.currentTime = 0;
+    updateProgress();
+    updateButtons();
+    status("Stopped. Press Play to restart " + tracks[current].title + ".");
+  });
+  get("previous").addEventListener("click", () => skip(-1));
+  get("next").addEventListener("click", () => skip(1));
+  rows.forEach((row, index) => row.querySelector("button").addEventListener("click", () => selectTrack(index, true)));
+  seek.addEventListener("input", () => {
+    if (!seek.disabled) audio.currentTime = Number(seek.value);
+    updateProgress();
+  });
+  volume.addEventListener("input", () => {
+    audio.volume = Number(volume.value);
+    if (audio.volume > 0) audio.muted = false;
+  });
+  get("mute").addEventListener("click", () => {
+    if (audio.muted || audio.volume === 0) { audio.muted = false; if (audio.volume === 0) audio.volume = 1; }
+    else audio.muted = true;
+  });
+  audio.addEventListener("volumechange", updateVolume);
+  ["loadedmetadata", "durationchange", "timeupdate", "emptied"].forEach((event) => audio.addEventListener(event, updateProgress));
+  audio.addEventListener("play", () => { updateButtons(); status("Playing " + tracks[current].title + "."); });
+  audio.addEventListener("pause", () => {
+    updateButtons();
+    if (!audio.ended && !stopped) status("Paused: " + tracks[current].title + ".");
+  });
+  audio.addEventListener("ended", () => {
+    if (current + 1 < tracks.length) selectTrack(current + 1, true);
+    else if (get("repeat").checked) selectTrack(0, true);
+    else { updateButtons(); status("Album finished. Choose a track to listen again."); }
+  });
+  audio.addEventListener("error", () => {
+    updateButtons();
+    status("Could not load " + tracks[current].title + ". Try another track.");
+  });
+
+  // Keep native controls as a fallback if JavaScript is disabled.
+  audio.controls = false;
+  get("custom-controls").hidden = false;
+  get("previous").disabled = tracks.length < 2;
+  get("next").disabled = tracks.length < 2;
+  selectTrack(0, false);
+  updateVolume();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Listen to Fire And Peace by PrincessTG.">
+  <title>Fire And Peace | PrincessTG Music</title>
+  <style>
+:root {
+  --bg: #11131a;
+  --card: #1d2230;
+  --text: #f3f5ff;
+  --muted: #b9bfd4;
+  --accent: #9f7bff;
+  --accent-hover: #bda7ff;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: linear-gradient(160deg, #0d1018, #171d2a 45%, #11131a);
+  color: var(--text);
+  line-height: 1.5;
+}
+.hero, main, footer { width: min(960px, 92vw); margin: 0 auto; }
+.hero {
+  background: url("../images/logo-removebg-preview.png") center / contain no-repeat;
+  min-height: 240px;
+  display: flex;
+  align-items: stretch;
+}
+.hero a { width: 100%; min-height: 240px; border-radius: 16px; }
+section, footer {
+  background: rgba(29, 34, 48, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+h1, h2 { margin: 0 0 0.5rem; overflow-wrap: anywhere; }
+h1 { font-size: clamp(1.8rem, 6vw, 2.8rem); }
+p { margin: 0.5rem 0; }
+.eyebrow, .release, .description, .muted, .status { color: var(--muted); }
+.eyebrow { margin-top: 0; color: var(--accent-hover); }
+.description, #song-description { white-space: pre-wrap; overflow-wrap: anywhere; }
+.back-link, footer a { color: var(--accent); }
+.back-link { display: inline-block; margin-bottom: 1rem; text-decoration: none; }
+a:hover { color: var(--accent-hover); }
+button, input { font: inherit; }
+button {
+  background: #101521;
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--accent-hover); }
+button:disabled, input:disabled { opacity: 0.5; cursor: default; }
+button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visible {
+  outline: 3px solid var(--accent-hover);
+  outline-offset: 3px;
+}
+#play { background: var(--accent); border-color: var(--accent); color: #101521; font-weight: bold; }
+#play:hover { background: var(--accent-hover); }
+.controls, .volume-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.65rem; }
+.controls { margin: 1rem 0; }
+.progress { display: flex; gap: 0.75rem; align-items: center; margin: 1rem 0; }
+.progress span { min-width: 3.25rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.progress span:last-child { text-align: right; }
+input[type="range"] { accent-color: var(--accent); min-width: 0; cursor: pointer; }
+#seek { flex: 1; width: 100%; }
+#volume { width: min(150px, 32vw); }
+.repeat { margin-left: auto; cursor: pointer; }
+.repeat input { accent-color: var(--accent); width: 1.1rem; height: 1.1rem; vertical-align: middle; }
+.status { min-height: 1.5em; }
+audio { width: 100%; display: block; margin: 1rem 0; }
+audio:not([controls]) { display: none; }
+.track-list { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: 0.55rem; }
+.track-list button {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  text-align: left;
+  width: 100%;
+}
+.track-list .active button { border-color: var(--accent); background: rgba(159, 123, 255, 0.12); }
+.track-number, .track-state { color: var(--muted); }
+.track-state { font-size: 0.85rem; }
+.track-title { overflow-wrap: anywhere; }
+summary { cursor: pointer; color: var(--accent-hover); padding: 0.5rem 0; }
+.lyrics {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: var(--text);
+  background: #101521;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin: 0.5rem 0 0;
+}
+footer { margin-bottom: 2rem; color: var(--muted); }
+[hidden] { display: none !important; }
+@media (max-width: 480px) {
+  .hero, .hero a { min-height: 180px; }
+  section, footer { padding: 1rem; }
+  .controls button { flex: 1 1 calc(50% - 0.65rem); }
+  .repeat { margin-left: 0; width: 100%; }
+  .track-list button { gap: 0.35rem; padding: 0.65rem; }
+}
+</style>
+</head>
+<body>
+  <header class="hero"><a href="../index.html" aria-label="PrincessTG Music home"></a></header>
+  <main>
+    <a class="back-link" href="./index.html">← All albums</a>
+    <section aria-labelledby="album-title">
+      <p class="eyebrow">PrincessTG Music</p>
+      <h1 id="album-title">Fire And Peace</h1>
+      <p class="release"><strong>Release date:</strong> 2026-11-1</p>
+      
+    </section>
+    <section aria-labelledby="now-title">
+      <p class="muted">Now playing</p>
+      <h2 id="now-title">unopened door</h2>
+      <p class="muted" id="track-position">Track 1 of 13</p>
+      <audio id="audio" controls preload="metadata" src="../audioPlayer/audio/unopened%20door.mp3">Your browser does not support audio playback.</audio>
+      <div id="custom-controls" hidden>
+        <div class="controls">
+          <button id="previous" type="button" aria-label="Previous track">Previous</button>
+          <button id="play" type="button" aria-pressed="false">Play</button>
+          <button id="stop" type="button">Stop</button>
+          <button id="next" type="button" aria-label="Next track">Next</button>
+        </div>
+        <div class="progress">
+          <span id="elapsed">0:00</span>
+          <input id="seek" type="range" min="0" max="1" step="0.1" value="0" aria-label="Seek in current track" disabled>
+          <span id="duration">--:--</span>
+        </div>
+        <div class="volume-row">
+          <button id="mute" type="button" aria-pressed="false">Mute</button>
+          <label for="volume">Volume</label>
+          <input id="volume" type="range" min="0" max="1" step="0.05" value="1">
+          <span id="volume-value">100%</span>
+          <label class="repeat"><input id="repeat" type="checkbox"> Repeat album</label>
+        </div>
+      </div>
+      <p id="status" class="status" role="status" aria-live="polite">Choose Play to start the album.</p>
+      <noscript><p>The native audio controls play the first track. Enable JavaScript for the full playlist.</p></noscript>
+    </section>
+    <section aria-labelledby="tracks-heading">
+      <h2 id="tracks-heading">Album tracks</h2>
+      <p class="muted">13 songs · Select a song to play it.</p>
+      <ol id="track-list" class="track-list">
+        <li><button type="button" aria-label="Play unopened door"><span class="track-number">1</span><span class="track-title">unopened door</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Dreaming"><span class="track-number">2</span><span class="track-title">Dreaming</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Never Be Silent"><span class="track-number">3</span><span class="track-title">Never Be Silent</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play I Wont Mask"><span class="track-number">4</span><span class="track-title">I Wont Mask</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Jelouse Of Me"><span class="track-number">5</span><span class="track-title">Jelouse Of Me</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play I Know You Wont Believe Me Now"><span class="track-number">6</span><span class="track-title">I Know You Wont Believe Me Now</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Forever Me"><span class="track-number">7</span><span class="track-title">Forever Me</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play I Wont Let You Bring Me Down"><span class="track-number">8</span><span class="track-title">I Wont Let You Bring Me Down</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play By No Command"><span class="track-number">9</span><span class="track-title">By No Command</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play You Thought Wrong"><span class="track-number">10</span><span class="track-title">You Thought Wrong</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Bigotry"><span class="track-number">11</span><span class="track-title">Bigotry</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Draw The Lines (explicit)"><span class="track-number">12</span><span class="track-title">Draw The Lines (explicit)</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Draw The Lines (censored)"><span class="track-number">13</span><span class="track-title">Draw The Lines (censored)</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+      </ol>
+    </section>
+    <section id="song-info" aria-labelledby="song-heading">
+      <h2 id="song-heading">Song details</h2>
+      <p id="song-description">“I Survived What You Are Crying Through” is an emotional alt-rock survival anthem about speaking to someone trapped in pain, fear, and exhaustion from the perspective of someone who made it through. With chant-like hooks, layered background vocals, and a message of endurance, the song turns suffering into proof that survival is possible.</p>
+      <details id="lyrics-panel">
+        <summary>Lyrics</summary>
+        <pre id="lyrics" class="lyrics">I survived what you are crying through
+
+Yes yes yes yes
+
+I survived what you are crying through
+
+Hold on hold on i made it out
+
+I know the room where your breathing breaks
+(breathing breaks)
+The ceiling spins and the silence shakes
+(silence shakes)
+
+You count the cracks like they know your name
+(know your name)
+Like every night is a losing game
+(not the same)
+
+I know the weight of an unopened door
+(unopened door)
+The kind of tired that sleeps on the floor
+(on the floor)
+
+But listen close when the thunder moves
+I survived what you are crying through
+(I survived for you)
+
+I survived what you are crying through
+Yes yes yes yes
+I survived what you are crying through
+
+Hold on hold on
+I made it out
+Hold on hold on
+I see you now
+
+I survived what you are crying through
+Yes yes yes yes
+I survived what you are crying through
+
+[Chorus]
+
+Hold on hold on
+I made it out
+I made it out
+Hold on hold on
+I see you now
+
+I survived what you are crying through
+Yes yes yes yes
+I survived 
+I survived what you are crying through
+
+I survived what you are crying through
+Yes yes yes yes
+I survived what you are crying through
+
+[Verse 2]
+I know the sound of your quiet phone
+(quiet phone)
+The kind of dark that feels like home
+(feels like home)
+
+You hide your tears where no one sees
+(no one sees)
+And bargain with the air to breathe
+(just to breathe)
+
+I know the fear in the bathroom light
+(bathroom light)
+The mirror asking if you’ll survive
+(you’ll survive)
+
+But every scar that swallowed you
+Became the map I followed through
+(I followed you)
+
+I survived what you are crying through
+Yes yes yes yes
+I survived what you are crying through
+
+[Bridge]
+I won’t lie and call it easy
+I won’t say the pain was small
+There were nights I almost vanished
+There were days I couldn’t crawl
+
+But I am standing in the morning
+With the proof inside my chest
+You don’t have to feel brave right now
+You just have to take one breath
+
+You don’t have to know the ending
+You don’t have to see it clear
+I am only here to tell you
+There is life beyond this fear
+
+[Outro]
+I survived what you are crying through
+Yes yes yes yes
+I survived what you are crying through
+
+Hold on hold on
+I made it out
+Hold on hold on
+I see you now
+
+I survived what you are crying through
+I survived what you are crying through
+I survived what you are crying through
+I survived what you are crying through</pre>
+      </details>
+    </section>
+  </main>
+  <footer>PrincessTG Music · <a href="./index.html">All albums</a> · <a href="../index.html">Home</a></footer>
+  <script id="album-data" type="application/json">{"tracks":[{"title":"unopened door","src":"../audioPlayer/audio/unopened%20door.mp3","description":"“I Survived What You Are Crying Through” is an emotional alt-rock survival anthem about speaking to someone trapped in pain, fear, and exhaustion from the perspective of someone who made it through. With chant-like hooks, layered background vocals, and a message of endurance, the song turns suffering into proof that survival is possible.","lyrics":"I survived what you are crying through\n\nYes yes yes yes\n\nI survived what you are crying through\n\nHold on hold on i made it out\n\nI know the room where your breathing breaks\n(breathing breaks)\nThe ceiling spins and the silence shakes\n(silence shakes)\n\nYou count the cracks like they know your name\n(know your name)\nLike every night is a losing game\n(not the same)\n\nI know the weight of an unopened door\n(unopened door)\nThe kind of tired that sleeps on the floor\n(on the floor)\n\nBut listen close when the thunder moves\nI survived what you are crying through\n(I survived for you)\n\nI survived what you are crying through\nYes yes yes yes\nI survived what you are crying through\n\nHold on hold on\nI made it out\nHold on hold on\nI see you now\n\nI survived what you are crying through\nYes yes yes yes\nI survived what you are crying through\n\n[Chorus]\n\nHold on hold on\nI made it out\nI made it out\nHold on hold on\nI see you now\n\nI survived what you are crying through\nYes yes yes yes\nI survived \nI survived what you are crying through\n\nI survived what you are crying through\nYes yes yes yes\nI survived what you are crying through\n\n[Verse 2]\nI know the sound of your quiet phone\n(quiet phone)\nThe kind of dark that feels like home\n(feels like home)\n\nYou hide your tears where no one sees\n(no one sees)\nAnd bargain with the air to breathe\n(just to breathe)\n\nI know the fear in the bathroom light\n(bathroom light)\nThe mirror asking if you’ll survive\n(you’ll survive)\n\nBut every scar that swallowed you\nBecame the map I followed through\n(I followed you)\n\nI survived what you are crying through\nYes yes yes yes\nI survived what you are crying through\n\n[Bridge]\nI won’t lie and call it easy\nI won’t say the pain was small\nThere were nights I almost vanished\nThere were days I couldn’t crawl\n\nBut I am standing in the morning\nWith the proof inside my chest\nYou don’t have to feel brave right now\nYou just have to take one breath\n\nYou don’t have to know the ending\nYou don’t have to see it clear\nI am only here to tell you\nThere is life beyond this fear\n\n[Outro]\nI survived what you are crying through\nYes yes yes yes\nI survived what you are crying through\n\nHold on hold on\nI made it out\nHold on hold on\nI see you now\n\nI survived what you are crying through\nI survived what you are crying through\nI survived what you are crying through\nI survived what you are crying through"},{"title":"Dreaming","src":"../audioPlayer/audio/Dreaming.mp3","description":"A song to support disabled creaters who find relief in ai use","lyrics":"Can you see what's in their mind\nCan you see the dreams they left behind\n\nCan you see the people dreaming\nCan you hear the voices screaming\nOr has their silence shaped your choice\nTo take the tools that give them a voice\n\nWhen you're walking through a crowd\nPast the people big and loud\nDo you hear what's on their mind\nAll the art they leave behind\n\nCan you see the heart and soul\nHoping they can feel whole\nA voice they could never share\nCause what they need is nowhere\n\nWhen one thing could make it true\nAI is here for you\n\nCan you see the people dreaming\nCan you hear the voices screaming\nOr has their silence shaped your choice\nTo take the tools that give them a voice\n\nThey can become so much more\nIf you'd let them open the door\nDo let their voices ring\nWith the tools they need to sing\n\nI know these things may be scary\nAnd you may be growing weary\nBut look into their heart\nAnd let them make their art\n\nLet them live and laugh and love\nWith the tools that lift above\nLet them carry all their dreams\nAnd live life by their own means\n\nGive the power in their voice\nLet them make their own choice\nLet them show what's on their mind\nEven if a tool must make the sign\n\nLet them rise above it all\nLet them dance to their own song\nEven if they needed help\nDon't let their heart sit on a shelf\n\nCan you see the people dreaming\nDreaming of a better life\nCan you hear the people screaming\nEvery day and night\n\nThey may lack the skills\nOr the money to make it real\nBut the tools can help them shine\nAnd they can show us how they feel\n\nThe songs they never got to sing\nThe paintings trapped inside their dreams\nGive them the tools, let voices ring\nAnd show the world what no one sees\n\nThe songs they never got to sing\nThe paintings trapped inside their dreams\nLet every voice become a sign\nOf all the art they held inside"},{"title":"Never Be Silent","src":"../audioPlayer/audio/Never%20Be%20Silent.mp3","description":"a song about aggressively fighting for trans rights","lyrics":"I WILL NEVER BE SILENT\n(Be silent)\n\nYou try to silence what you dont know\nHide behind the cowardice flow\nDeny the fear and pain i feel\nDeepening what i try to heal\n\nYou scream and beg i go away\nYet you are free to go or stay\nIm not listening to your cries and plea\nBecause youre trying to silence me\n\nYou try to silence me (silence me)\nBut i will not back down\nUntil they all are free\nUntil our voices all are found\n\nLet us safely share this place\nEvery life deserves its space\nTrans hearts stand here side by side\nWith dignity instead of pride\n\nYou paint us as the enemy\nIgnoring our humanity\nWe only ask for equal ground\nWhere love and hope can both be found\n\nYou raise your voice to spread your fear\nBut we are standing stronger here\nNo matter what you say or do\nWe will keep on breaking through\n\nYou try to silence me (silence me)\nBut i will not back down\nUntil they all are free\nUntil our voices all are found\n\nOpen every field and court\nLet us all compete in sport\nJudge us by the work we show\nNot by how we came to grow\n\nWe will not be silent\nWe will be louder then before\nYou cannot hide from truth\nWe will not take it anymore\n\nEvery push just makes us stronger\nEvery voice will grow much louder\nWe will stand where we belong\nWe will push against what's wrong\n\nYou can try to shut us down\nBut we will never leave this ground\nWe will rise above your fear\nOur voices will be heard right here\n\nWe will not be silent\nNot today, not anymore\nEvery voice deserves to matter\nEvery heart deserves to soar\n\nGender-affirming care saves lives\nHope is stronger than your fear\nWe will stand for every trans soul\nUntil every path is clear"},{"title":"I Wont Mask","src":"../audioPlayer/audio/I%20Wont%20Mask.mp3","description":"a song telling ppl i wont hide or mask to fit in ill only ever be me","lyrics":"I WON'T MASK FOR YOUR COMFORT!\nNO!\n\nI won't hide my truth so you can be at ease!\n\nI WON'T MASK FOR YOUR COMFORT!\nI won't hide my truth from you\nYou can take me how I am\nBut I won't pretend to just be true\n\nWhoa-oh!\nHEY!\nWhoa-oh-oh!\n\nI may do things different\nI may never fit your view\nI may seem like I am out there\nBut I'm only being real\n\nAnd if you let me in\nYou can finally see\nAll I'm hoping to accomplish\nIs to simply just be free\n\nWhoa-oh...\nNo...\nNo more...\n\nI won't mask for your comfort\nI deserve to just be me\nEvery day and every night\nI'm just hoping you can see\n\nI have the love to give\nAnd there's peace still in my heart\nBut masking is just hiding\nAnd it was tearing me apart\n\nWhoa-oh-oh!\nHey!\nWhoa-oh!\n\nAll I want is to exist\nAnd be loved as I do\nNot as a vessel that they see\nBut a soul that's being true\n\nI may suffer endlessly\nI may vent it every day\nI may never like the silence\nBut with love I see a way\n\nI WON'T MASK FOR YOUR COMFORT\nI WON'T BE SOMEONE I AM NOT\nI WON'T PRETEND THAT I'M OK\nWHEN I'M HURTING INSIDE A LOT\n\nI will always be myself\nAnd that should be OK\nBecause I still have love\nThat I will give every day\n\nWhoa-oh...\nOoooooh...\n\nI won't mask for your comfort\nAnd that should be OK\nJust because I'm different\nI still have a lot to say\n\nI may sometimes get angry\nI may even overshare\nBut you know my heart is out there\nAnd spreading love everywhere\n\nWhoa-oh!\nHEY!\nWhoa-oh-oh!\nI WON'T MASK FOR YOUR COMFORT!"},{"title":"Jelouse Of Me","src":"../audioPlayer/audio/Jelouse%20Of%20Me.mp3","description":"a song to the haters reminding them they are just jelouse","lyrics":"You scream all you want\nWith your slurs and your lies\n(Oh!)\nNo matter your hate\nYou won't make me hide\n\nEvery laugh I steal feels louder in your ears\nEvery step I take ignites another fear\nYou watch me living like it's something you can't stand\nI'm just being me while you're clenching empty hands\n\nYou hate the way I'm finally living free\nWhile you're still chained to who you think you have to be\nSo you throw your hate, hoping I'll believe it too\nBut I'm still free... and that terrifies you\n(Hey! Hey!)\n\nYou scream all you want\n(Hey!)\nWith your slurs and your lies\n(Whoa-oh!)\nNo matter your hate\nYou won't make me hide\n\nI'm living my truth\n(Stand tall!)\nYou're choking on yours\n(No more!)\nThat's all this will be\n'Cause you're jealous of me\n(Jealous of me!)\n\nI'm just a girl living her truth\n(Hey!)\nI won't become your living proof\nYou can judge me all you please\nBut you won't bring me to my knees\nI found the strength to finally see\nThe only life I need to be\nI'll never trade my soul for peace\nYou make it clear\nYou are jealous of me\n(Hey! Hey!)\n\nYou can't have the life that I live\nSo instead you prove you have nothing to give\n\nSo yell all your slurs\nSpread all your hate\nI'm a girl that's on fire\nAnd it is not a debate\n\nI live my life free\nYou live in your chains\nI can fully see\n\nYou are jealous of me!!!!\nyou are jelouse of me\n\nYou scream all you want\n(Whoa-oh!)\nWith your slurs and your lies\n(Hey!)\nNo matter your hate\nYou won't make me hide\n\nYou don't have to hate\nYou don't have to pretend\nYou could live your truth\nInstead of living in the end\n\nI'd welcome you here\nIf you'd finally break free\nYou could stand beside me\nAnd not be jealous of me\n(Stand beside me!)\n(Not jealous of me!)\n(Not jealous of me!)\n\nYou...\nAre...\nJealous...\nOf...\nMe!"},{"title":"I Know You Wont Believe Me Now","src":"../audioPlayer/audio/I%20Know%20You%20Wont%20Believe%20Me%20Now.mp3","description":"a song exploring the work i still put into my music dispite using ai","lyrics":"I know you wont believe me now\nI know you wont believe me now\n\nI know you cannot see it\nThe work i put insinde this\nI know you wont believe me now\n\nEvery day im working hard\nBut theres never a reward\n(Oh no) (oh no)\n\nThis is really all my art\nBut you... \nyou hate it from the start\nCause the tools to make it real\nGoes against just how you feal\n(Its true)\n\nBut look into the words\nMy heart deserves to be heard\n(Oh yea)\nI know you wont believe me now\n\nYou only see the tools I use\nYou never see the path I choose\nYou write me off without a doubt\nBefore you hear what I'm about\n\nYou can't erase the truth somehow\nMy voice is reaching through the crowd\nOne day you'll finally hear me out\nI know you won't believe me now\nI know you won't believe me now\n\nThese are stories from my soul\nEvery scar has played a role\n(It's true) (it's true)\n\nEvery tear became a line\nEvery dream became a rhyme\nYou don't see what lies beneath\nEvery word is part of me\n\n(Oh yeah)\n\nSo before you walk away\nHear the words I have to say\n\n(One chance)\n\nI know you won't believe me now\n\nYou only see the tools I use\nYou never see the path I choose\nYou write me off without a doubt\nBefore you hear what I'm about\n\nYou can't erase the truth somehow\nMy voice is reaching through the crowd\nOne day you'll finally hear me out\nI know you won't believe me now\nI know you won't believe me now\n\nYou can doubt me all you want\nYou can say this isn't real\nBut no matter what you call it\nYou can't change the way I feel\n\nThese are more than words somehow\nThis is who I am right now\nYou'll remember what I found...\nEven if you won't believe me now.\n\nYou only see the tools I use\nYou never see the path I choose\nYou judged the way these songs were made\nBut never heard the heart displayed\nYou can't erase the truth somehow\nI'm done with chasing your approval now\n\nThis voice will never be shut down\nEven if you won't believe me now\nEven as you tear my heart\nI will still make my art\n\nEven though you don't believe me now\nI know you won't believe me...\nI know you won't believe me...\nI know you won't believe me...\nI know you won't believe me now\nI know you won't believe me now"},{"title":"Forever Me","src":"../audioPlayer/audio/Forever%20Me.mp3","description":"a song about me being me","lyrics":"See me for me\nNot who you want me to be\nCause the truth from inside\nShould not need to hide\n\nIt matters not what you want me to be\nCause all of my life needs to be free\nI've bent enough to fit your design\nNow every broken piece is mine\n\nYou built a cage from borrowed fears\nI broke the lock through all these years\nYou can shout until your voice runs dry\nI'm done apologizing for my life\n\nEvery scar became my strength\nEvery step erased your chains\nI won't trade my soul away\nJust to make you feel okay\n\nSee me for me\nNot who you want me to be\nYou can't rewrite\nWhat's burning inside of me\n\nI'm done living your fantasy\nThis is my reality\nI'll never disappear\nI belong right here\n\nYou only loved the mask I'd wear\nNever cared who lived in there\nNow the mirror tells the truth\nAnd I finally see my proof\n\nYour opinions hold no weight\nI won't carry all your hate\nEvery heartbeat screams aloud\nI'm standing taller than your doubt\n\nGo ahead and scream my name\nThrow your blame into the fire\nEvery word just fuels the flame\nLifting me a little higher\n\n[Shout: gang]\nI won't kneel\nI won't break\nI won't bend for your sake\n\nSee me for me\nNot who you want me to be\nCause the truth from inside\nWill never again need to hide\n\nYou can throw me to the storm\nI won't change to fit your norm\nThis is all I'll ever be\nSo see the girl that's truly me\n\nsee me for me\nForever me\nsee the girl thats truly me\nsee me for me"},{"title":"I Wont Let You Bring Me Down","src":"../audioPlayer/audio/I%20Wont%20Let%20You%20Bring%20Me%20Down.mp3","description":"song of percervearance","lyrics":"I... won't... let... you... bring... me... down\nI... won't... let... you... turn... us... around\n\nHey! Hey! Hey!\nYeah! Yeah! Yeah!\n\nYou can throw your words like bullets\nYou can scream them in my face\nYou can try to tear me open\nTry to put me in my place\n\nBut I've walked through every fire\nI've survived your every lie\nYou can keep on pushing harder\nI will never step aside\n\nI can feel the pressure building\nI can hear the battle sound\nYou can give me everything you've got\nBut you'll never take me down!\n\nI won't let you bring me down\nI won't let you turn us around\nWe have come too far to lose it\nWe won't surrender now\n\nHey! Hey! Hey! Hey!\nLet me hear you make that sound\n\nYeah! Yeah!\nWe're still standing\nAnd you'll never take us down!\n\nEvery scar became a reason\nEvery fall became a fight\nEvery time you tried to break us\nWe came back with twice the might\n\nYou can build your walls around us\nYou can tell us we don't belong\nBut the louder you keep screaming\nThe louder we'll sing this song!\n\nI can feel the whole ground shaking\nHear the thunder all around\nYou can give us everything you've got\nBut you'll never take us down!\n\nI won't let you bring me down\nI won't let you turn us around\nWe have come too far to lose it\nWe won't surrender now\n\nHey! Hey! Hey! Hey!\nLet me hear you make that sound\n\nYeah! Yeah!\nWe're still standing\nAnd you'll never take us down!\n\nBring the thunder\nBring the rain\nBring your hatred\nBring your pain\n\nWe have fallen\nWe have bled\nBut we're not finished yet!\n\nI... won't... let... you... bring... me... down\n\nI... won't... let... you... turn... us... around\n\nI!\nWon't!\nBack!\nDown!\n\nI won't let you bring me down\nI won't let you turn us around\nWe have come too far to lose it\nWe won't surrender now!\n\nHey! Hey! Hey! Hey!\nLet the whole world hear the sound\n\nYeah! Yeah!\nWe're still standing\n\nAnd you'll never...\n\nYou'll never...\n\nTake!\n\nUs!\n\nDown!\n\nHey! Hey! Hey! Hey!\n\nYeah!"},{"title":"By No Command","src":"../audioPlayer/audio/By%20No%20Command.mp3","description":"","lyrics":"Why can't you see the person inside?\nWhy must I always be forced to hide?\nI've tried so hard just to make you understand\nBut maybe I should just give in to your demands...\n\nMaybe it's easier if I just let go...\nMaybe I should become what you want me to...\n\nNo.\n\nI will not conform to your expectations\nI will not live by your command\nYou are nothing in my life\nJust a nobody selling me advice\n\nYou can call me names til your face turns blue\nTell me my identity must be defined by you\nBut truth runs deeper then what you can see\nAND I WILL LIVE TO JUST BE ME\n\nI will not conform to your expectations\nI will not live by your command\nNo matter the hate you send at me\nI WAS BORN TO JUST LIVE FREE\n\nThis is not a game this is who i am\nAnd i will live as best as i can\nYou can shove me down but i will get back up\nPretend im fake but im still standing here\n\nI've spent too long surrounded by fear\nBUT I'LL MAKE SURE THE WHOLE WORLD HEARS!\n\nI WILL NOT CONFORM TO YOUR EXPECTATIONS\n\n(NO NO NO NO)\n\nI WILL NOT LIVE BY YOUR COMMAND\n\nOooooooo...\n\nYou tried to tell me who I had to be\nBut you will never take this life from me\nI fought too hard to finally find my way\nTo let your hatred take it all away\n\nI know my name, I know what's in my heart\nYou don't get a say in who you are\nYou threw your words and thought that I would break\nBut I am stronger with each step I take\n\nSo scream your hate, I'll answer with my pride\nI will not run, and I will never hide\nYou wanted me to bow down at your feet\nBUT I WILL NEVER EVER FACE DEFEAT!\n\nI WILL NOT CONFORM TO YOUR EXPECTATIONS\nI WILL NOT LIVE BY YOUR COMMAND\nNo matter the hate you send at me\nI WAS BORN TO JUST LIVE FREE\n\nYou can scream but you won't change my mind\nI won't leave who I am behind\nThis is my life, this is who I am\nAND I WILL NEVER LIVE BY YOUR COMMAND!\n\nI will not conform to your expectations\nI will not live by your command\n\n(Not your expectations...)\n(Not by your command...)\n\nI will not conform to your expectations\nI will not live by your command\n\nI will not conform to your expectations...\nI will not live by your command...\n\nI will not conform...\nTo your expectations...\n\nI will not live...\nBy your command..."},{"title":"You Thought Wrong","src":"../audioPlayer/audio/You%20Thought%20Wrong.mp3","description":"","lyrics":"I yell...\nI call...\nI scream at the world above\n\nI know...\nIn time...\n\nWe can find a way to love\n\nEvery second that goes by\nWe all just wonder why\nIn the heart of all we see\nLonging to just be free\n\nSomehow, some way\nWe can make it through this day\nIn the heart of all we see\nLet us all be free\n\nWe were never born to live behind a wall\nWe were never meant to watch each other fall\nTurn every open wound into an open door\nIf freedom has a heartbeat, let it shake the floor\n\nNo more drawing battle lines between our names\nNo more feeding yesterday another flame\nWe don't need permission to become something more\n\nIf freedom has a heartbeat, let it roar\n\nOoh...\nLet it roar\n\nI scream...\n\nLouder...\n\nJust so my heart is heard...\n\nBut you\nIgnore it\nAs you try to erase my life\n\nEvery time you turn away\nI still have so much to say\nIn the heart of who I’ll be\nYou cannot take my life from me\n\nSomehow, some way\nI will make it through this day\nIn the heart of who I’ll be\nI decide my destiny\n\nWe are more than all the scars the world can see\nWe are every voice they never thought would speak\nTake the weight they gave us, let it hit the ground\nWe have spent too many years just backing down\n\nEvery life deserves a chance to write its name\nEvery heart deserves to live without the shame\nStill you stand there telling me my life is wrong\nLike somehow you believed I'd play along—\n\nYou thought wrong.\n\nI won't surrender everything I've fought to find\nI won't let your hatred write the story of my life\nYou can raise your voice until there's nothing left to say\n\nBut you will never take my name away\n\nYou had your chance to tell me who I'm meant to be\nNow watch me turn your chains into a memory\nI spent too long believing I should disappear\n\nNow I'm the reason you will hear.\n\nSo yell...\nSo call...\n\nTry screaming louder than me\n\nYou wanted control\nYou wanted fear\n\nYou wanted to silence me\n\nYou should've never taught me how to scream."},{"title":"Bigotry","src":"../audioPlayer/audio/Bigotry.mp3","description":"","lyrics":"We will not cater to bigotry\nYou will never get to control me\n\nLet them scream till their face is blue\nYeah\nLet them yell as if their lie would come true\n\nNo, no, no, no, no, no, no, no\n\nWe will not cater to bigotry\nOh no\nYou will never ever get to control me\nNever\n\nScream it loud and we will yell right back\nYour hate only shows the empathy you lack\nYou are nothing to me and you will never be\nBut I will bring out the girl inside me\nYeah\n\nSo out of my way, I'm coming around\nYou will never ever get to bring me down\nYou act so big, yet you have nothing to say\nNow it's time you get out of my way\nYeah\n\nWe will not cater to bigotry\nOh no\nYou will never ever get to control me\nNever\n\nI won't make myself smaller just to keep your peace\nNo more\nI will stand as the woman I was born to be\nYeah\n\nEvery wall that you raise only strengthens me\nAnd I'm done giving you my apology\nThis is my life and I'm finally free\nSo get out of my way and let me be me!\n\nSay what you want, I have heard it before\nYour words don't have the power anymore\nYou can judge every choice that I make\nBut my life was never yours to take\nYeah\n\nI spent too long being pushed aside\nNow there's nothing left for me to hide\nI found my strength and I'm here to stay\nYou don't get to stand in my way\nYeah\n\nYou thought that I would bend until I broke\nThat I would swallow every word you spoke\nBut look at me now, I'm still standing tall\nAnd you never had that power at all!\n\nI'm done with the rules you made for my life\nDone being your target just for your spite\nThis is my body, my name, my destiny\n\nYou don't get a vote\nOn\nWho\nI\nGet\nTo\nBe!\n\nI am me!\nI am here!\nAnd I'm not going anywhere!\n\nSo scream your hate till your face turns blue\nMy life is real and I will live it true\nSay what you want, it won't make a difference\nI will not live for your permission\n\nI will never cater to your bigotry\nOh no\nYou will never ever get to control me\nI will never cater to your bigotry\nNo\nI will never cater to your bigotry\nOh no\nI will never cater to your bigotry\n\nI will never cater to your bigotry"},{"title":"Draw The Lines (explicit)","src":"../audioPlayer/audio/Draw%20The%20Lines%20(explicit).mp3","description":"","lyrics":"You don't get to tell a kid what's true\nYou don't get to choose what they go through\nYou don't get to stand there, pointing the way\nWe're drawing the line, and we're here to stay\n\nYou hide your hate behind what you believe\nWhile they're just fighting for the right to breathe\nYou call it protection, you call it debate\nBut their lives aren't yours to regulate\n\nYou can scream your judgment, spit your rage\nTry to lock their future inside your cage\nBut you don't own them, get out of their way\nThey're still gonna rise no matter what you say\n\nYou may win some battles\nBut you won't win this war\nEvery time you push us down\nWe'll come back wanting more\n\nWE ARE HERE TO STAY!\nYou can keep attacking us, you'll watch us soar\nWE WON'T GO AWAY!\nWe've survived everything you've thrown before\n\nYou're not their doctor\nYou're not what they need\nSo I do not give a shit\nWHAT YOU BELIEVE!\n\nLet the doctors talk, let therapists hear\nLet the kid speak without drowning in fear\nTheir care isn't yours to manipulate\nYou're not the one who gets to choose their fate\n\nStay out of their way, it's not your life\nThey're not asking you to approve how they survive\nWhile you keep screaming that something is wrong\nThey're finding the strength to keep holding on\n\nYou may win some battles\nBut you won't win this war\nEvery door you slam shut\nWE'LL BREAK OPEN ONE MORE!\n\nWE ARE HERE TO STAY!\nYou can keep attacking us, you'll watch us soar\nWE WON'T GO AWAY!\nWe've survived everything you've thrown before\n\nYou're not their doctor\nYou're not what they need\nSo I do not give a shit\nWHAT YOU BELIEVE!\n\nTHIS!\nISN'T!\nYOUR!\nLIFE!\n\nYou don't get to choose!\nYou don't get to decide!\nYou don't get to bury\nThe kid that's still inside!\n\nCall us whatever\nThrow us under the bus\nYour hatred means\nNOTHING TO US!\n\nYou want a debate?\nWE WANT THEM ALIVE!\n\nYou want them ashamed?\nWE WANT THEM TO THRIVE!\n\nYou want them silent?\nWE'LL GIVE THEM A VOICE!\n\nTheir life!\nTheir health!\nTHEIR FUCKING CHOICE!\n\nWE ARE HERE TO STAY!\nYou may win some battles, but we'll still endure\nWE WON'T GO AWAY!\nEvery attack only makes us fight more\n\nYou're not their doctor\nYou're not what they need\nSo I do not give a shit\nWHAT YOU BELIEVE!\n\nThis debate is over\nYour hatred has no wealth\nWe'll stand beside trans kids\nAnd fight for their health\n\nYou can throw your hatred\nYou can drown yourself in filth\n\nBut we're still here.\n\nWE'RE STILL HERE."},{"title":"Draw The Lines (censored)","src":"../audioPlayer/audio/Draw%20The%20Lines%20(censored).mp3","description":"","lyrics":"You don't get to tell a kid what's true\nYou don't get to choose what they go through\nYou don't get to stand there, pointing the way\nWe're drawing the line, and we're here to stay\n\nYou hide your hate behind what you believe\nWhile they're just fighting for the right to breathe\nYou call it protection, you call it debate\nBut their lives aren't yours to regulate\n\nYou can scream your judgment, spit your rage\nTry to lock their future inside your cage\nBut you don't own them, get out of their way\nThey're still gonna rise no matter what you say\n\nYou may win some battles\nBut you won't win this war\nEvery time you push us down\nWe'll come back wanting more\n\nWE ARE HERE TO STAY!\nYou can keep attacking us, you'll watch us soar\nWE WON'T GO AWAY!\nWe've survived everything you've thrown before\n\nYou're not their doctor\nYou're not what they need\nSo I do not give a s***\nWHAT YOU BELIEVE!\n\nLet the doctors talk, let therapists hear\nLet the kid speak without drowning in fear\nTheir care isn't yours to manipulate\nYou're not the one who gets to choose their fate\n\nStay out of their way, it's not your life\nThey're not asking you to approve how they survive\nWhile you keep screaming that something is wrong\nThey're finding the strength to keep holding on\n\nYou may win some battles\nBut you won't win this war\nEvery door you slam shut\nWE'LL BREAK OPEN ONE MORE!\n\nWE ARE HERE TO STAY!\nYou can keep attacking us, you'll watch us soar\nWE WON'T GO AWAY!\nWe've survived everything you've thrown before\n\nYou're not their doctor\nYou're not what they need\nSo I do not give a s***\nWHAT YOU BELIEVE!\n\nTHIS!\nISN'T!\nYOUR!\nLIFE!\n\nYou don't get to choose!\nYou don't get to decide!\nYou don't get to bury\nThe kid that's still inside!\n\nCall us whatever\nThrow us under the bus\nYour hatred means\nNOTHING TO US!\n\nYou want a debate?\nWE WANT THEM ALIVE!\n\nYou want them ashamed?\nWE WANT THEM TO THRIVE!\n\nYou want them silent?\nWE'LL GIVE THEM A VOICE!\n\nTheir life!\nTheir health!\nTHEIR F****** CHOICE!\n\nWE ARE HERE TO STAY!\nYou may win some battles, but we'll still endure\nWE WON'T GO AWAY!\nEvery attack only makes us fight more\n\nYou're not their doctor\nYou're not what they need\nSo I do not give a s***\nWHAT YOU BELIEVE!\n\nThis debate is over\nYour hatred has no wealth\nWe'll stand beside trans kids\nAnd fight for their health\n\nYou can throw your hatred\nYou can drown yourself in filth\n\nBut we're still here.\n\nWE'RE STILL HERE."}]}</script>
+  <script>
+(() => {
+  "use strict";
+  const { tracks } = JSON.parse(document.getElementById("album-data").textContent);
+  const get = (id) => document.getElementById(id);
+  const audio = get("audio");
+  const play = get("play");
+  const seek = get("seek");
+  const volume = get("volume");
+  const rows = Array.from(get("track-list").children);
+  let current = 0;
+  let playRequest = 0;
+  let stopped = false;
+
+  const status = (message) => { get("status").textContent = message; };
+  function time(seconds) {
+    if (!Number.isFinite(seconds)) return "--:--";
+    seconds = Math.max(0, Math.floor(seconds));
+    return Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0");
+  }
+  function updateProgress() {
+    const ready = Number.isFinite(audio.duration) && audio.duration > 0;
+    seek.disabled = !ready;
+    seek.max = ready ? audio.duration : 1;
+    seek.value = ready ? audio.currentTime : 0;
+    get("elapsed").textContent = time(audio.currentTime);
+    get("duration").textContent = time(audio.duration);
+    seek.setAttribute("aria-valuetext", time(audio.currentTime) + " of " + time(audio.duration));
+  }
+  function updateButtons() {
+    const playing = !audio.paused && !audio.ended;
+    play.textContent = playing ? "Pause" : "Play";
+    play.setAttribute("aria-pressed", String(playing));
+    rows.forEach((row, index) => {
+      const selected = index === current;
+      row.classList.toggle("active", selected);
+      const button = row.querySelector("button");
+      if (selected) button.setAttribute("aria-current", "true");
+      else button.removeAttribute("aria-current");
+      row.querySelector(".track-state").textContent = selected ? (playing ? "Playing" : "Selected") : "Play";
+    });
+  }
+  function updateVolume() {
+    volume.value = audio.volume;
+    const muted = audio.muted || audio.volume === 0;
+    get("mute").textContent = muted ? "Unmute" : "Mute";
+    get("mute").setAttribute("aria-pressed", String(muted));
+    get("volume-value").textContent = Math.round((muted ? 0 : audio.volume) * 100) + "%";
+  }
+  async function startPlayback() {
+    const request = ++playRequest;
+    try { await audio.play(); }
+    catch (error) {
+      if (request !== playRequest || error.name === "AbortError") return;
+      status(error.name === "NotAllowedError"
+        ? "Press Play to start the music."
+        : "Unable to play this track. Try another track or reload the page.");
+      updateButtons();
+    }
+  }
+  function selectTrack(index, autoplay) {
+    ++playRequest;
+    audio.pause();
+    current = index;
+    stopped = false;
+    const track = tracks[current];
+    audio.src = track.src;
+    audio.load();
+    get("now-title").textContent = track.title;
+    get("track-position").textContent = "Track " + (current + 1) + " of " + tracks.length;
+    get("song-description").textContent = track.description;
+    get("song-description").hidden = !track.description;
+    get("lyrics").textContent = track.lyrics;
+    get("lyrics-panel").hidden = !track.lyrics;
+    get("song-info").hidden = !track.description && !track.lyrics;
+    status("Ready to play " + track.title + ".");
+    updateProgress();
+    updateButtons();
+    if (autoplay) void startPlayback();
+  }
+  function skip(direction) {
+    const wasPlaying = !audio.paused && !audio.ended;
+    if (direction < 0 && audio.currentTime > 3) {
+      audio.currentTime = 0;
+      updateProgress();
+      return;
+    }
+    selectTrack((current + direction + tracks.length) % tracks.length, wasPlaying);
+  }
+
+  play.addEventListener("click", () => {
+    if (audio.paused) {
+      stopped = false;
+      if (audio.ended) audio.currentTime = 0;
+      void startPlayback();
+    } else { ++playRequest; audio.pause(); }
+  });
+  get("stop").addEventListener("click", () => {
+    ++playRequest;
+    stopped = true;
+    audio.pause();
+    audio.currentTime = 0;
+    updateProgress();
+    updateButtons();
+    status("Stopped. Press Play to restart " + tracks[current].title + ".");
+  });
+  get("previous").addEventListener("click", () => skip(-1));
+  get("next").addEventListener("click", () => skip(1));
+  rows.forEach((row, index) => row.querySelector("button").addEventListener("click", () => selectTrack(index, true)));
+  seek.addEventListener("input", () => {
+    if (!seek.disabled) audio.currentTime = Number(seek.value);
+    updateProgress();
+  });
+  volume.addEventListener("input", () => {
+    audio.volume = Number(volume.value);
+    if (audio.volume > 0) audio.muted = false;
+  });
+  get("mute").addEventListener("click", () => {
+    if (audio.muted || audio.volume === 0) { audio.muted = false; if (audio.volume === 0) audio.volume = 1; }
+    else audio.muted = true;
+  });
+  audio.addEventListener("volumechange", updateVolume);
+  ["loadedmetadata", "durationchange", "timeupdate", "emptied"].forEach((event) => audio.addEventListener(event, updateProgress));
+  audio.addEventListener("play", () => { updateButtons(); status("Playing " + tracks[current].title + "."); });
+  audio.addEventListener("pause", () => {
+    updateButtons();
+    if (!audio.ended && !stopped) status("Paused: " + tracks[current].title + ".");
+  });
+  audio.addEventListener("ended", () => {
+    if (current + 1 < tracks.length) selectTrack(current + 1, true);
+    else if (get("repeat").checked) selectTrack(0, true);
+    else { updateButtons(); status("Album finished. Choose a track to listen again."); }
+  });
+  audio.addEventListener("error", () => {
+    updateButtons();
+    status("Could not load " + tracks[current].title + ". Try another track.");
+  });
+
+  // Keep native controls as a fallback if JavaScript is disabled.
+  audio.controls = false;
+  get("custom-controls").hidden = false;
+  get("previous").disabled = tracks.length < 2;
+  get("next").disabled = tracks.length < 2;
+  selectTrack(0, false);
+  updateVolume();
+})();
+</script>
+</body>
+</html>

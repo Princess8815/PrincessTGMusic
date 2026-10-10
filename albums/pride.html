@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Listen to Pride by PrincessTG.">
+  <title>Pride | PrincessTG Music</title>
+  <style>
+:root {
+  --bg: #11131a;
+  --card: #1d2230;
+  --text: #f3f5ff;
+  --muted: #b9bfd4;
+  --accent: #9f7bff;
+  --accent-hover: #bda7ff;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: linear-gradient(160deg, #0d1018, #171d2a 45%, #11131a);
+  color: var(--text);
+  line-height: 1.5;
+}
+.hero, main, footer { width: min(960px, 92vw); margin: 0 auto; }
+.hero {
+  background: url("../images/logo-removebg-preview.png") center / contain no-repeat;
+  min-height: 240px;
+  display: flex;
+  align-items: stretch;
+}
+.hero a { width: 100%; min-height: 240px; border-radius: 16px; }
+section, footer {
+  background: rgba(29, 34, 48, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+h1, h2 { margin: 0 0 0.5rem; overflow-wrap: anywhere; }
+h1 { font-size: clamp(1.8rem, 6vw, 2.8rem); }
+p { margin: 0.5rem 0; }
+.eyebrow, .release, .description, .muted, .status { color: var(--muted); }
+.eyebrow { margin-top: 0; color: var(--accent-hover); }
+.description, #song-description { white-space: pre-wrap; overflow-wrap: anywhere; }
+.back-link, footer a { color: var(--accent); }
+.back-link { display: inline-block; margin-bottom: 1rem; text-decoration: none; }
+a:hover { color: var(--accent-hover); }
+button, input { font: inherit; }
+button {
+  background: #101521;
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--accent-hover); }
+button:disabled, input:disabled { opacity: 0.5; cursor: default; }
+button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visible {
+  outline: 3px solid var(--accent-hover);
+  outline-offset: 3px;
+}
+#play { background: var(--accent); border-color: var(--accent); color: #101521; font-weight: bold; }
+#play:hover { background: var(--accent-hover); }
+.controls, .volume-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.65rem; }
+.controls { margin: 1rem 0; }
+.progress { display: flex; gap: 0.75rem; align-items: center; margin: 1rem 0; }
+.progress span { min-width: 3.25rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.progress span:last-child { text-align: right; }
+input[type="range"] { accent-color: var(--accent); min-width: 0; cursor: pointer; }
+#seek { flex: 1; width: 100%; }
+#volume { width: min(150px, 32vw); }
+.repeat { margin-left: auto; cursor: pointer; }
+.repeat input { accent-color: var(--accent); width: 1.1rem; height: 1.1rem; vertical-align: middle; }
+.status { min-height: 1.5em; }
+audio { width: 100%; display: block; margin: 1rem 0; }
+audio:not([controls]) { display: none; }
+.track-list { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: 0.55rem; }
+.track-list button {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  text-align: left;
+  width: 100%;
+}
+.track-list .active button { border-color: var(--accent); background: rgba(159, 123, 255, 0.12); }
+.track-number, .track-state { color: var(--muted); }
+.track-state { font-size: 0.85rem; }
+.track-title { overflow-wrap: anywhere; }
+summary { cursor: pointer; color: var(--accent-hover); padding: 0.5rem 0; }
+.lyrics {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: var(--text);
+  background: #101521;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin: 0.5rem 0 0;
+}
+footer { margin-bottom: 2rem; color: var(--muted); }
+[hidden] { display: none !important; }
+@media (max-width: 480px) {
+  .hero, .hero a { min-height: 180px; }
+  section, footer { padding: 1rem; }
+  .controls button { flex: 1 1 calc(50% - 0.65rem); }
+  .repeat { margin-left: 0; width: 100%; }
+  .track-list button { gap: 0.35rem; padding: 0.65rem; }
+}
+</style>
+</head>
+<body>
+  <header class="hero"><a href="../index.html" aria-label="PrincessTG Music home"></a></header>
+  <main>
+    <a class="back-link" href="./index.html">← All albums</a>
+    <section aria-labelledby="album-title">
+      <p class="eyebrow">PrincessTG Music</p>
+      <h1 id="album-title">Pride</h1>
+      <p class="release"><strong>Release date:</strong> 2026-2-29</p>
+      
+    </section>
+    <section aria-labelledby="now-title">
+      <p class="muted">Now playing</p>
+      <h2 id="now-title">Better Than You</h2>
+      <p class="muted" id="track-position">Track 1 of 12</p>
+      <audio id="audio" controls preload="metadata" src="../audioPlayer/audio/Better%20Than%20You.mp3">Your browser does not support audio playback.</audio>
+      <div id="custom-controls" hidden>
+        <div class="controls">
+          <button id="previous" type="button" aria-label="Previous track">Previous</button>
+          <button id="play" type="button" aria-pressed="false">Play</button>
+          <button id="stop" type="button">Stop</button>
+          <button id="next" type="button" aria-label="Next track">Next</button>
+        </div>
+        <div class="progress">
+          <span id="elapsed">0:00</span>
+          <input id="seek" type="range" min="0" max="1" step="0.1" value="0" aria-label="Seek in current track" disabled>
+          <span id="duration">--:--</span>
+        </div>
+        <div class="volume-row">
+          <button id="mute" type="button" aria-pressed="false">Mute</button>
+          <label for="volume">Volume</label>
+          <input id="volume" type="range" min="0" max="1" step="0.05" value="1">
+          <span id="volume-value">100%</span>
+          <label class="repeat"><input id="repeat" type="checkbox"> Repeat album</label>
+        </div>
+      </div>
+      <p id="status" class="status" role="status" aria-live="polite">Choose Play to start the album.</p>
+      <noscript><p>The native audio controls play the first track. Enable JavaScript for the full playlist.</p></noscript>
+    </section>
+    <section aria-labelledby="tracks-heading">
+      <h2 id="tracks-heading">Album tracks</h2>
+      <p class="muted">12 songs · Select a song to play it.</p>
+      <ol id="track-list" class="track-list">
+        <li><button type="button" aria-label="Play Better Than You"><span class="track-number">1</span><span class="track-title">Better Than You</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Can You Hear Me Calling"><span class="track-number">2</span><span class="track-title">Can You Hear Me Calling</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Carry My Name"><span class="track-number">3</span><span class="track-title">Carry My Name</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Every Girl, Every Boy"><span class="track-number">4</span><span class="track-title">Every Girl, Every Boy</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play girl i am"><span class="track-number">5</span><span class="track-title">girl i am</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play invisible"><span class="track-number">6</span><span class="track-title">invisible</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play let me be"><span class="track-number">7</span><span class="track-title">let me be</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Now I know"><span class="track-number">8</span><span class="track-title">Now I know</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Rejection"><span class="track-number">9</span><span class="track-title">Rejection</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Will The Smoke Clear"><span class="track-number">10</span><span class="track-title">Will The Smoke Clear</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Before Its Too Late"><span class="track-number">11</span><span class="track-title">Before Its Too Late</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play echoes"><span class="track-number">12</span><span class="track-title">echoes</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+      </ol>
+    </section>
+    <section id="song-info" aria-labelledby="song-heading" hidden>
+      <h2 id="song-heading">Song details</h2>
+      <p id="song-description" hidden></p>
+      <details id="lyrics-panel" hidden>
+        <summary>Lyrics</summary>
+        <pre id="lyrics" class="lyrics"></pre>
+      </details>
+    </section>
+  </main>
+  <footer>PrincessTG Music · <a href="./index.html">All albums</a> · <a href="../index.html">Home</a></footer>
+  <script id="album-data" type="application/json">{"tracks":[{"title":"Better Than You","src":"../audioPlayer/audio/Better%20Than%20You.mp3","description":"","lyrics":""},{"title":"Can You Hear Me Calling","src":"../audioPlayer/audio/Can%20You%20Hear%20Me%20Calling.mp3","description":"","lyrics":""},{"title":"Carry My Name","src":"../audioPlayer/audio/Carry%20My%20Name.mp3","description":"","lyrics":""},{"title":"Every Girl, Every Boy","src":"../audioPlayer/audio/Every%20Girl,%20Every%20Boy.mp3","description":"","lyrics":""},{"title":"girl i am","src":"../audioPlayer/audio/girl%20i%20am.mp3","description":"","lyrics":""},{"title":"invisible","src":"../audioPlayer/audio/invisible.mp3","description":"","lyrics":""},{"title":"let me be","src":"../audioPlayer/audio/let%20me%20be.mp3","description":"","lyrics":""},{"title":"Now I know","src":"../audioPlayer/audio/Now%20I%20know.mp3","description":"","lyrics":""},{"title":"Rejection","src":"../audioPlayer/audio/Rejection.mp3","description":"","lyrics":""},{"title":"Will The Smoke Clear","src":"../audioPlayer/audio/Will%20The%20Smoke%20Clear.mp3","description":"","lyrics":""},{"title":"Before Its Too Late","src":"../audioPlayer/audio/Before%20Its%20Too%20Late.mp3","description":"A song following a very real concept around Trans Suicide","lyrics":"She used to run through open fields\nLaughing loud, no wounds concealed\nNo one told her who to be\nBack when life felt wild and free\n\nBut mirrors started twisting truth\nShowing someone she outgrew\nEvery day she played along\nSmiling through a quiet wrong\n\nIf you see someone alone tonight\nDon’t just pass them in the light\nSay their name, ask if they're okay\nSmall words can change a day\n\nHold a hand before it’s late\nHelp them carry all that weight\nOne small spark, one simple start\nCan pull someone back from the dark\n\nShe learned the lines, she knew the role\nBuilt a mask to hide her soul\nWalked through halls like she belonged\nWhile the nights kept stretching long\n\nChanged her hair and changed her name\nTiny steps against the pain\nLittle fires in the gray\nTrying just to find a way\n\nIf you see someone alone tonight\nDon’t just pass them in the light\nSay their name, ask if they're okay\nSmall words can change a day\n\nHold a hand before it’s late\nHelp them carry all that weight\nOne small spark, one simple start\nCan pull someone back from the dark\n\nOne night silence filled the room\nHeavy like a coming storm\nNo one heard the quiet break\nNo one saw the choice she’d make\n\nNow the halls still hold her trace\nMemories time can’t erase\nAnd the story left behind\nIs a warning for our kind\n\nMaybe kindness\nMaybe care\nCould have told her someone’s there\n\nMaybe one voice\nThrough the pain\nCould have helped her try again\n\nIf you see someone alone tonight\nBe the reason they still fight\nSay their name and let them stay\nHelp them see another day\n\nEvery heart desires a spark\nEvery soul desires the dark\nTo be broken, then restart\nBefore they disappear apart"},{"title":"echoes","src":"../audioPlayer/audio/echoes.mp3","description":"","lyrics":"Midnight streets and I’m wide awake\nAll these mirrors showing my mistakes\nEveryone thinks they know my name\nBut every time it feels the same\n\nI’m done hiding in the dark\nDone pretending I’m someone they want\nThere’s a voice inside my chest\nSaying now’s the time to confess\n\nHere I am, yeah I’m breaking through\nNo more living someone else’s truth\nI’ve been quiet way too long\nNow I’m louder than your wrongs\n\nSay what you want, I’m standing tall\nI won’t disappear to make you comfortable\nAnd if the whole world turns away\nI’ll still be screaming my name\n\nEvery whisper every stare\nLike they’re trying to erase me there\nBut I’m stronger than the fear\nI’m the truth you hate to hear\n\nYou can laugh and shut the door\nBut I’m not hiding anymore\nI’ve been fighting just to breathe\nNow you’re finally hearing me\n\nHere I am, yeah I’m breaking through\nNo more living someone else’s truth\nI’ve been quiet way too long\nNow I’m louder than your wrongs\n\nSay what you want, I’m standing tall\nI won’t disappear to make you comfortable\nAnd if the whole world turns away\nI’ll still be screaming my name\n\nEvery scar became a spark\nLighting fires in the dark\nI was lost but now I see\nThere was never something wrong with me\n\nEvery step I take tonight\nPulls me closer to the light\nYou can try to pull me down\nBut I’m done backing out\n\nYou don’t get to rewrite me\nYou don’t get to silence me\nI’ve been buried under your doubt too long\n\nAnd I’m done playing small\n\nEvery girl and every boy and in between better listen when I say this now\n\nI’m alive and I’m not going away\n\nHere I am, yeah I’m breaking through\nNo more hiding just to comfort you\nI’ve been quiet way too long\nNow the truth is in this song\n\nSay what you want, I’m standing tall\nI won’t disappear to make you comfortable\nAnd if the whole world turns away\nI’ll still be screaming my name"}]}</script>
+  <script>
+(() => {
+  "use strict";
+  const { tracks } = JSON.parse(document.getElementById("album-data").textContent);
+  const get = (id) => document.getElementById(id);
+  const audio = get("audio");
+  const play = get("play");
+  const seek = get("seek");
+  const volume = get("volume");
+  const rows = Array.from(get("track-list").children);
+  let current = 0;
+  let playRequest = 0;
+  let stopped = false;
+
+  const status = (message) => { get("status").textContent = message; };
+  function time(seconds) {
+    if (!Number.isFinite(seconds)) return "--:--";
+    seconds = Math.max(0, Math.floor(seconds));
+    return Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0");
+  }
+  function updateProgress() {
+    const ready = Number.isFinite(audio.duration) && audio.duration > 0;
+    seek.disabled = !ready;
+    seek.max = ready ? audio.duration : 1;
+    seek.value = ready ? audio.currentTime : 0;
+    get("elapsed").textContent = time(audio.currentTime);
+    get("duration").textContent = time(audio.duration);
+    seek.setAttribute("aria-valuetext", time(audio.currentTime) + " of " + time(audio.duration));
+  }
+  function updateButtons() {
+    const playing = !audio.paused && !audio.ended;
+    play.textContent = playing ? "Pause" : "Play";
+    play.setAttribute("aria-pressed", String(playing));
+    rows.forEach((row, index) => {
+      const selected = index === current;
+      row.classList.toggle("active", selected);
+      const button = row.querySelector("button");
+      if (selected) button.setAttribute("aria-current", "true");
+      else button.removeAttribute("aria-current");
+      row.querySelector(".track-state").textContent = selected ? (playing ? "Playing" : "Selected") : "Play";
+    });
+  }
+  function updateVolume() {
+    volume.value = audio.volume;
+    const muted = audio.muted || audio.volume === 0;
+    get("mute").textContent = muted ? "Unmute" : "Mute";
+    get("mute").setAttribute("aria-pressed", String(muted));
+    get("volume-value").textContent = Math.round((muted ? 0 : audio.volume) * 100) + "%";
+  }
+  async function startPlayback() {
+    const request = ++playRequest;
+    try { await audio.play(); }
+    catch (error) {
+      if (request !== playRequest || error.name === "AbortError") return;
+      status(error.name === "NotAllowedError"
+        ? "Press Play to start the music."
+        : "Unable to play this track. Try another track or reload the page.");
+      updateButtons();
+    }
+  }
+  function selectTrack(index, autoplay) {
+    ++playRequest;
+    audio.pause();
+    current = index;
+    stopped = false;
+    const track = tracks[current];
+    audio.src = track.src;
+    audio.load();
+    get("now-title").textContent = track.title;
+    get("track-position").textContent = "Track " + (current + 1) + " of " + tracks.length;
+    get("song-description").textContent = track.description;
+    get("song-description").hidden = !track.description;
+    get("lyrics").textContent = track.lyrics;
+    get("lyrics-panel").hidden = !track.lyrics;
+    get("song-info").hidden = !track.description && !track.lyrics;
+    status("Ready to play " + track.title + ".");
+    updateProgress();
+    updateButtons();
+    if (autoplay) void startPlayback();
+  }
+  function skip(direction) {
+    const wasPlaying = !audio.paused && !audio.ended;
+    if (direction < 0 && audio.currentTime > 3) {
+      audio.currentTime = 0;
+      updateProgress();
+      return;
+    }
+    selectTrack((current + direction + tracks.length) % tracks.length, wasPlaying);
+  }
+
+  play.addEventListener("click", () => {
+    if (audio.paused) {
+      stopped = false;
+      if (audio.ended) audio.currentTime = 0;
+      void startPlayback();
+    } else { ++playRequest; audio.pause(); }
+  });
+  get("stop").addEventListener("click", () => {
+    ++playRequest;
+    stopped = true;
+    audio.pause();
+    audio.currentTime = 0;
+    updateProgress();
+    updateButtons();
+    status("Stopped. Press Play to restart " + tracks[current].title + ".");
+  });
+  get("previous").addEventListener("click", () => skip(-1));
+  get("next").addEventListener("click", () => skip(1));
+  rows.forEach((row, index) => row.querySelector("button").addEventListener("click", () => selectTrack(index, true)));
+  seek.addEventListener("input", () => {
+    if (!seek.disabled) audio.currentTime = Number(seek.value);
+    updateProgress();
+  });
+  volume.addEventListener("input", () => {
+    audio.volume = Number(volume.value);
+    if (audio.volume > 0) audio.muted = false;
+  });
+  get("mute").addEventListener("click", () => {
+    if (audio.muted || audio.volume === 0) { audio.muted = false; if (audio.volume === 0) audio.volume = 1; }
+    else audio.muted = true;
+  });
+  audio.addEventListener("volumechange", updateVolume);
+  ["loadedmetadata", "durationchange", "timeupdate", "emptied"].forEach((event) => audio.addEventListener(event, updateProgress));
+  audio.addEventListener("play", () => { updateButtons(); status("Playing " + tracks[current].title + "."); });
+  audio.addEventListener("pause", () => {
+    updateButtons();
+    if (!audio.ended && !stopped) status("Paused: " + tracks[current].title + ".");
+  });
+  audio.addEventListener("ended", () => {
+    if (current + 1 < tracks.length) selectTrack(current + 1, true);
+    else if (get("repeat").checked) selectTrack(0, true);
+    else { updateButtons(); status("Album finished. Choose a track to listen again."); }
+  });
+  audio.addEventListener("error", () => {
+    updateButtons();
+    status("Could not load " + tracks[current].title + ". Try another track.");
+  });
+
+  // Keep native controls as a fallback if JavaScript is disabled.
+  audio.controls = false;
+  get("custom-controls").hidden = false;
+  get("previous").disabled = tracks.length < 2;
+  get("next").disabled = tracks.length < 2;
+  selectTrack(0, false);
+  updateVolume();
+})();
+</script>
+</body>
+</html>
