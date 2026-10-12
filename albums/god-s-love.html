@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Listen to God&#39;s Love by PrincessTG.">
+  <title>God&#39;s Love | PrincessTG Music</title>
+  <style>
+:root {
+  --bg: #11131a;
+  --card: #1d2230;
+  --text: #f3f5ff;
+  --muted: #b9bfd4;
+  --accent: #9f7bff;
+  --accent-hover: #bda7ff;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: linear-gradient(160deg, #0d1018, #171d2a 45%, #11131a);
+  color: var(--text);
+  line-height: 1.5;
+}
+.hero, main, footer { width: min(960px, 92vw); margin: 0 auto; }
+.hero {
+  background: url("../images/logo-removebg-preview.png") center / contain no-repeat;
+  min-height: 240px;
+  display: flex;
+  align-items: stretch;
+}
+.hero a { width: 100%; min-height: 240px; border-radius: 16px; }
+section, footer {
+  background: rgba(29, 34, 48, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+h1, h2 { margin: 0 0 0.5rem; overflow-wrap: anywhere; }
+h1 { font-size: clamp(1.8rem, 6vw, 2.8rem); }
+p { margin: 0.5rem 0; }
+.eyebrow, .release, .description, .muted, .status { color: var(--muted); }
+.eyebrow { margin-top: 0; color: var(--accent-hover); }
+.description, #song-description { white-space: pre-wrap; overflow-wrap: anywhere; }
+.back-link, footer a { color: var(--accent); }
+.back-link { display: inline-block; margin-bottom: 1rem; text-decoration: none; }
+a:hover { color: var(--accent-hover); }
+button, input { font: inherit; }
+button {
+  background: #101521;
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--accent-hover); }
+button:disabled, input:disabled { opacity: 0.5; cursor: default; }
+button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visible {
+  outline: 3px solid var(--accent-hover);
+  outline-offset: 3px;
+}
+#play { background: var(--accent); border-color: var(--accent); color: #101521; font-weight: bold; }
+#play:hover { background: var(--accent-hover); }
+.controls, .volume-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.65rem; }
+.controls { margin: 1rem 0; }
+.progress { display: flex; gap: 0.75rem; align-items: center; margin: 1rem 0; }
+.progress span { min-width: 3.25rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.progress span:last-child { text-align: right; }
+input[type="range"] { accent-color: var(--accent); min-width: 0; cursor: pointer; }
+#seek { flex: 1; width: 100%; }
+#volume { width: min(150px, 32vw); }
+.repeat { margin-left: auto; cursor: pointer; }
+.repeat input { accent-color: var(--accent); width: 1.1rem; height: 1.1rem; vertical-align: middle; }
+.status { min-height: 1.5em; }
+audio { width: 100%; display: block; margin: 1rem 0; }
+audio:not([controls]) { display: none; }
+.track-list { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: 0.55rem; }
+.track-list button {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  text-align: left;
+  width: 100%;
+}
+.track-list .active button { border-color: var(--accent); background: rgba(159, 123, 255, 0.12); }
+.track-number, .track-state { color: var(--muted); }
+.track-state { font-size: 0.85rem; }
+.track-title { overflow-wrap: anywhere; }
+summary { cursor: pointer; color: var(--accent-hover); padding: 0.5rem 0; }
+.lyrics {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: var(--text);
+  background: #101521;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin: 0.5rem 0 0;
+}
+footer { margin-bottom: 2rem; color: var(--muted); }
+[hidden] { display: none !important; }
+@media (max-width: 480px) {
+  .hero, .hero a { min-height: 180px; }
+  section, footer { padding: 1rem; }
+  .controls button { flex: 1 1 calc(50% - 0.65rem); }
+  .repeat { margin-left: 0; width: 100%; }
+  .track-list button { gap: 0.35rem; padding: 0.65rem; }
+}
+</style>
+</head>
+<body>
+  <header class="hero"><a href="../index.html" aria-label="PrincessTG Music home"></a></header>
+  <main>
+    <a class="back-link" href="./index.html">← All albums</a>
+    <section aria-labelledby="album-title">
+      <p class="eyebrow">PrincessTG Music</p>
+      <h1 id="album-title">God&#39;s Love</h1>
+      <p class="release"><strong>Release date:</strong> tbd</p>
+      
+    </section>
+    <section aria-labelledby="now-title">
+      <p class="muted">Now playing</p>
+      <h2 id="now-title">If I Go To Heaven Tonight</h2>
+      <p class="muted" id="track-position">Track 1 of 14</p>
+      <audio id="audio" controls preload="metadata" src="../audioPlayer/audio/If%20I%20Go%20To%20Heaven%20Tonight.mp3">Your browser does not support audio playback.</audio>
+      <div id="custom-controls" hidden>
+        <div class="controls">
+          <button id="previous" type="button" aria-label="Previous track">Previous</button>
+          <button id="play" type="button" aria-pressed="false">Play</button>
+          <button id="stop" type="button">Stop</button>
+          <button id="next" type="button" aria-label="Next track">Next</button>
+        </div>
+        <div class="progress">
+          <span id="elapsed">0:00</span>
+          <input id="seek" type="range" min="0" max="1" step="0.1" value="0" aria-label="Seek in current track" disabled>
+          <span id="duration">--:--</span>
+        </div>
+        <div class="volume-row">
+          <button id="mute" type="button" aria-pressed="false">Mute</button>
+          <label for="volume">Volume</label>
+          <input id="volume" type="range" min="0" max="1" step="0.05" value="1">
+          <span id="volume-value">100%</span>
+          <label class="repeat"><input id="repeat" type="checkbox"> Repeat album</label>
+        </div>
+      </div>
+      <p id="status" class="status" role="status" aria-live="polite">Choose Play to start the album.</p>
+      <noscript><p>The native audio controls play the first track. Enable JavaScript for the full playlist.</p></noscript>
+    </section>
+    <section aria-labelledby="tracks-heading">
+      <h2 id="tracks-heading">Album tracks</h2>
+      <p class="muted">14 songs · Select a song to play it.</p>
+      <ol id="track-list" class="track-list">
+        <li><button type="button" aria-label="Play If I Go To Heaven Tonight"><span class="track-number">1</span><span class="track-title">If I Go To Heaven Tonight</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Until We Meet In Heaven"><span class="track-number">2</span><span class="track-title">Until We Meet In Heaven</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Im Still His Child"><span class="track-number">3</span><span class="track-title">Im Still His Child</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Faith Is Not A Weapon"><span class="track-number">4</span><span class="track-title">Faith Is Not A Weapon</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Even Jesus Wept"><span class="track-number">5</span><span class="track-title">Even Jesus Wept</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play A Thousand Reason"><span class="track-number">6</span><span class="track-title">A Thousand Reason</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Not Every Church Is Home"><span class="track-number">7</span><span class="track-title">Not Every Church Is Home</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Let Your Light Shine"><span class="track-number">8</span><span class="track-title">Let Your Light Shine</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play The Hands That Held Me"><span class="track-number">9</span><span class="track-title">The Hands That Held Me</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play The Devil Doesnt Own Me"><span class="track-number">10</span><span class="track-title">The Devil Doesnt Own Me</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Unshakable"><span class="track-number">11</span><span class="track-title">Unshakable</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Made In Your Image"><span class="track-number">12</span><span class="track-title">Made In Your Image</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play When Heaven Feels Silent"><span class="track-number">13</span><span class="track-title">When Heaven Feels Silent</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play scream to the heavens (remake)"><span class="track-number">14</span><span class="track-title">scream to the heavens (remake)</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+      </ol>
+    </section>
+    <section id="song-info" aria-labelledby="song-heading">
+      <h2 id="song-heading">Song details</h2>
+      <p id="song-description" hidden></p>
+      <details id="lyrics-panel">
+        <summary>Lyrics</summary>
+        <pre id="lyrics" class="lyrics">If i go to heaven tonight
+Will you hold me in your arms?
+Will you gently wipe my tears
+And keep me safe from harm?
+
+Will you know the tears i&#39;ve cried
+And the battles i have fought?
+Will you gently take my hand
+And give me peace i&#39;ve sought?
+
+If i go to heaven tonight
+Let me rest within your love
+Let me feel the peace i&#39;ve prayed for
+In your kingdom up above
+
+I don&#39;t need a golden crown
+Or a mansion in the sky
+I just want to feel your arms
+And know i need not cry
+
+If i have a thousand days to go
+Please stay with me through the night
+Hold me in your loving arms
+And help me find the light</pre>
+      </details>
+    </section>
+  </main>
+  <footer>PrincessTG Music · <a href="./index.html">All albums</a> · <a href="../index.html">Home</a></footer>
+  <script id="album-data" type="application/json">{"tracks":[{"title":"If I Go To Heaven Tonight","src":"../audioPlayer/audio/If%20I%20Go%20To%20Heaven%20Tonight.mp3","description":"","lyrics":"If i go to heaven tonight\nWill you hold me in your arms?\nWill you gently wipe my tears\nAnd keep me safe from harm?\n\nWill you know the tears i've cried\nAnd the battles i have fought?\nWill you gently take my hand\nAnd give me peace i've sought?\n\nIf i go to heaven tonight\nLet me rest within your love\nLet me feel the peace i've prayed for\nIn your kingdom up above\n\nI don't need a golden crown\nOr a mansion in the sky\nI just want to feel your arms\nAnd know i need not cry\n\nIf i have a thousand days to go\nPlease stay with me through the night\nHold me in your loving arms\nAnd help me find the light"},{"title":"Until We Meet In Heaven","src":"../audioPlayer/audio/Until%20We%20Meet%20In%20Heaven.mp3","description":"","lyrics":"Your favorite chair is empty now\nI try to carry on somehow\nYour picture rests beside my bed\nWith all the words i never said\n\nI still reach out to call your phone\nThen realize i'm here alone\nI close my eyes and start to pray\nThat god is holding you today\n\nUntil we meet in heaven\nI'll keep your memory near\nAnd trust that god is holding you\nBeyond the pain and fear\n\nUntil we meet in heaven\nWhere no more tears will fall\nI'll carry you within my heart\nUntil i hear his call\n\nI found your sweater yesterday\nAnd held it close as tears gave way\nI wonder if you've found your peace\nWhere all your suffering finally ceased\n\nI hope he greeted you with love\nAnd welcomed you to peace above\nI hope the pain you knew is gone\nAnd heaven feels like coming home\n\nUntil we meet in heaven\nI'll hold the love we shared\nAnd thank the lord for every day\nThat you were with me here\n\nUntil we meet in heaven\nWhen all our tears are through\nI'll trust that god is holding you\nUntil i can hold you too\n\nYour favorite chair is empty still\nAnd i suppose it always will\nBut when i whisper one more prayer\nI trust that god is with you there"},{"title":"Im Still His Child","src":"../audioPlayer/audio/Im%20Still%20His%20Child.mp3","description":"","lyrics":"You can question who i am\nYou can say i don't belong\nBut the love that god has given\nHas been with me all along\n\nI've heard the whispers in the crowd\nThe voices shouting far too loud\nThey tell me what i ought to be\nAs though they know what's best for me\n\nBut i was never theirs to claim\nOr theirs to burden with their shame\nMy faith is something deep inside\nA love i never need to hide\n\nI'm still his child\nThrough every trial\nThrough every tear\nAnd every smile\n\nYou cannot take\nHis love from me\nFor in his eyes\nI'm meant to be\n\nI've walked through storms they never knew\nAnd prayed for strength to make it through\nWhen all the world had turned away\nHis love still helped me face the day\n\nI don't need strangers to decide\nIf i'm deserving of his light\nFor every prayer i've ever made\nReminds me that his love remains\n\nI'm still his child\nNo matter what they say\nHis love will guide me\nThrough another day\n\nNo words of hatred\nCan change what's true\nMy heart belongs to god\nIn everything i do\n\nI may be different in their eyes\nBut heaven knows the tears i've cried\nAnd when they say i don't belong\nHis love reminds me they are wrong\n\nI'm still his child\nAnd i will always be\nA soul that god has loved\nFor all eternity\n\nLet the world keep talking\nLet them question me\nFor nothing they can say\nWill change his love for me\n\nI don't need their permission\nI don't need their approval\nI know who holds my heart\nAnd his love is unconditional"},{"title":"Faith Is Not A Weapon","src":"../audioPlayer/audio/Faith%20Is%20Not%20A%20Weapon.mp3","description":"","lyrics":"Faith is not a weapon\nTo use against the weak\nLove is not a privilege\nReserved for those who speak\n\nIn the name of your beliefs\nYou tear the world apart\nBut god never asked you\nTo turn away a heart\n\nYou hold the bible in your hand\nAnd claim to know what god has planned\nYou speak of mercy, love, and grace\nThen throw your judgment in my face\n\nYou build your walls and close your doors\nDeciding who his love is for\nBut every soul deserves to know\nThe kindness jesus came to show\n\nYou preach forgiveness, yet condemn\nThe very ones who need a friend\nYou say your hatred comes from love\nBut is that what he taught above?\n\nFaith is not a weapon\nTo strike another down\nThe cross was never meant to be\nA tool to claim your crown\n\nYou cannot preach compassion\nWhile tearing lives apart\nFor faith without the love\nIs just an empty heart\n\nHe walked among the cast aside\nAnd stood with those denied their pride\nHe touched the sick and fed the poor\nAnd welcomed strangers through the door\n\nHe never asked for wealth or fame\nOr used his teachings to bring shame\nHe showed the world another way\nYet some have twisted what he'd say\n\nIf you believe that god is love\nThen show the world what you're made of\nDon't hide behind a holy name\nTo justify another's pain\n\nFaith is not a weapon\nAnd love is not a war\nYou cannot claim to follow him\nWhile hating those he died for\n\nSo put aside your judgment\nLet kindness take its place\nFor no one here can earn the right\nTo limit heaven's grace\nTo limit heaven's grace\n\nA bible in your hand\nMeans nothing if you choose\nTo turn the words of love\nInto something meant to bruise"},{"title":"Even Jesus Wept","src":"../audioPlayer/audio/Even%20Jesus%20Wept.mp3","description":"","lyrics":"They tell me faith should make me strong\nThat tears mean something must be wrong\nBut in the pages that i've read\nI found the tears that jesus shed\n\nHe stood before a grieving crowd\nWhere sorrow spoke without a sound\nHe saw the pain upon each face\nAnd shared their tears within that place\n\nHe knew that death would not remain\nYet still he felt their human pain\nAnd in that moment, love was kept\nWithin the tears that jesus wept\n\nEven jesus wept\nWhen his heart was filled with pain\nEven jesus wept\nThough he knew they'd meet again\n\nSo why must i hide\nThe tears that i have cried?\nIf the son of god could weep\nThen why can't i?\n\nHe prayed beneath the olive trees\nAnd fell before god on his knees\nHe faced the weight of what would come\nYet prayed that god's own will be done\n\nAnd when i kneel beneath my fears\nI know that he understands my tears\nFor faith was never meant to be\nA life where sorrow cannot reach me\n\nEven jesus wept\nWhen the world was filled with grief\nEven jesus wept\nAnd still he held onto belief\n\nSo let me cry tonight\nWithout questioning my light\nIf the son of god could weep\nThen my tears are alright\n\nI don't need someone telling me\nThat faith will make my sadness leave\nI only need to know that you\nHave felt the sorrow i've been through\n\nAnd when the tears begin to fall\nI know you understand them all\nFor in the shortest verse i've kept\nI found these words...\n\nJesus wept."},{"title":"A Thousand Reason","src":"../audioPlayer/audio/A%20Thousand%20Reason.mp3","description":"","lyrics":"The warmth of sunlight on my face\nThe morning dew, a quiet place\nThe sound of laughter down the hall\nThe little things that mean it all\n\nThe smell of rain upon the ground\nThe songs of birds, their peaceful sound\nThe colors painted in the sky\nThe clouds that slowly wander by\n\nA mother's hug, a father's smile\nA friend who stays a little while\nA candle burning through the night\nA window filled with golden light\n\nA thousand sunrises\nA thousand stars\nA thousand moments\nThat touch our hearts\n\nA thousand blessings\nBoth big and small\nAnd somehow you're there\nThrough them all\n\nThe first snowfall upon the trees\nThe gentle touch of summer's breeze\nThe crunch of leaves beneath my feet\nThe kindness of a stranger on the street\n\nA handwritten letter from a friend\nA broken heart beginning to mend\nThe smell of cookies fresh from heat\nThe sound of dancing, moving feet\n\nA thousand tears i've cried alone\nA thousand paths i've never known\nA thousand prayers beneath the moon\nA thousand flowers set to bloom\n\nAnd even when the world feels gray\nA little beauty finds its way\nIn every breath and all i see\nYour love is quietly surrounding me\n\nA thousand colors\nA thousand dreams\nA thousand rivers\nAnd flowing streams\n\nA thousand moments\nI'll treasure through\nThe life you gave me\nAnd the love i find in you\n\nThe warmth of sunlight on my face\nAnother morning filled with grace\nI close my eyes and softly pray\nThank you, lord, for one more day"},{"title":"Not Every Church Is Home","src":"../audioPlayer/audio/Not%20Every%20Church%20Is%20Home.mp3","description":"","lyrics":"The doors were open\nThe pews were filled\nThey spoke of kindness\nBut the room felt chilled\n\nI walked inside with hope in my heart\nBelieving this could be a brand new start\nThey sang of mercy, forgiveness, and grace\nYet somehow i felt so out of place\n\nThey spoke of love for everyone\nBut questioned who deserved the son\nI came to worship, i came to pray\nNot knowing i'd be turned away\n\nThe cross upon the wall\nThe shadows in the hall\nA thousand voices singing\nBut no one heard my call\n\nThey taught that judgment wasn't theirs\nThen whispered cruelty between their prayers\nI wondered how a house of love\nCould make me doubt the lord above\n\nI didn't come to challenge you\nI didn't come to fight\nI only came to worship\nAnd find a little light\n\nYou do not own the love of god\nYou do not choose who gets his grace\nYou cannot close the gates of heaven\nOr take away another's place\n\nYour walls may keep me from your pews\nYour words may leave me all alone\nBut you can never take my faith\nNot every church is home\n\nSo i walked out into the rain\nStill carrying every word of pain\nAnd though their doors were closed to me\nMy heart still held what i believed\n\nThe cross upon the wall\nWas never theirs alone\nFor god is with the wandering\nAnd those without a home\n\nI still believe\nI still will pray\nI'll carry my faith\nAnd make my heart its home"},{"title":"Let Your Light Shine","src":"../audioPlayer/audio/Let%20Your%20Light%20Shine.mp3","description":"","lyrics":"A coffee spilled\nA missed goodbye\nA stranger crying\nAs the world walks by\n\nA woman drops her groceries in the rain\nWhile everybody rushes for the train\nI stop to help her gather what she can\nShe smiles and gently reaches for my hand\n\nShe says that no one stopped for her today\nAnd thanks me as she slowly walks away\nI never thought that something quite so small\nCould mean so much to someone after all\n\nLet your light shine\nIn the little things you do\nYou never know who needs\nA little kindness coming through\n\nYou don't need a miracle\nTo change somebody's day\nSometimes god works through us\nIn the simplest of ways\n\nA lonely child is sitting all alone\nWhile others laugh with friends they've always known\nI take a seat and ask about their day\nAnd watch their sadness slowly fade away\n\nI don't have riches, i don't have fame\nBut i can learn to love in jesus' name\nAnd when the world is moving much too fast\nA moment spent with someone just might last\n\nNo grand applause grand applause\nNo shining crown no shining crown\nJust lifting someone\nWhen they're down\n\nLet your light shine\nLet the world see what love can do\nNot through the words you preach\nBut through the love that lives in you\n\nAnd when your day is over\nAnd the sun has left the sky\nSomeone may still be smiling\nFrom the light you left behind\n\nA coffee spilled\nA missed goodbye\nA stranger smiling\nAs i walk by"},{"title":"The Hands That Held Me","src":"../audioPlayer/audio/The%20Hands%20That%20Held%20Me.mp3","description":"","lyrics":"I never saw you standing there\nBut somehow knew that you still cared\nThrough every tear i cried alone\nYou held me when i had no home\n\nI remember nights i couldn't sleep\nWhen all i had were tears to weep\nI begged for peace, i begged for rest\nWith all this pain inside my chest\n\nI wondered if you heard my cries\nOr saw the hurt behind my eyes\nI thought that i was all alone\nBut you were there through the unknown\n\nThe hands that held me when i cried\nWere there when all my hope had died\nWhen i could barely find my way\nYou gave me\nYou gave me strength to face the day\n\nAnd though i never saw your face\nI felt your love, i felt your grace\nWhen i had nothing left to give\nYou held me close and helped me live\n\nI prayed for you to take my pain\nBut every morning came again\nAnd though the hurt refused to leave\nYou gave me reasons to believe\n\nI wish that i could understand\nWhy suffering was in your plan\nBut if i never find the reason\nPlease hold me through another season\n\nThe hands that held me through the night\nNever promised things were right\nYou didn't take my pain away\nBut gave me strength to face today\n\nI still have nights when i break down\nWhen all my tears fall to the ground\nBut now i know i'm not alone\nYour hands still hold me as your own"},{"title":"The Devil Doesnt Own Me","src":"../audioPlayer/audio/The%20Devil%20Doesnt%20Own%20Me.mp3","description":"","lyrics":"A whisper in the darkness\nA shadow on the wall\nA voice that promises me everything\nWhile waiting for my fall\n\nYou found me when my hope was gone\nAnd promised i could carry on\nYou offered everything i'd need\nBut hid the price beneath your greed\n\nYou filled my mind with endless lies\nAnd watched the tears fall from my eyes\nBut somewhere deep inside my soul\nA light remained beyond your control\n\nYou can try to break my spirit\nYou can try to steal my light\nBut there's a power deep within me\nThat will never lose this fight\n\nYou can offer me the world\nAnd everything that i desire\nBut my soul belongs to heaven\nAnd my faith will never tire\n\nYou dress your lies in shades of gold\nAnd promise treasures left untold\nBut every gift conceals a chain\nThat leads to nothing more than pain\n\nI know the truth behind your smile\nI've seen your darkness all the while\nAnd though temptation calls my name\nMy heart will never play your game\n\nI know that i am far from pure\nAnd sometimes faith feels insecure\nBut when i stumble, when i fall\nI know whose name i need to call\n\nLet the darkness rise around me\nLet the thunder shake the sky\nYou will never claim my spirit\nNo matter how hard you try\n\nFor the one who walked on water\nAnd who calmed the raging sea\nHas already won the battle\nAnd his love has set me free\n\nThe shadows fade\nThe whispers cease\nI close my eyes\nAnd rest in peace"},{"title":"Unshakable","src":"../audioPlayer/audio/Unshakable.mp3","description":"","lyrics":"The storms may rise\nThe winds may blow\nBut there's one truth\nI'll always know\n\nI've walked through darkness, faced my fears\nI've fought through pain and endless tears\nWhen everything was falling apart\nI held your promise within my heart\n\nThe world may change beneath my feet\nAnd every road may bring defeat\nBut even when i lose my way\nI know your love is here to stay\n\nI am unshakable\nMy faith will stand\nThrough every storm\nYou hold my hand\n\nThe mountains may crumble\nThe oceans may rise\nBut nothing can break\nThe faith i hold inside\n\nWhen doubts begin to fill my mind\nAnd answers seem so hard to find\nI turn to you and call your name\nYour endless love remains the same\n\nI may grow tired, i may fall\nBut you are there through it all\nAnd when my strength is nearly gone\nYour love will help me carry on\n\nI won't pretend i never fear\nOr that my path is always clear\nBut faith is choosing to believe\nThat you will never abandon me\n\nI am unshakable\nNot because i'm strong\nBut because your love\nHas held me all along\n\nLet the thunder roar\nLet the heavens shake\nMy faith is in your hands\nAnd your love will never break\n\nThrough every storm\nThrough every fall\nMy faith remains\nYou are my all"},{"title":"Made In Your Image","src":"../audioPlayer/audio/Made%20In%20Your%20Image.mp3","description":"","lyrics":"A thousand faces\nA thousand names\nEvery heart different\nYet your love remains\n\nYou made the mountains, you made the seas\nYou gave the world its mysteries\nAnd in the beauty of all you do\nYou made us different, yet loved us too\n\nWe walk through life on different roads\nWith different stories and heavy loads\nBut every soul beneath the sky\nIs precious in your loving eyes\n\nWe are made in your image\nWe are held in your grace\nEvery heart has a purpose\nEvery soul has a place\n\nNo matter our differences\nYour love will see us through\nWe are made in your image\nAnd we all belong to you\n\nSome find their faith along the way\nSome struggle just to face the day\nSome carry wounds the world can't see\nYet all deserve love and dignity\n\nYou never asked us to be the same\nOr judge another in your name\nYou taught us how to love and care\nAnd show your kindness everywhere\n\nLet us love as you have shown\nSo no one walks this world alone\nLet compassion lead the way\nAnd let your light shine every day\n\nWe are made in your image\nNot defined by what we see\nEvery life holds a story\nEvery heart deserves to be free\n\nThrough every trial we face\nYour love will guide us through\nWe are made in your image\nAnd we all belong to you\n\nA thousand faces\nA thousand names\nMade in your image\nAnd loved just the same"},{"title":"When Heaven Feels Silent","src":"../audioPlayer/audio/When%20Heaven%20Feels%20Silent.mp3","description":"","lyrics":"Moving through this world in your endless grace\nPraying unto heaven for my rightful place\nKnowing you can hear me calling out\nAsking you what it's all about\n\nThrough the silence i move on\nKnowing you are here when i feel gone\n\nWhen heaven feels silent\nAnd i don't know why\nI keep on praying\nWith tears in my eyes\n\nEven when answers\nAre hard to find\nI know you're listening\nThrough the silence of time\n\nEvery night i kneel and pray\nHoping you will guide my way\nWhen the darkness fills my mind\nI trust your light is mine to find\n\nI don't need to see your face\nTo know i'm held within your grace\nAnd though your answers may be delayed\nI'll trust the path that you have made\n\nWhen heaven feels silent\nAnd my faith feels small\nI know you still love me\nThrough the rise and fall\n\nEven when questions\nAre all that remain\nI'll keep on believing\nThrough sorrow and pain\n\nWhen heaven feels silent\nI'll still call your name\nFor even in silence\nYour love stays the same"},{"title":"scream to the heavens (remake)","src":"../audioPlayer/audio/scream%20to%20the%20heavens%20(remake).mp3","description":"","lyrics":"If this is the end, then i'm calling your name\nThrough shadow or light, you're still the same\nThe road has been long, the trials unkind\nBut hope still survives in the depths of my mind\n\nI'm bruised but breathing, i'm bent but i stand\nWith faith like a spark in the palm of my hand\nThe night may be heavy, the silence may weigh\nBut dawn keeps whispering, \"you'll see another day\"\n\nIf i scream to the heavens, will you hear me now?\nThrough fire and thunder, i won't back down\nThrough valley and breaking, through doubt and despair\nI know you are with me even when you feel nowhere\n\nIf this is the storm, then let it refine me\nThrough shadow or light, let your mercy define me\nI fall to my knees, but i rise when you call\nYou are my beginning, my end, my all\n\nThe stars keep reminding me dark doesn't win\nThe chains that once held me are breaking within\nI walk with my spirit, i walk with my pain\nThrough tempest and sorrow, through fire and rain\n\nI've wrestled with silence, i've wrestled with shame\nStill i am breathing, still i proclaim\nEven in darkness, i reach for the flame\nEven in breaking, i call out your name\n\nIf i scream to the heavens, you hear me now\nThrough fire and thunder, i won't bow\nThrough valley and breaking, through doubt and despair\nYou were always with me, even when unaware\n\nIf this is the end, it's not defeat\nYour mercy lifts me to my feet\nI fall to my knees, but i rise when you call\nYou are my beginning, my end, my all"}]}</script>
+  <script>
+(() => {
+  "use strict";
+  const { tracks } = JSON.parse(document.getElementById("album-data").textContent);
+  const get = (id) => document.getElementById(id);
+  const audio = get("audio");
+  const play = get("play");
+  const seek = get("seek");
+  const volume = get("volume");
+  const rows = Array.from(get("track-list").children);
+  let current = 0;
+  let playRequest = 0;
+  let stopped = false;
+
+  const status = (message) => { get("status").textContent = message; };
+  function time(seconds) {
+    if (!Number.isFinite(seconds)) return "--:--";
+    seconds = Math.max(0, Math.floor(seconds));
+    return Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0");
+  }
+  function updateProgress() {
+    const ready = Number.isFinite(audio.duration) && audio.duration > 0;
+    seek.disabled = !ready;
+    seek.max = ready ? audio.duration : 1;
+    seek.value = ready ? audio.currentTime : 0;
+    get("elapsed").textContent = time(audio.currentTime);
+    get("duration").textContent = time(audio.duration);
+    seek.setAttribute("aria-valuetext", time(audio.currentTime) + " of " + time(audio.duration));
+  }
+  function updateButtons() {
+    const playing = !audio.paused && !audio.ended;
+    play.textContent = playing ? "Pause" : "Play";
+    play.setAttribute("aria-pressed", String(playing));
+    rows.forEach((row, index) => {
+      const selected = index === current;
+      row.classList.toggle("active", selected);
+      const button = row.querySelector("button");
+      if (selected) button.setAttribute("aria-current", "true");
+      else button.removeAttribute("aria-current");
+      row.querySelector(".track-state").textContent = selected ? (playing ? "Playing" : "Selected") : "Play";
+    });
+  }
+  function updateVolume() {
+    volume.value = audio.volume;
+    const muted = audio.muted || audio.volume === 0;
+    get("mute").textContent = muted ? "Unmute" : "Mute";
+    get("mute").setAttribute("aria-pressed", String(muted));
+    get("volume-value").textContent = Math.round((muted ? 0 : audio.volume) * 100) + "%";
+  }
+  async function startPlayback() {
+    const request = ++playRequest;
+    try { await audio.play(); }
+    catch (error) {
+      if (request !== playRequest || error.name === "AbortError") return;
+      status(error.name === "NotAllowedError"
+        ? "Press Play to start the music."
+        : "Unable to play this track. Try another track or reload the page.");
+      updateButtons();
+    }
+  }
+  function selectTrack(index, autoplay) {
+    ++playRequest;
+    audio.pause();
+    current = index;
+    stopped = false;
+    const track = tracks[current];
+    audio.src = track.src;
+    audio.load();
+    get("now-title").textContent = track.title;
+    get("track-position").textContent = "Track " + (current + 1) + " of " + tracks.length;
+    get("song-description").textContent = track.description;
+    get("song-description").hidden = !track.description;
+    get("lyrics").textContent = track.lyrics;
+    get("lyrics-panel").hidden = !track.lyrics;
+    get("song-info").hidden = !track.description && !track.lyrics;
+    status("Ready to play " + track.title + ".");
+    updateProgress();
+    updateButtons();
+    if (autoplay) void startPlayback();
+  }
+  function skip(direction) {
+    const wasPlaying = !audio.paused && !audio.ended;
+    if (direction < 0 && audio.currentTime > 3) {
+      audio.currentTime = 0;
+      updateProgress();
+      return;
+    }
+    selectTrack((current + direction + tracks.length) % tracks.length, wasPlaying);
+  }
+
+  play.addEventListener("click", () => {
+    if (audio.paused) {
+      stopped = false;
+      if (audio.ended) audio.currentTime = 0;
+      void startPlayback();
+    } else { ++playRequest; audio.pause(); }
+  });
+  get("stop").addEventListener("click", () => {
+    ++playRequest;
+    stopped = true;
+    audio.pause();
+    audio.currentTime = 0;
+    updateProgress();
+    updateButtons();
+    status("Stopped. Press Play to restart " + tracks[current].title + ".");
+  });
+  get("previous").addEventListener("click", () => skip(-1));
+  get("next").addEventListener("click", () => skip(1));
+  rows.forEach((row, index) => row.querySelector("button").addEventListener("click", () => selectTrack(index, true)));
+  seek.addEventListener("input", () => {
+    if (!seek.disabled) audio.currentTime = Number(seek.value);
+    updateProgress();
+  });
+  volume.addEventListener("input", () => {
+    audio.volume = Number(volume.value);
+    if (audio.volume > 0) audio.muted = false;
+  });
+  get("mute").addEventListener("click", () => {
+    if (audio.muted || audio.volume === 0) { audio.muted = false; if (audio.volume === 0) audio.volume = 1; }
+    else audio.muted = true;
+  });
+  audio.addEventListener("volumechange", updateVolume);
+  ["loadedmetadata", "durationchange", "timeupdate", "emptied"].forEach((event) => audio.addEventListener(event, updateProgress));
+  audio.addEventListener("play", () => { updateButtons(); status("Playing " + tracks[current].title + "."); });
+  audio.addEventListener("pause", () => {
+    updateButtons();
+    if (!audio.ended && !stopped) status("Paused: " + tracks[current].title + ".");
+  });
+  audio.addEventListener("ended", () => {
+    if (current + 1 < tracks.length) selectTrack(current + 1, true);
+    else if (get("repeat").checked) selectTrack(0, true);
+    else { updateButtons(); status("Album finished. Choose a track to listen again."); }
+  });
+  audio.addEventListener("error", () => {
+    updateButtons();
+    status("Could not load " + tracks[current].title + ". Try another track.");
+  });
+
+  // Keep native controls as a fallback if JavaScript is disabled.
+  audio.controls = false;
+  get("custom-controls").hidden = false;
+  get("previous").disabled = tracks.length < 2;
+  get("next").disabled = tracks.length < 2;
+  selectTrack(0, false);
+  updateVolume();
+})();
+</script>
+</body>
+</html>
