@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="metal rock">
+  <title>Braking The Roolz | PrincessTG Music</title>
+  <style>
+:root {
+  --bg: #11131a;
+  --card: #1d2230;
+  --text: #f3f5ff;
+  --muted: #b9bfd4;
+  --accent: #9f7bff;
+  --accent-hover: #bda7ff;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: linear-gradient(160deg, #0d1018, #171d2a 45%, #11131a);
+  color: var(--text);
+  line-height: 1.5;
+}
+.hero, main, footer { width: min(960px, 92vw); margin: 0 auto; }
+.hero {
+  background: url("../images/logo-removebg-preview.png") center / contain no-repeat;
+  min-height: 240px;
+  display: flex;
+  align-items: stretch;
+}
+.hero a { width: 100%; min-height: 240px; border-radius: 16px; }
+section, footer {
+  background: rgba(29, 34, 48, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+h1, h2 { margin: 0 0 0.5rem; overflow-wrap: anywhere; }
+h1 { font-size: clamp(1.8rem, 6vw, 2.8rem); }
+p { margin: 0.5rem 0; }
+.eyebrow, .release, .description, .muted, .status { color: var(--muted); }
+.eyebrow { margin-top: 0; color: var(--accent-hover); }
+.description, #song-description { white-space: pre-wrap; overflow-wrap: anywhere; }
+.back-link, footer a { color: var(--accent); }
+.back-link { display: inline-block; margin-bottom: 1rem; text-decoration: none; }
+a:hover { color: var(--accent-hover); }
+button, input { font: inherit; }
+button {
+  background: #101521;
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--accent-hover); }
+button:disabled, input:disabled { opacity: 0.5; cursor: default; }
+button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visible {
+  outline: 3px solid var(--accent-hover);
+  outline-offset: 3px;
+}
+#play { background: var(--accent); border-color: var(--accent); color: #101521; font-weight: bold; }
+#play:hover { background: var(--accent-hover); }
+.controls, .volume-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.65rem; }
+.controls { margin: 1rem 0; }
+.progress { display: flex; gap: 0.75rem; align-items: center; margin: 1rem 0; }
+.progress span { min-width: 3.25rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.progress span:last-child { text-align: right; }
+input[type="range"] { accent-color: var(--accent); min-width: 0; cursor: pointer; }
+#seek { flex: 1; width: 100%; }
+#volume { width: min(150px, 32vw); }
+.repeat { margin-left: auto; cursor: pointer; }
+.repeat input { accent-color: var(--accent); width: 1.1rem; height: 1.1rem; vertical-align: middle; }
+.status { min-height: 1.5em; }
+audio { width: 100%; display: block; margin: 1rem 0; }
+audio:not([controls]) { display: none; }
+.track-list { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: 0.55rem; }
+.track-list button {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  text-align: left;
+  width: 100%;
+}
+.track-list .active button { border-color: var(--accent); background: rgba(159, 123, 255, 0.12); }
+.track-number, .track-state { color: var(--muted); }
+.track-state { font-size: 0.85rem; }
+.track-title { overflow-wrap: anywhere; }
+summary { cursor: pointer; color: var(--accent-hover); padding: 0.5rem 0; }
+.lyrics {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: var(--text);
+  background: #101521;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin: 0.5rem 0 0;
+}
+footer { margin-bottom: 2rem; color: var(--muted); }
+[hidden] { display: none !important; }
+@media (max-width: 480px) {
+  .hero, .hero a { min-height: 180px; }
+  section, footer { padding: 1rem; }
+  .controls button { flex: 1 1 calc(50% - 0.65rem); }
+  .repeat { margin-left: 0; width: 100%; }
+  .track-list button { gap: 0.35rem; padding: 0.65rem; }
+}
+</style>
+</head>
+<body>
+  <header class="hero"><a href="../index.html" aria-label="PrincessTG Music home"></a></header>
+  <main>
+    <a class="back-link" href="./index.html">← All albums</a>
+    <section aria-labelledby="album-title">
+      <p class="eyebrow">PrincessTG Music</p>
+      <h1 id="album-title">Braking The Roolz</h1>
+      <p class="release"><strong>Release date:</strong> TBD</p>
+      <p class="description">metal rock</p>
+    </section>
+    <section aria-labelledby="now-title">
+      <p class="muted">Now playing</p>
+      <h2 id="now-title">bREAKING tHE rULES</h2>
+      <p class="muted" id="track-position">Track 1 of 14</p>
+      <audio id="audio" controls preload="metadata" src="../audioPlayer/audio/bREAKING%20tHE%20rULES.mp3">Your browser does not support audio playback.</audio>
+      <div id="custom-controls" hidden>
+        <div class="controls">
+          <button id="previous" type="button" aria-label="Previous track">Previous</button>
+          <button id="play" type="button" aria-pressed="false">Play</button>
+          <button id="stop" type="button">Stop</button>
+          <button id="next" type="button" aria-label="Next track">Next</button>
+        </div>
+        <div class="progress">
+          <span id="elapsed">0:00</span>
+          <input id="seek" type="range" min="0" max="1" step="0.1" value="0" aria-label="Seek in current track" disabled>
+          <span id="duration">--:--</span>
+        </div>
+        <div class="volume-row">
+          <button id="mute" type="button" aria-pressed="false">Mute</button>
+          <label for="volume">Volume</label>
+          <input id="volume" type="range" min="0" max="1" step="0.05" value="1">
+          <span id="volume-value">100%</span>
+          <label class="repeat"><input id="repeat" type="checkbox"> Repeat album</label>
+        </div>
+      </div>
+      <p id="status" class="status" role="status" aria-live="polite">Choose Play to start the album.</p>
+      <noscript><p>The native audio controls play the first track. Enable JavaScript for the full playlist.</p></noscript>
+    </section>
+    <section aria-labelledby="tracks-heading">
+      <h2 id="tracks-heading">Album tracks</h2>
+      <p class="muted">14 songs · Select a song to play it.</p>
+      <ol id="track-list" class="track-list">
+        <li><button type="button" aria-label="Play bREAKING tHE rULES"><span class="track-number">1</span><span class="track-title">bREAKING tHE rULES</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play UNPERMISSIONED"><span class="track-number">2</span><span class="track-title">UNPERMISSIONED</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Unruled"><span class="track-number">3</span><span class="track-title">Unruled</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Before the Name"><span class="track-number">4</span><span class="track-title">Before the Name</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Faster Then Time"><span class="track-number">5</span><span class="track-title">Faster Then Time</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Torment"><span class="track-number">6</span><span class="track-title">Torment</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Dangerous Life"><span class="track-number">7</span><span class="track-title">Dangerous Life</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Here We Go Again"><span class="track-number">8</span><span class="track-title">Here We Go Again</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Thirty First"><span class="track-number">9</span><span class="track-title">Thirty First</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Stardust"><span class="track-number">10</span><span class="track-title">Stardust</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Growth"><span class="track-number">11</span><span class="track-title">Growth</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play You Lost Me"><span class="track-number">12</span><span class="track-title">You Lost Me</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Comfort Zone"><span class="track-number">13</span><span class="track-title">Comfort Zone</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+        <li><button type="button" aria-label="Play Breaking Limits"><span class="track-number">14</span><span class="track-title">Breaking Limits</span><span class="track-state" aria-hidden="true">Play</span></button></li>
+      </ol>
+    </section>
+    <section id="song-info" aria-labelledby="song-heading">
+      <h2 id="song-heading">Song details</h2>
+      <p id="song-description">description? naaaa im breaking that rule to</p>
+      <details id="lyrics-panel">
+        <summary>Lyrics</summary>
+        <pre id="lyrics" class="lyrics">ok im not mean enough to break this rule so here 
+IM BREAKING THE RULES AND I AM HERE TO STAY  
+EVERY WAKING HOUR I WILL BE OK
+
+im breaking the rules you set for me  
+Breaking the rules to set me free
+
+This is my song  
+This is my life  
+Im breaking the rules you set tonight
+
+Tommorrow will come ill still be around  
+But the rules you set will be out of bounds
+
+Im breaking the rules  
+(Breaking the rules)
+
+IM BREAKING THE RULES TONIGHT
+
+No rules...  
+For my life...  
+Im breaking your rules tonight
+
+Its my life  
+Its my right  
+Your rules will be losing this fight
+
+CAUSE IM BREAKING YOUR RULES TONIGHT
+
+im breaking your rules you dont stand a chance  
+Nomatter the way you want to have this dance
+
+Im breaking the rules you set forth on me  
+Im breaking the rules and you will see  
+that my heart is happy when i am free
+
+Im breaking your rules  
+(Breaking the rules)
+
+Im breaking your rules  
+(Breaking the rules)  
+(Breaking the rules)
+
+IM BREAKING THE RULES  
+TONIGHT</pre>
+      </details>
+    </section>
+  </main>
+  <footer>PrincessTG Music · <a href="./index.html">All albums</a> · <a href="../index.html">Home</a></footer>
+  <script id="album-data" type="application/json">{"tracks":[{"title":"bREAKING tHE rULES","src":"../audioPlayer/audio/bREAKING%20tHE%20rULES.mp3","description":"description? naaaa im breaking that rule to","lyrics":"ok im not mean enough to break this rule so here \nIM BREAKING THE RULES AND I AM HERE TO STAY  \nEVERY WAKING HOUR I WILL BE OK\n\nim breaking the rules you set for me  \nBreaking the rules to set me free\n\nThis is my song  \nThis is my life  \nIm breaking the rules you set tonight\n\nTommorrow will come ill still be around  \nBut the rules you set will be out of bounds\n\nIm breaking the rules  \n(Breaking the rules)\n\nIM BREAKING THE RULES TONIGHT\n\nNo rules...  \nFor my life...  \nIm breaking your rules tonight\n\nIts my life  \nIts my right  \nYour rules will be losing this fight\n\nCAUSE IM BREAKING YOUR RULES TONIGHT\n\nim breaking your rules you dont stand a chance  \nNomatter the way you want to have this dance\n\nIm breaking the rules you set forth on me  \nIm breaking the rules and you will see  \nthat my heart is happy when i am free\n\nIm breaking your rules  \n(Breaking the rules)\n\nIm breaking your rules  \n(Breaking the rules)  \n(Breaking the rules)\n\nIM BREAKING THE RULES  \nTONIGHT"},{"title":"UNPERMISSIONED","src":"../audioPlayer/audio/UNPERMISSIONED.mp3","description":"","lyrics":"Cry it from the rooftops  \nI’m still a girl\n\nYell it from the mountains  \nI’m still a girl\n\nScream it from the streets  \nI’m still a girl\n\nI’m still a girl\n\nNo matter your hatred, no matter your lies  \nI will reach forward till I touch the skies  \nYou mean nothing to me cause my life is mine  \nI’m just a girl and that... is... fine\n\nSo take all your hate and shove it up where the sun won’t reach  \nI’m here to stay no matter your speech\n\nYou can shout all you want, you can scream at the world  \nNothing you say changes that I’m a girl  \nThrow every insult, I’ll still stand tall  \nYour words have no power, no power at all\n\nI know who I am, I’ve got nothing to hide  \nI fought for this life and I’m living with pride  \nSay what you want, cause when all is unfurled  \nI’ll still be standing here, still a girl\n\nYou can write down your reasons and call them the truth  \nBut none of your anger can tell me what to do  \nI’ve walked through the fire, I’ve carried the scars  \nAnd I’m still reaching higher, still chasing the stars\n\nYou thought I would crumble, you thought I would fall  \nBut I learned that your hatred means nothing at all  \nThis life belongs to me, every breath, every day  \nAnd nothing you believe can take that away\n\nSo yell from the sidewalk, go scream at the sky  \nI’m done wasting moments just asking you why  \nI don’t need approval, I don’t need your respect  \nAnd I sure don’t need your consent\n\nI’ll walk through the noise with my head held high  \nThere’s nothing about me I need to deny  \nYou wanted me silent, but look at me now  \nI’m still a girl and I’m screaming it loud\n\nI’M STILL HERE\n\nI’M STILL ME\n\nI’M STILL EVERYTHING  \nYOU SAID I COULDN’T BE\n\nTurn up the guitars  \nLet the whole world hear\n\nI AM A GIRL\n\nAND I’M NOT DISAPPEARING\n\nCry it from the rooftops  \nTill every window shakes\n\nYell it from the mountains  \nTill the ground beneath us breaks\n\nScream it through the streets  \nEvery word I’ve held inside\n\nI’m done letting anybody  \nTell me how to live my life\n\nI survived every voice  \nThat tried to tell me who I am\n\nNow I’m louder than the hatred  \nAnd I finally understand\n\nYou never had the power  \nYou never ruled my world\n\nAfter everything you threw at me\n\nI’M STILL A GIRL\n\nStill here\n\nStill loud\n\nStill proud\n\nStill...\n\nA...\n\nGIRL!"},{"title":"Unruled","src":"../audioPlayer/audio/Unruled.mp3","description":"","lyrics":"Freedom by peace\nOr freedom by war\n\nWe will not play\nBy your rules anymore\n\nYou tried to decide who we're allowed to be\nBuilt all your walls and called them liberty\nYou wrote down the rules and expected our praise\nWhile taking our rights and controlling our days\n\nYou wanted us quiet\nYou wanted us small\nYou thought if you pushed us we'd finally fall\n\nBut every trans girl that you tried to erase\nIs standing beside us and taking her place\n\nWe demand our freedom\nWe demand our lives\nNo more asking permission\nJust to simply survive\n\nOur names are our own\nAnd our futures are too\nWe won't surrender our freedom\nTo people like you\n\nYou have beaten us down\nDestroyed who we are\nBut we won't turn back\nWe will heal from this scar\n\nYou cost us too much\nHarmed the people we love\nTook us for granted\n\nNow we rise above\n\nWe aren't your question\nWe aren't your debate\nWe aren't an excuse for your anger and hate\nOur bodies aren't ballots\nOur lives aren't your laws\nWe won't spend forever defending our cause\n\nWe built our own voices\nWe learned how to fight\nNot for your approval\nBut simply our right\n\nTo walk through this world\nWithout begging to be\nAnything less than completely free\n\nThis is independence\nOur voices are loud\nTrans girls standing together\nAnd we're standing proud\n\nNo ruler above us\nDeciding our fate\nYou can give us our freedom\nOr watch us take back our place\n\nNo more control\n\nNo more shame\n\nYou don't get\nTo choose our names\n\nNo more rules\nThat keep us down\n\nWe're still here\n\nLook at us now\n\nWe stand here united\nThe revolution is here\nSo give us our freedom\nOr cower in fear\n\nYou pushed us together\nYou gave us a cause\n\nNow watch what happens\n\nWhen we stop\nFollowing\nYour\nLaws\n\nFreedom for every trans girl alive\nFreedom to flourish\nNot merely survive\n\nFreedom to speak\nFreedom to choose\nFreedom means nothing\nWhen ours can be removed\n\nWe won't be governed\nBy hatred anymore\n\nFreedom by peace\n\nOr freedom by war\n\nYou had your rules\n\nWe have our lives\n\nYou had your power\n\nNow we rise\n\nNo permission\nNo surrender\n\nOur freedom\n\nForever"},{"title":"Before the Name","src":"../audioPlayer/audio/Before%20the%20Name.mp3","description":"","lyrics":"No one told me\nNo one showed me\nThere was a life\nWhere i could be me\n\nNo one told me trans existed\nNo one told me i could just be me\nI was taught i had to fear it\nThat no one ever got to see\n\nI grew up hiding all my feelings\nAfraid of what the world would say\nI never knew there was an answer\nOr that i could live another way\n\nIt was not something mentioned\nAnd yet i knew before a word\nA girl i needed to be inside me\nBut fear kept me from being heard\n\nI spent my childhood feeling different\nWith questions i could never share\nI thought that i was all alone\nAnd nobody out there would care\n\nYou never saw the tears i cried\nOr all the years i spent inside\nA world that told me i was wrong\nFor being who i was all along\n\nYou never knew the girl inside\nOr all the years she had to hide\nYou never saw the pain she knew\nOr what that fear had put her through\n\nBut now i'm standing here today\nAnd i won't let you turn away\nI'm not a shadow of my past\nI'm finally living free at last\nI'm finally living free at last\n\nYou do not get what i went through\nYou cannot understand my pain\nYou only base it on so little\nWhen you feel you cannot gain\n\nYou judge a life you've never lived\nAnd question things you cannot see\nBut you don't know the years it took\nTo finally let myself be me\n\nI never asked to be your enemy\nOr someone you should learn to fear\nI only wanted to be happy\nAnd live a life without these tears\n\nYou do not have to understand\nThe journey that has brought me here\nBut you can choose to show compassion\nInstead of spreading hate and fear\n\nI was a girl before i knew\nThat other girls had felt it too\nBefore i ever knew the name\nThe girl inside was still the same\n\nAnd all the years that i had lost\nCan never tell the final cost\nBut i will live the life i choose\nAnd not let hatred make me lose\n\nSo listen to what others say\nBefore you turn their hearts away\nWe all have stories left untold\nAnd pain that others never hold\n\nWe're all just human after all\nWe all can hurt, we all can fall\nWe never meant to be apart\nSo let compassion lead your heart\n\nNo one told me trans existed\nBut i knew who i had to be\nAnd now the girl who lived in silence\nHas finally found her way to be free"},{"title":"Faster Then Time","src":"../audioPlayer/audio/Faster%20Then%20Time.mp3","description":"","lyrics":"Time is chasing me\nI feel it gaining speed\nThere's nowhere left to hide\nI need to run!\n\nEvery heartbeat counts another\nEvery footstep shakes the ground\nI can hear the seconds coming\nGetting louder, getting loud!\n\nFaster...\nThan...\nTime!\n\nI'm running faster than time!\nThe seconds closing in behind!\nNo turning back, no finish line\nI'm running faster than time!\n\nYou can't catch me, i'm already gone!\nEvery ticking second drives me on!\nThe clock is screaming in my mind\nI'm running faster than time!\n\nAnother second, another race\nAnother moment i can't replace\nThe hands keep reaching for my feet\nI hear them closing with every beat\n\nMy lungs are burning, my vision blurs\nThe road bends sharply as the whole world turns\nI steal a breath, the drums attack\nThe seconds snap against my back!\n\nI push ahead, i lose my place\nI barely recognize my face\nThe faster that i try to fly\nThe closer i can hear time cry!\n\nOne more breath\nOne more stride\nI feel the seconds multiply\nThe clock strikes hard\nThe numbers climb\nI'm running out of time!\n\nI'm running faster than time!\nThe seconds closing in behind!\nNo turning back, no finish line\nI'm running faster than time!\n\nYou can't catch me, i'm already gone!\nEvery ticking second drives me on!\nThe clock is screaming in my mind\nI can't outrun the hands of time!\n\nI've spent my life just running away\nAfraid of what might come someday\nI held my breath through every mile\nAnd missed the reasons i should smile\n\nI don't need to outrun my life\nOr chase the seconds passing by\nThe future comes, and that's alright\nI don't have to run tonight\n\nLet the hours come and go\nThere's still so much i want to know\nI used to fear the passing light\nNow i can let it fill my life\n\nFaster than time...\nI don't have to be."},{"title":"Torment","src":"../audioPlayer/audio/Torment.mp3","description":"","lyrics":"I wake before the morning breaks\nAlready burning underneath\nAnother day inside these walls\nAnother breath i barely breathe\n\nWhat did i do to earn this pain?\nWhat law of nature did i break?\nI watch the world move effortlessly\nWhile every step is mine to pay\n\nYou say that everybody hurts\nAs if that makes my suffering small\nI just want what you have\nA body that won't fight me at all\n\nIf something out there hears me\nBeyond this ceiling made of bone\nI'm not asking for forever\nJust one breath to call my own\n\nLet me breathe without the weight\nLet the fire sleep beneath my skin\nI'm not asking for forever\nJust one moment i can live within\n\nLet me breathe without the weight\nLet the morning come without the pain\nI don't need the world to change\nJust one day that feels like mine again\n\nI used to know who i would be\nI used to know who i would be\nNow that future stands apart\nA silent ghost beyond the walls\n\nOf a body falling apart\nI see the life i might have known\nIn every stranger passing by\nA thousand things they never notice\n\nAre the things for which i cry\nFor one moment, the burning fades\nThe doors swing open, i can see\nThe ghost of who i could have been\n\nStanding there in front of me\nBut then the fire comes again\nAnd every doorway disappears\nI reach for what was almost mine\n\nAnd watch it vanish through my tears\nLet me breathe without the weight\nLet the fire sleep beneath my skin\nIf the person i could have been\n\nIs still out there, let me in\nLet me breathe without the weight\nLet the morning come without the pain\nI don't need another lifetime\n\nJust one day that feels like mine again\nThe ghost remains beyond the doorway\nA future i may never know\nI asked the stars for an answer\n\nBut the silence only grows\n\nIn this pain i remain alone"},{"title":"Dangerous Life","src":"../audioPlayer/audio/Dangerous%20Life.mp3","description":"","lyrics":"I check the weather, find my keys\nThe kitchen clock says eight-oh-three\nThe corner shop, the sliding door\nMy shoes squeak on the polished floor\n\nA voice behind me changes pitch\nAnd suddenly i'm counting exits\nMy shoulders rise without permission\nI hate how fast my body listens\n\nA carton of milk, a receipt in my hand\nI shouldn't need an escape plan\nFor something this ordinary\nBut here i am again\n\nIt shouldn't take this much courage\nTo walk through a door and buy what i need\nTo answer a question without rehearsing\nEvery possible way it could be received\n\nI wanted a morning that stayed a morning\nA checkout line that was only a line\nI shouldn't have to be this careful\nWith something as simple as my time\nWith something as simple as my time\n\nThe parking lot is mostly empty\nI hear a car door shut behind me\nI keep my pace at something normal\nMy keys leave marks against my palm\n\nThe words come back when no one's speaking\nAt red lights, washing dishes, eating\nI hear them in the quiet seconds\nBefore i fall asleep\n\nThe light turns green, i wait too long\nA driver sounds the horn\nI know i'm safe enough to move\nMy hands don't seem so sure\n\nIt shouldn't take this much courage\nTo walk through a door and buy what i need\nTo answer a question without rehearsing\nEvery possible way it could be received\n\nI made it through another morning\nBut carried half of it back inside\nI shouldn't have to be this careful\nWith something as simple as my time\n\nI tell people it doesn't bother me\nBecause i don't want their faces to change\nI say i'm used to it\nAs if that makes it easier to explain\n\nI am more afraid than i sound\nMore tired than i say\nI resent the careful little choices\nThat get me through an ordinary day\n\nI still have somewhere i need to be\n\nIt shouldn't take this much courage\nTo walk through a door and buy what i need\nTo answer a question without rehearsing\nEvery possible way it could be received\n\nTomorrow i'll leave in the morning\nI'll check my keys and i'll check the time\nI won't pretend that i'm not frightened\nI won't pretend that i am fine\n\nI'm just here surviving a dangerous life."},{"title":"Here We Go Again","src":"../audioPlayer/audio/Here%20We%20Go%20Again.mp3","description":"","lyrics":"Another day, another hour\nSame old thing, i've lost my power\nI did it once, then one time more\nHoping i can find a door\n\nI just hope that this will end\n\nHere\nWe\nGo\nAgain\n\nI'm running in circles, repeating the same\nI'm changing the pieces but nothing has changed\nI'm pushing the limits, i'm losing my place\nI'm trying to finish this endless race\n\nI'm counting the seconds, i'm counting the tries\nI'm searching for answers beneath all the lies\nI'm starting all over, right back where i've been\nI'm taking a breath, here we go again\nHere we go again\n\nI'm tracing the steps that i thought i erased\nI'm finding the faults that i thought i replaced\nI'm turning the gears but they're grinding in place\nI'm picking up speed while i'm losing the race\n\nI'm testing the limits of everything known\nI'm building a structure that won't hold its own\nI'm fixing the cracks but they multiply fast\nI'm making the same damn mistakes as the last\n\nThe walls keep shifting every time i turn\nA thousand lessons i refuse to learn\nThe rhythm pulls me further from the ground\nI'm caught inside this never-ending sound\n\nRound and round, the patterns intertwine\nAnother repetition crossing mine\nI'm losing track of where the cycles end\nAnd somehow i'm beginning them again\n\nI see the pattern forming underneath\nAnother failure hiding in my teeth\nI know the outcome long before it starts\nBut still i pull the whole damn thing apart\n\nI rearrange the pieces one by one\nI tell myself the damage has been done\nAnd just before i finally reach the end\nThe mechanism pulls me back again\n\nI'm pushing harder than i did before\nBut every answer leads to something more\nThe pressure builds until i can't ignore\nThe sound of everything i'm fighting for\n\nI can feel the system overload\nAnother fracture in this endless road\nI'm still moving even when i bend\nAnd here we go again and again\n\nAgain and again, i'm repeating the motion\nAgain and again, with the same old devotion\nAgain and again, i'm resetting the chain\nAgain and again, and it's driving me insane\n\nI know what is coming, i know what i'll find\nThe same calculations are burning my mind\nI'm trying to stop it, i'm trying to bend\nBut every beginning returns to the end\n\nI'm running i'm rushing i'm losing control\nI'm breaking the pattern that's swallowing whole\nI'm pushing i'm pulling i'm starting again\nI'm trapped in a cycle that never will end\n\nI'm falling i'm rising i'm falling once more\nI'm searching i'm reaching i'm locking the door\nI'm counting i'm shouting i'm losing my way\nI'm trying i'm fighting i'm breaking away\n\nIt's happening happening happening again\nI'm starting restarting repeating again\nI'm running i'm running i'm running and then\nHere we go again"},{"title":"Thirty First","src":"../audioPlayer/audio/Thirty%20First.mp3","description":"","lyrics":"October thirty-first, eleven fifty-nine\nThe numbers on the wall are counting down my time\nThe hallway smells of rust, the ceiling starts to bleed\nSomething underneath the floor is waking up to feed\n\nThe windows have been boarded from the other side\nThe mirrors show a version of me trying to hide\nThe telephone is ringing with a disconnected line\nI pick it up and hear a voice identical to mine\n\nIt tells me that the basement door is open once again\nIt tells me not to listen to the scratching in the vent\nIt tells me that the clocks are counting everything i owe\nAnd something wearing my own face is waiting down below\n\nThe second hand is shaking\nThe circuit starts to bend\nI hear the engine turning\nAnd i know how this will end\n\nThree\nTwo\nOne\nRun\n\nI'm running through the corridors, i'm tearing through the wires\nI'm watching all the exit signs illuminate like fires\nI'm pulling on the handles but the doors are welded shut\nI'm hearing something laughing as the power lines erupt\n\nI'm climbing through the ventilation, crawling through the walls\nI'm hearing heavy footsteps getting closer down the halls\nI'm breaking every circuit, every lock and every chain\nBut every door i open puts me right back here again\n\nThe thirty-first is calling me\nThe clock is counting down to three\nThe thing inside the walls is free\nAnd every face i see is me\n\nI hear the gears beneath my skin\nThe dead are begging to get in\nThe clock strikes twelve, the lights go red\nAnd something tells me i'm not dead\n\nThe basement door is opening, the staircase starts descending\nThe cables hanging overhead are twisting without ending\nA thousand broken monitors are flickering to life\nDisplaying every single time i didn't make it out alive\n\nThe first one shows me drowning in a chamber full of steam\nThe second shows a surgeon cutting wires out of me\nThe third one shows me standing where the final doorway stood\nAnd every other screen is showing something just as good\n\nThe room is full of pumpkins with their faces carved in steel\nTheir teeth are made of razor blades, their candlelight is real\nA figure in a butcher's mask is standing by the stairs\nI lift the mask and find my face has always waited there\n\nThe memory is coming back, the missing pieces fit\nI built this entire mechanism, every single bit\nI programmed every nightmare, every scream and every death\nAnd now the system only runs as long as i have breath\n\nI made the walls\nI built the floor\nI locked myself\nBehind the door\n\nI wrote the code\nI set the date\nI made the thing\nThat seals my fate\n\nIt's coming from my body and the wires in my chest\nThe engine keeps on running every time i try to rest\nThe thing that i've been running from is everything i've made\nAnd every thirty-first i watch my memories degrade\n\nI'm tearing out the circuits but they grow beneath my skin\nI'm shutting down the system but the system starts again\nI'm screaming at the ceiling as the final numbers bend\nAnd every single ending is another way to begin\n\nOctober thirty-first\nOctober thirty-first\nThe engine needs another death\nTo satisfy its thirst\n\nI'm cutting i'm pulling i'm tearing the wires\nI'm running i'm falling through electrical fires\nI'm breaking i'm bending i'm forcing the frame\nI'm screaming i'm hearing it calling my name\n\nI'm counting i'm climbing i'm reaching the door\nI'm slipping i'm sliding i'm hitting the floor\nI'm pushing i'm pulling i'm starting to see\nThe monster i'm hunting is hunting through me\n\nIt's turning it's turning it's turning again\nI'm burning i'm breaking i'm bending again\nI'm running i'm running i'm running and then\nThe clock strikes twelve and it starts again"},{"title":"Stardust","src":"../audioPlayer/audio/Stardust.mp3","description":"","lyrics":"In a town where silence ruled\nThe children learned to follow rules\nA sacred light beyond the trees\nPromised everyone their peace\n\nA little girl could see beyond\nThe world that everyone called wrong\nThey marked her mind with words of shame\nAnd promised light would ease her pain\n\nHer mother trusted what they said\nBelieved the path that lay ahead\nBut in the drawings that she made\nA different truth began to take shape\n\nThey walked beneath the fading sun\nBelieving healing would be done\nUntil a child returned one day\nWith everything she loved erased\n\nThey call it healing, call it light\nBut something here is not quite right\nIf being free is called a curse\nThen what is freedom really worth?\n\nThe road grew dark, the questions grew\nThe mother saw what others knew\nThe children laughed and drew their dreams\nYet nothing was as it would seem\n\nThe sacred place came into view\nIts hidden purpose breaking through\nThe light was never meant to heal\nIt only taught their hearts to kneel\n\nShe stood against the sacred flame\nRefused to let them take her name\nThe stone began to split apart\nRevealing what was at its heart\n\nA creature feeding on their fear\nHad kept the truth imprisoned here\nAnd from the fragments of the light\nAn angel rose into the night\n\nThey called it healing, called it light\nBut now the truth was burning bright\nThe curse was never theirs to bear\nIt was the lie that held them there\n\nThe children found their voices there\nTheir dreams returned into the air\nAnd in the dust of shattered stone\nA world was born where all belonged"},{"title":"Growth","src":"../audioPlayer/audio/Growth.mp3","description":"","lyrics":"I'm searching through the valley\nLooking for a place to call my own\nPraying for a day someone\nWould be walking beside me\n\nI'm looking to the heavens\nThen down upon the seas\nMaybe someday i will find\nA heart so close to mine\n\nBut i know in my heart\nSomeone's out there\nI must move on forward\nAnd face what lies ahead\n\nThough the road may be long\nAnd my feet may grow tired\nI'll keep searching for a place\nWhere my heart can belong\n\nI've walked so many miles\nWith questions on my mind\nI've stumbled along the way\nBut left my fears behind\n\nI'm learning how to stand\nWhen everything goes wrong\nThe pain has made me stronger\nBut i've been strong too long\n\nI've carried all this pain\nAnd held it deep inside\nI'm tired of the struggle\nAnd all the tears i've cried\n\nI won't let fear control me\nOr tear my world apart\nI've fought to find my purpose\nNow i'll fight to find my heart\n\nI've crossed the point of turning\nThere's nothing left to hide\nThe weight that once could break me\nNow drives me from inside\n\nI feel the ground beneath me\nBegin to shake and bend\nI'm pushing past the limit\nAnd i won't stop at the end\n\nI've been pushed beyond my limits!\nI've given everything i have!\nI won't be brought down any longer!\nI will rise above my past!\n\nI've traveled through the valley\nAnd weathered all the pain\nThe road that once seemed endless\nHas taught me how to change\n\nI'm looking to the heavens\nWith peace i've never known\nI may not have found someone\nBut i've found a place called home"},{"title":"You Lost Me","src":"../audioPlayer/audio/You%20Lost%20Me.mp3","description":"","lyrics":"I gave you all the trust i had\nBelieved in every word you said\nBut now i'm left here wondering\nIf anything was real back then\n\nI tried so hard to make things right\nWhile falling further out of sight\nI'm running out of ways to cope\nAnd losing every bit of hope\n\nNo you will not get to me\nYou've lost the girl you'll never see\n\nYou had your chance and threw it away\nThere's nothing left for you to say\nYou lost the right to stand with me\nAnd see the girl that i can be\n\nYou'll never know how far i'll go\nOr see the strength i've come to show\nYou had your chance to watch me shine\nBut now this future's only mine\n\nYou took my kindness for a weakness\nAnd thought i'd always take the blame\nYou kept on pushing every boundary\nThen acted like i was the one to blame\n\nAwwww!\n\nI'm not your puppet anymore\nI'm not the girl you can ignore\nYou had my trust and watched it break\nNow live with every choice you made\n\nI gave you chances you never earned\nAnd every lesson went unlearned\nYou watched me hurt and turned away\nNow there's nothing left for you to say\n\nI won't be begging anymore\nYou're not the one i'm living for\nYou had the chance to stand with me\nNow watch me become who i'm meant to be\nWho i'm meant to be\n\nYou had your chance you let it die\nI'm done with every single lie\nYou thought i'd break you thought i'd fall\nBut now i don't need you at all\n\nI'm moving faster breaking free\nBecoming who i want to be\nYou lost your place inside my life\nAnd now i'm cutting every tie\n\nNo more chances no more pain\nYou will never win again\nI am free and you will see\nYou lost your chance to be with me"},{"title":"Comfort Zone","src":"../audioPlayer/audio/Comfort%20Zone.mp3","description":"","lyrics":"I once couldnt do this\nIt once was too hard\nI once had to struggle\nJust to get out of the yard\n\nBut look at me now\nLouder than ever\nLets show you now\nThere is no more never\n\nI pushed to the edge\nOf all i could be\nThe limits are breaking\nNow watch me break free\n\nI'm racing through the possibilities i never dared explore\nDiscovering a thousand things that leave me wanting more\nThe hesitation disappears as everything accelerates\nI'm moving through the challenges that once made me hesitate\n\nI'm stepping into territory i never thought i'd see\nDiscovering the possibilities of everything that i could be\nI'm pushing every boundary as the world begins to grow\nAnd finding there's a universe beyond the things i used to know\n\nI used to think the smallest step\nWas further than i'd ever get\nBut every time i tried again\nI found another way ahead\n\nThe unfamiliar doesn't mean\nThat i should turn and walk away\nThere's something waiting to be found\nIn everything i try today\n\nThe further that i travel\nThe more i understand\nThe things i thought were distant\nAre now within my hands\n\nAnd every new beginning\nIs something i can choose\nI'm finding my own rhythm\nWith nothing left to prove\n\nThe world beyond the familiar is calling me to see\nThe endless possibilities of who i want to be\nI'm learning as i'm moving and i'm moving as i learn\nDiscovering that every step can lead to another turn\n\nI'm flying through the unfamiliar finding places unexplored\nEvery second brings another opportunity to move toward\nAll the things i never thought that i would ever get to try\nNow i'm reaching even further with my eyes upon the sky\n\nEvery challenge is a doorway to another part of me\nEvery moment is a chance to find out what i couldn't see\nI'm accelerating faster than the doubts i used to know\nAnd discovering there's no limit to how far i want to go\n\nI'm running into everything i once was too afraid to try\nI'm reaching for the possibilities that used to pass me by\nI'm leaving all the familiar without forgetting where i've been\nMy comfort zone is growing as another life begins\n\nI'm not finished growing yet"},{"title":"Breaking Limits","src":"../audioPlayer/audio/Breaking%20Limits.mp3","description":"","lyrics":"I hear the rhythm calling me\nA steady pulse beneath my feet\nI feel the tempo taking hold\nThere's something waiting to unfold\n\nFive\n\nI take a step beyond the beat\nThe shifting patterns move my feet\nAnother measure comes around\nI'm pushing past familiar ground\n\nThe rhythm bends beneath my voice\nI find another way through noise\nEach changing pattern pulls me in\nAnd now the challenge can begin\n\nFour\n\nI feel the rhythm start to shift\nThe rising tempo gives a lift\nThe notes are moving out of line\nI'm finding ways to stay in time\n\nThe patterns twist and overlap\nThe drums are closing every gap\nI chase the pulse around the sound\nAnd feel the pressure building now\n\nThree\n\nThe beat is shifting underneath\nI barely have the time to breathe\nThe rhythm moves from side to side\nAnd still i push against the tide\n\nI hear the layers multiplying\nFeel the tempo intensifying\nEvery measure rearranging\nEvery pattern rapidly changing\n\nTwo\n\nI push the rhythm past the line\nAnother pattern out of time\nThe drums collide the guitars race\nI'm moving into unknown space\n\nThe shifting beats are overlapping\nEvery rhythm twisting snapping\nEvery second getting faster\nEvery measure growing harder\n\nOne\n\nI hear the sound accelerating\nFeel the rhythm escalating\nEvery limit disintegrating\nEvery second demonstrating\n\nI can take it even higher\nPush the rhythm through the fire\nEverything is moving faster\nI am taking over now\n\nZero\n\nI break the speed i break the sound\nI tear the limits to the ground\nThe rhythm shakes beneath my feet\nI'm moving faster than the beat\n\nI feel the power rising high\nThe notes are racing through the sky\nNo more restraint to hold me down\nI'm breaking through the speed of sound\n\nThe rhythm splits in different ways\nI chase the beats through shifting waves\nThe guitars strike against the time\nWhile every drum begins to climb\n\nThe measures change the patterns bend\nThe rising speed refuses end\nI find the spaces in between\nAnd push beyond what i have seen\n\nThe rhythm's breaking into pieces\nEvery shifting pattern increases\nDrums are striking guitars are racing\nEvery measure i'm embracing\n\nFaster movements tighter timing\nEvery note is still aligning\nThrough the chaos i keep driving\nEvery second i'm surviving\n\nI'm accelerating recreating\nEvery pattern elevating\nRearranging redefining\nEvery beat is realigning\n\nOverlapping interweaving\nEvery limit i am leaving\nFaster harder still advancing\nThrough the rhythm i'm expanding\n\nI have gone beyond the line\nI have made this rhythm mine\nWhat was once too fast to play\nIs what i'm overcoming today\n\nI once believed i'd never find\nThe strength to leave my fears behind\nBut every rhythm brought me here\nBeyond the limits i once feared\n\nAnd now the music carries me\nBeyond what i believed could be\nThe greatest thing i've come to know\nIs there's no limit to how far i'll go"}]}</script>
+  <script>
+(() => {
+  "use strict";
+  const { tracks } = JSON.parse(document.getElementById("album-data").textContent);
+  const get = (id) => document.getElementById(id);
+  const audio = get("audio");
+  const play = get("play");
+  const seek = get("seek");
+  const volume = get("volume");
+  const rows = Array.from(get("track-list").children);
+  let current = 0;
+  let playRequest = 0;
+  let stopped = false;
+
+  const status = (message) => { get("status").textContent = message; };
+  function time(seconds) {
+    if (!Number.isFinite(seconds)) return "--:--";
+    seconds = Math.max(0, Math.floor(seconds));
+    return Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0");
+  }
+  function updateProgress() {
+    const ready = Number.isFinite(audio.duration) && audio.duration > 0;
+    seek.disabled = !ready;
+    seek.max = ready ? audio.duration : 1;
+    seek.value = ready ? audio.currentTime : 0;
+    get("elapsed").textContent = time(audio.currentTime);
+    get("duration").textContent = time(audio.duration);
+    seek.setAttribute("aria-valuetext", time(audio.currentTime) + " of " + time(audio.duration));
+  }
+  function updateButtons() {
+    const playing = !audio.paused && !audio.ended;
+    play.textContent = playing ? "Pause" : "Play";
+    play.setAttribute("aria-pressed", String(playing));
+    rows.forEach((row, index) => {
+      const selected = index === current;
+      row.classList.toggle("active", selected);
+      const button = row.querySelector("button");
+      if (selected) button.setAttribute("aria-current", "true");
+      else button.removeAttribute("aria-current");
+      row.querySelector(".track-state").textContent = selected ? (playing ? "Playing" : "Selected") : "Play";
+    });
+  }
+  function updateVolume() {
+    volume.value = audio.volume;
+    const muted = audio.muted || audio.volume === 0;
+    get("mute").textContent = muted ? "Unmute" : "Mute";
+    get("mute").setAttribute("aria-pressed", String(muted));
+    get("volume-value").textContent = Math.round((muted ? 0 : audio.volume) * 100) + "%";
+  }
+  async function startPlayback() {
+    const request = ++playRequest;
+    try { await audio.play(); }
+    catch (error) {
+      if (request !== playRequest || error.name === "AbortError") return;
+      status(error.name === "NotAllowedError"
+        ? "Press Play to start the music."
+        : "Unable to play this track. Try another track or reload the page.");
+      updateButtons();
+    }
+  }
+  function selectTrack(index, autoplay) {
+    ++playRequest;
+    audio.pause();
+    current = index;
+    stopped = false;
+    const track = tracks[current];
+    audio.src = track.src;
+    audio.load();
+    get("now-title").textContent = track.title;
+    get("track-position").textContent = "Track " + (current + 1) + " of " + tracks.length;
+    get("song-description").textContent = track.description;
+    get("song-description").hidden = !track.description;
+    get("lyrics").textContent = track.lyrics;
+    get("lyrics-panel").hidden = !track.lyrics;
+    get("song-info").hidden = !track.description && !track.lyrics;
+    status("Ready to play " + track.title + ".");
+    updateProgress();
+    updateButtons();
+    if (autoplay) void startPlayback();
+  }
+  function skip(direction) {
+    const wasPlaying = !audio.paused && !audio.ended;
+    if (direction < 0 && audio.currentTime > 3) {
+      audio.currentTime = 0;
+      updateProgress();
+      return;
+    }
+    selectTrack((current + direction + tracks.length) % tracks.length, wasPlaying);
+  }
+
+  play.addEventListener("click", () => {
+    if (audio.paused) {
+      stopped = false;
+      if (audio.ended) audio.currentTime = 0;
+      void startPlayback();
+    } else { ++playRequest; audio.pause(); }
+  });
+  get("stop").addEventListener("click", () => {
+    ++playRequest;
+    stopped = true;
+    audio.pause();
+    audio.currentTime = 0;
+    updateProgress();
+    updateButtons();
+    status("Stopped. Press Play to restart " + tracks[current].title + ".");
+  });
+  get("previous").addEventListener("click", () => skip(-1));
+  get("next").addEventListener("click", () => skip(1));
+  rows.forEach((row, index) => row.querySelector("button").addEventListener("click", () => selectTrack(index, true)));
+  seek.addEventListener("input", () => {
+    if (!seek.disabled) audio.currentTime = Number(seek.value);
+    updateProgress();
+  });
+  volume.addEventListener("input", () => {
+    audio.volume = Number(volume.value);
+    if (audio.volume > 0) audio.muted = false;
+  });
+  get("mute").addEventListener("click", () => {
+    if (audio.muted || audio.volume === 0) { audio.muted = false; if (audio.volume === 0) audio.volume = 1; }
+    else audio.muted = true;
+  });
+  audio.addEventListener("volumechange", updateVolume);
+  ["loadedmetadata", "durationchange", "timeupdate", "emptied"].forEach((event) => audio.addEventListener(event, updateProgress));
+  audio.addEventListener("play", () => { updateButtons(); status("Playing " + tracks[current].title + "."); });
+  audio.addEventListener("pause", () => {
+    updateButtons();
+    if (!audio.ended && !stopped) status("Paused: " + tracks[current].title + ".");
+  });
+  audio.addEventListener("ended", () => {
+    if (current + 1 < tracks.length) selectTrack(current + 1, true);
+    else if (get("repeat").checked) selectTrack(0, true);
+    else { updateButtons(); status("Album finished. Choose a track to listen again."); }
+  });
+  audio.addEventListener("error", () => {
+    updateButtons();
+    status("Could not load " + tracks[current].title + ". Try another track.");
+  });
+
+  // Keep native controls as a fallback if JavaScript is disabled.
+  audio.controls = false;
+  get("custom-controls").hidden = false;
+  get("previous").disabled = tracks.length < 2;
+  get("next").disabled = tracks.length < 2;
+  selectTrack(0, false);
+  updateVolume();
+})();
+</script>
+</body>
+</html>
