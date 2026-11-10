@@ -1,0 +1,738 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Accidental Songwriter Challenge | PrincessTG</title>
+
+  <link rel="stylesheet" href="./styles/styles.css" />
+  <link rel="stylesheet" href="../styles/author.css" />
+  <link rel="icon" type="image/png" href="../images/logo avatar.png" />
+
+  <style>
+    /* Form-specific layout.
+       Existing website styles remain in effect. */
+
+    .challenge-form .form-field {
+      margin: 22px 0;
+    }
+
+    .challenge-form label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .challenge-form input:not([type="checkbox"]),
+    .challenge-form textarea,
+    .challenge-form select {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      margin-bottom: 12px;
+      border: 1px solid #999;
+      border-radius: 6px;
+      font: inherit;
+      background: #fff;
+      color: #222;
+    }
+
+    .challenge-form textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    .challenge-form .check-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .challenge-form .check-label input {
+      margin-top: 5px;
+    }
+
+    .challenge-form button,
+    .new-entry-button {
+      cursor: pointer;
+      padding: 12px 20px;
+      font: inherit;
+      font-weight: bold;
+      border-radius: 6px;
+    }
+
+    .challenge-form button:disabled {
+      cursor: wait;
+      opacity: 0.6;
+    }
+
+    .payment-code {
+      font-size: 2rem;
+      font-weight: bold;
+      letter-spacing: 5px;
+      margin: 15px 0;
+    }
+
+    .form-error {
+      color: #e53935;
+      font-weight: bold;
+    }
+
+    .challenge-form small {
+      display: block;
+      margin-bottom: 12px;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+  </style>
+</head>
+
+<body>
+  <header class="hero"></header>
+
+  <main class="about-page">
+
+    <a class="back-button" href="../index.html">
+      ← Back to Music
+    </a>
+
+    <section class="intro-card">
+
+      <h1>🎵 THE ACCIDENTAL SONGWRITER CHALLENGE 🎵</h1>
+
+      <p>
+        No songwriting experience required!
+        Just answer these 12 questions.
+        Your answers will be turned into a complete original song.
+      </p>
+
+      <p>
+        <strong>
+          THIS CHALLENGE COSTS A MINIMUM OF $10.
+          PAYMENT IS ACCEPTED THROUGH CASH APP ONLY.
+        </strong>
+      </p>
+
+      <p>
+        After submitting your answers, you will receive a
+        four-digit payment verification code.
+        Send at least $10 to
+        <strong class="cashapp-name"></strong>
+        using Cash App, and include your four-digit code
+        in the payment note.
+      </p>
+
+      <p>
+        Your song will be created after your payment
+        has been verified.
+      </p>
+
+    </section>
+
+    <!-- SONGWRITER FORM -->
+
+    <section class="intro-card" id="form-section">
+
+      <h2>Your Song Challenge Submission</h2>
+
+      <form
+        id="songwriter-form"
+        class="challenge-form"
+        action="https://formspree.io/f/xqpqzkgr"
+        method="POST"
+      >
+
+        <input
+          type="hidden"
+          name="_subject"
+          value="New Accidental Songwriter Challenge"
+        />
+
+        <input
+          type="hidden"
+          id="payment-code-input"
+          name="Payment Verification Code"
+        />
+
+        <div class="form-field">
+          <label for="participant-name">Your Name</label>
+          <input
+            type="text"
+            id="participant-name"
+            name="Participant Name"
+            required
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="participant-email">Your Email</label>
+          <input
+            type="email"
+            id="participant-email"
+            name="email"
+            required
+          />
+        </div>
+
+        <!-- QUESTION 1 -->
+
+        <div class="form-field">
+          <label for="q1">
+            1. What emotion should someone feel when listening?
+          </label>
+          <input
+            type="text"
+            id="q1"
+            name="1 - Emotion"
+            required
+          />
+        </div>
+
+        <!-- QUESTION 2 -->
+
+        <div class="form-field">
+
+          <label for="genre1">
+            2. What genre of music should it be?
+          </label>
+
+          <small>
+            Choose one genre, or combine up to three!
+          </small>
+
+          <label for="genre1">Primary Genre (Required)</label>
+          <select
+            id="genre1"
+            class="genre-select"
+            name="2 - Primary Genre"
+            required
+          >
+            <option value="">Select a genre</option>
+          </select>
+
+          <label for="genre2">Second Genre (Optional)</label>
+          <select
+            id="genre2"
+            class="genre-select"
+            name="2 - Second Genre"
+          >
+            <option value="">None</option>
+          </select>
+
+          <label for="genre3">Third Genre (Optional)</label>
+          <select
+            id="genre3"
+            class="genre-select"
+            name="2 - Third Genre"
+          >
+            <option value="">None</option>
+          </select>
+
+          <p id="genre-error" class="form-error" hidden>
+            Please select different genres.
+          </p>
+
+        </div>
+
+        <!-- QUESTION 3 -->
+
+        <div class="form-field">
+          <label for="q3">
+            3. Who is the main character?
+          </label>
+          <textarea
+            id="q3"
+            name="3 - Main Character"
+            required
+          ></textarea>
+        </div>
+
+        <!-- QUESTION 4 -->
+
+        <div class="form-field">
+          <label for="q4">
+            4. What does that character want more than anything?
+          </label>
+          <textarea
+            id="q4"
+            name="4 - Character Desire"
+            required
+          ></textarea>
+        </div>
+
+        <!-- QUESTION 5 -->
+
+        <div class="form-field">
+          <label for="q5">
+            5. What is stopping them from getting it?
+          </label>
+          <textarea
+            id="q5"
+            name="5 - Obstacle"
+            required
+          ></textarea>
+        </div>
+
+        <!-- QUESTION 6 -->
+
+        <div class="form-field">
+          <label for="q6">
+            6. Where does the story take place?
+          </label>
+          <textarea
+            id="q6"
+            name="6 - Story Location"
+            required
+          ></textarea>
+        </div>
+
+        <!-- QUESTION 7 -->
+
+        <div class="form-field">
+          <label for="q7">
+            7. What is the worst thing that could happen?
+          </label>
+          <textarea
+            id="q7"
+            name="7 - Worst Outcome"
+            required
+          ></textarea>
+        </div>
+
+        <!-- QUESTION 8 -->
+
+        <div class="form-field">
+          <label for="q8">
+            8. What secret is someone hiding?
+          </label>
+          <textarea
+            id="q8"
+            name="8 - Hidden Secret"
+            required
+          ></textarea>
+        </div>
+
+        <!-- QUESTION 9 -->
+
+        <div class="form-field">
+          <label for="q9">
+            9. Give me one random sentence the character might say.
+          </label>
+          <textarea
+            id="q9"
+            name="9 - Random Sentence"
+            required
+          ></textarea>
+        </div>
+
+        <!-- QUESTION 10 -->
+
+        <div class="form-field">
+          <label for="q10">
+            10. What should happen at the end?
+          </label>
+          <textarea
+            id="q10"
+            name="10 - Ending"
+            required
+          ></textarea>
+        </div>
+
+        <!-- QUESTION 11 -->
+
+        <div class="form-field">
+          <label for="q11">
+            11. What should the song be called?
+          </label>
+          <input
+            type="text"
+            id="q11"
+            name="11 - Song Title"
+            required
+          />
+        </div>
+
+        <!-- QUESTION 12 -->
+
+        <div class="form-field">
+          <label for="q12">
+            12. Choose one word that MUST appear in the chorus.
+          </label>
+          <input
+            type="text"
+            id="q12"
+            name="12 - Mandatory Chorus Word"
+            pattern="[^\s]+"
+            title="Please enter exactly one word."
+            required
+          />
+        </div>
+
+        <!-- RULES -->
+
+        <h2>Challenge Rules</h2>
+
+        <ul>
+          <li>Answer every question.</li>
+          <li>
+            Be as creative, serious, emotional,
+            or ridiculous as you want.
+          </li>
+          <li>You don't need to write a single lyric.</li>
+          <li>
+            Every answer must influence the finished song.
+          </li>
+          <li>Once submitted, your answers are final!</li>
+          <li>
+            The minimum payment is $10 through Cash App.
+          </li>
+          <li>
+            Your payment verification code must be included
+            in your Cash App payment note.
+          </li>
+          <li>
+            Your song will be created after payment verification.
+          </li>
+        </ul>
+
+        <div class="form-field">
+          <label class="check-label">
+            <input
+              type="checkbox"
+              name="Rules Accepted"
+              value="Yes"
+              required
+            />
+            <span>
+              I understand the challenge rules,
+              payment requirement, and that my answers
+              cannot be changed after submission.
+            </span>
+          </label>
+        </div>
+
+        <button type="submit" id="submit-button">
+          Submit My Song Challenge
+        </button>
+
+        <p id="submit-error" class="form-error" hidden>
+          Something went wrong submitting your answers.
+          Please try again.
+        </p>
+
+      </form>
+
+    </section>
+
+    <!-- SUCCESS / PAYMENT INSTRUCTIONS -->
+
+    <section
+      class="intro-card"
+      id="payment-confirmation"
+      hidden
+      aria-live="polite"
+    >
+
+      <h2>🎵 Your Challenge Has Been Submitted!</h2>
+
+      <p>
+        Thank you for participating!
+        Your answers have been received.
+      </p>
+
+      <h3>Your Four-Digit Payment Code</h3>
+
+      <p class="payment-code" id="display-payment-code"></p>
+
+      <p>
+        <strong>
+          PLEASE SEND AT LEAST $10 THROUGH CASH APP TO:
+        </strong>
+      </p>
+
+      <h3 class="cashapp-name"></h3>
+
+      <p>
+        <strong>
+          IMPORTANT: Include your four-digit code in
+          the Cash App payment note!
+        </strong>
+      </p>
+
+      <p>
+        Your code allows me to match your Cash App
+        payment to your song challenge submission.
+      </p>
+
+      <p>
+        Once your payment has been verified,
+        your answers will be used to create your song!
+      </p>
+
+      <p>
+        <strong>
+          Save your code until your payment is verified.
+        </strong>
+      </p>
+
+      <button
+        type="button"
+        id="new-entry-button"
+        class="new-entry-button"
+      >
+        Start Another Submission
+      </button>
+
+    </section>
+
+  </main>
+
+  <script>
+    // ==========================================
+    // CASH APP
+    // CHANGE THIS TO YOUR CASH APP CASHTAG
+    // ==========================================
+
+    const CASH_APP = "$TransGirl777";
+
+    document.querySelectorAll(".cashapp-name")
+      .forEach(element => {
+        element.textContent = CASH_APP;
+      });
+
+    // ==========================================
+    // GENRE LIST
+    // ONLY EDIT GENRES HERE
+    // ALL THREE DROPDOWNS USE THIS LIST
+    // ==========================================
+
+    const GENRES = [
+      "Pop",
+      "Pop Rock",
+      "Emotional Pop Rock",
+      "Power Pop",
+      "Soft Rock",
+      "Alternative Rock",
+      "Hard Rock",
+      "Classic Rock",
+      "Dark Rock",
+      "Pop Metal",
+      "Heavy Metal",
+      "Speed Metal",
+      "Alternative Metal",
+      "Heavy Alternative Metal",
+      "Melodic Metal",
+      "Modern Melodic Metal",
+      "Power Metal",
+      "Symphonic Metal",
+      "Gothic Metal",
+      "Industrial Metal",
+      "Industrial Alternative Metal",
+      "Industrial Nu Metal",
+      "Electronic Metal",
+      "Progressive Metal",
+      "Djent",
+      "Industrial Djent",
+      "Progressive Djent Metal",
+      "Progressive Groove Metal",
+      "Metalcore",
+      "Melodic Metalcore",
+      "Hardcore Metal",
+      "Mathcore",
+      "Black Metal",
+      "Melodic Death Metal",
+      "Extreme Progressive Metal"
+    ];
+
+    const genreSelects = Array.from(
+      document.querySelectorAll(".genre-select")
+    );
+
+    // Populate all genre dropdowns
+
+    genreSelects.forEach(select => {
+      GENRES.forEach(genre => {
+        const option = document.createElement("option");
+
+        option.value = genre;
+        option.textContent = genre;
+
+        select.appendChild(option);
+      });
+    });
+
+    // ==========================================
+    // PAYMENT CODE GENERATOR
+    // ==========================================
+
+    const storageKey = "princesstg-song-challenge";
+
+    function generateCode() {
+      const numbers = new Uint32Array(1);
+      crypto.getRandomValues(numbers);
+
+      return String(1000 + (numbers[0] % 9000));
+    }
+
+    function saveEntry(entry) {
+      sessionStorage.setItem(
+        storageKey,
+        JSON.stringify(entry)
+      );
+    }
+
+    function loadEntry() {
+      try {
+        return JSON.parse(
+          sessionStorage.getItem(storageKey)
+        );
+      } catch {
+        return null;
+      }
+    }
+
+    let entry = loadEntry();
+
+    if (!entry || !/^[0-9]{4}$/.test(entry.code)) {
+      entry = {
+        code: generateCode(),
+        submitted: false
+      };
+
+      saveEntry(entry);
+    }
+
+    const form = document.getElementById("songwriter-form");
+    const formSection = document.getElementById("form-section");
+    const confirmation = document.getElementById(
+      "payment-confirmation"
+    );
+
+    const paymentInput = document.getElementById(
+      "payment-code-input"
+    );
+
+    const displayCode = document.getElementById(
+      "display-payment-code"
+    );
+
+    const submitButton = document.getElementById(
+      "submit-button"
+    );
+
+    const submitError = document.getElementById(
+      "submit-error"
+    );
+
+    const genreError = document.getElementById(
+      "genre-error"
+    );
+
+    function showCurrentEntry() {
+      paymentInput.value = entry.code;
+      displayCode.textContent = entry.code;
+
+      formSection.hidden = entry.submitted;
+      confirmation.hidden = !entry.submitted;
+    }
+
+    showCurrentEntry();
+
+    // ==========================================
+    // SUBMIT FORM TO FORMSPREE
+    // ==========================================
+
+    form.addEventListener("submit", async function(event) {
+      event.preventDefault();
+
+      submitError.hidden = true;
+      genreError.hidden = true;
+
+      // Reject duplicate genres
+
+      const selectedGenres = genreSelects
+        .map(select => select.value)
+        .filter(Boolean);
+
+      const uniqueGenres = new Set(selectedGenres);
+
+      if (uniqueGenres.size !== selectedGenres.length) {
+        genreError.hidden = false;
+        genreError.scrollIntoView({
+          behavior: "smooth",
+          block: "center"
+        });
+        return;
+      }
+
+      // Ensure verification code is submitted
+
+      paymentInput.value = entry.code;
+
+      submitButton.disabled = true;
+      submitButton.textContent = "Submitting...";
+
+      try {
+        const response = await fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            "Accept": "application/json"
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error("Form submission failed");
+        }
+
+        // Mark this entry as submitted
+
+        entry.submitted = true;
+        saveEntry(entry);
+
+        // Show payment instructions
+
+        showCurrentEntry();
+
+        confirmation.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+
+      } catch (error) {
+        submitError.hidden = false;
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = "Submit My Song Challenge";
+      }
+    });
+
+    // ==========================================
+    // START A NEW ENTRY
+    // ==========================================
+
+    document.getElementById("new-entry-button")
+      .addEventListener("click", function() {
+        entry = {
+          code: generateCode(),
+          submitted: false
+        };
+
+        saveEntry(entry);
+        form.reset();
+        showCurrentEntry();
+
+        formSection.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      });
+  </script>
+
+</body>
+</html>
