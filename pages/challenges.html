@@ -1,47 +1,295 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>About PrincessTG</title>
-    <link rel="stylesheet" href="./styles/styles.css" />
-    <link rel="stylesheet" href="../styles/author.css" />
-    <link rel="icon" type="image/png" href="../images/logo avatar.png">
-  </head>
-  <body>
-    <header class="hero"></header>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Songwriting Challenges | PrincessTG</title>
+  <link rel="stylesheet" href="./styles/styles.css" />
+  <link rel="stylesheet" href="../styles/author.css" />
+  <link rel="icon" type="image/png" href="../images/logo avatar.png" />
+  <style>
+    /* Only styles specific to this page. Your existing stylesheets stay in place. */
+    .challenge-form .form-field { margin: 1.4rem 0; }
+    .challenge-form label { display: block; font-weight: bold; margin-bottom: 0.5rem; }
+    .challenge-form input:not([type="checkbox"]),
+    .challenge-form select,
+    .challenge-form textarea {
+      display: block;
+      box-sizing: border-box;
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #999;
+      border-radius: 6px;
+      background: white;
+      color: #222;
+      font: inherit;
+    }
+    .challenge-form textarea { min-height: 115px; resize: vertical; }
+    .challenge-form .check-label { display: flex; gap: 0.65rem; align-items: flex-start; }
+    .challenge-form .check-label input { margin-top: 0.3rem; }
+    .challenge-submit, .new-entry-button {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0.9rem 1.25rem;
+      border: 0;
+      border-radius: 6px;
+      background: #7944c9;
+      color: white;
+      font: inherit;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .challenge-submit:hover, .new-entry-button:hover { background: #5929a1; }
+    .challenge-submit:disabled { opacity: 0.6; cursor: wait; }
+    .challenge-card { margin-bottom: 1.25rem; }
+    .challenge-card h2 { margin-top: 0; }
+    /* The WHOLE Accidental Songwriter section is one link/button. */
+    a.intro-card.accidental-challenge-button {
+      display: block;
+      box-sizing: border-box;
+      width: 100%;
+      text-decoration: none;
+      cursor: pointer;
+      border: 2px solid #7944c9;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+    a.accidental-challenge-button, a.accidental-challenge-button * { color: inherit; }
+    a.accidental-challenge-button:hover { background: #7944c930; transform: translateY(-2px); }
+    a.accidental-challenge-button:focus-visible { outline: 3px solid #7944c9; outline-offset: 3px; }
+    .payment-code { font-size: 2.5rem; font-weight: bold; letter-spacing: 0.3rem; text-align: center; }
+    .form-error { color: #e34b4b; font-weight: bold; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <header class="hero"></header>
 
-    <main class="about-page">
+  <main class="about-page">
+    <a class="back-button" href="../index.html">← Back to Music</a>
 
-        <a class="back-button" href="../index.html">← Back to Music</a>
-      <section class="intro-card" aria-labelledby="about-heading">
-        <h1 id="about-heading">Challenges</h1>
+    <section class="intro-card" aria-labelledby="challenge-heading">
+      <h1 id="challenge-heading">🎵 Songwriting Challenges 🎵</h1>
+      <p>Pick a challenge and help inspire a brand-new original song. No songwriting experience needed!</p>
+      <p><strong>REGULAR CHALLENGES COST A MINIMUM OF $5. PAYMENT IS THROUGH CASH APP ONLY.</strong></p>
+      <p>Submit your challenge first. You'll receive a four-digit code to include in your Cash App payment note so I can match your payment with your entry.</p>
+      <p>Your song will be created after your payment is verified.</p>
+    </section>
+
+    <!-- $5 CHALLENGE FORM AT THE TOP -->
+    <section class="intro-card" id="form-section" aria-labelledby="form-heading">
+      <h2 id="form-heading">Submit a $5 Songwriting Challenge</h2>
+      <form id="challenge-form" class="challenge-form" action="https://formspree.io/f/xqpqzkgr" method="POST">
+        <input type="hidden" name="_subject" value="PrincessTG - $5 Songwriting Challenge" />
+        <input type="hidden" name="Challenge Type" value="Regular $5 Challenge" />
+        <input type="hidden" id="payment-code-input" name="Payment Verification Code" />
+
+        <div class="form-field">
+          <label for="participant-name">Your Name (Required)</label>
+          <input id="participant-name" name="Participant Name" type="text" autocomplete="name" required />
+        </div>
+        <div class="form-field">
+          <label for="participant-email">Your Email (Required)</label>
+          <input id="participant-email" name="email" type="email" autocomplete="email" required />
+        </div>
+        <div class="form-field">
+          <label for="challenge-select">Choose a Challenge (Required)</label>
+          <select id="challenge-select" name="Selected Challenge" required>
+            <option value="">Select a songwriting challenge</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="challenge-details">Additional Details (Optional)</label>
+          <textarea id="challenge-details" name="Additional Details" placeholder="Optional: song ideas, subjects, character details, words, or anything else you want me to consider."></textarea>
+        </div>
+
+        <h3>Challenge Rules</h3>
         <ul>
-
-<li>THE FORBIDDEN WORDS CHALLENGE - Write an emotional song without using 10 common emotional words, such as love, heart, pain, tears, broken, alone, fear, lost, cry, or hurt.</li>
-
-<li>THE REVERSE STORY CHALLENGE - Start with the ending of a story and work backward through the verses until the listener discovers what caused everything.</li>
-
-<li>THE GENRE ROULETTE CHALLENGE - Randomly select two completely different genres and combine them into one song.</li>
-
-<li>THE FOUR PERSPECTIVES CHALLENGE - Write four verses about the same event, each from a different person's perspective. Nobody agrees about what happened.</li>
-
-<li>THE EMOTIONAL CONTRADICTION CHALLENGE - Write a song with cheerful, upbeat instrumentation but devastating lyrics, or aggressive metal about forgiveness and compassion.</li>
-
-<li>THE ONE OBJECT CHALLENGE - Someone chooses an ordinary object. Build an entire emotional narrative around it.</li>
-
-<li>THE UNRELIABLE NARRATOR CHALLENGE - Write a song where the narrator believes they're the hero, but the listener gradually realizes they're actually the villain.</li>
-
-<li>THE CHANGING CHORUS CHALLENGE - Every chorus must change meaning as the story progresses. The final chorus completely transforms how the listener interprets the first.</li>
-
-<li>THE FIVE RANDOM WORDS CHALLENGE - Have five people each contribute one unrelated word. All five must become essential to the story.</li>
-
-<li>THE MUSICAL PLOT TWIST CHALLENGE - Write a song that sounds like a romantic love song for the first two verses, but the bridge reveals an entirely different situation.</li>
-
-<li>THE ACCIDENTAL SONGWRITER CHALLENGE - Answer 12 questions to create a unique, original song. <a href="./Accidental-Songwriters-Challenge.html">Try it now!</a></li>
-
+          <li>Select one of the 10 challenges below.</li>
+          <li>Enter your name and email. Extra details are optional.</li>
+          <li>Each regular challenge has a minimum $5 payment through Cash App.</li>
+          <li>Include the four-digit code shown after submission in your Cash App payment note.</li>
+          <li>The song will be created after payment is manually verified.</li>
+          <li>Once submitted, your selection and details are final.</li>
         </ul>
-      </section>
-    </main>
-  </body>
+        <div class="form-field">
+          <label class="check-label">
+            <input type="checkbox" name="Rules Accepted" value="Yes" required />
+            <span>I understand the rules and the $5 minimum payment requirement.</span>
+          </label>
+        </div>
+        <button class="challenge-submit" id="submit-button" type="submit">Submit My Challenge</button>
+        <p id="submit-error" class="form-error" role="alert" hidden>Your form couldn't be submitted. Please try again.</p>
+      </form>
+    </section>
+
+    <!-- SHOWN ONLY AFTER FORMSPREE ACCEPTS THE SUBMISSION -->
+    <section class="intro-card" id="payment-confirmation" aria-live="polite" hidden>
+      <h2>🎵 Your Challenge Has Been Submitted!</h2>
+      <p>Your answers were sent successfully.</p>
+      <h3>Your Selected Challenge</h3>
+      <p id="selected-challenge-display"></p>
+      <h3>Your Four-Digit Payment Code</h3>
+      <p class="payment-code" id="display-payment-code"></p>
+      <p><strong>PLEASE SEND AT LEAST $5 THROUGH CASH APP TO:</strong></p>
+      <h2 class="cashapp-name"></h2>
+      <p><strong>Include your four-digit code in the Cash App payment note!</strong></p>
+      <p>This lets me match your payment with your submission. Once payment is verified, your song can be created.</p>
+      <p><strong>Save your code until your payment has been verified.</strong></p>
+      <button class="new-entry-button" id="new-entry-button" type="button">Submit Another Challenge</button>
+    </section>
+
+    <!-- ENTIRE SECTION IS ONE CLICKABLE BUTTON -->
+    <a class="intro-card accidental-challenge-button"
+       href="./Accidental-Songwriters-Challenge.html"
+       aria-label="Try the Accidental Songwriter Challenge. Answer 12 questions. Minimum $10.">
+      <h2>🎵 THE ACCIDENTAL SONGWRITER CHALLENGE 🎵</h2>
+      <p>No songwriting experience required! Answer 12 questions to help create a unique, original song.</p>
+      <p><strong>THIS SPECIAL CHALLENGE COSTS A MINIMUM OF $10.</strong></p>
+      <p><strong>Click anywhere on this card to participate!</strong></p>
+    </a>
+
+    <section class="intro-card">
+      <h2>Available $5 Challenges</h2>
+      <p>Read the challenge descriptions below, then select your favorite in the form at the top.</p>
+    </section>
+
+    <!-- Dropdown options are read from these headings automatically. -->
+    <section class="intro-card challenge-card" data-challenge>
+      <h2>THE FORBIDDEN WORDS CHALLENGE</h2>
+      <p>Write an emotional song without using 10 common emotional words, such as love, heart, pain, tears, broken, alone, fear, lost, cry, or hurt.</p>
+    </section>
+    <section class="intro-card challenge-card" data-challenge>
+      <h2>THE REVERSE STORY CHALLENGE</h2>
+      <p>Start with the ending of a story and work backward through the verses until the listener discovers what caused everything.</p>
+    </section>
+    <section class="intro-card challenge-card" data-challenge>
+      <h2>THE GENRE ROULETTE CHALLENGE</h2>
+      <p>Randomly select two completely different genres and combine them into one song.</p>
+    </section>
+    <section class="intro-card challenge-card" data-challenge>
+      <h2>THE FOUR PERSPECTIVES CHALLENGE</h2>
+      <p>Write four verses about the same event, each from a different person's perspective. Nobody agrees about what happened.</p>
+    </section>
+    <section class="intro-card challenge-card" data-challenge>
+      <h2>THE EMOTIONAL CONTRADICTION CHALLENGE</h2>
+      <p>Write a song with cheerful, upbeat instrumentation but devastating lyrics, or aggressive metal about forgiveness and compassion.</p>
+    </section>
+    <section class="intro-card challenge-card" data-challenge>
+      <h2>THE ONE OBJECT CHALLENGE</h2>
+      <p>Someone chooses an ordinary object. Build an entire emotional narrative around it.</p>
+    </section>
+    <section class="intro-card challenge-card" data-challenge>
+      <h2>THE UNRELIABLE NARRATOR CHALLENGE</h2>
+      <p>Write a song where the narrator believes they're the hero, but the listener gradually realizes they're actually the villain.</p>
+    </section>
+    <section class="intro-card challenge-card" data-challenge>
+      <h2>THE CHANGING CHORUS CHALLENGE</h2>
+      <p>Every chorus must change meaning as the story progresses. The final chorus completely transforms how the listener interprets the first.</p>
+    </section>
+    <section class="intro-card challenge-card" data-challenge>
+      <h2>THE FIVE RANDOM WORDS CHALLENGE</h2>
+      <p>Have five people each contribute one unrelated word. All five must become essential to the story.</p>
+    </section>
+    <section class="intro-card challenge-card" data-challenge>
+      <h2>THE MUSICAL PLOT TWIST CHALLENGE</h2>
+      <p>Write a song that sounds like a romantic love song for the first two verses, but the bridge reveals an entirely different situation.</p>
+    </section>
+  </main>
+
+  <script>
+    // EDIT THIS ONE LINE TO USE YOUR REAL CASH APP HANDLE:
+    const CASH_APP = "$TransGirl777";
+    document.querySelectorAll(".cashapp-name").forEach(el => {
+      el.textContent = CASH_APP;
+    });
+
+    // Read the 10 challenge titles directly from their sections.
+    // Adding or editing a challenge title automatically updates the dropdown.
+    const challengeSelect = document.getElementById("challenge-select");
+    document.querySelectorAll(".challenge-card[data-challenge] h2").forEach(heading => {
+      const option = document.createElement("option");
+      option.value = heading.textContent.trim();
+      option.textContent = heading.textContent.trim();
+      challengeSelect.appendChild(option);
+    });
+
+    function generateCode() {
+      const number = new Uint32Array(1);
+      crypto.getRandomValues(number);
+      return String(1000 + (number[0] % 9000));
+    }
+
+    const storageKey = "princesstg-regular-challenge";
+    function loadEntry() {
+      try { return JSON.parse(sessionStorage.getItem(storageKey)); }
+      catch { return null; }
+    }
+    function saveEntry(value) {
+      try { sessionStorage.setItem(storageKey, JSON.stringify(value)); }
+      catch { /* Form still works if session storage is disabled. */ }
+    }
+    function newEntry() {
+      return { code: generateCode(), submitted: false, challenge: "" };
+    }
+
+    let entry = loadEntry();
+    if (!entry || !/^[0-9]{4}$/.test(entry.code)) {
+      entry = newEntry();
+      saveEntry(entry);
+    }
+
+    const form = document.getElementById("challenge-form");
+    const formSection = document.getElementById("form-section");
+    const confirmation = document.getElementById("payment-confirmation");
+    const paymentInput = document.getElementById("payment-code-input");
+    const submitButton = document.getElementById("submit-button");
+    const submitError = document.getElementById("submit-error");
+
+    function showCurrentEntry() {
+      paymentInput.value = entry.code;
+      document.getElementById("display-payment-code").textContent = entry.code;
+      document.getElementById("selected-challenge-display").textContent = entry.challenge;
+      formSection.hidden = entry.submitted;
+      confirmation.hidden = !entry.submitted;
+    }
+    showCurrentEntry();
+
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      submitError.hidden = true;
+      paymentInput.value = entry.code;
+      submitButton.disabled = true;
+      submitButton.textContent = "Submitting...";
+
+      try {
+        const response = await fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: { "Accept": "application/json" }
+        });
+        if (!response.ok) throw new Error("Submission unsuccessful");
+
+        entry.challenge = challengeSelect.value;
+        entry.submitted = true;
+        saveEntry(entry);
+        showCurrentEntry();
+        confirmation.scrollIntoView({ behavior: "smooth", block: "start" });
+      } catch {
+        submitError.hidden = false;
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = "Submit My Challenge";
+      }
+    });
+
+    document.getElementById("new-entry-button").addEventListener("click", () => {
+      entry = newEntry();
+      saveEntry(entry);
+      form.reset();
+      showCurrentEntry();
+      formSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  </script>
+</body>
 </html>
