@@ -1,0 +1,70 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>PrincessTG Poetry</title>
+
+  <link rel="stylesheet" href="../styles/styles.css">
+  <link rel="stylesheet" href="../styles/auth.css">
+  <link rel="stylesheet" href="../styles/poems.css">
+
+  <link rel="icon" type="image/png"
+        href="../images/logo avatar.png">
+
+  <script src="../script/menu.js" defer></script>
+  <script type="module" src="../script/auth.js"></script>
+  <script src="../script/poems.js" defer></script>
+</head>
+
+<body>
+  <div id="auth-container"></div>
+
+  <header class="hero"></header>
+
+  <main class="poetry-page">
+
+    <div id="poetry-navigation">
+      <a href="../index.html" class="back-button">
+        ← Back to Music
+      </a>
+    </div>
+
+    <section id="poetry-heading" class="poetry-heading">
+      <h1>PrincessTG Poetry</h1>
+      <p>Explore my collection of original poetry.</p>
+    </section>
+
+    <section id="poetry-library" class="poetry-library">
+      <h2>Poetry Collection</h2>
+
+      <p id="poem-count"></p>
+
+      <div id="poem-grid" class="poem-grid">
+        <p>Loading poetry...</p>
+      </div>
+    </section>
+
+    <section id="poem-reader" class="poem-reader" hidden>
+
+      <button
+        id="close-poem"
+        class="back-button"
+        type="button"
+      >
+        ← Back to Poetry
+      </button>
+
+      <h2 id="reader-title"></h2>
+
+      <p id="reader-rating"></p>
+
+      <div id="reader-content"></div>
+
+    </section>
+
+  </main>
+</body>
+</html>
