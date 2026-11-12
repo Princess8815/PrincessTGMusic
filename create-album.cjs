@@ -568,8 +568,11 @@ const INDEX_PAGE = String.raw`<!DOCTYPE html>
       section, footer, .album-card { padding: 1rem; }
     }
   </style>
+    <link rel="stylesheet" href="../styles/auth.css">
+    <script type="module" src="../script/auth.js"></script>
 </head>
 <body>
+  <div id="auth-container"></div>
   <header class="hero"><a href="../index.html" aria-label="PrincessTG Music home"></a></header>
   <main>
     <a class="back-link" href="../index.html">← Back to main page</a>
