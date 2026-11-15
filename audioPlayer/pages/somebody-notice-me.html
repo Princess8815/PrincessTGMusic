@@ -1,0 +1,300 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Somebody Notice Me by PrincessTG</title>
+  <meta name="description" content="Listen to Somebody Notice Me by PrincessTG." />
+  <meta property="og:title" content="Somebody Notice Me by PrincessTG" />
+  <meta property="og:description" content="Listen to Somebody Notice Me by PrincessTG." />
+  <meta property="og:image" content="https://princess8815.github.io/PrincessTGMusic/images/logo%20avatar.png" />
+  <meta property="og:url" content="https://princess8815.github.io/PrincessTGMusic/audioPlayer/pages/somebody-notice-me.html" />
+  <meta property="og:type" content="music.song" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Somebody Notice Me by PrincessTG" />
+  <meta name="twitter:description" content="Listen to Somebody Notice Me by PrincessTG." />
+  <meta name="twitter:image" content="https://princess8815.github.io/PrincessTGMusic/images/logo%20avatar.png" />
+
+  <link rel="icon" type="image/png" href="../../images/logo avatar.png" />
+  <link rel="stylesheet" href="../styles/main.css" />
+  <link rel="stylesheet" href="../styles/auth.css">
+
+  <script type="module" src="../../script/auth.js" defer></script>
+
+  <style>
+    .translation-toggle-container {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      margin: 15px 0;
+    }
+
+    .translation-toggle-container.visible {
+      display: flex;
+    }
+
+    .translation-toggle-container label {
+      cursor: pointer;
+    }
+
+    .translation-toggle-container input {
+      cursor: pointer;
+      width: 18px;
+      height: 18px;
+      accent-color: #b85cff;
+    }
+
+    #songLyrics {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+  </style>
+</head>
+
+<body data-song-id="somebody-notice-me" data-song-title="Somebody Notice Me">
+  <div id="auth-container"></div>
+
+  <main class="app">
+
+    <button id="back" type="button">
+      <a href="../index.html">Back to Song List</a>
+    </button>
+
+    <header class="app__header">
+      <h1 id="songTitle">Somebody Notice Me</h1>
+      <p class="status">Song details page</p>
+    </header>
+
+    <section class="now-playing">
+      <audio
+        id="songPlayer"
+        controls
+        style="width:100%; margin-top:10px;"
+      ></audio>
+
+      <button id="playSong" type="button">Play</button>
+      <button id="stopSong" type="button">Stop</button>
+    </section>
+
+    <section class="now-playing">
+      <h2>Description</h2>
+      <p id="songDescription"></p>
+    </section>
+
+    <section class="now-playing">
+      <h2>Album</h2>
+      <p id="songAlbum">Around the World</p>
+    </section>
+
+    <section class="now-playing">
+      <h2>Release Date</h2>
+      <p id="songDate">tbd</p>
+    </section>
+
+    <section class="now-playing">
+      <details class="lyrics-dropdown">
+        <summary>Lyrics</summary>
+
+        <div
+          id="translationToggleContainer"
+          class="translation-toggle-container"
+        >
+          <input
+            type="checkbox"
+            id="translationToggle"
+          />
+
+          <label for="translationToggle">
+            Show English Translation
+          </label>
+        </div>
+
+        <pre id="songLyrics">Another morning, another crowded train
+I hide my sadness behind a smile again
+誰も私の心を知らない
+今日も平気なふりをしていた
+
+A million faces passing by
+誰も私の目を見ない
+「大丈夫」と嘘をついて
+本当の気持ちを飲み込んだ
+
+I work until the daylight fades
+And count the hours, count the days
+期待に応えようとして
+自分の声さえ忘れてく
+
+Can anybody hear me now?
+この街の音に消されて
+助けてなんて言えなくて
+また笑顔を作ってしまう
+
+Somebody notice me tonight
+I'm disappearing in plain sight
+I don't need you to understand
+Just reach for me and take my hand
+
+誰か私に気づいてよ
+この声は届いているの？
+笑っていても苦しいの
+お願い、ひとりにしないで
+
+My apartment waits without a sound
+There's nobody when i turn around
+玄関の明かりをつけて
+静かな部屋に帰ってきた
+
+携帯の画面を見つめ
+送れない言葉を消して
+「寂しい」と書いたけれど
+誰にも送れず夜になる
+
+I'm tired of saying i'm okay
+I'm tired of living every day
+Behind a smile that isn't mine
+While everybody thinks i'm fine
+
+誰か私に気づいてよ
+この声は届いているの？
+笑っていても苦しいの
+お願い、ひとりにしないで
+
+Somebody notice me tonight
+I'm disappearing in plain sight
+I don't need you to understand
+Just reach for me and take my hand
+
+もう限界かもしれない
+But i don't know what i should say
+誰かに頼りたいのに
+迷惑だと思われそうで
+
+I type the words, then erase them all
+「助けて」と書いてみた
+I'm staring at my phone again
+Will anybody answer me?
+
+お願い、誰か聞いて
+私はここにいるんだよ
+I'm still waiting here tonight
+For someone to say i'll be alright
+
+送信ボタンに指を置く
+震える手が止まらない
+画面の光だけが揺れる
+Is anybody there?</pre>
+      </details>
+    </section>
+
+  </main>
+
+  <script src="../script/songlist.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      const songTitle = document.body.dataset.songTitle;
+      const songId = document.body.dataset.songId;
+
+      const lyricsElement = document.getElementById("songLyrics");
+      const toggleContainer = document.getElementById(
+        "translationToggleContainer"
+      );
+      const toggle = document.getElementById("translationToggle");
+
+      // Keep the generated lyrics as an initial fallback.
+      let originalLyrics = lyricsElement.textContent;
+      let englishTranslation = null;
+
+      // Load original lyrics from song-details.json.
+      try {
+        const response = await fetch(
+          "../audio/song-details.json"
+        );
+
+        if (!response.ok) {
+          throw new Error("Could not load song details.");
+        }
+
+        const songs = await response.json();
+
+        if (!Array.isArray(songs)) {
+          throw new Error("Invalid song details format.");
+        }
+
+        const song = songs.find((item) => {
+          if (songId && item.pageId === songId) {
+            return true;
+          }
+
+          return item.title === songTitle;
+        });
+
+        if (song && typeof song.lyrics === "string") {
+          originalLyrics = song.lyrics;
+          lyricsElement.textContent = originalLyrics;
+        }
+
+      } catch (error) {
+        console.warn(
+          "Using generated original lyrics:",
+          error
+        );
+      }
+
+      // Check whether this song has an English translation.
+      try {
+        const response = await fetch(
+          "../../data/translation.json"
+        );
+
+        if (!response.ok) {
+          return;
+        }
+
+        const translations = await response.json();
+
+        if (
+          !translations ||
+          typeof translations !== "object" ||
+          Array.isArray(translations)
+        ) {
+          return;
+        }
+
+        // Translation keys are song titles.
+        const translation = translations[songTitle];
+
+        if (
+          typeof translation !== "string" ||
+          !translation.trim()
+        ) {
+          return;
+        }
+
+        englishTranslation = translation;
+
+        // Only display the toggle when a translation exists.
+        toggleContainer.classList.add("visible");
+
+      } catch (error) {
+        console.warn(
+          "Translation unavailable:",
+          error
+        );
+      }
+
+      // Switch between original and translated lyrics.
+      toggle.addEventListener("change", () => {
+        if (toggle.checked && englishTranslation !== null) {
+          lyricsElement.textContent = englishTranslation;
+        } else {
+          lyricsElement.textContent = originalLyrics;
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>
+
