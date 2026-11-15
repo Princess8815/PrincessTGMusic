@@ -1,0 +1,305 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Freeing Korea by PrincessTG</title>
+  <meta name="description" content="Listen to Freeing Korea by PrincessTG." />
+  <meta property="og:title" content="Freeing Korea by PrincessTG" />
+  <meta property="og:description" content="Listen to Freeing Korea by PrincessTG." />
+  <meta property="og:image" content="https://princess8815.github.io/PrincessTGMusic/images/logo%20avatar.png" />
+  <meta property="og:url" content="https://princess8815.github.io/PrincessTGMusic/audioPlayer/pages/freeing-korea.html" />
+  <meta property="og:type" content="music.song" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Freeing Korea by PrincessTG" />
+  <meta name="twitter:description" content="Listen to Freeing Korea by PrincessTG." />
+  <meta name="twitter:image" content="https://princess8815.github.io/PrincessTGMusic/images/logo%20avatar.png" />
+
+  <link rel="icon" type="image/png" href="../../images/logo avatar.png" />
+  <link rel="stylesheet" href="../styles/main.css" />
+  <link rel="stylesheet" href="../styles/auth.css">
+
+  <script type="module" src="../../script/auth.js" defer></script>
+
+  <style>
+    .translation-toggle-container {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      margin: 15px 0;
+    }
+
+    .translation-toggle-container.visible {
+      display: flex;
+    }
+
+    .translation-toggle-container label {
+      cursor: pointer;
+    }
+
+    .translation-toggle-container input {
+      cursor: pointer;
+      width: 18px;
+      height: 18px;
+      accent-color: #b85cff;
+    }
+
+    #songLyrics {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+  </style>
+</head>
+
+<body data-song-id="freeing-korea" data-song-title="Freeing Korea">
+  <div id="auth-container"></div>
+
+  <main class="app">
+
+    <button id="back" type="button">
+      <a href="../index.html">Back to Song List</a>
+    </button>
+
+    <header class="app__header">
+      <h1 id="songTitle">Freeing Korea</h1>
+      <p class="status">Song details page</p>
+    </header>
+
+    <section class="now-playing">
+      <audio
+        id="songPlayer"
+        controls
+        style="width:100%; margin-top:10px;"
+      ></audio>
+
+      <button id="playSong" type="button">Play</button>
+      <button id="stopSong" type="button">Stop</button>
+    </section>
+
+    <section class="now-playing">
+      <h2>Description</h2>
+      <p id="songDescription"></p>
+    </section>
+
+    <section class="now-playing">
+      <h2>Album</h2>
+      <p id="songAlbum">Around the World</p>
+    </section>
+
+    <section class="now-playing">
+      <h2>Release Date</h2>
+      <p id="songDate">tbd</p>
+    </section>
+
+    <section class="now-playing">
+      <details class="lyrics-dropdown">
+        <summary>Lyrics</summary>
+
+        <div
+          id="translationToggleContainer"
+          class="translation-toggle-container"
+        >
+          <input
+            type="checkbox"
+            id="translationToggle"
+          />
+
+          <label for="translationToggle">
+            Show English Translation
+          </label>
+        </div>
+
+        <pre id="songLyrics">I was born where the borders close
+Where no one asks what a child knows
+I watch the birds cross over the sky
+And wonder why i'm forbidden to fly
+
+창문 너머로 세상을 봐요
+갈 수 없는 길을 바라봐요
+누군가 내 목소리를 들을까요
+언젠가 나도 자유로울까요
+
+밤이 오면 작은 꿈을 꿔요
+아무도 모르게 소원을 빌어요
+두려움 없이 말할 수 있다면
+내일은 조금 달라질 수 있을까요
+
+멀리 있는 누군가 들리나요
+여기에도 사람이 살고 있어요
+우리의 이름을 잊지 말아요
+제발 이 목소리를 들어 줘요
+
+Can anybody hear us calling?
+Can anybody see us here?
+We only want to live in freedom
+Without another day of fear
+
+우리가 바라는 건 자유예요
+두려움 없는 평범한 하루예요
+우리의 내일을 빼앗지 말아요
+우리도 사람답게 살고 싶어요
+
+어머니는 조용히 내 손을 잡고
+괜찮을 거라고 속삭이지만
+그 눈에 고인 눈물을 보면
+아무 말도 할 수가 없어요
+
+산 너머에는 무엇이 있나요
+그곳의 아이들은 웃고 있나요
+원하는 꿈을 말해도 되나요
+아무런 벌 없이 살아가나요
+
+If there's a world beyond these walls
+Please don't forget we're here at all
+We have our dreams, we have our names
+And every child deserves the same
+
+Can anybody hear us crying?
+Can anybody see our tears?
+We only want to live in freedom
+Not spend our lives consumed by fear
+
+우리의 작은 꿈을 지켜 줘요
+더는 침묵 속에 살게 하지 말아요
+언젠가 이 문이 열리는 날
+우리도 세상을 볼 수 있겠죠
+
+오늘도 해는 저 멀리 지고
+나는 아직 이곳에 남아 있어요
+하지만 마음속 작은 희망은
+누구도 빼앗아 갈 수 없어요
+
+제발 우리를 잊지 말아요
+이 어둠 속에 버려두지 말아요
+우리도 자유롭게 웃고 싶어요
+우리도 내일을 꿈꾸고 싶어요
+
+Can anybody hear us screaming?
+We're still alive behind these walls!
+We only ask to live in freedom
+Please hear us before the silence falls!
+
+우리의 목소리가 닿을 때까지
+자유의 문이 열리는 그날까지
+우리는 희망을 놓지 않을 거예요
+언젠가 자유롭게 살 수 있을 거예요
+
+오늘 밤도 하늘을 바라봐요
+언젠가 저 길을 걸을 수 있기를
+누군가 우리의 목소리를 듣기를
+그날이 오기를 기다려요</pre>
+      </details>
+    </section>
+
+  </main>
+
+  <script src="../script/songlist.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      const songTitle = document.body.dataset.songTitle;
+      const songId = document.body.dataset.songId;
+
+      const lyricsElement = document.getElementById("songLyrics");
+      const toggleContainer = document.getElementById(
+        "translationToggleContainer"
+      );
+      const toggle = document.getElementById("translationToggle");
+
+      // Keep the generated lyrics as an initial fallback.
+      let originalLyrics = lyricsElement.textContent;
+      let englishTranslation = null;
+
+      // Load original lyrics from song-details.json.
+      try {
+        const response = await fetch(
+          "../audio/song-details.json"
+        );
+
+        if (!response.ok) {
+          throw new Error("Could not load song details.");
+        }
+
+        const songs = await response.json();
+
+        if (!Array.isArray(songs)) {
+          throw new Error("Invalid song details format.");
+        }
+
+        const song = songs.find((item) => {
+          if (songId && item.pageId === songId) {
+            return true;
+          }
+
+          return item.title === songTitle;
+        });
+
+        if (song && typeof song.lyrics === "string") {
+          originalLyrics = song.lyrics;
+          lyricsElement.textContent = originalLyrics;
+        }
+
+      } catch (error) {
+        console.warn(
+          "Using generated original lyrics:",
+          error
+        );
+      }
+
+      // Check whether this song has an English translation.
+      try {
+        const response = await fetch(
+          "../../data/translation.json"
+        );
+
+        if (!response.ok) {
+          return;
+        }
+
+        const translations = await response.json();
+
+        if (
+          !translations ||
+          typeof translations !== "object" ||
+          Array.isArray(translations)
+        ) {
+          return;
+        }
+
+        // Translation keys are song titles.
+        const translation = translations[songTitle];
+
+        if (
+          typeof translation !== "string" ||
+          !translation.trim()
+        ) {
+          return;
+        }
+
+        englishTranslation = translation;
+
+        // Only display the toggle when a translation exists.
+        toggleContainer.classList.add("visible");
+
+      } catch (error) {
+        console.warn(
+          "Translation unavailable:",
+          error
+        );
+      }
+
+      // Switch between original and translated lyrics.
+      toggle.addEventListener("change", () => {
+        if (toggle.checked && englishTranslation !== null) {
+          lyricsElement.textContent = englishTranslation;
+        } else {
+          lyricsElement.textContent = originalLyrics;
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>
+
