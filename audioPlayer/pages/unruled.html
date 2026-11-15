@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,23 +15,64 @@
   <meta name="twitter:title" content="Unruled by PrincessTG" />
   <meta name="twitter:description" content="Listen to Unruled by PrincessTG." />
   <meta name="twitter:image" content="https://princess8815.github.io/PrincessTGMusic/images/logo%20avatar.png" />
+
   <link rel="icon" type="image/png" href="../../images/logo avatar.png" />
   <link rel="stylesheet" href="../styles/main.css" />
   <link rel="stylesheet" href="../styles/auth.css">
+
   <script type="module" src="../../script/auth.js" defer></script>
+
+  <style>
+    .translation-toggle-container {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      margin: 15px 0;
+    }
+
+    .translation-toggle-container.visible {
+      display: flex;
+    }
+
+    .translation-toggle-container label {
+      cursor: pointer;
+    }
+
+    .translation-toggle-container input {
+      cursor: pointer;
+      width: 18px;
+      height: 18px;
+      accent-color: #b85cff;
+    }
+
+    #songLyrics {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+  </style>
 </head>
+
 <body data-song-id="unruled" data-song-title="Unruled">
   <div id="auth-container"></div>
 
   <main class="app">
-    <button id="back" type="button"><a href="../index.html">Back to Song List</a></button>
+
+    <button id="back" type="button">
+      <a href="../index.html">Back to Song List</a>
+    </button>
+
     <header class="app__header">
       <h1 id="songTitle">Unruled</h1>
       <p class="status">Song details page</p>
     </header>
 
     <section class="now-playing">
-      <audio id="songPlayer" controls style="width:100%; margin-top:10px;"></audio>
+      <audio
+        id="songPlayer"
+        controls
+        style="width:100%; margin-top:10px;"
+      ></audio>
+
       <button id="playSong" type="button">Play</button>
       <button id="stopSong" type="button">Stop</button>
     </section>
@@ -53,6 +95,21 @@
     <section class="now-playing">
       <details class="lyrics-dropdown">
         <summary>Lyrics</summary>
+
+        <div
+          id="translationToggleContainer"
+          class="translation-toggle-container"
+        >
+          <input
+            type="checkbox"
+            id="translationToggle"
+          />
+
+          <label for="translationToggle">
+            Show English Translation
+          </label>
+        </div>
+
         <pre id="songLyrics">Freedom by peace
 Or freedom by war
 
@@ -179,8 +236,115 @@ Our freedom
 Forever</pre>
       </details>
     </section>
+
   </main>
 
   <script src="../script/songlist.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      const songTitle = document.body.dataset.songTitle;
+      const songId = document.body.dataset.songId;
+
+      const lyricsElement = document.getElementById("songLyrics");
+      const toggleContainer = document.getElementById(
+        "translationToggleContainer"
+      );
+      const toggle = document.getElementById("translationToggle");
+
+      // Keep the generated lyrics as an initial fallback.
+      let originalLyrics = lyricsElement.textContent;
+      let englishTranslation = null;
+
+      // Load original lyrics from song-details.json.
+      try {
+        const response = await fetch(
+          "../audio/song-details.json"
+        );
+
+        if (!response.ok) {
+          throw new Error("Could not load song details.");
+        }
+
+        const songs = await response.json();
+
+        if (!Array.isArray(songs)) {
+          throw new Error("Invalid song details format.");
+        }
+
+        const song = songs.find((item) => {
+          if (songId && item.pageId === songId) {
+            return true;
+          }
+
+          return item.title === songTitle;
+        });
+
+        if (song && typeof song.lyrics === "string") {
+          originalLyrics = song.lyrics;
+          lyricsElement.textContent = originalLyrics;
+        }
+
+      } catch (error) {
+        console.warn(
+          "Using generated original lyrics:",
+          error
+        );
+      }
+
+      // Check whether this song has an English translation.
+      try {
+        const response = await fetch(
+          "../../data/translation.json"
+        );
+
+        if (!response.ok) {
+          return;
+        }
+
+        const translations = await response.json();
+
+        if (
+          !translations ||
+          typeof translations !== "object" ||
+          Array.isArray(translations)
+        ) {
+          return;
+        }
+
+        // Translation keys are song titles.
+        const translation = translations[songTitle];
+
+        if (
+          typeof translation !== "string" ||
+          !translation.trim()
+        ) {
+          return;
+        }
+
+        englishTranslation = translation;
+
+        // Only display the toggle when a translation exists.
+        toggleContainer.classList.add("visible");
+
+      } catch (error) {
+        console.warn(
+          "Translation unavailable:",
+          error
+        );
+      }
+
+      // Switch between original and translated lyrics.
+      toggle.addEventListener("change", () => {
+        if (toggle.checked && englishTranslation !== null) {
+          lyricsElement.textContent = englishTranslation;
+        } else {
+          lyricsElement.textContent = originalLyrics;
+        }
+      });
+    });
+  </script>
+
 </body>
 </html>
+

@@ -4,6 +4,7 @@ const path = require("path");
 const readline = require("readline");
 
 const FILE = "./audioPlayer/audio/song-details.json";
+const TRANSLATION_FILE = "./data/translation.json";
 
 function slugify(title) {
   return String(title ?? "")
@@ -34,49 +35,37 @@ function makeUniquePageId(title, songs) {
   return pageId;
 }
 
-// Clean lyrics before saving
-
+// Clean lyrics while preserving foreign characters.
 function cleanLyrics(lyrics) {
   return String(lyrics ?? "")
-    // Remove ALL square bracket tags, including multiline tags
+    // Remove bracket-only lines.
+    .replace(/^[ \t]*\[[^\]\r\n]*\][ \t]*(?:\r?\n|$)/gm, "")
+
+    // Remove remaining bracket tags.
     .replace(/\[[\s\S]*?\]/g, "")
 
-    // Remove parentheses but KEEP the text inside
+    // Remove parentheses but keep their text.
     .replace(/[()]/g, "")
 
-    // Split into individual lines
     .split(/\r?\n/)
-
     .map((line) => {
-      // Remove extra spaces
       line = line.trim();
 
-      // Keep blank lines for separating verses
       if (!line) return "";
 
-      // Make all letters lowercase
-      line = line.toLowerCase();
+      // Lowercase Unicode letters, then capitalize
+      // the first letter in the line.
+      line = line.toLocaleLowerCase();
 
-      // Capitalize only the first letter of each line
-      line = line.replace(
-        /[a-z]/,
-        (letter) => letter.toUpperCase()
+      return line.replace(
+        /\p{L}/u,
+        (letter) => letter.toLocaleUpperCase()
       );
-
-      return line;
     })
-
-    // Put lyrics back together
     .join("\n")
-
-    // Remove excess blank lines (maximum one blank line)
     .replace(/\n{3,}/g, "\n\n")
-
-    // Remove leading and trailing whitespace
     .trim();
 }
-
-
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -84,7 +73,6 @@ const rl = readline.createInterface({
   terminal: Boolean(process.stdin.isTTY)
 });
 
-// Collect every input line in one place.
 const pendingLines = [];
 const waitingResolvers = [];
 
@@ -111,8 +99,24 @@ async function ask(question) {
   return (await nextLine()).trim();
 }
 
-async function getLyrics() {
-  console.log("\nPaste lyrics below.");
+async function askYesNo(question) {
+  while (true) {
+    const answer = (await ask(question)).toLowerCase();
+
+    if (answer === "y" || answer === "yes") {
+      return true;
+    }
+
+    if (answer === "n" || answer === "no") {
+      return false;
+    }
+
+    console.log("Please enter y or n.");
+  }
+}
+
+async function getLyrics(label = "lyrics") {
+  console.log(`\nPaste ${label} below.`);
   console.log("Type END on its own line when finished:\n");
 
   const lines = [];
@@ -130,36 +134,25 @@ async function getLyrics() {
   return lines.join("\n");
 }
 
+function loadJSON(file, fallback) {
+  if (!fs.existsSync(file)) {
+    return fallback;
+  }
 
-function cleanLyrics(lyrics) {
-  return String(lyrics ?? "")
-    // Remove bracket-only lines including their newline
-    .replace(/^[ \t]*\[[^\]\r\n]*\][ \t]*(?:\r?\n|$)/gm, "")
-
-    // Remove any remaining bracket tags
-    .replace(/\[[\s\S]*?\]/g, "")
-
-    // Remove parentheses but keep the text inside
-    .replace(/[()]/g, "")
-
-    .split(/\r?\n/)
-    .map((line) => {
-      line = line.trim();
-
-      if (!line) return "";
-
-      line = line.toLowerCase();
-
-      return line.replace(
-        /[a-z]/,
-        (letter) => letter.toUpperCase()
-      );
-    })
-    .join("\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
+  return JSON.parse(fs.readFileSync(file, "utf8"));
 }
 
+function saveJSON(file, data) {
+  fs.mkdirSync(path.dirname(file), {
+    recursive: true
+  });
+
+  fs.writeFileSync(
+    file,
+    JSON.stringify(data, null, 2),
+    "utf8"
+  );
+}
 
 async function main() {
   try {
@@ -168,28 +161,55 @@ async function main() {
     const album = await ask("Album: ");
     const releaseDate = await ask("Release date (YYYY-MM-DD): ");
 
-    const rawLyrics = await getLyrics();
+    // Original lyrics.
+    const rawLyrics = await getLyrics("original lyrics");
     const lyrics = cleanLyrics(rawLyrics);
 
     console.log("\n--- CLEANED LYRICS PREVIEW ---");
     console.log(lyrics);
     console.log("--- END PREVIEW ---\n");
 
-    const confirm = await ask("Save this song? (y/n): ");
+    // Ask whether the song needs translation.
+    const needsTranslation = await askYesNo(
+      "Does this song need an English translation? (y/n): "
+    );
 
-    if (confirm.toLowerCase() !== "y") {
+    let englishLyrics = null;
+
+    if (needsTranslation) {
+      const rawEnglishLyrics = await getLyrics(
+        "the English-only translation"
+      );
+
+      englishLyrics = cleanLyrics(rawEnglishLyrics);
+
+      if (!englishLyrics) {
+        throw new Error(
+          "English translation cannot be empty."
+        );
+      }
+
+      console.log("\n--- ENGLISH TRANSLATION PREVIEW ---");
+      console.log(englishLyrics);
+      console.log("--- END TRANSLATION PREVIEW ---\n");
+    }
+
+    const confirm = await askYesNo(
+      "Save this song? (y/n): "
+    );
+
+    if (!confirm) {
       console.log("Song not saved.");
       return;
     }
 
-    let songs = [];
+    // Load existing songs.
+    const songs = loadJSON(FILE, []);
 
-    if (fs.existsSync(FILE)) {
-      songs = JSON.parse(fs.readFileSync(FILE, "utf8"));
-
-      if (!Array.isArray(songs)) {
-        throw new Error("Song details must be a JSON array.");
-      }
+    if (!Array.isArray(songs)) {
+      throw new Error(
+        "Song details must be a JSON array."
+      );
     }
 
     const newSong = {
@@ -202,22 +222,53 @@ async function main() {
       lyrics
     };
 
+    // Prepare translation before writing files.
+    let translations = null;
+
+    if (needsTranslation) {
+      translations = loadJSON(TRANSLATION_FILE, {});
+
+      if (
+        translations === null ||
+        typeof translations !== "object" ||
+        Array.isArray(translations)
+      ) {
+        throw new Error(
+          "Translation JSON must be an object."
+        );
+      }
+
+      // Use the song title as the key.
+      if (Object.hasOwn(translations, title)) {
+        throw new Error(
+          `A translation already exists for "${title}".`
+        );
+      }
+
+      translations[title] = englishLyrics;
+    }
+
     songs.push(newSong);
 
-    fs.mkdirSync(path.dirname(FILE), {
-      recursive: true
-    });
+    // Save song details.
+    saveJSON(FILE, songs);
 
-    fs.writeFileSync(
-      FILE,
-      JSON.stringify(songs, null, 2),
-      "utf8"
-    );
+    // Save translation separately.
+    if (needsTranslation) {
+      saveJSON(TRANSLATION_FILE, translations);
+    }
 
     console.log("\nSong added successfully!");
+
     console.log(
       `Page file: audioPlayer/pages/${newSong.pageId}.html`
     );
+
+    if (needsTranslation) {
+      console.log(
+        `English translation saved in ${TRANSLATION_FILE}`
+      );
+    }
 
   } catch (err) {
     console.error("Error:", err);
@@ -227,4 +278,3 @@ async function main() {
 }
 
 main();
-
