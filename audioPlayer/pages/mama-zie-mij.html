@@ -1,0 +1,317 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mama, Zie Mij by PrincessTG</title>
+  <meta name="description" content="Listen to Mama, Zie Mij by PrincessTG." />
+  <meta property="og:title" content="Mama, Zie Mij by PrincessTG" />
+  <meta property="og:description" content="Listen to Mama, Zie Mij by PrincessTG." />
+  <meta property="og:image" content="https://princess8815.github.io/PrincessTGMusic/images/logo%20avatar.png" />
+  <meta property="og:url" content="https://princess8815.github.io/PrincessTGMusic/audioPlayer/pages/mama-zie-mij.html" />
+  <meta property="og:type" content="music.song" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Mama, Zie Mij by PrincessTG" />
+  <meta name="twitter:description" content="Listen to Mama, Zie Mij by PrincessTG." />
+  <meta name="twitter:image" content="https://princess8815.github.io/PrincessTGMusic/images/logo%20avatar.png" />
+
+  <link rel="icon" type="image/png" href="../../images/logo avatar.png" />
+  <link rel="stylesheet" href="../styles/main.css" />
+  <link rel="stylesheet" href="../styles/auth.css">
+
+  <script type="module" src="../../script/auth.js" defer></script>
+
+  <style>
+    .translation-toggle-container {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      margin: 15px 0;
+    }
+
+    .translation-toggle-container.visible {
+      display: flex;
+    }
+
+    .translation-toggle-container label {
+      cursor: pointer;
+    }
+
+    .translation-toggle-container input {
+      cursor: pointer;
+      width: 18px;
+      height: 18px;
+      accent-color: #b85cff;
+    }
+
+    #songLyrics {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+  </style>
+</head>
+
+<body data-song-id="mama-zie-mij" data-song-title="Mama, Zie Mij">
+  <div id="auth-container"></div>
+
+  <main class="app">
+
+    <button id="back" type="button">
+      <a href="../index.html">Back to Song List</a>
+    </button>
+
+    <header class="app__header">
+      <h1 id="songTitle">Mama, Zie Mij</h1>
+      <p class="status">Song details page</p>
+    </header>
+
+    <section class="now-playing">
+      <audio
+        id="songPlayer"
+        controls
+        style="width:100%; margin-top:10px;"
+      ></audio>
+
+      <button id="playSong" type="button">Play</button>
+      <button id="stopSong" type="button">Stop</button>
+    </section>
+
+    <section class="now-playing">
+      <h2>Description</h2>
+      <p id="songDescription"></p>
+    </section>
+
+    <section class="now-playing">
+      <h2>Album</h2>
+      <p id="songAlbum">Dedication</p>
+    </section>
+
+    <section class="now-playing">
+      <h2>Release Date</h2>
+      <p id="songDate">tbd</p>
+    </section>
+
+    <section class="now-playing">
+      <details class="lyrics-dropdown">
+        <summary>Lyrics</summary>
+
+        <div
+          id="translationToggleContainer"
+          class="translation-toggle-container"
+        >
+          <input
+            type="checkbox"
+            id="translationToggle"
+          />
+
+          <label for="translationToggle">
+            Show English Translation
+          </label>
+        </div>
+
+        <pre id="songLyrics">Mama, why can't you see?
+The little girl inside of me
+I only wanted you to care
+To hold me close and just be there
+
+Ik stond als kind voor onze spiegel
+En zag een meisje vol verdriet
+Ik wilde jou mijn waarheid zeggen
+Maar jij begreep mijn woorden niet
+
+Je zei dat ik moest leren zwijgen
+Dat ik jouw zoon zou blijven, altijd
+Ik probeerde mij voor jou te verbergen
+Maar raakte zo mezelf steeds kwijt
+
+Elke avond hoorde ik je schreeuwen
+Elke ochtend deed ik weer alsof
+Dat jouw woorden mij niet konden raken
+Maar vanbinnen ging ik langzaam kapot
+
+Mama, can't you see your daughter?
+Ik ben het meisje dat hier staat
+Waarom kun je mij niet liefhebben?
+Waarom is jouw liefde vol met haat?
+
+I just want to be your little girl
+Niet de zoon die jij nog altijd ziet
+Mama, kijk me alsjeblieft eens aan
+En zeg dat jij me niet verliet
+
+Je woorden sneden door mijn dromen
+Je woede joeg me uit jouw buurt
+Ik hoorde hoe je mij bleef noemen
+Met een naam die mij nog steeds verscheurt
+
+Ik heb zo vaak om jou gehuild
+Terwijl jij zei dat ik niet bestond
+Als dochter wilde ik je liefde
+Maar kreeg ik weer een nieuwe wond
+
+Ik vraag niet om een ander leven
+Ik vraag niet om een wonder meer
+Ik wil alleen jouw dochter wezen
+Waarom doet jouw afwijzing zo zeer?
+
+Mama, i'm still your daughter!
+Waarom wil jij dat niet verstaan?
+Ik heb zo lang op jou gewacht
+Maar jij blijft mij maar pijn doen, mama
+
+I don't want to lose my mother!
+Ik wil gewoon jouw meisje zijn
+Waarom moet ik blijven smeken?
+Waarom doet jouw liefde zoveel pijn?
+
+Weet je nog hoe ik kon lachen?
+Toen ik nog geloofde in jouw hand
+Dat jij me altijd zou beschermen
+En naast me stond, wat er ook kwam
+
+Maar nu ben ik bang voor jouw ogen
+Voor de woorden die je naar me gooit
+Toch blijf ik hopen dat je luistert
+Dat je mij als dochter ziet, ooit
+
+Mama, please don't turn away!
+Ik ben jouw dochter, hoor mijn stem!
+Ik ben geen fout die jij moet wissen!
+Ik ben het meisje dat ik ben!
+
+Please, mama, let me be your girl!
+Ik wil niet langer voor je vluchten!
+Ik wil gewoon dat jij me vasthoudt!
+En zegt dat ik jouw dochter ben!
+
+Mama, alsjeblieft, kijk naar mij
+Ik ben je dochter, laat me vrij
+Noem me je meisje, één keer maar
+Zeg dat je van me houdt, is dat zo zwaar?
+
+Mama, ik smeek je, hoor mijn stem
+Laat mij het meisje zijn dat ik ben
+Ik wil niet langer huilend leven
+Kun je mij jouw liefde geven?
+
+Alsjeblieft, mama, laat me zijn
+Jouw kleine meisje, zonder pijn
+Ik ben je dochter, zie je mij?
+Mama... alsjeblieft...
+
+Laat me het meisje zijn dat ik ben...</pre>
+      </details>
+    </section>
+
+  </main>
+
+  <script src="../script/songlist.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      const songTitle = document.body.dataset.songTitle;
+      const songId = document.body.dataset.songId;
+
+      const lyricsElement = document.getElementById("songLyrics");
+      const toggleContainer = document.getElementById(
+        "translationToggleContainer"
+      );
+      const toggle = document.getElementById("translationToggle");
+
+      // Keep the generated lyrics as an initial fallback.
+      let originalLyrics = lyricsElement.textContent;
+      let englishTranslation = null;
+
+      // Load original lyrics from song-details.json.
+      try {
+        const response = await fetch(
+          "../audio/song-details.json"
+        );
+
+        if (!response.ok) {
+          throw new Error("Could not load song details.");
+        }
+
+        const songs = await response.json();
+
+        if (!Array.isArray(songs)) {
+          throw new Error("Invalid song details format.");
+        }
+
+        const song = songs.find((item) => {
+          if (songId && item.pageId === songId) {
+            return true;
+          }
+
+          return item.title === songTitle;
+        });
+
+        if (song && typeof song.lyrics === "string") {
+          originalLyrics = song.lyrics;
+          lyricsElement.textContent = originalLyrics;
+        }
+
+      } catch (error) {
+        console.warn(
+          "Using generated original lyrics:",
+          error
+        );
+      }
+
+      // Check whether this song has an English translation.
+      try {
+        const response = await fetch(
+          "../../data/translation.json"
+        );
+
+        if (!response.ok) {
+          return;
+        }
+
+        const translations = await response.json();
+
+        if (
+          !translations ||
+          typeof translations !== "object" ||
+          Array.isArray(translations)
+        ) {
+          return;
+        }
+
+        // Translation keys are song titles.
+        const translation = translations[songTitle];
+
+        if (
+          typeof translation !== "string" ||
+          !translation.trim()
+        ) {
+          return;
+        }
+
+        englishTranslation = translation;
+
+        // Only display the toggle when a translation exists.
+        toggleContainer.classList.add("visible");
+
+      } catch (error) {
+        console.warn(
+          "Translation unavailable:",
+          error
+        );
+      }
+
+      // Switch between original and translated lyrics.
+      toggle.addEventListener("change", () => {
+        if (toggle.checked && englishTranslation !== null) {
+          lyricsElement.textContent = englishTranslation;
+        } else {
+          lyricsElement.textContent = originalLyrics;
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>
+
