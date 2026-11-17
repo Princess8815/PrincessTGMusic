@@ -1,0 +1,317 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cultural Love by PrincessTG</title>
+  <meta name="description" content="Listen to Cultural Love by PrincessTG." />
+  <meta property="og:title" content="Cultural Love by PrincessTG" />
+  <meta property="og:description" content="Listen to Cultural Love by PrincessTG." />
+  <meta property="og:image" content="https://princess8815.github.io/PrincessTGMusic/images/logo%20avatar.png" />
+  <meta property="og:url" content="https://princess8815.github.io/PrincessTGMusic/audioPlayer/pages/cultural-love.html" />
+  <meta property="og:type" content="music.song" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Cultural Love by PrincessTG" />
+  <meta name="twitter:description" content="Listen to Cultural Love by PrincessTG." />
+  <meta name="twitter:image" content="https://princess8815.github.io/PrincessTGMusic/images/logo%20avatar.png" />
+
+  <link rel="icon" type="image/png" href="../../images/logo avatar.png" />
+  <link rel="stylesheet" href="../styles/main.css" />
+  <link rel="stylesheet" href="../styles/auth.css">
+
+  <script type="module" src="../../script/auth.js" defer></script>
+
+  <style>
+    .translation-toggle-container {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      margin: 15px 0;
+    }
+
+    .translation-toggle-container.visible {
+      display: flex;
+    }
+
+    .translation-toggle-container label {
+      cursor: pointer;
+    }
+
+    .translation-toggle-container input {
+      cursor: pointer;
+      width: 18px;
+      height: 18px;
+      accent-color: #b85cff;
+    }
+
+    #songLyrics {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+  </style>
+</head>
+
+<body data-song-id="cultural-love" data-song-title="Cultural Love">
+  <div id="auth-container"></div>
+
+  <main class="app">
+
+    <button id="back" type="button">
+      <a href="../index.html">Back to Song List</a>
+    </button>
+
+    <header class="app__header">
+      <h1 id="songTitle">Cultural Love</h1>
+      <p class="status">Song details page</p>
+    </header>
+
+    <section class="now-playing">
+      <audio
+        id="songPlayer"
+        controls
+        style="width:100%; margin-top:10px;"
+      ></audio>
+
+      <button id="playSong" type="button">Play</button>
+      <button id="stopSong" type="button">Stop</button>
+    </section>
+
+    <section class="now-playing">
+      <h2>Description</h2>
+      <p id="songDescription"></p>
+    </section>
+
+    <section class="now-playing">
+      <h2>Album</h2>
+      <p id="songAlbum">Fragile</p>
+    </section>
+
+    <section class="now-playing">
+      <h2>Release Date</h2>
+      <p id="songDate">tbd</p>
+    </section>
+
+    <section class="now-playing">
+      <details class="lyrics-dropdown">
+        <summary>Lyrics</summary>
+
+        <div
+          id="translationToggleContainer"
+          class="translation-toggle-container"
+        >
+          <input
+            type="checkbox"
+            id="translationToggle"
+          />
+
+          <label for="translationToggle">
+            Show English Translation
+          </label>
+        </div>
+
+        <pre id="songLyrics">I don't know how to say hello
+When every word feels wrong
+You smile at me across the room
+And suddenly i'm gone
+
+I want to tell you how i feel
+But what if you don't understand?
+I practice words i barely know
+Then freeze when you reach for my hand
+
+네가 무슨 말을 할지 몰라도
+네 눈빛만 봐도 알 수 있어
+완벽한 말은 필요 없어
+그냥 내 곁에 있어 주면 돼
+
+I'm scared i'll say the wrong thing
+I'm scared you'll walk away
+
+틀려도 괜찮아, 걱정하지 마
+난 여기서 널 기다릴게
+
+I don't know how to love you
+When our words are worlds apart
+
+언어가 달라도 괜찮아
+난 이미 네 마음을 느껴
+
+Could you ever feel the same?
+Or am i dreaming all alone?
+
+두려워하지 말고 다가와
+너는 혼자가 아니야
+
+I watch you laugh, i look away
+Afraid you'll see me staring
+There's so much that i want to say
+But i'm terrified of sharing
+
+네가 숨기는 그 마음까지
+조금씩 내게 보여 줘도 돼
+서두르지 않아도 괜찮아
+난 네 이야기를 듣고 싶어
+
+I don't know how to love you
+But i want to learn somehow
+
+천천히 함께 걸어가자
+지금 이 순간부터 시작해
+
+I'm afraid to say i need you
+I'm afraid you'll disappear
+
+내 손을 잡아도 괜찮아
+난 네 곁에 있고 싶어
+
+I can't keep hiding anymore
+I'm crying here in front of you
+I tried so hard to find the words
+But nothing i rehearsed will do
+
+I'm scared because i love you
+I've loved you all this time
+And if you cannot love me back
+I'll understand, i'll be alright
+
+울지 마, 나도 널 사랑해
+나 역시 같은 마음이었어
+이제 더는 숨기지 않아도 돼
+우리 함께 사랑을 시작하자
+
+You heard the words i couldn't say
+And held me when i cried
+
+네가 내게 마음을 열어 줘서
+이제 우리 둘이 함께할 수 있어
+
+I never thought you'd love me too
+But now you're here with me
+
+서로 다른 말로 사랑해도
+우리 마음은 같은 곳에 있어
+
+I don't need the perfect words
+When you're standing here with me
+
+사랑해, 이제 내 손을 잡아
+우리의 이야기는 지금 시작돼
+
+I love you
+
+나도 사랑해</pre>
+      </details>
+    </section>
+
+  </main>
+
+  <script src="../script/songlist.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      const songTitle = document.body.dataset.songTitle;
+      const songId = document.body.dataset.songId;
+
+      const lyricsElement = document.getElementById("songLyrics");
+      const toggleContainer = document.getElementById(
+        "translationToggleContainer"
+      );
+      const toggle = document.getElementById("translationToggle");
+
+      // Keep the generated lyrics as an initial fallback.
+      let originalLyrics = lyricsElement.textContent;
+      let englishTranslation = null;
+
+      // Load original lyrics from song-details.json.
+      try {
+        const response = await fetch(
+          "../audio/song-details.json"
+        );
+
+        if (!response.ok) {
+          throw new Error("Could not load song details.");
+        }
+
+        const songs = await response.json();
+
+        if (!Array.isArray(songs)) {
+          throw new Error("Invalid song details format.");
+        }
+
+        const song = songs.find((item) => {
+          if (songId && item.pageId === songId) {
+            return true;
+          }
+
+          return item.title === songTitle;
+        });
+
+        if (song && typeof song.lyrics === "string") {
+          originalLyrics = song.lyrics;
+          lyricsElement.textContent = originalLyrics;
+        }
+
+      } catch (error) {
+        console.warn(
+          "Using generated original lyrics:",
+          error
+        );
+      }
+
+      // Check whether this song has an English translation.
+      try {
+        const response = await fetch(
+          "../../data/translation.json"
+        );
+
+        if (!response.ok) {
+          return;
+        }
+
+        const translations = await response.json();
+
+        if (
+          !translations ||
+          typeof translations !== "object" ||
+          Array.isArray(translations)
+        ) {
+          return;
+        }
+
+        // Translation keys are song titles.
+        const translation = translations[songTitle];
+
+        if (
+          typeof translation !== "string" ||
+          !translation.trim()
+        ) {
+          return;
+        }
+
+        englishTranslation = translation;
+
+        // Only display the toggle when a translation exists.
+        toggleContainer.classList.add("visible");
+
+      } catch (error) {
+        console.warn(
+          "Translation unavailable:",
+          error
+        );
+      }
+
+      // Switch between original and translated lyrics.
+      toggle.addEventListener("change", () => {
+        if (toggle.checked && englishTranslation !== null) {
+          lyricsElement.textContent = englishTranslation;
+        } else {
+          lyricsElement.textContent = originalLyrics;
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>
+
