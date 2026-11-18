@@ -1,0 +1,77 @@
+    /* Form-specific layout.
+       Existing website styles remain in effect. */
+
+    .challenge-form .form-field {
+      margin: 22px 0;
+    }
+
+    .challenge-form label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .challenge-form input:not([type="checkbox"]),
+    .challenge-form textarea,
+    .challenge-form select {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      margin-bottom: 12px;
+      border: 1px solid #999;
+      border-radius: 6px;
+      font: inherit;
+      background: #fff;
+      color: #222;
+    }
+
+    .challenge-form textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    .challenge-form .check-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .challenge-form .check-label input {
+      margin-top: 5px;
+    }
+
+    .challenge-form button,
+    .new-entry-button {
+      cursor: pointer;
+      padding: 12px 20px;
+      font: inherit;
+      font-weight: bold;
+      border-radius: 6px;
+    }
+
+    .challenge-form button:disabled {
+      cursor: wait;
+      opacity: 0.6;
+    }
+
+    .payment-code {
+      font-size: 2rem;
+      font-weight: bold;
+      letter-spacing: 5px;
+      margin: 15px 0;
+    }
+
+    .form-error {
+      color: #e53935;
+      font-weight: bold;
+    }
+
+    .challenge-form small {
+      display: block;
+      margin-bottom: 12px;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
