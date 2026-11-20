@@ -75,3 +75,164 @@
     [hidden] {
       display: none !important;
     }
+
+    .challenge-form .form-field {
+      margin: 1.4rem 0;
+    }
+
+    .challenge-form label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+
+    .challenge-form input:not([type="checkbox"]),
+    .challenge-form select,
+    .challenge-form textarea {
+      display: block;
+      box-sizing: border-box;
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #999;
+      border-radius: 6px;
+      background: white;
+      color: #222;
+      font: inherit;
+    }
+
+    .challenge-form textarea {
+      min-height: 115px;
+      resize: vertical;
+    }
+
+    .challenge-form .check-label {
+      display: flex;
+      gap: 0.65rem;
+      align-items: flex-start;
+    }
+
+    .challenge-form .check-label input {
+      margin-top: 0.3rem;
+    }
+
+    .challenge-submit,
+    .new-entry-button {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0.9rem 1.25rem;
+      border: 0;
+      border-radius: 6px;
+      background: #7944c9;
+      color: white;
+      font: inherit;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .challenge-submit:hover,
+    .new-entry-button:hover {
+      background: #5929a1;
+    }
+
+    .challenge-submit:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    .challenge-card {
+      margin-bottom: 1.25rem;
+    }
+
+    .challenge-card h2 {
+      margin-top: 0;
+    }
+
+    /* Accidental Songwriter clickable card */
+
+    a.intro-card.accidental-challenge-button {
+      display: block;
+      box-sizing: border-box;
+      width: 100%;
+      text-decoration: none;
+      cursor: pointer;
+      border: 2px solid #7944c9;
+      transition: background 0.2s ease,
+                  transform 0.2s ease;
+    }
+
+    a.accidental-challenge-button,
+    a.accidental-challenge-button * {
+      color: inherit;
+    }
+
+    a.accidental-challenge-button:hover {
+      background: #7944c930;
+      transform: translateY(-2px);
+    }
+
+    a.accidental-challenge-button:focus-visible {
+      outline: 3px solid #7944c9;
+      outline-offset: 3px;
+    }
+
+    /* Generated confirmation styles */
+
+    .payment-code {
+      font-size: 2.5rem;
+      font-weight: bold;
+      letter-spacing: 0.3rem;
+      text-align: center;
+    }
+
+    .confirmation-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .confirmation-actions > * {
+      flex: 1 1 200px;
+      box-sizing: border-box;
+      text-align: center;
+    }
+
+    .form-error {
+      color: #e34b4b;
+      font-weight: bold;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+        .payment-code {
+      font-size: 2.5rem;
+      font-weight: bold;
+      letter-spacing: 0.3rem;
+      text-align: center;
+      margin: 1.5rem 0;
+    }
+
+    .confirmation-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .confirmation-actions > * {
+      flex: 1 1 200px;
+      box-sizing: border-box;
+      text-align: center;
+    }
+
+    .form-error {
+      color: #e34b4b;
+      font-weight: bold;
+    }
+
+    [hidden] {
+      display: none !important;
+    }

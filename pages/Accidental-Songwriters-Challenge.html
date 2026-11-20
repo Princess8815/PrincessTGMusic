@@ -7,19 +7,27 @@
 
   <title>Accidental Songwriter Challenge | PrincessTG</title>
 
-  <link rel="stylesheet" href="./styles/styles.css" />
+  <link rel="stylesheet" href="../styles/styles.css" />
   <link rel="stylesheet" href="../styles/author.css" />
-  <link rel="icon" type="image/png" href="../images/logo avatar.png" />
-    <link rel="stylesheet" href="../styles/challenge.css">
-    <link rel="stylesheet" href="../styles/auth.css">
-    <script type="module" src="../script/auth.js"></script>
-    <script src="../script/genres.js" defer></script>
-    <script src="../script/form.js" defer></script>
+  <link rel="stylesheet" href="../styles/challenge.css" />
+  <link rel="stylesheet" href="../styles/auth.css" />
+
+  <link
+    rel="icon"
+    type="image/png"
+    href="../images/logo avatar.png"
+  />
+
+  <script type="module" src="../script/auth.js"></script>
+  <script src="../script/genres.js" defer></script>
+  <script src="../script/form.js" defer></script>
 
 </head>
 
 <body>
-    <div id="auth-container"></div>
+
+  <div id="auth-container"></div>
+
   <header class="hero"></header>
 
   <main class="about-page">
@@ -28,19 +36,27 @@
       ← Back to Music
     </a>
 
+    <!-- ======================================
+         INTRODUCTION
+    ======================================= -->
+
     <section class="intro-card">
 
-      <h1>🎵 THE ACCIDENTAL SONGWRITER CHALLENGE 🎵</h1>
+      <h1>
+        🎵 THE ACCIDENTAL SONGWRITER CHALLENGE 🎵
+      </h1>
 
       <p>
         No songwriting experience required!
         Just answer these 12 questions.
-        Your answers will be turned into a complete original song.
+        Your answers will be turned into
+        a complete original song.
       </p>
 
       <p>
         <strong>
-          THIS CHALLENGE COSTS A MINIMUM OF $10.
+          THIS CHALLENGE COSTS A MINIMUM OF
+          <span class="challenge-price"></span>.
           PAYMENT IS ACCEPTED THROUGH CASH APP ONLY.
         </strong>
       </p>
@@ -48,8 +64,10 @@
       <p>
         After submitting your answers, you will receive a
         four-digit payment verification code.
-        Send at least $10 to
-        <strong class="cashapp-name"></strong>
+
+        Send at least
+        <span class="challenge-price"></span>
+        to <strong class="cashapp-name"></strong>
         using Cash App, and include your four-digit code
         in the payment note.
       </p>
@@ -61,7 +79,9 @@
 
     </section>
 
-    <!-- SONGWRITER FORM -->
+    <!-- ======================================
+         ACCIDENTAL SONGWRITER FORM
+    ======================================= -->
 
     <section class="intro-card" id="form-section">
 
@@ -70,6 +90,10 @@
       <form
         id="songwriter-form"
         class="challenge-form"
+        data-price="10"
+        data-storage-key="princesstg-song-challenge"
+        data-back-url="../index.html"
+        data-back-label="Back to Music"
         action="https://formspree.io/f/xqpqzkgr"
         method="POST"
       >
@@ -86,41 +110,64 @@
           name="Payment Verification Code"
         />
 
+        <!-- PARTICIPANT NAME -->
+
         <div class="form-field">
-          <label for="participant-name">Your Name</label>
+
+          <label for="participant-name">
+            Your Name
+          </label>
+
           <input
             type="text"
             id="participant-name"
             name="Participant Name"
+            autocomplete="name"
             required
           />
+
         </div>
 
+        <!-- PARTICIPANT EMAIL -->
+
         <div class="form-field">
-          <label for="participant-email">Your Email</label>
+
+          <label for="participant-email">
+            Your Email
+          </label>
+
           <input
             type="email"
             id="participant-email"
             name="email"
+            autocomplete="email"
             required
           />
+
         </div>
 
-        <!-- QUESTION 1 -->
+        <!-- ======================================
+             QUESTION 1
+        ======================================= -->
 
         <div class="form-field">
+
           <label for="q1">
             1. What emotion should someone feel when listening?
           </label>
+
           <input
             type="text"
             id="q1"
             name="1 - Emotion"
             required
           />
+
         </div>
 
-        <!-- QUESTION 2 -->
+        <!-- ======================================
+             QUESTION 2
+        ======================================= -->
 
         <div class="form-field">
 
@@ -132,17 +179,29 @@
             Choose one genre, or combine up to three!
           </small>
 
-          <label for="genre1">Primary Genre (Required)</label>
+          <!-- PRIMARY GENRE -->
+
+          <label for="genre1">
+            Primary Genre (Required)
+          </label>
+
           <select
             id="genre1"
             class="genre-select"
             name="2 - Primary Genre"
             required
           >
-            <option value="">Select a genre</option>
+            <option value="">
+              Select a genre
+            </option>
           </select>
 
-          <label for="genre2">Second Genre (Optional)</label>
+          <!-- SECONDARY GENRE -->
+
+          <label for="genre2">
+            Second Genre (Optional)
+          </label>
+
           <select
             id="genre2"
             class="genre-select"
@@ -151,7 +210,12 @@
             <option value="">None</option>
           </select>
 
-          <label for="genre3">Third Genre (Optional)</label>
+          <!-- THIRD GENRE -->
+
+          <label for="genre3">
+            Third Genre (Optional)
+          </label>
+
           <select
             id="genre3"
             class="genre-select"
@@ -160,136 +224,192 @@
             <option value="">None</option>
           </select>
 
-          <p id="genre-error" class="form-error" hidden>
+          <!-- DUPLICATE GENRE ERROR -->
+
+          <p
+            id="genre-error"
+            class="form-error"
+            role="alert"
+            hidden
+          >
             Please select different genres.
           </p>
 
         </div>
 
-        <!-- QUESTION 3 -->
+        <!-- ======================================
+             QUESTION 3
+        ======================================= -->
 
         <div class="form-field">
+
           <label for="q3">
             3. Who is the main character?
           </label>
+
           <textarea
             id="q3"
             name="3 - Main Character"
             required
           ></textarea>
+
         </div>
 
-        <!-- QUESTION 4 -->
+        <!-- ======================================
+             QUESTION 4
+        ======================================= -->
 
         <div class="form-field">
+
           <label for="q4">
             4. What does that character want more than anything?
           </label>
+
           <textarea
             id="q4"
             name="4 - Character Desire"
             required
           ></textarea>
+
         </div>
 
-        <!-- QUESTION 5 -->
+        <!-- ======================================
+             QUESTION 5
+        ======================================= -->
 
         <div class="form-field">
+
           <label for="q5">
             5. What is stopping them from getting it?
           </label>
+
           <textarea
             id="q5"
             name="5 - Obstacle"
             required
           ></textarea>
+
         </div>
 
-        <!-- QUESTION 6 -->
+        <!-- ======================================
+             QUESTION 6
+        ======================================= -->
 
         <div class="form-field">
+
           <label for="q6">
             6. Where does the story take place?
           </label>
+
           <textarea
             id="q6"
             name="6 - Story Location"
             required
           ></textarea>
+
         </div>
 
-        <!-- QUESTION 7 -->
+        <!-- ======================================
+             QUESTION 7
+        ======================================= -->
 
         <div class="form-field">
+
           <label for="q7">
             7. What is the worst thing that could happen?
           </label>
+
           <textarea
             id="q7"
             name="7 - Worst Outcome"
             required
           ></textarea>
+
         </div>
 
-        <!-- QUESTION 8 -->
+        <!-- ======================================
+             QUESTION 8
+        ======================================= -->
 
         <div class="form-field">
+
           <label for="q8">
             8. What secret is someone hiding?
           </label>
+
           <textarea
             id="q8"
             name="8 - Hidden Secret"
             required
           ></textarea>
+
         </div>
 
-        <!-- QUESTION 9 -->
+        <!-- ======================================
+             QUESTION 9
+        ======================================= -->
 
         <div class="form-field">
+
           <label for="q9">
             9. Give me one random sentence the character might say.
           </label>
+
           <textarea
             id="q9"
             name="9 - Random Sentence"
             required
           ></textarea>
+
         </div>
 
-        <!-- QUESTION 10 -->
+        <!-- ======================================
+             QUESTION 10
+        ======================================= -->
 
         <div class="form-field">
+
           <label for="q10">
             10. What should happen at the end?
           </label>
+
           <textarea
             id="q10"
             name="10 - Ending"
             required
           ></textarea>
+
         </div>
 
-        <!-- QUESTION 11 -->
+        <!-- ======================================
+             QUESTION 11
+        ======================================= -->
 
         <div class="form-field">
+
           <label for="q11">
             11. What should the song be called?
           </label>
+
           <input
             type="text"
             id="q11"
             name="11 - Song Title"
             required
           />
+
         </div>
 
-        <!-- QUESTION 12 -->
+        <!-- ======================================
+             QUESTION 12
+        ======================================= -->
 
         <div class="form-field">
+
           <label for="q12">
             12. Choose one word that MUST appear in the chorus.
           </label>
+
           <input
             type="text"
             id="q12"
@@ -298,56 +418,103 @@
             title="Please enter exactly one word."
             required
           />
+
         </div>
 
-        <!-- RULES -->
+        <!-- ======================================
+             CHALLENGE RULES
+        ======================================= -->
 
         <h2>Challenge Rules</h2>
 
         <ul>
-          <li>Answer every question.</li>
+
+          <li>
+            Answer every question.
+          </li>
+
           <li>
             Be as creative, serious, emotional,
             or ridiculous as you want.
           </li>
-          <li>You don't need to write a single lyric.</li>
+
           <li>
-            Every answer must influence the finished song.
+            You don't need to write a single lyric.
           </li>
-          <li>Once submitted, your answers are final!</li>
+
           <li>
-            The minimum payment is $10 through Cash App.
+            Every answer must influence
+            the finished song.
           </li>
+
           <li>
-            Your payment verification code must be included
-            in your Cash App payment note.
+            Once submitted, your answers are final!
           </li>
+
           <li>
-            Your song will be created after payment verification.
+            The minimum payment is
+            <span class="challenge-price"></span>
+            through Cash App.
           </li>
+
+          <li>
+            Your payment verification code
+            must be included in your
+            Cash App payment note.
+          </li>
+
+          <li>
+            Your song will be created
+            after payment verification.
+          </li>
+
         </ul>
 
+        <!-- ======================================
+             ACCEPT RULES
+        ======================================= -->
+
         <div class="form-field">
+
           <label class="check-label">
+
             <input
               type="checkbox"
               name="Rules Accepted"
               value="Yes"
               required
             />
+
             <span>
               I understand the challenge rules,
-              payment requirement, and that my answers
-              cannot be changed after submission.
+              payment requirement, and that
+              my answers cannot be changed
+              after submission.
             </span>
+
           </label>
+
         </div>
 
-        <button type="submit" id="submit-button">
+        <!-- ======================================
+             SUBMIT BUTTON
+        ======================================= -->
+
+        <button
+          type="submit"
+          id="submit-button"
+        >
           Submit My Song Challenge
         </button>
 
-        <p id="submit-error" class="form-error" hidden>
+        <!-- FORM SUBMISSION ERROR -->
+
+        <p
+          id="submit-error"
+          class="form-error"
+          role="alert"
+          hidden
+        >
           Something went wrong submitting your answers.
           Please try again.
         </p>
@@ -356,66 +523,14 @@
 
     </section>
 
-    <!-- SUCCESS / PAYMENT INSTRUCTIONS -->
+    <!-- ======================================
+         PAYMENT CONFIRMATION
 
-    <section
-      class="intro-card"
-      id="payment-confirmation"
-      hidden
-      aria-live="polite"
-    >
+         Automatically generated by form.js.
 
-      <h2>🎵 Your Challenge Has Been Submitted!</h2>
-
-      <p>
-        Thank you for participating!
-        Your answers have been received.
-      </p>
-
-      <h3>Your Four-Digit Payment Code</h3>
-
-      <p class="payment-code" id="display-payment-code"></p>
-
-      <p>
-        <strong>
-          PLEASE SEND AT LEAST $10 THROUGH CASH APP TO:
-        </strong>
-      </p>
-
-      <h3 class="cashapp-name"></h3>
-
-      <p>
-        <strong>
-          IMPORTANT: Include your four-digit code in
-          the Cash App payment note!
-        </strong>
-      </p>
-
-      <p>
-        Your code allows me to match your Cash App
-        payment to your song challenge submission.
-      </p>
-
-      <p>
-        Once your payment has been verified,
-        your answers will be used to create your song!
-      </p>
-
-      <p>
-        <strong>
-          Save your code until your payment is verified.
-        </strong>
-      </p>
-
-      <button
-        type="button"
-        id="new-entry-button"
-        class="new-entry-button"
-      >
-        Start Another Submission
-      </button>
-
-    </section>
+         Do not add a confirmation section here.
+         JavaScript inserts it after the form.
+    ======================================= -->
 
   </main>
 
