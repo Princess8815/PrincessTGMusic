@@ -106,4 +106,121 @@ async function loadSongDetails() {
   }
 }
 
+
+/* ==========================================
+   DISABLE PLAYER FOR RELEASED SONGS
+========================================== */
+
+async function checkReleasedSongPlayback() {
+  const player = document.getElementById("songPlayer");
+
+  if (!player) return;
+
+  const playButton = document.getElementById("playSong");
+  const stopButton = document.getElementById("stopSong");
+
+  // Disable playback while checking availability.
+  player.controls = false;
+
+  if (playButton) playButton.disabled = true;
+  if (stopButton) stopButton.disabled = true;
+
+  function enablePlayer() {
+    player.controls = true;
+
+    if (playButton) playButton.disabled = false;
+    if (stopButton) stopButton.disabled = false;
+  }
+
+  function fileKey(path) {
+    return String(path || "")
+      .split(/[\\/]/)
+      .pop()
+      .split(/[?#]/)[0]
+      .replace(/\.[^.]+$/, "")
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  }
+
+  try {
+    const [indexResponse, detailsResponse] =
+      await Promise.all([
+        fetch("../audio/index.json"),
+        fetch("../audio/song-details.json")
+      ]);
+
+    if (!indexResponse.ok || !detailsResponse.ok) {
+      throw new Error("Could not check audio availability.");
+    }
+
+    const audioIndex = await indexResponse.json();
+    const songDetails = await detailsResponse.json();
+
+    if (!Array.isArray(audioIndex) ||
+        !Array.isArray(songDetails)) {
+      throw new Error("Invalid audio data.");
+    }
+
+    const songId = document.body.dataset.songId;
+    const songTitle = document.body.dataset.songTitle;
+
+    const song = songDetails.find(item =>
+      (songId && item.pageId === songId) ||
+      (songTitle && item.title === songTitle)
+    );
+
+    if (!song || !song.file) {
+      enablePlayer();
+      return;
+    }
+
+    const songFile = fileKey(song.file);
+
+    const isAvailable = audioIndex.some(path =>
+      fileKey(typeof path === "string" ? path : path?.file)
+        === songFile
+    );
+
+    if (isAvailable) {
+      enablePlayer();
+      return;
+    }
+
+    // Song is no longer listed in index.json.
+    // Remove the playable controls.
+
+    player.pause();
+    player.removeAttribute("src");
+    player.load();
+
+    const playerSection = player.closest(".now-playing");
+
+    if (playerSection) {
+      const notice = document.createElement("p");
+
+      notice.className = "status";
+
+      notice.textContent =
+        "This song has been released. " +
+        "On-site audio playback is disabled. " +
+        "Please listen on your favorite streaming platform.";
+
+      playerSection.replaceChildren(notice);
+    }
+
+  } catch (error) {
+    console.warn("Audio availability check failed:", error);
+
+    // Keep existing playback available if the
+    // availability files could not be checked.
+    enablePlayer();
+  }
+}
+
+checkReleasedSongPlayback();
+
+
 loadSongDetails();

@@ -1,0 +1,524 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Released Songs | PrincessTG Music</title>
+
+  <meta
+    name="description"
+    content="Explore released songs by PrincessTG, view lyrics and song details, and find streaming platforms."
+  />
+
+  <link
+    rel="icon"
+    type="image/png"
+    href="../images/logo avatar.png"
+  />
+
+  <link rel="stylesheet" href="../styles/styles.css" />
+  <link rel="stylesheet" href="../styles/author.css" />
+  <link rel="stylesheet" href="../styles/auth.css" />
+
+  <script src="../script/menu.js" defer></script>
+  <script src="../script/releases.js" defer></script>
+  <script type="module" src="../script/auth.js"></script>
+
+  <style>
+    /* ========================================
+       RELEASES PAGE
+    ======================================== */
+
+    .releases-page {
+      width: min(1100px, 94%);
+      margin: 0 auto;
+      padding: 2rem 0 4rem;
+    }
+
+    .releases-page .intro-card {
+      margin-bottom: 2rem;
+    }
+
+    .releases-page h1,
+    .releases-page h2 {
+      text-align: center;
+    }
+
+    .release-note {
+      text-align: center;
+      line-height: 1.7;
+      margin: 1.5rem auto;
+      max-width: 800px;
+    }
+
+    /* ========================================
+       STREAMING PLATFORM LOGOS
+    ======================================== */
+
+    .music-platforms {
+      display: grid;
+      grid-template-columns:
+        repeat(auto-fit, minmax(135px, 1fr));
+      gap: 1.25rem;
+      margin: 2rem 0;
+    }
+
+    .music-platforms a {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+
+      padding: 1rem;
+      border: 1px solid #7944c9;
+      border-radius: 12px;
+
+      background: rgba(121, 68, 201, 0.08);
+      color: inherit;
+      text-decoration: none;
+
+      transition:
+        transform 0.2s ease,
+        background 0.2s ease;
+    }
+
+    .music-platforms a:hover {
+      background: rgba(121, 68, 201, 0.2);
+      transform: translateY(-3px);
+    }
+
+    .music-platforms img {
+      width: 68px;
+      height: 68px;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+
+    .music-platforms span {
+      font-weight: bold;
+      text-align: center;
+    }
+
+    /* ========================================
+       RELEASED SONG BUTTONS
+    ======================================== */
+
+    .released-song-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .released-song-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      min-height: 65px;
+      padding: 1rem;
+
+      border-radius: 10px;
+      background: #7944c9;
+      color: #fff;
+
+      font-weight: bold;
+      text-align: center;
+      text-decoration: none;
+
+      overflow-wrap: anywhere;
+
+      transition:
+        background 0.2s ease,
+        transform 0.2s ease;
+    }
+
+    .released-song-button:hover {
+      background: #5929a1;
+      transform: translateY(-2px);
+    }
+
+    .released-song-button:focus-visible,
+    .music-platforms a:focus-visible {
+      outline: 3px solid #ad86ef;
+      outline-offset: 3px;
+    }
+
+    #releases-status {
+      text-align: center;
+      font-weight: bold;
+      margin: 1rem 0;
+    }
+
+    @media (max-width: 480px) {
+      .music-platforms {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .released-song-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+
+/* ==========================================
+   RELEASE SEARCH AND FILTER CONTROLS
+========================================== */
+
+.release-controls {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.release-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.release-control label {
+  font-weight: bold;
+}
+
+.release-control input,
+.release-control select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 0.85rem;
+  border: 1px solid #7944c9;
+  border-radius: 8px;
+  background: white;
+  color: #222;
+  font: inherit;
+}
+
+.release-control input:focus,
+.release-control select:focus {
+  outline: 2px solid #7944c9;
+  outline-offset: 2px;
+}
+
+/* RESET FILTER BUTTON */
+
+.release-reset-button {
+  display: block;
+  margin: 0 auto 1.5rem;
+  padding: 0.75rem 1.5rem;
+  background: #7944c9;
+  border: 0;
+  border-radius: 8px;
+  color: white;
+  font: inherit;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.release-reset-button:hover {
+  background: #5929a1;
+}
+
+/* SONG BUTTON METADATA */
+
+.released-song-button {
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.released-song-title {
+  font-weight: bold;
+}
+
+.released-song-meta {
+  font-size: 0.8rem;
+  font-weight: normal;
+  opacity: 0.85;
+  overflow-wrap: anywhere;
+}
+
+/* TABLETS */
+
+@media (max-width: 900px) {
+  .release-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* MOBILE PHONES */
+
+@media (max-width: 520px) {
+  .release-controls {
+    grid-template-columns: 1fr;
+  }
+}
+
+  </style>
+</head>
+
+<body>
+
+  <div id="auth-container"></div>
+
+  <header class="hero"></header>
+
+  <main class="releases-page">
+
+    <a class="back-button" href="../index.html">
+      ← Back to Music
+    </a>
+
+    <!-- ======================================
+         STREAMING PLATFORMS
+    ======================================= -->
+
+    <section
+      class="intro-card"
+      aria-labelledby="streaming-heading"
+    >
+
+      <h1 id="streaming-heading">
+        🎵 Listen to PrincessTG Music 🎵
+      </h1>
+
+      <p class="release-note">
+        All songs listed on this page have been released.
+        The audio players on their individual song pages
+        are disabled.
+        You can listen to these songs on the following
+        streaming platforms:
+      </p>
+
+      <div class="icon-grid music-platforms">
+
+        <!-- AMAZON MUSIC -->
+
+        <a
+          href="https://music.amazon.com/artists/B0GQL5MNFF/princesstg"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Amazon Music"
+        >
+          <img
+            src="https://img.icons8.com/color/1200/amazon-music--v3.jpg"
+            alt="Amazon Music"
+            loading="lazy"
+          />
+          <span>Amazon Music</span>
+        </a>
+
+        <!-- SPOTIFY -->
+
+        <a
+          href="https://open.spotify.com/artist/0TbjqhFC34mJKKQT43AfVm"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Spotify"
+        >
+          <img
+            src="https://cdn.simpleicons.org/spotify"
+            alt="Spotify"
+            loading="lazy"
+          />
+          <span>Spotify</span>
+        </a>
+
+        <!-- ITUNES -->
+
+        <a
+          href="https://music.apple.com/us/artist/princesstg/1880850838"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="iTunes"
+        >
+          <img
+            src="https://cdn.simpleicons.org/apple"
+            alt="iTunes"
+            loading="lazy"
+          />
+          <span>iTunes</span>
+        </a>
+
+        <!-- APPLE MUSIC -->
+
+        <a
+          href="https://music.apple.com/us/artist/princesstg/1880850838"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Apple Music"
+        >
+          <img
+            src="https://cdn.simpleicons.org/applemusic"
+            alt="Apple Music"
+            loading="lazy"
+          />
+          <span>Apple Music</span>
+        </a>
+
+        <!-- IHEARTRADIO -->
+
+        <a
+          href="https://www.iheart.com/artist/princesstg-49829583"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="iHeartRadio"
+        >
+          <img
+            src="https://cdn.simpleicons.org/iheartradio"
+            alt="iHeartRadio"
+            loading="lazy"
+          />
+          <span>iHeartRadio</span>
+        </a>
+
+        <!-- YOUTUBE -->
+
+        <a
+          href="https://www.youtube.com/channel/UC3aOko5dyPsspLiu-Z9Cq3w"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="YouTube"
+        >
+          <img
+            src="https://cdn.simpleicons.org/youtube"
+            alt="YouTube"
+            loading="lazy"
+          />
+          <span>YouTube</span>
+        </a>
+
+        <!-- YOUTUBE MUSIC -->
+
+        <a
+          href="https://music.youtube.com/channel/UCJlagBEOhoo_rLyfyJBKGIA"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="YouTube Music"
+        >
+          <img
+            src="../images/YTM.png"
+            alt="YouTube Music"
+            loading="lazy"
+          />
+          <span>YouTube Music</span>
+        </a>
+
+        <!-- DEEZER -->
+
+        <a
+          href="https://www.deezer.com/us/artist/376445801"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Deezer"
+        >
+          <img
+            src="../images/deezer.png"
+            alt="Deezer"
+            loading="lazy"
+          />
+          <span>Deezer</span>
+        </a>
+
+      </div>
+
+    </section>
+
+    <!-- ======================================
+         AUTOMATICALLY GENERATED SONG LIST
+    ======================================= -->
+
+    <section
+      class="intro-card"
+      aria-labelledby="releases-heading"
+    >
+
+      <h2 id="releases-heading">
+        Released Songs
+      </h2>
+
+      <p class="release-note">
+        Select a song below to view its details,
+        lyrics, album, and release information.
+      </p>
+
+
+<!-- SEARCH, GENRE, ALBUM AND SORT -->
+
+<div class="release-controls">
+
+  <div class="release-control">
+    <label for="release-search">
+      Search Songs
+    </label>
+    <input
+      type="search"
+      id="release-search"
+      placeholder="Search songs..."
+      autocomplete="off"
+    />
+  </div>
+
+  <div class="release-control">
+    <label for="release-genre">
+      Filter by Genre
+    </label>
+    <select id="release-genre">
+      <option value="">All Genres</option>
+    </select>
+  </div>
+
+  <div class="release-control">
+    <label for="release-album">
+      Filter by Album
+    </label>
+    <select id="release-album">
+      <option value="">All Albums</option>
+    </select>
+  </div>
+
+  <div class="release-control">
+    <label for="release-sort">
+      Sort Songs
+    </label>
+    <select id="release-sort">
+      <option value="title-asc">Title: A to Z</option>
+      <option value="title-desc">Title: Z to A</option>
+      <option value="album-asc">Album: A to Z</option>
+      <option value="date-desc">Newest Release First</option>
+      <option value="date-asc">Oldest Release First</option>
+    </select>
+  </div>
+
+</div>
+
+<button
+  type="button"
+  id="release-reset"
+  class="release-reset-button"
+>
+  Reset Filters
+</button>
+
+<p id="releases-status" role="status">
+  Loading released songs...
+</p>
+
+
+      <!-- releases.js puts the buttons here -->
+
+      <div
+        id="released-songs"
+        class="released-song-grid"
+      ></div>
+
+    </section>
+
+  </main>
+
+</body>
+</html>

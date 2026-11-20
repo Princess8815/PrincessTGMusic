@@ -156,10 +156,33 @@ function saveJSON(file, data) {
 
 async function main() {
   try {
-    const title = await ask("Song title: ");
-    const description = await ask("Description: ");
-    const album = await ask("Album: ");
-    const releaseDate = await ask("Release date (YYYY-MM-DD): ");
+
+const title = await ask("Song title: ");
+const description = await ask("Description: ");
+
+// ==========================================
+// ALBUM SELECTION
+// ==========================================
+
+const albumInput = await ask("Album (S for Single): ");
+
+const album =
+  albumInput.toLowerCase() === "s" ||
+  albumInput.toLowerCase() === "single"
+    ? "Single"
+    : albumInput;
+
+// ==========================================
+// RELEASE DATE
+// ==========================================
+
+let releaseDate = "tbd";
+
+// Only singles ask for a release date.
+if (album === "Single") {
+  releaseDate = await ask("Release date (YYYY-MM-DD): ");
+}
+
 
     // Original lyrics.
     const rawLyrics = await getLyrics("original lyrics");
@@ -263,6 +286,8 @@ async function main() {
     console.log(
       `Page file: audioPlayer/pages/${newSong.pageId}.html`
     );
+
+    console.log(`Release date: ${releaseDate}`);
 
     if (needsTranslation) {
       console.log(
