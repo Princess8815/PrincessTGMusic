@@ -34,6 +34,10 @@ if (!container) {
     Admin Panel
   </button>
 
+  <button id="auth-profile" type="button" hidden>
+  My Profile
+</button>
+
   <button id="auth-logout" type="button" hidden>
     Log Out
   </button>
@@ -82,6 +86,25 @@ if (!container) {
       </div>
     </div>
   `;
+
+
+const profileButton = document.getElementById(
+  "auth-profile"
+);
+
+if (profileButton) {
+  profileButton.addEventListener("click", () => {
+    window.location.href = new URL(
+      "../pages/profile.html",
+      import.meta.url
+    ).href;
+  });
+
+  onAuthStateChanged(auth, user => {
+    profileButton.hidden = !user;
+  });
+}
+
 
   const $ = (id) => document.getElementById(id);
 

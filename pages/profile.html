@@ -1,0 +1,373 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>My Profile | PrincessTG Music</title>
+
+  <script type="module" src="../script/profile.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    body {
+      margin: 0;
+      background: #111827;
+      color: #f9fafb;
+      font-family: Arial, sans-serif;
+      line-height: 1.5;
+    }
+
+    main {
+      max-width: 900px;
+      padding: 22px;
+      margin: 30px auto;
+    }
+
+    h1 {
+      color: #c084fc;
+    }
+
+    .profile-card {
+      margin: 20px 0;
+      padding: 24px;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      background: #1f2937;
+    }
+
+    .profile-field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 16px 0;
+    }
+
+    label {
+      font-weight: bold;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #6b7280;
+      border-radius: 7px;
+      background: #111827;
+      color: white;
+      font: inherit;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 130px;
+    }
+
+    button {
+      padding: 12px 18px;
+      background: #8b5cf6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font: inherit;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
+    a {
+      color: #c4b5fd;
+    }
+
+    .muted {
+      color: #cbd5e1;
+    }
+
+    .status {
+      margin: 12px 0;
+      overflow-wrap: anywhere;
+    }
+
+    .danger {
+      border: 2px solid #ef4444;
+      background: #2b151c;
+    }
+
+    .danger h2 {
+      color: #fca5a5;
+    }
+
+    .danger-button {
+      background: #dc2626;
+      color: white;
+      width: 100%;
+    }
+
+    .danger-button:hover:not(:disabled) {
+      background: #b91c1c;
+    }
+
+    .danger strong {
+      color: #fecaca;
+    }
+
+    .submissions-list li {
+      margin: 12px 0;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="auth-container"></div>
+
+  <main>
+    <p>
+      <a href="../index.html">Back to PrincessTG Music</a>
+    </p>
+
+    <h1>My Profile</h1>
+
+    <p id="profile-status" role="status" aria-live="polite">
+      Checking your account...
+    </p>
+
+    <div id="profile-app" hidden>
+
+      <!-- BASIC ACCOUNT INFORMATION -->
+
+      <section class="profile-card">
+        <h2>Account Information</h2>
+
+        <p>
+          <strong>Account role:</strong>
+          <span id="profile-role"></span>
+        </p>
+
+        <p>
+          <strong>Account status:</strong>
+          <span id="profile-account-status"></span>
+        </p>
+
+        <p>
+          <strong>Joined:</strong>
+          <span id="profile-joined"></span>
+        </p>
+
+        <form id="profile-form">
+
+          <div class="profile-field">
+            <label for="profile-name">Display Name</label>
+
+            <input
+              id="profile-name"
+              type="text"
+              maxlength="80"
+              required
+            >
+          </div>
+
+          <div class="profile-field">
+            <label for="profile-bio">Bio</label>
+
+            <textarea
+              id="profile-bio"
+              maxlength="500"
+              placeholder="Tell us about yourself..."
+            ></textarea>
+
+            <span id="profile-bio-count" class="muted">
+              0 / 500
+            </span>
+          </div>
+
+          <button id="save-profile" type="submit">
+            Save Profile
+          </button>
+
+          <p id="profile-save-status"
+             class="status"
+             role="status"></p>
+        </form>
+      </section>
+
+      <!-- EMAIL MANAGEMENT -->
+
+      <section class="profile-card">
+        <h2>Email Address</h2>
+
+        <p>
+          <strong>Current email:</strong>
+          <span id="profile-current-email"></span>
+        </p>
+
+        <p id="profile-email-verified" class="muted"></p>
+
+        <form id="profile-email-form">
+          <div class="profile-field">
+            <label for="profile-new-email">
+              New Email
+            </label>
+
+            <input
+              id="profile-new-email"
+              type="email"
+              required
+              autocomplete="email"
+            >
+          </div>
+
+          <div class="profile-field">
+            <label for="profile-email-password">
+              Current Password
+            </label>
+
+            <input
+              id="profile-email-password"
+              type="password"
+              required
+              autocomplete="current-password"
+            >
+          </div>
+
+          <button type="submit" id="profile-change-email">
+            Send Email Change Verification
+          </button>
+
+          <p id="profile-email-status"
+             class="status"
+             role="status"></p>
+        </form>
+      </section>
+
+      <!-- SUBMISSIONS -->
+
+      <section class="profile-card">
+        <h2>My Submissions</h2>
+
+        <p class="muted">
+          Published songs associated with your account.
+          Pending submissions will be added when the
+          submission system is available.
+        </p>
+
+        <p id="profile-submissions-status"
+           class="status"></p>
+
+        <ul id="profile-submissions"
+            class="submissions-list"></ul>
+      </section>
+
+      <!-- EMAIL LIST -->
+
+      <section class="profile-card">
+        <h2>Email Newsletter</h2>
+
+        <p>
+          Receive optional announcements about new music
+          and releases from PrincessTG Music.
+        </p>
+
+        <p id="newsletter-state" class="muted"></p>
+
+        <button type="button" id="newsletter-button">
+          Subscribe to Email List
+        </button>
+
+        <p id="newsletter-status"
+           class="status"
+           role="status"></p>
+
+        <p class="muted">
+          You can unsubscribe at any time.
+        </p>
+      </section>
+
+      <!-- ACCOUNT DELETION -->
+
+      <section class="profile-card danger">
+        <h2>Danger Zone: Delete Account</h2>
+
+        <p>
+          <strong>Warning:</strong> This action closes your
+          account and removes your Firebase login.
+        </p>
+
+        <p>
+          Your account record will be archived.
+          You will lose access to this account.
+          Your bio will be cleared and your newsletter
+          subscription cancelled.
+        </p>
+
+        <p>
+          Previously published songs are not automatically
+          deleted by account closure.
+        </p>
+
+        <details id="close-details">
+          <summary>
+            I want to delete my account
+          </summary>
+
+          <form id="close-account-form">
+
+            <div class="profile-field">
+              <label for="close-account-confirm">
+                Type DELETE to confirm
+              </label>
+
+              <input
+                id="close-account-confirm"
+                type="text"
+                autocomplete="off"
+                required
+                placeholder="DELETE"
+              >
+            </div>
+
+            <div class="profile-field">
+              <label for="close-account-password">
+                Enter Your Password
+              </label>
+
+              <input
+                id="close-account-password"
+                type="password"
+                autocomplete="current-password"
+                required
+              >
+            </div>
+
+            <button
+              type="submit"
+              id="close-account-button"
+              class="danger-button"
+            >
+              Permanently Delete Login and Archive Account
+            </button>
+
+          </form>
+        </details>
+
+        <p id="close-account-status"
+           class="status"
+           role="alert"></p>
+      </section>
+
+    </div>
+  </main>
+
+</body>
+</html>
