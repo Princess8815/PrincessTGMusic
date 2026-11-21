@@ -21,6 +21,7 @@ const JSON_URL =
   "../audioPlayer/audio/song-details.json";
 
 const MAX_RESULTS = 60;
+const TRANSLATION_JSON = "../data/translation.json";
 
 // ==========================================
 // HELPERS
@@ -112,6 +113,30 @@ document.addEventListener("DOMContentLoaded", async () => {
   const audioInput = $("edit-song-audio");
   const lyricsInput = $("edit-song-lyrics");
 
+  // ========================================
+  // ENGLISH TRANSLATION CONTROLS
+  // ========================================
+
+  const translationCheckbox = $("edit-has-translation");
+  const translationContainer = $("edit-translation-container");
+  const translationInput = $("edit-song-translation");
+
+  function syncEditTranslation() {
+    const enabled = translationCheckbox.checked;
+
+    translationContainer.hidden = !enabled;
+    translationInput.disabled = !enabled;
+    translationInput.required = enabled;
+  }
+
+  translationCheckbox.addEventListener(
+    "change",
+    syncEditTranslation
+  );
+
+  syncEditTranslation();
+
+
   const saveButton = $("edit-song-save");
   const saveStatus = $("edit-song-save-status");
 
@@ -133,6 +158,39 @@ document.addEventListener("DOMContentLoaded", async () => {
   let allSongs = [];
   let databaseIds = new Set();
   let albumNames = [];
+  let legacyTranslations = {};
+let originalTitlesById = new Map();
+
+  // Match translations by original song title,
+  // ignoring capitalization differences.
+
+  function findLegacyTranslation(...titles) {
+    for (const title of titles) {
+      if (!title) continue;
+
+      if (
+        typeof legacyTranslations[title] === "string"
+      ) {
+        return legacyTranslations[title];
+      }
+
+      const matchingKey = Object.keys(
+        legacyTranslations
+      ).find(key =>
+        normalize(key) === normalize(title)
+      );
+
+      if (
+        matchingKey &&
+        typeof legacyTranslations[matchingKey] === "string"
+      ) {
+        return legacyTranslations[matchingKey];
+      }
+    }
+
+    return "";
+  }
+
 
   let activeFilter = "all";
 
@@ -199,6 +257,37 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const jsonSongs = await jsonResponse.json();
 
+    // ======================================
+    // LOAD LEGACY TRANSLATION.JSON
+    // ======================================
+
+    const translationResponse = await fetch(
+      TRANSLATION_JSON,
+      { cache: "no-store" }
+    );
+
+    if (!translationResponse.ok) {
+      throw new Error(
+        "Unable to load data/translation.json."
+      );
+    }
+
+    const translationData =
+      await translationResponse.json();
+
+    if (
+      !translationData ||
+      typeof translationData !== "object" ||
+      Array.isArray(translationData)
+    ) {
+      throw new Error(
+        "translation.json must contain a title-to-text object."
+      );
+    }
+
+    legacyTranslations = translationData;
+
+
     if (!Array.isArray(jsonSongs)) {
       throw new Error(
         "Song JSON must contain an array."
@@ -206,6 +295,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     const songMap = new Map();
+    originalTitlesById = new Map();
 
     // ======================================
     // FIRST: LEGACY JSON RECORDS
@@ -218,6 +308,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         song.pageId || slugify(song.title)
       ).trim();
 
+      originalTitlesById.set(id, song.title);
       songMap.set(id, {
         ...song,
         pageId: id
@@ -610,6 +701,40 @@ document.addEventListener("DOMContentLoaded", async () => {
           ? song.lyrics
           : "";
 
+
+      // ====================================
+      // DETECT EXISTING ENGLISH TRANSLATION
+      // ====================================
+
+      const originalTitle =
+        originalTitlesById.get(id) || song.title;
+
+      const jsonTranslation = findLegacyTranslation(
+        originalTitle,
+        song.title
+      );
+
+      // Firestore takes priority over JSON.
+      // An empty Firestore string means the
+      // translation was intentionally disabled.
+
+      const currentTranslation =
+        typeof song.translation === "string"
+          ? song.translation
+          : jsonTranslation;
+
+      // Populate the translation textarea.
+      translationInput.value = currentTranslation;
+
+      // Automatically activate the checkbox
+      // when a translation is present.
+      translationCheckbox.checked =
+        currentTranslation.trim().length > 0;
+
+      // Show or hide the textarea.
+      syncEditTranslation();
+
+
       // ====================================
       // RELEASE DATE
       // ====================================
@@ -728,6 +853,26 @@ document.addEventListener("DOMContentLoaded", async () => {
         lyricsInput.value
       );
 
+
+      const translation = translationCheckbox.checked
+        ? translationInput.value
+            .replace(/\r\n?/g, "\n")
+            .trim()
+        : "";
+
+      if (translationCheckbox.checked && !translation) {
+        throw new Error(
+          "Enter a translation or uncheck the option."
+        );
+      }
+
+      if (translation.length > 100000) {
+        throw new Error(
+          "Translation cannot exceed 100,000 characters."
+        );
+      }
+
+
       if (!title) {
         throw new Error("Title is required.");
       }
@@ -785,6 +930,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         genre,
         releaseDate,
         lyrics,
+        translation,
         updatedAt: serverTimestamp()
       };
 

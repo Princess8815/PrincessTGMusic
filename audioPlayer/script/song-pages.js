@@ -191,6 +191,7 @@ async function setupAudio(song) {
 // LOAD ENGLISH TRANSLATION
 // ==========================================
 
+
 async function setupTranslation(song) {
   const toggleContainer = $(
     "translationToggleContainer"
@@ -200,41 +201,76 @@ async function setupTranslation(song) {
   const lyrics = $("songLyrics");
 
   const originalLyrics = song.lyrics || "";
+
   let englishTranslation = null;
 
+  toggle.checked = false;
+  toggleContainer.hidden = true;
+
+  // ========================================
+  // FIRST: FIRESTORE TRANSLATION
+  // ========================================
+
+  if (typeof song.translation === "string") {
+    englishTranslation = song.translation;
+
+  } else {
+
+    // ======================================
+    // SECOND: LEGACY JSON TRANSLATION
+    // ======================================
+
+    try {
+      const response = await fetch(TRANSLATIONS);
+
+      if (response.ok) {
+        const translations = await response.json();
+
+        const match = Object.keys(translations).find(
+          key =>
+            key.toLowerCase() ===
+            String(song.title).toLowerCase()
+        );
+
+        if (
+          match &&
+          typeof translations[match] === "string"
+        ) {
+          englishTranslation = translations[match];
+        }
+      }
+
+    } catch (error) {
+      console.warn(
+        "Translation unavailable:",
+        error
+      );
+    }
+  }
+
+  // ========================================
+  // SHOW TRANSLATION TOGGLE
+  // ========================================
+
+  if (
+    typeof englishTranslation !== "string" ||
+    !englishTranslation.trim()
+  ) {
+    lyrics.textContent = originalLyrics;
+    return;
+  }
+
+  toggleContainer.hidden = false;
+
   toggle.addEventListener("change", () => {
-    lyrics.textContent =
-      toggle.checked && englishTranslation !== null
-        ? englishTranslation
-        : originalLyrics;
+    lyrics.textContent = toggle.checked
+      ? englishTranslation
+      : originalLyrics;
   });
 
-  try {
-    const response = await fetch(TRANSLATIONS);
-
-    if (!response.ok) return;
-
-    const translations = await response.json();
-
-    const translated = translations?.[song.title];
-
-    if (
-      typeof translated !== "string" ||
-      !translated.trim()
-    ) {
-      return;
-    }
-
-    englishTranslation = translated;
-    toggleContainer.hidden = false;
-
-  } catch (error) {
-    console.warn(
-      "Translation unavailable:",
-      error
-    );
-  }
+  lyrics.textContent = originalLyrics;
 }
+
 
 // ==========================================
 // UPDATE PAGE METADATA
