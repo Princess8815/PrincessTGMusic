@@ -302,9 +302,15 @@ const createTrackRow = (track, index) => {
 	details.className = "track__details";
 	details.type = "button";
 	details.textContent = "Details";
-	details.addEventListener("click", () => {
-		window.location.href = `pages/${track.pageId || slugifyTitle(track.title)}.html`;
-	});
+
+details.addEventListener("click", () => {
+  const pageId =
+    track.pageId || slugifyTitle(track.title);
+
+  window.location.href =
+    `pages/song.html?id=${encodeURIComponent(pageId)}`;
+});
+
 
 	titleBlock.append(title, meta);
 	actions.append(enabledLabel, playlistLabel, play, details);
