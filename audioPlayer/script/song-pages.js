@@ -240,22 +240,60 @@ async function setupTranslation(song) {
 // UPDATE PAGE METADATA
 // ==========================================
 
+
 function updateMetadata(song) {
-  document.title =
-    `${song.title} by PrincessTG`;
+  const title = song.title || "Unknown Song";
+
+  const pageTitle = `${title} | PrincessTG Music`;
 
   const description =
     song.description ||
-    `Listen to ${song.title} by PrincessTG.`;
+    `Listen to ${title} by PrincessTG.`;
 
-  const meta = document.querySelector(
+  // Browser tab title
+  document.title = pageTitle;
+
+  // Standard SEO description
+  let meta = document.querySelector(
     'meta[name="description"]'
   );
 
   if (meta) {
-    meta.content = description;
+    meta.setAttribute("content", description);
+  }
+
+  // Open Graph and social metadata
+  const metadata = {
+    "og:title": pageTitle,
+    "og:description": description,
+    "og:type": "music.song",
+    "og:url": window.location.href
+  };
+
+  for (const [property, content] of Object.entries(metadata)) {
+    let element = document.querySelector(
+      `meta[property="${property}"]`
+    );
+
+    if (!element) {
+      element = document.createElement("meta");
+      element.setAttribute("property", property);
+      document.head.appendChild(element);
+    }
+
+    element.setAttribute("content", content);
+  }
+
+  // Twitter/X metadata
+  const twitterTitle = document.querySelector(
+    'meta[name="twitter:title"]'
+  );
+
+  if (twitterTitle) {
+    twitterTitle.content = pageTitle;
   }
 }
+
 
 // ==========================================
 // MAIN PAGE LOADER
@@ -333,6 +371,7 @@ async function initializeSongPage() {
     setText("songStatus", "Song details");
 
     updateMetadata(song);
+    setupSongSharing(song, pageId);
 
     // ======================================
     // LOAD OPTIONAL FEATURES
@@ -356,5 +395,203 @@ async function initializeSongPage() {
     );
   }
 }
+
+
+/* ==========================================
+   PRINCESSTG MUSIC SONG SHARING
+========================================== */
+
+function setupSongSharing(song, pageId) {
+
+  // ========================================
+  // CLOUDFLARE SHARING SERVICE
+  // ========================================
+
+  const SHARE_BASE =
+    "https://princesstg-song-share.transgirl1991.workers.dev";
+
+  const songId = String(
+    song.pageId || pageId
+  ).trim();
+
+  const shareURL =
+    `${SHARE_BASE}/song/${encodeURIComponent(songId)}`;
+
+  // ========================================
+  // ELEMENTS
+  // ========================================
+
+  const shareButton = $("shareSongButton");
+  const copyLinkButton = $("copySongLinkButton");
+  const copyPostButton = $("copySongPostButton");
+
+  const messageInput = $("songShareMessage");
+  const status = $("songShareStatus");
+
+  if (
+    !shareButton ||
+    !copyLinkButton ||
+    !copyPostButton ||
+    !messageInput ||
+    !status
+  ) {
+    console.warn("Song sharing elements missing.");
+    return;
+  }
+
+  // ========================================
+  // DEFAULT SHARING MESSAGE
+  // ========================================
+
+  messageInput.value =
+    `Check out "${song.title}" on PrincessTG Music!`;
+
+  function getMessage() {
+    return messageInput.value.trim();
+  }
+
+  function getFullPost() {
+    return [
+      getMessage(),
+      shareURL
+    ].filter(Boolean).join("\n\n");
+  }
+
+  function showStatus(message) {
+    status.textContent = message;
+  }
+
+  // ========================================
+  // COPY TEXT TO CLIPBOARD
+  // ========================================
+
+  async function copyText(text) {
+
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error("Clipboard unavailable.");
+      }
+
+      await navigator.clipboard.writeText(text);
+
+      return true;
+
+    } catch (error) {
+
+      // Fallback if clipboard access is blocked.
+      window.prompt(
+        "Copy this text:",
+        text
+      );
+
+      return false;
+    }
+  }
+
+  // ========================================
+  // OPEN NATIVE SHARING MENU
+  // ========================================
+
+  shareButton.addEventListener(
+    "click",
+    async () => {
+
+      const shareData = {
+        title: `${song.title} | PrincessTG Music`,
+        url: shareURL
+      };
+
+      const message = getMessage();
+
+      if (message) {
+        shareData.text = message;
+      }
+
+      // ====================================
+      // USE DEVICE SHARE MENU IF AVAILABLE
+      // ====================================
+
+      if (typeof navigator.share === "function") {
+
+        try {
+          await navigator.share(shareData);
+
+          showStatus(
+            "Sharing menu closed."
+          );
+
+          return;
+
+        } catch (error) {
+
+          // User canceled sharing.
+          if (error.name === "AbortError") {
+            showStatus("");
+            return;
+          }
+
+          console.warn(
+            "Native sharing unavailable:",
+            error
+          );
+        }
+      }
+
+      // ====================================
+      // FALLBACK: COPY MESSAGE AND LINK
+      // ====================================
+
+      const copied = await copyText(
+        getFullPost()
+      );
+
+      showStatus(
+        copied
+          ? "Sharing menu unavailable. Message and link copied!"
+          : "Use the copy dialog to copy your message and link."
+      );
+    }
+  );
+
+  // ========================================
+  // COPY LINK ONLY
+  // ========================================
+
+  copyLinkButton.addEventListener(
+    "click",
+    async () => {
+
+      const copied = await copyText(shareURL);
+
+      showStatus(
+        copied
+          ? "Song link copied!"
+          : "Use the copy dialog to copy the link."
+      );
+    }
+  );
+
+  // ========================================
+  // COPY MESSAGE AND LINK
+  // ========================================
+
+  copyPostButton.addEventListener(
+    "click",
+    async () => {
+
+      const copied = await copyText(
+        getFullPost()
+      );
+
+      showStatus(
+        copied
+          ? "Message and song link copied!"
+          : "Use the copy dialog to copy your post."
+      );
+    }
+  );
+
+}
+
 
 initializeSongPage();
