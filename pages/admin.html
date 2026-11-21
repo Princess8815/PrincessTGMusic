@@ -379,6 +379,63 @@
         </form>
       </section>
 
+
+<!-- ======================================
+     ALBUM MANAGEMENT
+====================================== -->
+
+<section class="admin-card">
+
+  <h2>Album Management</h2>
+
+  <p class="helper">
+    Add a new album to the database.
+    It will automatically become available
+    when adding songs.
+  </p>
+
+  <form id="add-album-form">
+
+    <div class="form-field">
+
+      <label for="new-album-name">
+        New Album Name
+        <span class="required">*</span>
+      </label>
+
+      <input
+        type="text"
+        id="new-album-name"
+        placeholder="Enter album name"
+        maxlength="100"
+        required
+      >
+
+    </div>
+
+    <div class="form-actions">
+
+      <button
+        type="submit"
+        id="add-album-button"
+      >
+        Add Album
+      </button>
+
+    </div>
+
+    <p
+      id="add-album-status"
+      class="helper"
+      role="status"
+      aria-live="polite"
+    ></p>
+
+  </form>
+
+</section>
+
+
       <section class="admin-card">
         <h2>Coming Next</h2>
         <p>
