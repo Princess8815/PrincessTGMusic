@@ -39,6 +39,11 @@
   src="../script/admin-edit-songs.js"
 ></script>
 
+<script
+  type="module"
+  src="../script/admin-accounts.js"
+></script>
+
   <style>
     * {
       box-sizing: border-box;
@@ -264,6 +269,63 @@
 #edit-song-form[hidden] {
   display: none !important;
 }
+
+
+/* ======================================
+   OWNER ACCOUNT MANAGEMENT
+====================================== */
+
+.account-results {
+  max-height: 280px;
+  overflow-y: auto;
+  margin: 12px 0;
+}
+
+.account-result {
+  display: block;
+  width: 100%;
+  margin: 5px 0;
+  text-align: left;
+  background: #111827 !important;
+  border: 1px solid #4b5563 !important;
+}
+
+.account-result:hover {
+  background: #312e81 !important;
+}
+
+.account-result small {
+  display: block;
+  color: #cbd5e1;
+  margin-top: 5px;
+}
+
+#account-editor {
+  margin-top: 24px;
+}
+
+#account-editor hr {
+  border: 0;
+  border-top: 1px solid #4b5563;
+  margin-bottom: 20px;
+}
+
+#account-current-status {
+  font-weight: bold;
+}
+
+#account-save-status {
+  margin-top: 15px;
+  overflow-wrap: anywhere;
+}
+
+#account-management[hidden],
+#account-editor[hidden],
+#account-ban-settings[hidden],
+#account-custom-ban[hidden] {
+  display: none !important;
+}
+
 
   </style>
 </head>
@@ -822,11 +884,146 @@
 </section>
 
 
+<!-- ======================================
+     OWNER ACCOUNT MANAGEMENT
+====================================== -->
+
+<section
+  id="account-management"
+  class="admin-card"
+  hidden
+>
+  <h2>Account Management</h2>
+
+  <p class="helper">
+    Owner access only. Search accounts by
+    display name or email address.
+  </p>
+
+  <div class="form-field">
+    <label for="account-search">
+      Find Account
+    </label>
+
+    <input
+      type="search"
+      id="account-search"
+      placeholder="Type a name or email..."
+      autocomplete="off"
+    >
+  </div>
+
+  <p id="account-search-status"
+     role="status"
+     aria-live="polite">
+  </p>
+
+  <div
+    id="account-results"
+    class="account-results"
+  ></div>
+
+  <button
+    type="button"
+    id="account-refresh"
+    class="secondary"
+  >
+    Refresh Accounts
+  </button>
+
+  <!-- SELECTED ACCOUNT -->
+
+  <div id="account-editor" hidden>
+
+    <hr>
+
+    <h3 id="account-selected-name"></h3>
+    <p id="account-selected-email"></p>
+
+    <p>
+      <strong>Current status:</strong>
+      <span id="account-current-status"></span>
+    </p>
+
+    <div class="form-field">
+      <label for="account-role">
+        Set Account Permissions
+      </label>
+
+      <select id="account-role">
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+        <option value="banned">Banned</option>
+      </select>
+    </div>
+
+    <div id="account-ban-settings" hidden>
+
+      <div class="form-field">
+        <label for="account-ban-duration">
+          Ban Duration
+        </label>
+
+        <select id="account-ban-duration">
+          <option value="1h">1 Hour</option>
+          <option value="24h">24 Hours</option>
+          <option value="7d">7 Days</option>
+          <option value="30d">30 Days</option>
+          <option value="90d">90 Days</option>
+          <option value="custom">Custom End Date</option>
+          <option value="indefinite">
+            Indefinite
+          </option>
+        </select>
+      </div>
+
+      <div
+        id="account-custom-ban"
+        class="form-field"
+        hidden
+      >
+        <label for="account-ban-end">
+          Ban Ends At
+        </label>
+
+        <input
+          type="datetime-local"
+          id="account-ban-end"
+        >
+      </div>
+
+      <p class="helper">
+        Banned users can still log in.
+        Submission permissions will be denied
+        until the ban expires or is removed.
+      </p>
+
+    </div>
+
+    <div class="form-actions">
+      <button
+        type="button"
+        id="account-save"
+      >
+        Save Account Changes
+      </button>
+    </div>
+
+    <p
+      id="account-save-status"
+      role="status"
+      aria-live="polite"
+    ></p>
+
+  </div>
+</section>
+
+
+
       <section class="admin-card">
         <h2>Coming Next</h2>
         <p>
-          Edit existing songs, review submissions,
-          and manage users.
+          Review submissions,
         </p>
       </section>
 
