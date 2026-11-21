@@ -1,5 +1,6 @@
 
 import { auth } from "./firebase.js";
+import { saveUserIfChanged } from "./user-data.js";
 
 import {
   createUserWithEmailAndPassword,
@@ -224,14 +225,27 @@ if (!container) {
     }
   });
 
-  $("auth-logout").addEventListener("click", async () => {
+
+$("auth-logout").addEventListener("click", async () => {
+  try {
+    // Save any unsaved user changes.
     try {
-      await signOut(auth);
-    } catch (error) {
-      console.error("Logout failed:", error);
-      alert("Could not log out. Please try again.");
+      await saveUserIfChanged();
+    } catch (saveError) {
+      console.warn(
+        "User changes could not be saved:",
+        saveError
+      );
     }
-  });
+
+    await signOut(auth);
+
+  } catch (error) {
+    console.error("Logout failed:", error);
+    alert("Could not log out. Please try again.");
+  }
+});
+
 
   onAuthStateChanged(auth, (user) => {
     const loggedIn = Boolean(user);
