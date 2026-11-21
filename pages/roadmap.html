@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Explore upcoming PrincessTGMusic features, including radio, memberships, community music, CDs, newsletters and more." />
+  <meta name="theme-color" content="#11131a" />
+  <title>Development Roadmap | PrincessTG Music</title>
+  <link rel="icon" type="image/png" href="../images/logo avatar.png" />
+  <link rel="stylesheet" href="../styles/styles.css" />
+  <link rel="stylesheet" href="../styles/auth.css" />
+  <script type="module" src="../script/auth.js"></script>
+  <script src="../script/menu.js" defer></script>
+  <style>
+    /* Scoped additions: uses existing PrincessTGMusic color variables and layout */
+    .roadmap-page { padding: 0 0 3rem; }
+    .roadmap-page a { color: var(--accent); }
+    .roadmap-page a:hover { color: var(--accent-hover); }
+    .roadmap-top { text-align: center; padding: 1.8rem 1.25rem; }
+    .roadmap-top h1 { font-size: clamp(1.8rem, 4vw, 2.7rem); }
+    .roadmap-top p { color: var(--muted); max-width: 680px; margin: .7rem auto; }
+    .roadmap-kicker { color: var(--accent); font-size: .8rem; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
+    .roadmap-note { border-left: 3px solid var(--accent); padding: .7rem 1rem; background: rgba(159,123,255,.08); border-radius: 0 8px 8px 0; color: var(--muted); font-size: .94rem; text-align: left; margin-top: 1.2rem; }
+    .roadmap-controls { display: flex; gap: .65rem; flex-wrap: wrap; justify-content: center; align-items: center; margin: 1.2rem 0; }
+    .roadmap-filter, .roadmap-action { font: inherit; cursor: pointer; color: var(--text); border: 1px solid rgba(159,123,255,.45); background: #101521; padding: .65rem .95rem; border-radius: 9px; }
+    .roadmap-filter:hover, .roadmap-action:hover { border-color: var(--accent-hover); background: rgba(159,123,255,.12); }
+    .roadmap-filter[aria-pressed="true"] { background: #7944c9; border-color: #a785ec; color: white; }
+    .roadmap-section-title { margin: 1.8rem 0 .8rem; font-size: 1.3rem; }
+    .roadmap-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr)); gap: 1rem; }
+    .roadmap-card { background: #101521; border: 1px solid rgba(255,255,255,.1); border-radius: 14px; padding: 1.1rem 1.15rem; min-width: 0; }
+    .roadmap-card[hidden] { display: none; }
+    .roadmap-card-head { display: flex; gap: .8rem; align-items: flex-start; justify-content: space-between; }
+    .roadmap-phase { color: var(--accent-hover); font-size: .8rem; font-weight: bold; letter-spacing: .06em; text-transform: uppercase; }
+    .roadmap-card h3 { margin: .25rem 0 .4rem; font-size: 1.17rem; }
+    .roadmap-card p { color: var(--muted); margin: .5rem 0; }
+    .roadmap-tag { display: inline-block; white-space: nowrap; border-radius: 999px; background: rgba(159,123,255,.12); color: #d6c8ff; border: 1px solid rgba(159,123,255,.35); font-size: .73rem; padding: .26rem .55rem; font-weight: bold; }
+    .roadmap-card details { margin-top: .8rem; border-top: 1px solid rgba(255,255,255,.1); padding-top: .75rem; }
+    .roadmap-card summary { color: var(--accent-hover); cursor: pointer; font-weight: bold; list-style-position: inside; padding: .25rem 0; }
+    .roadmap-card summary:focus-visible, .roadmap-filter:focus-visible, .roadmap-action:focus-visible, .roadmap-page a:focus-visible, .menu-toggle:focus-visible { outline: 3px solid var(--accent-hover); outline-offset: 3px; }
+    .roadmap-card ul { padding-left: 1.3rem; margin: .7rem 0 .2rem; }
+    .roadmap-card li { margin: .4rem 0; }
+    .roadmap-card li::marker { color: var(--accent); }
+    .roadmap-pricing { width: 100%; border-collapse: collapse; margin: .75rem 0; font-size: .91rem; }
+    .roadmap-pricing th, .roadmap-pricing td { padding: .55rem; text-align: left; border-bottom: 1px solid rgba(255,255,255,.12); }
+    .roadmap-pricing th { color: var(--accent-hover); }
+    .roadmap-status-guide { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
+    .roadmap-status-guide span { border-radius: 8px; background: #101521; border: 1px solid rgba(255,255,255,.1); padding: .5rem .75rem; font-size: .85rem; }
+    .roadmap-back { display: inline-block; margin: .7rem 0 1rem; text-decoration: none; font-weight: bold; }
+    .roadmap-empty { text-align: center; color: var(--muted); padding: 1.2rem; }
+    .roadmap-page .section-header { margin-bottom: 0; }
+    .roadmap-page .dropdown-menu a { color: var(--text); }
+    @media(max-width:600px) { .roadmap-card-head { flex-direction: column; gap: .4rem; } .roadmap-top { padding: 1.2rem 1rem; } }
+    @media(prefers-reduced-motion: no-preference) { .roadmap-card { transition: border-color .2s ease, transform .2s ease; } .roadmap-card:hover { border-color: rgba(159,123,255,.48); transform: translateY(-2px); } }
+  </style>
+</head>
+<body>
+  <div id="auth-container"></div>
+  <header class="hero" aria-label="PrincessTG Music"></header>
+  <main class="roadmap-page">
+    <div class="section-header">
+      <a class="roadmap-back" href="../index.html">← Back to Music</a>
+      <div class="menu-wrapper">
+        <button class="menu-toggle" type="button" aria-label="Open site menu" aria-expanded="false" aria-controls="platform-menu">☰</button>
+        <nav class="dropdown-menu" id="platform-menu" aria-label="Site navigation">
+          <a href="../index.html">Home</a>
+          <a href="../audioPlayer/index.html">Music</a>
+          <a href="./releases.html">Releases</a>
+          <a href="./challenges.html">Challenges</a>
+          <a href="./roadmap.html" aria-current="page">Roadmap</a>
+        </nav>
+      </div>
+    </div>
+
+    <section class="roadmap-top" aria-labelledby="roadmap-title">
+      <div class="roadmap-kicker">The future of PrincessTGMusic</div>
+      <h1 id="roadmap-title">Development Roadmap</h1>
+      <p>From sharing my own songs to building a home for music lovers and independent artists. Here's what I'm hoping to bring to PrincessTGMusic, one feature at a time.</p>
+      <div class="roadmap-note"><strong>A work in progress:</strong> Everything below is planned, not a promise of a release date. Features and priorities may change as I build, test, and improve the website. Statuses shown here are planning placeholders, not live progress updates.</div>
+    </section>
+
+    <section aria-labelledby="explore-heading">
+      <h2 id="explore-heading">Explore what's coming</h2>
+      <p style="color:var(--muted)">Choose a category, then select “See planned features” on any card for more details.</p>
+      <div class="roadmap-controls" role="group" aria-label="Filter roadmap by category">
+        <button class="roadmap-filter" data-filter="all" aria-pressed="true" type="button">Everything</button>
+        <button class="roadmap-filter" data-filter="music" aria-pressed="false" type="button">Music</button>
+        <button class="roadmap-filter" data-filter="community" aria-pressed="false" type="button">Community</button>
+        <button class="roadmap-filter" data-filter="support" aria-pressed="false" type="button">Support &amp; Shop</button>
+      </div>
+      <div class="roadmap-grid" id="roadmap-grid">
+        <article class="roadmap-card" data-category="music">
+          <div class="roadmap-card-head"><div><div class="roadmap-phase">Phase 01</div><h3>Better Music Library</h3></div><span class="roadmap-tag">Planned</span></div>
+          <p>Find your next favorite song with easier browsing and more ways to explore.</p>
+          <details><summary>See planned features</summary><ul><li>Improved song and album pages</li><li>Artist information and dedicated artist collections</li><li>Browse and filter by genre, artist, and uploader</li><li>A smoother experience on phones and computers</li></ul></details>
+        </article>
+        <article class="roadmap-card" data-category="music">
+          <div class="roadmap-card-head"><div><div class="roadmap-phase">Phase 02</div><h3>Music Releases &amp; Previews</h3></div><span class="roadmap-tag">Planned</span></div>
+          <p>Discover upcoming singles and albums before their official release.</p>
+          <details><summary>See planned features</summary><ul><li>Upcoming release announcements and information</li><li>Audio previews for unreleased songs</li><li>Release dates and album details</li><li>Preview players automatically removed from song details when the single or album is released</li></ul></details>
+        </article>
+        <article class="roadmap-card" data-category="support music">
+          <div class="roadmap-card-head"><div><div class="roadmap-phase">Phase 03</div><h3>Paid Memberships</h3></div><span class="roadmap-tag">Planned</span></div>
+          <p>Optional membership benefits for listeners who want to support the website.</p>
+          <details><summary>See planned features</summary><ul><li>Ad-free listening</li><li>Full on-demand music player for members</li><li>Premium radio options</li><li>Personalized listening</li><li>Priority support messages</li><li>Free visitors can still explore songs and listen to public radio</li></ul></details>
+        </article>
+        <article class="roadmap-card" data-category="community">
+          <div class="roadmap-card-head"><div><div class="roadmap-phase">Phase 04</div><h3>Weekly Newsletters</h3></div><span class="roadmap-tag">Planned</span></div>
+          <p>Get updates about new songs, upcoming releases, and the website's progress.</p>
+          <details><summary>See planned features</summary><ul><li>Optional email subscriptions</li><li>Weekly updates and featured music</li><li>Release announcements and occasional special messages</li><li>Easy unsubscribe option</li></ul></details>
+        </article>
+        <article class="roadmap-card" data-category="support community">
+          <div class="roadmap-card-head"><div><div class="roadmap-phase">Phase 05</div><h3>Contact &amp; Support</h3></div><span class="roadmap-tag">Planned</span></div>
+          <p>Reach out with questions, feedback, and support requests directly on the website.</p>
+          <details><summary>See planned features</summary><ul><li>Built-in contact form</li><li>Organized messages and reply history</li><li>Priority handling for paid members</li><li>Spam and harassment protection</li></ul></details>
+        </article>
+        <article class="roadmap-card" data-category="support">
+          <div class="roadmap-card-head"><div><div class="roadmap-phase">Phase 06</div><h3>Physical CDs &amp; Custom Albums</h3></div><span class="roadmap-tag">Planned</span></div>
+          <p>Bring the music home with physical albums and personalized collections.</p>
+          <details><summary>See planned features</summary><table class="roadmap-pricing"><thead><tr><th>CD option</th><th>Planned price</th></tr></thead><tbody><tr><td>Released album</td><td>$10 + shipping</td></tr><tr><td>Completed unreleased album</td><td>$15 + shipping</td></tr><tr><td>Custom CD, up to 15 songs</td><td>$20 + shipping</td></tr></tbody></table><p>Custom selections will depend on music availability and disc capacity. Checkout, shipping, and order updates are also planned.</p></details>
+        </article>
+        <article class="roadmap-card" data-category="community music">
+          <div class="roadmap-card-head"><div><div class="roadmap-phase">Phase 07</div><h3>Community Music Submissions</h3></div><span class="roadmap-tag">Planned</span></div>
+          <p>Give independent artists a chance to share their original songs with the community.</p>
+          <details><summary>See planned features</summary><ul><li>Submit original songs and cover artwork</li><li>Artist pages and music collections</li><li>Browse by artist or uploader</li><li>Hybrid moderation using automated checks and human review where needed</li><li>Community reporting and takedown tools</li><li>Submission limits to protect website storage</li></ul></details>
+        </article>
+        <article class="roadmap-card" data-category="music community">
+          <div class="roadmap-card-head"><div><div class="roadmap-phase">Phase 08</div><h3>PrincessTG Radio</h3></div><span class="roadmap-tag">Planned</span></div>
+          <p>Tune into synchronized stations. Everyone on the same station hears the same music at approximately the same time.</p>
+          <details><summary>See planned features</summary><ul><li>Metal, Pop, Rock, International, and All Music stations</li><li>Separate music schedules for each genre</li><li>Continuous listening and new music discovery</li><li>More stations as the music library grows</li></ul></details>
+        </article>
+        <article class="roadmap-card" data-category="music support">
+          <div class="roadmap-card-head"><div><div class="roadmap-phase">Phase 09</div><h3>Premium Radio Features</h3></div><span class="roadmap-tag">Planned</span></div>
+          <p>More control over your music experience with optional membership features.</p>
+          <details><summary>See planned features</summary><ul><li>Members-only radio station</li><li>Ad-free radio listening</li><li>Personalized stations based on favorite genres and artists</li><li>More listening choices for subscribers</li></ul></details>
+        </article>
+        <article class="roadmap-card" data-category="support music">
+          <div class="roadmap-card-head"><div><div class="roadmap-phase">Phase 10</div><h3>Advertising &amp; Sponsorships</h3></div><span class="roadmap-tag">Planned</span></div>
+          <p>Help support the costs of hosting music without interrupting songs.</p>
+          <details><summary>See planned features</summary><ul><li>Ads only between songs</li><li>At least 10 minutes between ad breaks</li><li>No ads for paid members</li><li>Potential sponsorship opportunities in the future</li></ul></details>
+        </article>
+        <article class="roadmap-card" data-category="community music">
+          <div class="roadmap-card-head"><div><div class="roadmap-phase">Phase 11</div><h3>More Community Features</h3></div><span class="roadmap-tag">Future idea</span></div>
+          <p>New ways for artists and listeners to discover, connect, and participate.</p>
+          <details><summary>See possible ideas</summary><ul><li>Favorite songs and artists</li><li>Featured community musicians</li><li>Special radio events and artist spotlights</li><li>Music recommendations and more ways to support artists</li></ul><p>These are ideas for the future, not guaranteed features.</p></details>
+        </article>
+      </div>
+      <p class="roadmap-empty" id="roadmap-empty" hidden>No roadmap items match this category.</p>
+    </section>
+
+    <section aria-labelledby="progress-heading">
+      <h2 id="progress-heading">How development updates will work</h2>
+      <p>I'll share updates as features move through planning, development, testing, and release. Some projects will take longer than others, especially those involving payments, community uploads, and synchronized radio.</p>
+      <div class="roadmap-status-guide" aria-label="Roadmap status definitions">
+        <span><strong>Planned:</strong> On the roadmap</span>
+        <span><strong>In Development:</strong> Being built</span>
+        <span><strong>Testing:</strong> Being checked</span>
+        <span><strong>Released:</strong> Available to use</span>
+        <span><strong>On Hold:</strong> Temporarily paused</span>
+      </div>
+    </section>
+    <section aria-labelledby="message-heading">
+      <h2 id="message-heading">A Message from PrincessTG</h2>
+      <p>PrincessTGMusic began as a way to share my music, and I have bigger hopes for what it can become. I want to create a welcoming place where listeners discover new music, independent artists share their creativity, and everyone can see what's coming next.</p>
+      <p>I'm building this step by step, so I can't promise exact dates. Thank you for being part of the journey.</p>
+      <p><strong>PrincessTG</strong></p>
+    </section>
+  </main>
+  <script>
+    (() => {
+      const buttons = document.querySelectorAll('.roadmap-filter');
+      const cards = document.querySelectorAll('.roadmap-card');
+      const empty = document.getElementById('roadmap-empty');
+      buttons.forEach(button => button.addEventListener('click', () => {
+        const selected = button.dataset.filter;
+        buttons.forEach(b => b.setAttribute('aria-pressed', String(b === button)));
+        let visible = 0;
+        cards.forEach(card => {
+          const show = selected === 'all' || card.dataset.category.split(' ').includes(selected);
+          card.hidden = !show;
+          if (show) visible++;
+        });
+        empty.hidden = visible !== 0;
+      }));
+    })();
+  </script>
+</body>
+</html>
