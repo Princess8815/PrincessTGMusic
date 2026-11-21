@@ -34,6 +34,11 @@
     src="../script/admin-songs.js"
   ></script>
 
+  <script
+  type="module"
+  src="../script/admin-edit-songs.js"
+></script>
+
   <style>
     * {
       box-sizing: border-box;
@@ -192,6 +197,74 @@
         padding: 16px;
       }
     }
+
+
+/* ======================================
+   SONG EDITOR SEARCH RESULTS
+====================================== */
+
+.edit-song-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.edit-song-filters button.active {
+  background: #7c3aed;
+}
+
+.edit-song-results {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 24px;
+  max-height: 320px;
+  overflow-y: auto;
+  border-radius: 8px;
+}
+
+.edit-song-results li {
+  margin-bottom: 5px;
+}
+
+.edit-song-results button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: #111827;
+  border: 1px solid #374151;
+  padding: 12px;
+  border-radius: 6px;
+}
+
+.edit-song-results button:hover,
+.edit-song-results button:focus-visible {
+  border-color: #c084fc;
+  background: #312e81;
+}
+
+.edit-result-note {
+  display: block;
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  font-weight: normal;
+  margin-top: 3px;
+}
+
+#edit-song-form {
+  border-top: 1px solid #374151;
+  padding-top: 20px;
+}
+
+#edit-song-save-status {
+  margin-top: 15px;
+  overflow-wrap: anywhere;
+}
+
+#edit-song-form[hidden] {
+  display: none !important;
+}
+
   </style>
 </head>
 
@@ -336,6 +409,44 @@
               </p>
             </div>
 
+<!-- OPTIONAL ENGLISH TRANSLATION -->
+
+<div class="form-field full-width">
+
+  <label>
+    <input
+      type="checkbox"
+      id="add-has-translation"
+      style="width:auto;"
+    >
+    Include English Translation
+  </label>
+
+  <div
+    id="add-translation-container"
+    class="form-field"
+    hidden
+  >
+    <label for="song-translation">
+      English Translation
+    </label>
+
+    <textarea
+      id="song-translation"
+      rows="14"
+      maxlength="100000"
+      placeholder="Paste the English translation..."
+    ></textarea>
+
+    <p class="helper">
+      Preserve blank lines and language labels
+      such as {Korean} or {German}.
+    </p>
+  </div>
+
+</div>
+
+
           </div>
 
           <div class="form-actions">
@@ -430,6 +541,281 @@
       role="status"
       aria-live="polite"
     ></p>
+
+  </form>
+
+</section>
+
+
+<!-- ======================================
+     EDIT EXISTING SONGS
+====================================== -->
+
+<section class="admin-card" id="edit-song-section">
+
+  <h2>Edit Existing Songs</h2>
+
+  <p class="helper">
+    Search songs from JSON and Firestore.
+    Select a song to load and edit its details.
+  </p>
+
+  <!-- ====================================
+       LIVE SEARCH
+  ===================================== -->
+
+  <div class="form-field">
+    <label for="edit-song-search">
+      Find Song
+    </label>
+
+    <input
+      type="search"
+      id="edit-song-search"
+      placeholder="Start typing a song title..."
+      autocomplete="off"
+    >
+  </div>
+
+  <!-- ====================================
+       QUICK FILTERS
+  ===================================== -->
+
+  <div class="edit-song-filters">
+
+    <button type="button"
+            id="edit-filter-all">
+      All Songs
+    </button>
+
+    <button type="button"
+            id="edit-filter-no-lyrics"
+            class="secondary">
+      Missing Lyrics
+    </button>
+
+    <button type="button"
+            id="edit-filter-no-db"
+            class="secondary">
+      Not in Database
+    </button>
+
+    <button type="button"
+            id="edit-filter-either"
+            class="secondary">
+      Either Problem
+    </button>
+
+    <button type="button"
+            id="edit-refresh-songs"
+            class="secondary">
+      Refresh List
+    </button>
+
+  </div>
+
+  <p id="edit-search-status"
+     class="helper"
+     role="status"
+     aria-live="polite">
+    Loading songs...
+  </p>
+
+  <!-- Matches appear below the search box -->
+  <ul id="edit-song-results"
+      class="edit-song-results">
+  </ul>
+
+  <!-- ====================================
+       SONG EDITOR
+  ===================================== -->
+
+  <form id="edit-song-form" hidden>
+
+    <h3>Edit Selected Song</h3>
+
+    <p id="edit-song-source" class="helper"></p>
+
+    <div class="form-grid">
+
+      <!-- SONG ID -->
+      <div class="form-field full-width">
+        <label for="edit-song-id">
+          Song ID
+        </label>
+
+        <input id="edit-song-id"
+               type="text"
+               readonly>
+
+        <p class="helper">
+          This ID stays unchanged so existing
+          song links keep working.
+        </p>
+      </div>
+
+      <!-- TITLE -->
+      <div class="form-field full-width">
+        <label for="edit-song-title">
+          Title <span class="required">*</span>
+        </label>
+
+        <input id="edit-song-title"
+               type="text"
+               maxlength="160"
+               required>
+      </div>
+
+      <!-- DESCRIPTION -->
+      <div class="form-field full-width">
+        <label for="edit-song-description">
+          Description
+        </label>
+
+        <textarea
+          id="edit-song-description"
+          rows="4"
+          maxlength="5000"
+        ></textarea>
+      </div>
+
+      <!-- ALBUM -->
+      <div class="form-field">
+        <label for="edit-song-album">
+          Album <span class="required">*</span>
+        </label>
+
+        <select id="edit-song-album" required>
+          <option value="">N/A</option>
+        </select>
+
+        <p id="edit-original-album"
+           class="helper"></p>
+      </div>
+
+      <!-- GENRE -->
+      <div class="form-field">
+        <label for="edit-song-genre">
+          Genre <span class="required">*</span>
+        </label>
+
+        <select id="edit-song-genre" required>
+          <option value="">Select Genre</option>
+        </select>
+      </div>
+
+      <!-- RELEASE DATE -->
+      <div class="form-field">
+        <label for="edit-song-release">
+          Release Date
+        </label>
+
+        <input id="edit-song-release"
+               type="date">
+
+        <p id="edit-original-date"
+           class="helper">
+          Blank saves as tbd.
+        </p>
+      </div>
+
+      <!-- SUBMITTED BY -->
+      <div class="form-field">
+        <label for="edit-song-submitted-by">
+          Submitted By
+        </label>
+
+        <input id="edit-song-submitted-by"
+               type="text"
+               readonly>
+      </div>
+
+      <!-- AUDIO REFERENCE -->
+      <div class="form-field full-width">
+        <label for="edit-song-audio">
+          Existing Audio Reference
+        </label>
+
+        <input id="edit-song-audio"
+               type="text"
+               readonly>
+
+        <p class="helper">
+          Audio files are not modified by
+          this editor.
+        </p>
+      </div>
+
+      <!-- LYRICS -->
+      <div class="form-field full-width">
+        <label for="edit-song-lyrics">
+          Lyrics <span class="required">*</span>
+        </label>
+
+        <textarea
+          id="edit-song-lyrics"
+          rows="16"
+          required
+          placeholder="Enter song lyrics..."
+        ></textarea>
+
+        <p class="helper">
+          Uses the same lyric formatting
+          rules as Add Song.
+        </p>
+      </div>
+
+<!-- EDIT ENGLISH TRANSLATION -->
+
+<div class="form-field full-width">
+
+  <label>
+    <input
+      type="checkbox"
+      id="edit-has-translation"
+      style="width:auto;"
+    >
+    English Translation Available
+  </label>
+
+  <div
+    id="edit-translation-container"
+    class="form-field"
+    hidden
+  >
+    <label for="edit-song-translation">
+      English Translation
+    </label>
+
+    <textarea
+      id="edit-song-translation"
+      rows="14"
+      maxlength="100000"
+      placeholder="Enter English translation..."
+    ></textarea>
+
+    <p class="helper">
+      Existing JSON translations load automatically.
+      Uncheck to remove a song's translation.
+    </p>
+  </div>
+
+</div>
+
+
+    </div>
+
+    <div class="form-actions">
+      <button type="submit"
+              id="edit-song-save">
+        Save Changes to Firestore
+      </button>
+    </div>
+
+    <p id="edit-song-save-status"
+       role="status"
+       aria-live="polite">
+    </p>
 
   </form>
 

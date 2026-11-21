@@ -79,6 +79,42 @@ document.addEventListener("DOMContentLoaded", async () => {
   const submittedByInput = document.getElementById("song-by");
   const lyricsInput = document.getElementById("song-lyrics");
 
+
+// ==========================================
+// OPTIONAL ENGLISH TRANSLATION
+// ==========================================
+
+const translationCheckbox = document.getElementById(
+  "add-has-translation"
+);
+
+const translationContainer = document.getElementById(
+  "add-translation-container"
+);
+
+const translationInput = document.getElementById(
+  "song-translation"
+);
+
+function syncAddTranslation() {
+  const enabled = translationCheckbox.checked;
+
+  translationContainer.hidden = !enabled;
+  translationInput.disabled = !enabled;
+  translationInput.required = enabled;
+}
+
+translationCheckbox.addEventListener(
+  "change",
+  syncAddTranslation
+);
+
+syncAddTranslation();
+
+form.addEventListener("reset", () => {
+  setTimeout(syncAddTranslation, 0);
+});
+
   const previewButton = document.getElementById(
     "preview-lyrics"
   );
@@ -485,6 +521,24 @@ albumForm.addEventListener("submit", async event => {
         lyricsInput.value
       );
 
+
+const translation = translationCheckbox.checked
+  ? translationInput.value
+      .replace(/\r\n?/g, "\n")
+      .trim()
+  : "";
+
+if (translationCheckbox.checked && !translation) {
+  throw new Error(
+    "Enter an English translation or uncheck the option."
+  );
+}
+
+if (translation.length > 100000) {
+  throw new Error("Translation is too long.");
+}
+
+
       const username = getUsername(user);
 
       if (!title) {
@@ -551,6 +605,7 @@ albumForm.addEventListener("submit", async event => {
         genre,
         releaseDate,
         lyrics,
+        ...(translation ? { translation } : {}),
 
         submittedBy: {
           uid: user.uid,
