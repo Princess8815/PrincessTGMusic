@@ -89,6 +89,19 @@ jobs:
       # DEPLOY WEBSITE
       # ====================================
 
+
+      # ====================================
+      # WAIT FOR ARTIFACT REGISTRATION
+      # ====================================
+
+      - name: Wait for uploaded website
+        run: sleep 60
+
+      # ====================================
+      # DEPLOY WEBSITE
+      # ====================================
+
       - name: Publish website
         id: deployment
         uses: actions/deploy-pages@v4
+
