@@ -1,0 +1,401 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>Administration | PrincessTG Music</title>
+
+  <link
+    rel="stylesheet"
+    href="../styles/auth.css"
+  >
+
+  <!-- Existing authentication system -->
+  <script
+    type="module"
+    src="../script/auth.js"
+  ></script>
+
+  <!-- Existing genre list -->
+  <script
+    src="../script/genres.js"
+    defer
+  ></script>
+
+  <!-- New admin song management -->
+  <script
+    type="module"
+    src="../script/admin-songs.js"
+  ></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #111827;
+      color: #f9fafb;
+      font-family: Arial, sans-serif;
+      line-height: 1.5;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    .admin-main {
+      max-width: 1000px;
+      margin: 35px auto;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #c084fc;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      margin-top: 0;
+    }
+
+    .admin-card {
+      margin-top: 25px;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      padding: 25px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .full-width {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-weight: 600;
+    }
+
+    .required {
+      color: #fda4af;
+    }
+
+    .admin-card input,
+    .admin-card select,
+    .admin-card textarea {
+      width: 100%;
+      padding: 12px;
+      background: #111827;
+      border: 1px solid #6b7280;
+      border-radius: 7px;
+      color: white;
+      font: inherit;
+    }
+
+    .admin-card input:focus,
+    .admin-card select:focus,
+    .admin-card textarea:focus {
+      outline: 2px solid #c084fc;
+      outline-offset: 1px;
+    }
+
+    .admin-card input[readonly] {
+      opacity: 0.75;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    #song-lyrics {
+      min-height: 280px;
+    }
+
+    .form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 25px;
+    }
+
+    .admin-card button {
+      padding: 12px 20px;
+      border: 0;
+      border-radius: 8px;
+      background: #8b5cf6;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .admin-card button.secondary {
+      background: #374151;
+    }
+
+    .admin-card button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .helper {
+      color: #cbd5e1;
+      font-size: 0.9rem;
+      margin: 0;
+    }
+
+    #add-song-status {
+      min-height: 25px;
+      margin-top: 18px;
+      overflow-wrap: anywhere;
+    }
+
+    #lyrics-preview {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      background: #111827;
+      padding: 15px;
+      border-radius: 8px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    a {
+      color: #c4b5fd;
+    }
+
+    @media (max-width: 650px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .admin-card {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="auth-container"></div>
+
+  <main class="admin-main">
+
+    <p id="admin-status">
+      Verifying administrator access...
+    </p>
+
+    <div id="admin-content" hidden>
+
+      <h1>PrincessTG Music Administration</h1>
+
+      <p>
+        Manage your music database.
+      </p>
+
+      <section class="admin-card">
+
+        <h2>Add Song</h2>
+
+        <p class="helper">
+          Fields marked * are required.
+        </p>
+
+        <form id="add-song-form">
+
+          <div class="form-grid">
+
+            <!-- TITLE -->
+            <div class="form-field full-width">
+              <label for="song-title">
+                Song Title <span class="required">*</span>
+              </label>
+
+              <input
+                type="text"
+                id="song-title"
+                maxlength="160"
+                required
+              >
+            </div>
+
+            <!-- DESCRIPTION -->
+            <div class="form-field full-width">
+              <label for="song-description">
+                Description
+              </label>
+
+              <textarea
+                id="song-description"
+                maxlength="5000"
+                rows="4"
+              ></textarea>
+            </div>
+
+            <!-- ALBUM -->
+            <div class="form-field">
+              <label for="song-album">
+                Album <span class="required">*</span>
+              </label>
+
+              <select id="song-album" required disabled>
+                <option value="">
+                  Loading albums...
+                </option>
+              </select>
+
+              <p class="helper" id="album-status"></p>
+            </div>
+
+            <!-- GENRE -->
+            <div class="form-field">
+              <label for="song-genre">
+                Genre <span class="required">*</span>
+              </label>
+
+              <select
+                id="song-genre"
+                class="genre-select"
+                required
+              >
+                <option value="">
+                  Select genre
+                </option>
+              </select>
+            </div>
+
+            <!-- RELEASE DATE -->
+            <div class="form-field">
+              <label for="song-release">
+                Release Date
+              </label>
+
+              <input
+                type="date"
+                id="song-release"
+              >
+
+              <p class="helper">
+                Leave blank to save "tbd".
+              </p>
+            </div>
+
+            <!-- SUBMITTED BY -->
+            <div class="form-field">
+              <label for="song-by">
+                Submitted By
+              </label>
+
+              <input
+                type="text"
+                id="song-by"
+                readonly
+              >
+
+              <p class="helper">
+                Automatically taken from your account.
+              </p>
+            </div>
+
+            <!-- LYRICS -->
+            <div class="form-field full-width">
+              <label for="song-lyrics">
+                Lyrics <span class="required">*</span>
+              </label>
+
+              <textarea
+                id="song-lyrics"
+                rows="15"
+                required
+                placeholder="Paste the full song lyrics here..."
+              ></textarea>
+
+              <p class="helper">
+                Stage labels and parentheses are cleaned
+                automatically when saving.
+              </p>
+            </div>
+
+          </div>
+
+          <div class="form-actions">
+
+            <button
+              type="button"
+              id="preview-lyrics"
+              class="secondary"
+            >
+              Preview Cleaned Lyrics
+            </button>
+
+            <button
+              type="submit"
+              id="save-song"
+              disabled
+            >
+              Save Song to Firestore
+            </button>
+
+            <button
+              type="reset"
+              class="secondary"
+            >
+              Clear Form
+            </button>
+
+          </div>
+
+          <div id="preview-container" hidden>
+            <h3>Cleaned Lyrics Preview</h3>
+            <pre id="lyrics-preview"></pre>
+          </div>
+
+          <p
+            id="add-song-status"
+            role="status"
+            aria-live="polite"
+          ></p>
+
+        </form>
+      </section>
+
+      <section class="admin-card">
+        <h2>Coming Next</h2>
+        <p>
+          Edit existing songs, review submissions,
+          and manage users.
+        </p>
+      </section>
+
+      <p>
+        <a href="../index.html">
+          Back to Home
+        </a>
+      </p>
+
+    </div>
+
+  </main>
+
+</body>
+</html>

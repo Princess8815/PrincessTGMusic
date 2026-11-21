@@ -1,6 +1,11 @@
 
 import { auth } from "./firebase.js";
 import { saveUserIfChanged } from "./user-data.js";
+import {
+  verifyStaff,
+  watchStaffRole
+} from "./staff-auth.js";
+import "./song-links.js";
 
 import {
   createUserWithEmailAndPassword,
@@ -19,10 +24,21 @@ if (!container) {
   container.innerHTML = `
     <div class="auth-bar">
       <span id="auth-welcome"></span>
-      <div class="auth-bar-actions">
-        <button id="auth-open" type="button" hidden>Login / Register</button>
-        <button id="auth-logout" type="button" hidden>Log Out</button>
-      </div>
+
+<div class="auth-bar-actions">
+  <button id="auth-open" type="button" hidden>
+    Login / Register
+  </button>
+
+  <button id="auth-admin" type="button" hidden>
+    Admin Panel
+  </button>
+
+  <button id="auth-logout" type="button" hidden>
+    Log Out
+  </button>
+</div>
+
     </div>
 
     <div id="auth-modal" class="auth-modal" hidden>
@@ -77,6 +93,56 @@ if (!container) {
   const nameGroup = $("auth-name-group");
   const loginTab = $("auth-login-tab");
   const registerTab = $("auth-register-tab");
+
+// ==========================================
+// ADMIN PANEL BUTTON
+// ==========================================
+
+const adminButton = $("auth-admin");
+
+// Resolve the URL from this script's location
+// so it works from every page on the website.
+const adminPageURL = new URL(
+  "../pages/admin.html",
+  import.meta.url
+);
+
+// ==========================================
+// SHOW BUTTON ONLY FOR STAFF
+// ==========================================
+
+watchStaffRole((isStaff) => {
+  adminButton.hidden = isStaff !== true;
+});
+
+// ==========================================
+// VERIFY AGAIN BEFORE OPENING
+// ==========================================
+
+adminButton.addEventListener("click", async () => {
+
+  adminButton.disabled = true;
+
+  try {
+    const allowed = await verifyStaff();
+
+    if (!allowed) {
+      adminButton.hidden = true;
+
+      alert(
+        "Access denied. Administrator permissions required."
+      );
+
+      return;
+    }
+
+    window.location.href = adminPageURL.href;
+
+  } finally {
+    adminButton.disabled = false;
+  }
+});
+
 
   let mode = "login";
   let busy = false;

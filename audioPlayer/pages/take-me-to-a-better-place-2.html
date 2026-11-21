@@ -196,29 +196,21 @@ Take me to a better place</pre>
       let originalLyrics = lyricsElement.textContent;
       let englishTranslation = null;
 
-      // Load original lyrics from song-details.json.
+      
+      // ==========================================
+      // LOAD ORIGINAL LYRICS FROM JSON + FIRESTORE
+      // ==========================================
+
       try {
-        const response = await fetch(
-          "../audio/song-details.json"
+        const { loadSong } = await import(
+          "../../script/song-data.js"
         );
 
-        if (!response.ok) {
-          throw new Error("Could not load song details.");
-        }
-
-        const songs = await response.json();
-
-        if (!Array.isArray(songs)) {
-          throw new Error("Invalid song details format.");
-        }
-
-        const song = songs.find((item) => {
-          if (songId && item.pageId === songId) {
-            return true;
-          }
-
-          return item.title === songTitle;
-        });
+        const song = await loadSong(
+          songId,
+          songTitle,
+          "../audio/song-details.json"
+        );
 
         if (song && typeof song.lyrics === "string") {
           originalLyrics = song.lyrics;
@@ -231,6 +223,7 @@ Take me to a better place</pre>
           error
         );
       }
+
 
       // Check whether this song has an English translation.
       try {

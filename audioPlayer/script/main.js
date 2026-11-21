@@ -362,15 +362,28 @@ const loadTracks = async () => {
 	setStatus("Loading audio index...");
 
 	try {
-		const [indexResponse, detailsResponse] = await Promise.all([
-			fetch(AUDIO_INDEX, { cache: "no-store" }),
-			fetch(SONG_DETAILS, { cache: "no-store" }),
-		]);
-		if (!indexResponse.ok) throw new Error(`HTTP error, status (${indexResponse.status})`);
-		if (!detailsResponse.ok) throw new Error(`Song details HTTP error, status (${detailsResponse.status})`);
+		
+        // ==========================================
+        // LOAD SONG DETAILS FROM JSON AND FIRESTORE
+        // ==========================================
 
-		const paths = await indexResponse.json();
-		const details = await detailsResponse.json();
+        const { loadAllSongs } = await import(
+          "../../script/song-data.js"
+        );
+
+        const [indexResponse, details] = await Promise.all([
+          fetch(AUDIO_INDEX, { cache: "no-store" }),
+          loadAllSongs(SONG_DETAILS)
+        ]);
+
+        if (!indexResponse.ok) {
+          throw new Error(
+            `Audio index error: ${indexResponse.status}`
+          );
+        }
+
+        const paths = await indexResponse.json();
+
 		if (!paths || paths.length === 0) throw new Error("No audio files found in audio/index.json");
 
 		const detailsByTitle = new Map(details.map((song) => [song.title.toLowerCase(), song]));

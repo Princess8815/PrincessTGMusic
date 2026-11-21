@@ -1,3 +1,27 @@
+
+/* ==========================================
+   REDIRECT OLD SONG PAGES
+========================================== */
+
+(function redirectLegacySongPage() {
+
+  const pageId = document.body.dataset.songId;
+
+  if (!pageId) return;
+
+  const url = new URL(
+    "song.html",
+    window.location.href
+  );
+
+  url.searchParams.set("id", pageId);
+
+  window.location.replace(url.href);
+
+})();
+
+
+
 const SITE_URL = "https://princess8815.github.io/PrincessTGMusic";
 const LOGO_URL = `${SITE_URL}/images/logo%20avatar.png`;
 
@@ -45,18 +69,26 @@ async function loadSongDetails() {
   if (!pageIdFromUrl && !titleFromUrl) return;
 
   try {
-    const response = await fetch("../audio/song-details.json");
-    if (!response.ok) return;
+    
+const { loadSong } = await import(
+  "../../script/song-data.js"
+);
 
-    const songs = await response.json();
+const song = await loadSong(
+  pageIdFromUrl,
+  titleFromUrl,
+  "../audio/song-details.json"
+);
 
-    const normalizedPageId = pageIdFromUrl?.toLowerCase();
-    const normalizedTitle = titleFromUrl?.toLowerCase();
-    const song = songs.find((s) => {
-      const songPageId = s.pageId?.toLowerCase();
-      const songTitle = s.title?.toLowerCase();
-      return (normalizedPageId && songPageId === normalizedPageId) || (normalizedTitle && songTitle === normalizedTitle);
-    });
+
+console.log("========== SONG DATABASE TEST ==========");
+console.log("Requested page ID:", pageIdFromUrl);
+console.log("Requested title:", titleFromUrl);
+console.log("Merged song data:", song);
+console.log("Description:", song?.description);
+console.log("========================================");
+
+
 
     let filePath = `../audio/${titleFromUrl}.mp3`;
 
@@ -101,9 +133,14 @@ async function loadSongDetails() {
         player.currentTime = 0;
       });
     }
-  } catch {
-    /* silent fail */
+
+  } catch (error) {
+    console.error(
+      "SONG DETAILS LOADING FAILED:",
+      error
+    );
   }
+
 }
 
 
@@ -146,31 +183,53 @@ async function checkReleasedSongPlayback() {
   }
 
   try {
-    const [indexResponse, detailsResponse] =
-      await Promise.all([
-        fetch("../audio/index.json"),
-        fetch("../audio/song-details.json")
-      ]);
 
-    if (!indexResponse.ok || !detailsResponse.ok) {
-      throw new Error("Could not check audio availability.");
+    // ==========================================
+    // LOAD SONG FROM JSON AND FIRESTORE
+    // ==========================================
+
+    const params = new URLSearchParams(
+      window.location.search
+    );
+
+    const songId =
+      params.get("pageId") ||
+      document.body.dataset.songId;
+
+    const songTitle =
+      params.get("title") ||
+      document.body.dataset.songTitle;
+
+    const { loadSong } = await import(
+      "../../script/song-data.js"
+    );
+
+    // ==========================================
+    // LOAD AUDIO INDEX AND SONG DETAILS
+    // ==========================================
+
+    const [indexResponse, song] = await Promise.all([
+      fetch("../audio/index.json"),
+
+      loadSong(
+        songId,
+        songTitle,
+        "../audio/song-details.json"
+      )
+    ]);
+
+    if (!indexResponse.ok) {
+      throw new Error(
+        "Could not check audio availability."
+      );
     }
 
     const audioIndex = await indexResponse.json();
-    const songDetails = await detailsResponse.json();
 
-    if (!Array.isArray(audioIndex) ||
-        !Array.isArray(songDetails)) {
-      throw new Error("Invalid audio data.");
+    if (!Array.isArray(audioIndex)) {
+      throw new Error("Invalid audio index.");
     }
 
-    const songId = document.body.dataset.songId;
-    const songTitle = document.body.dataset.songTitle;
-
-    const song = songDetails.find(item =>
-      (songId && item.pageId === songId) ||
-      (songTitle && item.title === songTitle)
-    );
 
     if (!song || !song.file) {
       enablePlayer();

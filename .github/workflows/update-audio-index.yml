@@ -1,0 +1,94 @@
+
+name: Update Audio Index and Publish Website
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      # ====================================
+      # DOWNLOAD REPOSITORY
+      # ====================================
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ====================================
+      # SET UP NODE.JS
+      # ====================================
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # ====================================
+      # RUN YOUR EXISTING GENERATOR
+      # ====================================
+
+      - name: Generate audio index
+        run: node generate-audio-index.js
+
+      # ====================================
+      # SAVE UPDATED INDEX TO GITHUB
+      # ====================================
+
+      - name: Commit updated audio index
+        run: |
+          git add audioPlayer/audio/index.json
+
+          if git diff --cached --quiet; then
+            echo "Audio index is already up to date."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+            git commit -m "Automatically update audio index"
+            git push origin HEAD:main
+          fi
+
+      # ====================================
+      # PREPARE GITHUB PAGES
+      # ====================================
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      # ====================================
+      # UPLOAD COMPLETE WEBSITE
+      # ====================================
+
+      - name: Upload website files
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: .
+
+      # ====================================
+      # DEPLOY WEBSITE
+      # ====================================
+
+      - name: Publish website
+        id: deployment
+        uses: actions/deploy-pages@v4

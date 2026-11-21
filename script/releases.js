@@ -376,10 +376,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   try {
     status.textContent = "Loading released songs...";
 
+    
+    // ==========================================
+    // LOAD SONGS FROM JSON AND FIRESTORE
+    // ==========================================
+
+    const { loadAllSongs } = await import(
+      "./song-data.js"
+    );
+
     const [audioIndex, songDetails] = await Promise.all([
       loadJSON(INDEX_URL),
-      loadJSON(DETAILS_URL)
+      loadAllSongs(DETAILS_URL)
     ]);
+
 
     if (
       !Array.isArray(audioIndex) ||
