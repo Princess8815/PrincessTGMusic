@@ -40,8 +40,10 @@ let writingPromise = null;
 let directorySync = null;
 async function syncMailDirectory(user) {
   if (!user?.emailVerified || currentUid !== user.uid) return;
-  const memberName = String(currentRecord?.auth?.displayName || "").trim();
-  if (!memberName) return;
+  const memberName = String(currentRecord?.auth?.displayName || "");
+  if (!memberName.trim()) return;
+  // Keep the exact stored public name so Firestore rules can reject a
+  // forged directory entry without needing to expose private user profiles.
   if (directorySync) return directorySync;
   directorySync = (async () => {
     const memberRef = doc(db, "siteMailDirectory", user.uid);
