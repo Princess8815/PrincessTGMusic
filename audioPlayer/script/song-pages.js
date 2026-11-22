@@ -428,9 +428,19 @@ async function initializeSongPage() {
     setupSongSharing(song, pageId);
     const playlistActions = $("song-playlist-actions");
     if (playlistActions) {
-      playlistActions.replaceChildren(addToPlaylistControl(
+      const picker=addToPlaylistControl(
         async () => [keyForSong(song, await getAudioIndex().catch(() => []))]
-      ));
+      );
+      const send=document.createElement("a");
+      send.className="mail-song-link";
+      send.textContent="✉ Send by site mail";
+      const destination=new URL("../../pages/profile.html",import.meta.url);
+      destination.searchParams.set("mailSong","song:"+pageId);
+      destination.searchParams.set("mailTitle",String(song.title||pageId));
+      destination.hash="tab-mail";
+      send.href=destination.href;
+      send.style.cssText="display:inline-flex;align-items:center;min-height:38px;padding:8px 12px;margin-left:10px;border-radius:9px;border:1px solid var(--ptg-border,#74608e);text-decoration:none;font-weight:700";
+      playlistActions.replaceChildren(picker,send);
     }
 
 
