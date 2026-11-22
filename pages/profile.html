@@ -9,6 +9,7 @@
 
   <script type="module" src="../script/profile-promotions.js"></script>
   <script type="module" src="../script/profile.js"></script>
+  <script type="module" src="../script/profile-playlists.js"></script>
 
   <script
   type="module"
@@ -131,6 +132,22 @@
     .submissions-list li {
       margin: 12px 0;
     }
+  </style>
+
+  <style>
+    .profile-playlist-actions,.profile-playlist-create,.profile-playlist-controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:10px 0}
+    .profile-playlist-actions label,.profile-playlist-create label{width:100%;font-weight:700}
+    #profile-playlist-select,#profile-playlist-name{flex:1;min-width:min(100%,180px)}
+    .profile-playlist-tracklist{list-style:none;padding:0;margin:15px 0}
+    .profile-playlist-tracklist li{padding:10px 0;border-top:1px solid #4b5563;display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+    .profile-playlist-tracklist .playlist-track-name{flex:1;min-width:150px;overflow-wrap:anywhere}
+    .profile-playlist-tracklist button{padding:8px 11px}
+    .profile-playlist-lyrics{background:#101425;border:1px solid #535070;border-radius:11px;padding:12px}
+    .profile-playlist-lyrics summary{cursor:pointer;color:#d5b9ff;font-weight:bold}
+    .profile-playlist-lyrics pre{white-space:pre-wrap;max-height:340px;overflow:auto;font:1rem/1.7 Georgia,serif}
+    .profile-playlist-now{font-size:1.16rem;color:#e7d4ff}
+    #profile-playlist-player-panel{background:#1c2033;padding:16px;border-radius:12px;margin-top:15px}
+    #profile-playlist-shuffle[aria-pressed=true]{background:#b786ff;color:#160c27}
   </style>
 </head>
 
@@ -273,6 +290,38 @@
 
         <ul id="profile-submissions"
             class="submissions-list"></ul>
+      </section>
+
+      <!-- PERSONAL MUSIC PLAYLISTS: saved per signed-in account in this browser -->
+      <section class="profile-card" id="profile-playlists-section">
+        <h2>My Music Playlists</h2>
+        <p class="muted">Make playlists from any album or song page, then play them here. Playlists are stored in this browser, not synced across devices.</p>
+        <div class="profile-playlist-actions">
+          <label for="profile-playlist-select">Choose Playlist</label>
+          <select id="profile-playlist-select"><option value="">Select a playlist</option></select>
+          <button type="button" id="profile-playlist-delete" class="secondary">Delete Playlist</button>
+        </div>
+        <div class="profile-playlist-create">
+          <label for="profile-playlist-name">Create a playlist</label>
+          <input id="profile-playlist-name" placeholder="Playlist name" maxlength="90">
+          <button type="button" id="profile-playlist-create">Create</button>
+        </div>
+        <div id="profile-playlist-player-panel" hidden>
+          <div class="profile-playlist-now"><strong id="profile-playlist-now-playing">Choose a song</strong></div>
+          <details class="profile-playlist-lyrics">
+            <summary id="profile-playlist-lyrics-title">Lyrics (expand)</summary>
+            <pre id="profile-playlist-lyrics-text">Choose a track.</pre>
+          </details>
+          <div class="profile-playlist-controls">
+            <button id="profile-playlist-prev" type="button" aria-label="Previous">⏮ Previous</button>
+            <button id="profile-playlist-play" type="button">▶ Play</button>
+            <button id="profile-playlist-next" type="button" aria-label="Next">Next ⏭</button>
+            <button id="profile-playlist-shuffle" type="button" aria-pressed="false">⇄ Shuffle</button>
+          </div>
+          <audio id="profile-playlist-audio" controls controlslist="nodownload" preload="metadata" style="width:100%;margin-top:14px"></audio>
+        </div>
+        <ol id="profile-playlist-tracks" class="profile-playlist-tracklist"></ol>
+        <p id="profile-playlist-status" role="status" aria-live="polite" class="status"></p>
       </section>
 
       <!-- EMAIL LIST -->
