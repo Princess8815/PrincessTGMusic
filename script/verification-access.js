@@ -6,6 +6,11 @@ import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/fire
 import {doc,getDoc,onSnapshot} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
 const overrides=new Map();
+function eligibleOverride(snapshot,user){
+  return !!user && snapshot.exists()
+    && snapshot.data().enabled===true
+    && snapshot.data().targetEmail===user.email;
+}
 let stopOverride=()=>{};
 
 export function hasSiteVerificationAccess(user){
@@ -27,7 +32,7 @@ export async function refreshSiteVerificationAccess(user){
   try{
     const snapshot=await getDoc(doc(db,"verificationOverrides",user.uid));
     if(auth.currentUser?.uid!==user.uid)return false;
-    const allowed=snapshot.exists() && snapshot.data().enabled===true;
+    const allowed=eligibleOverride(snapshot,user);
     overrides.set(user.uid,allowed);
     publish(user);
     return allowed;
@@ -52,7 +57,7 @@ onAuthStateChanged(auth,user=>{
   }
   stopOverride=onSnapshot(doc(db,"verificationOverrides",user.uid),snapshot=>{
     if(auth.currentUser?.uid!==user.uid)return;
-    overrides.set(user.uid,snapshot.exists()&&snapshot.data().enabled===true);
+    overrides.set(user.uid,eligibleOverride(snapshot,user));
     publish(user);
   },error=>{
     overrides.delete(user.uid);
