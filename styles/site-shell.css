@@ -1,6 +1,6 @@
 
 /* PrincessTG Creations shared shell. Loaded after page-specific CSS. */
-:root { --ptg-sidebar-width:252px; --ptg-bar-height:62px; --ptg-shell-accent:#b48cff; }
+:root { --ptg-sidebar-width:252px; --ptg-bar-height:62px; --ptg-shell-accent:var(--ptg-highlight,#c084fc); }
 html {scroll-padding-top:18px}
 body.ptg-shell-ready {padding-left:var(--ptg-sidebar-width);min-width:0;box-sizing:border-box}
 body.ptg-shell-ready > main,
@@ -51,11 +51,7 @@ body.ptg-shell-ready > footer:not(.ptg-global-footer){display:none!important}
 .ptg-tab-panel > section {margin-bottom:15px}
 .ptg-tab-panel .more-content {margin-bottom:15px}
 .ptg-shell-ready .about-page pre{max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere}
-html[data-ptg-accent="rose"]{--ptg-shell-accent:#fa95c6;--accent:#f28cbe;--accent-hover:#ffd0e7}
-html[data-ptg-accent="teal"]{--ptg-shell-accent:#67e7d6;--accent:#65d9d0;--accent-hover:#b9fff3}
-html[data-ptg-accent="violet"]{--ptg-shell-accent:#b48cff;--accent:#9f7bff;--accent-hover:#c8b4ff}
-html[data-ptg-accent="rose"] .ptg-sidebar .ptg-nav-link[aria-current="page"]{background:#6b2e57;border-color:#db78af}
-html[data-ptg-accent="teal"] .ptg-sidebar .ptg-nav-link[aria-current="page"]{background:#175e61;border-color:#79dcd5}
+/* Legacy accent presets are migrated to the five-color palette in site-shell.js. */
 html[data-ptg-text="large"] body{font-size:1.125rem}
 html[data-ptg-text="large"] .ptg-sidebar .ptg-nav-link{font-size:1.02rem}
 html[data-ptg-contrast="high"] .ptg-sidebar{background:#08080c;border-color:#d4b9ff}
