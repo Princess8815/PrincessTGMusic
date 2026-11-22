@@ -1,7 +1,9 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+import { getAuth, connectAuthEmulator } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+import { getFirestore, connectFirestoreEmulator } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+
+
 
 // Firebase configuration
 const firebaseConfig = {
@@ -14,14 +16,41 @@ const firebaseConfig = {
   measurementId: "G-XYNRZ5WWXR"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
 
-// Initialize Authentication
+const testingLocally = [
+  "localhost",
+  "127.0.0.1"
+].includes(window.location.hostname);
+
+// Match the demo project running in the emulator.
+const app = initializeApp(
+  testingLocally
+    ? {
+        ...firebaseConfig,
+        projectId: "demo-princesstg",
+        authDomain: "demo-princesstg.firebaseapp.com"
+      }
+    : firebaseConfig
+);
+
 const auth = getAuth(app);
-
-// Initialize Firestore
 const db = getFirestore(app);
 
-// Export Firebase services
+if (testingLocally) {
+  connectAuthEmulator(
+    auth,
+    "http://127.0.0.1:9099"
+  );
+
+  connectFirestoreEmulator(
+    db,
+    "127.0.0.1",
+    8080
+  );
+
+  console.log("Using LOCAL Firebase emulators");
+} else {
+  console.log("Using production Firebase");
+}
+
 export { app, auth, db };
