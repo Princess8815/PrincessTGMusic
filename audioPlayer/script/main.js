@@ -2,6 +2,8 @@ import {
   getPlaylists, savePlaylists, createPlaylist as createNamedPlaylist,
   deletePlaylist as deleteNamedPlaylist, addToPlaylistControl
 } from "../../script/music-playlists.js";
+import {auth} from "../../script/firebase.js";
+import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 const AUDIO_INDEX = "audio/index.json";
 const SONG_DETAILS = "audio/song-details.json";
 const ORDER_STORAGE_KEY = "audio-player-order-v1";
@@ -503,6 +505,13 @@ deletePlaylistButton.addEventListener("click", () => {
 	saveSelectedPlaylist();
 	renderPlaylistOptions();
 	renderPlaylist();
+});
+
+// Account changes switch the local playlist collection for this browser.
+onAuthStateChanged(auth, () => {
+  customPlaylists = getPlaylists();
+  renderPlaylistOptions();
+  renderPlaylist();
 });
 
 void loadTracks();
