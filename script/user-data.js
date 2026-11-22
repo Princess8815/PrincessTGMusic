@@ -7,6 +7,8 @@ import {
 
 import {
   doc,
+  getDoc,
+  setDoc,
   runTransaction,
   updateDoc,
   serverTimestamp
@@ -31,6 +33,25 @@ let lastSavedAuth = null;
 let sessionVersion = 0;
 let readyPromise = null;
 let writingPromise = null;
+
+// Public mail directory contains display names only, never private emails,
+// roles, passwords, or account records. It is opt-in via verification of the
+// site's email address; existing members enroll the next time they log in.
+let directorySync = null;
+async function syncMailDirectory(user) {
+  if (!user?.emailVerified || currentUid !== user.uid) return;
+  const memberName = String(currentRecord?.auth?.displayName || "").trim();
+  if (!memberName) return;
+  if (directorySync) return directorySync;
+  directorySync = (async () => {
+    const memberRef = doc(db, "siteMailDirectory", user.uid);
+    const previous = await getDoc(memberRef);
+    if (previous.exists() && previous.data()?.name === memberName) return;
+    await setDoc(memberRef, {name:memberName, updatedAt:serverTimestamp()});
+  })();
+  try {await directorySync;}
+  finally {directorySync = null;}
+}
 
 // ==========================================
 // GET SAFE AUTH INFORMATION
@@ -146,6 +167,14 @@ onAuthStateChanged(auth, (user) => {
       })
     );
 
+    if (user.emailVerified) {
+      // Update stale auth metadata before indexing the display name.
+      // This never exposes users/{uid} documents to other members.
+      void saveUserIfChanged()
+        .then(() => syncMailDirectory(user))
+        .catch(error => console.warn("Mail directory registration deferred:",error));
+    }
+
   })().catch(error => {
     console.error(
       "Unable to initialize user database:",
@@ -224,6 +253,9 @@ export async function saveUserIfChanged() {
         ...currentRecord,
         auth: authInfo
       };
+      void syncMailDirectory(user).catch(error=>{
+        console.warn("Mail directory update deferred:",error);
+      });
     }
 
     console.log("User changes saved.");
@@ -267,3 +299,11 @@ document.addEventListener(
     }
   }
 );
+
+window.addEventListener("princesstg:email-verified", () => {
+  const user = auth.currentUser;
+  if (!user?.emailVerified) return;
+  void saveUserIfChanged()
+    .then(() => syncMailDirectory(user))
+    .catch(error=>console.warn("Mail directory registration deferred:",error));
+});
