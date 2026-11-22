@@ -554,7 +554,7 @@ async function compressImage(file){
           reader.onerror=()=>reject(Error("Image conversion failed."));
           reader.readAsDataURL(encoded);
         });
-        return {name:file.name.replace(/\.[^.]+$/,"")+".jpg",dataUrl};
+        return {name:file.name.replace(/\.[^.]+$/,"").slice(0,84)+".jpg",dataUrl};
       }
       scale*=.78;
     }
