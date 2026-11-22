@@ -31,6 +31,8 @@ body.ptg-shell-ready > main {min-width:0}
 .ptg-shell-ready a.roadmap-back[href],
 .ptg-shell-ready button#back:has(a[href]) {display:none!important}
 .ptg-shell-ready #auth-admin, .ptg-shell-ready #auth-profile {display:none!important}
+/* Preserve legacy footers for no-JS fallback, show just the shared one when active. */
+body.ptg-shell-ready > footer:not(.ptg-global-footer){display:none!important}
 .ptg-global-footer {width:min(1050px,94%);max-width:1050px;margin:32px auto 25px;padding:18px 20px;background:#171b2a;border:1px solid #403a53;border-radius:16px;color:#c8c3d6;text-align:center}
 .ptg-global-footer .ptg-footer-inner{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px}
 .ptg-global-footer .ptg-footer-copy{font-size:.84rem}
