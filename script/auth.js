@@ -202,6 +202,7 @@ adminButton.addEventListener("click", async () => {
   let mode = "login";
   let busy = false;
   let lastVerificationEmailAt = 0;
+  let lastVerificationUid = "";
   let lastAutomaticCheckAt=0;
   let automaticCheckPending=false;
   const verifyPanel = $("auth-verify-panel");
@@ -336,25 +337,26 @@ adminButton.addEventListener("click", async () => {
 
   async function sendVerification(user,automatic=false) {
     const now=Date.now();
-    if(now-lastVerificationEmailAt<60000) {
+    if(user.uid===lastVerificationUid && now-lastVerificationEmailAt<60000) {
       $("auth-verify-message").textContent =
-        "A link was recently sent. Check your inbox or spam folder before requesting another.";
+        "A verification request was recently accepted for this account. Check your inbox and Spam folder. You can retry after 60 seconds.";
       return;
     }
     try {
       const sent=await sendSiteVerification(user);
       lastVerificationEmailAt=Date.now();
-      $("auth-verify-message").textContent = sent.needsAuthorizedDomain
-        ? "Verification email sent using Firebase's standard link. After confirming, return here and select I've verified my email. Add this site's domain in Firebase Authorized domains for an automatic return link."
-        : sent.alreadyVerified
-          ? "This email is already verified. Select I've verified my email to continue."
-          : "Verification email sent. Open the Firebase link, confirm your address, then return here. You can press I've verified my email to refresh your account.";
+      lastVerificationUid=user.uid;
+      $("auth-verify-message").textContent = sent.alreadyVerified
+        ? "Your address is already verified. Select I've verified my email to continue."
+        : "Firebase accepted the verification email request for "+(user.email||"your address")+
+          ". Check your inbox and Spam folder. Open the verification link, then return here and select I've verified my email.";
     } catch (error) {
+      console.error("Firebase verification email request failed:",error?.code,error);
       $("auth-verify-message").textContent =
         automatic
-          ? "Your account was created, but Firebase could not send verification: "+verificationError(error)+
-            " Use Resend verification email to try again."
-          : "Unable to send verification email: "+verificationError(error);
+          ? "Your account was created, but Firebase rejected the verification email: "+verificationError(error)+
+            ". Use Resend verification email to try again."
+          : "Firebase could not send the verification email: "+verificationError(error);
     }
   }
 
@@ -387,9 +389,9 @@ adminButton.addEventListener("click", async () => {
           await updateProfile(credential.user,{displayName});
         }catch(error){
           console.error("Unable to set display name:",error);
-          showVerification(credential.user,
-            "Your account was created, but its display name was not saved.");
-          return;
+          // An optional profile-data error must never prevent sending the
+          // verification email to the account that was successfully created.
+          console.warn("Account created; continuing with email verification.");
         }
         showVerification(credential.user);
         // The user-data listener may have created the Firestore record
