@@ -69,7 +69,7 @@ async function mailSearch(searchText){
   const collections=collection(db,DIRECTORY);
   const results=await Promise.all([...new Set(variants)].map(term=>
     getDocs(query(collections,orderBy("name"),startAt(term),
-      endAt(term+"\\uf8ff"),limit(12)))));
+      endAt(term+"\uf8ff"),limit(12)))));
   for(const result of results){
     for(const snapshot of result.docs){
       if(snapshot.id===auth.currentUser?.uid)continue;
@@ -94,7 +94,7 @@ async function mailSend(args,member){
   if(!body&&!share&&!images.length)
     throw mailError("Write a message or attach a song, playlist or picture.");
   if(!Array.isArray(images)||images.length>3||
-     images.some(image=>!/^data:image\\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(image?.dataUrl||"")||
+     images.some(image=>!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(image?.dataUrl||"")||
        image.dataUrl.length>200000))
     throw mailError("Only up to three compressed JPEG images are allowed. Audio is blocked.");
   if(share&&(!["song","playlist"].includes(share.kind)))
