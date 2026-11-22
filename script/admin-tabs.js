@@ -97,6 +97,42 @@ document.addEventListener("DOMContentLoaded", () => {
     activate(tabs[next].dataset.adminTab);
   });
 
+
+  // Nested Add / Edit / Delete tabs. Keep existing song panel IDs
+  // so song editors, deletion and form validation are unchanged.
+  const subGroups = new Map();
+  for (const button of document.querySelectorAll("[data-admin-subtab]")) {
+    const [group, action] = button.dataset.adminSubtab.split(":");
+    if (!subGroups.has(group)) subGroups.set(group, []);
+    subGroups.get(group).push({ button, action });
+  }
+  function activateSub(group, action) {
+    for (const {button, action: item} of subGroups.get(group) || []) {
+      const active = action === item;
+      button.setAttribute("aria-selected", String(active));
+      const target = group === "music"
+        ? document.getElementById("admin-main-panel-" + item)
+        : document.querySelector('[data-admin-subpanel="' + group + ":" + item + '"]');
+      if (target) target.hidden = !active;
+    }
+  }
+  for (const [group, entries] of subGroups) {
+    for (const {button, action} of entries) {
+      button.addEventListener("click", () => {
+        activateSub(group, action);
+        history.replaceState(null, "", "#admin-" + group + "-" + action);
+      });
+    }
+    activateSub(group, "add");
+  }
+  // Old links such as #admin-edit still open the correct song editor.
+  const requestedHash = location.hash.replace(/^#admin-/, "");
+  const legacyMusic = ["add", "edit", "delete"].includes(requestedHash)
+    ? requestedHash : null;
+  const nestedMatch = requestedHash.match(/^(music|albums|genres)-(add|edit|delete)$/);
+  if (legacyMusic) activateSub("music", legacyMusic);
+  if (nestedMatch) activateSub(nestedMatch[1], nestedMatch[2]);
+
   // ========================================
   // TURN MAIL GREEN FOR ANY UNREAD CATEGORY
   // ========================================
@@ -189,7 +225,7 @@ document.addEventListener("DOMContentLoaded", () => {
   );
 
   activate(
-    panels.has(initial) ? initial : "mail",
+    legacyMusic ? "music" : nestedMatch ? nestedMatch[1] : panels.has(initial) ? initial : "mail",
     false
   );
 });
