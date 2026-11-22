@@ -18,5 +18,25 @@ function mount() {
   ]));
   header.insertAdjacentElement("afterend",box);
 }
-if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",mount,{once:true});
-else mount();
+function mountLegacyAlbum() {
+  const source=document.getElementById("album-data");
+  if(!source || document.getElementById("legacy-album-playlist"))return;
+  let songs=[];
+  try{songs=JSON.parse(source.textContent).tracks||[];}catch{return;}
+  if(!Array.isArray(songs)||!songs.length)return;
+  const hero=document.querySelector("main section") || document.querySelector("main");
+  if(!hero)return;
+  const box=document.createElement("div");
+  box.id="legacy-album-playlist";
+  box.style.cssText="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0";
+  const label=document.createElement("span");
+  label.textContent="Save this album:";
+  box.append(label,addToPlaylistControl(async()=>{
+    const paths=await getAudioIndex().catch(()=>[]);
+    return songs.map(song=>keyForSong({title:song.title,file:song.src},paths));
+  },{label:"+ Add full album to playlist"}));
+  hero.append(box);
+}
+function mountAll(){mount();mountLegacyAlbum();}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",mountAll,{once:true});
+else mountAll();
