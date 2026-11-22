@@ -131,6 +131,9 @@ if (profileButton) {
   onAuthStateChanged(auth, user => {
     profileButton.hidden = !user?.emailVerified;
   });
+  window.addEventListener("princesstg:email-verified",()=>{
+    profileButton.hidden = !auth.currentUser?.emailVerified;
+  });
 }
 
 
@@ -264,6 +267,11 @@ adminButton.addEventListener("click", async () => {
     if (loggedIn && !verified) showVerification(user);
     else if (verified) {
       verifyPanel.hidden = true;
+      modal.hidden = true;
+    } else if (!verifyPanel.hidden) {
+      // Logging out must never leave the previous account's verification
+      // screen and email address visible in the modal.
+      setMode("login");
       modal.hidden = true;
     }
   }
@@ -440,6 +448,8 @@ adminButton.addEventListener("click", async () => {
       modal.hidden=true;
       syncAuthBar(user);
       window.dispatchEvent(new CustomEvent("princesstg:email-verified"));
+      try { await saveUserIfChanged(); }
+      catch (error) { console.warn("Verified status sync deferred:",error); }
     }catch(error){
       $("auth-verify-message").textContent =
         "Could not check your email status: "+friendlyError(error);
