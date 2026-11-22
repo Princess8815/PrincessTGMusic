@@ -1,94 +1,238 @@
 import {db} from "../../script/firebase.js";
 import {loadAllSongs} from "../../script/song-data.js";
-import {collection,doc,getDoc,getDocs} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+import {
+  getAudioIndex, keyForSong, songId, songLink, audioLink,
+  orderByIds, addToPlaylistControl
+} from "../../script/music-playlists.js";
+import {doc,getDoc} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+
 const $=id=>document.getElementById(id);
+const albumId=new URLSearchParams(location.search).get("id");
+const normalize=x=>String(x||"").trim().replace(/\s+/g," ").toLowerCase();
 const slug=x=>String(x||"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
-const key=x=>String(x||"").trim().replace(/\s+/g," ").toLowerCase();
-const fileKey=x=>decodeURIComponent(String(x||"").split(/[\\/]/).pop().split(/[?#]/)[0])
- .replace(/\.[^.]+$/,"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-");
-async function initialize(){
- const id=new URLSearchParams(location.search).get("id");
- if(!id){$("album-status").textContent="No album selected.";return;}
- try{
-  const songs=await loadAllSongs("../audioPlayer/audio/song-details.json");
-  let metadata=null;
-  try{
-    const found=await getDoc(doc(db,"albums",id));
-    if(found.exists())metadata=found.data();
-  }catch(e){console.warn("Album metadata unavailable.",e);}
-  let albumName=metadata?.name||"";
-  if(!albumName){
-    const names=new Set(songs.flatMap(song=>Array.isArray(song.albums)?song.albums:[song.album]).filter(Boolean));
-    albumName=[...names].find(name=>slug(name)===id)||"";
-    if(!albumName){
-      try{
-        const enums=await getDoc(doc(db,"enums","albums"));
-        albumName=(enums.exists()?enums.data().values||[]:[]).find(x=>slug(x)===id)||"";
-      }catch(e){console.warn("Legacy album list unavailable.",e);}
-    }
-  }
-  if(!albumName){$("album-status").textContent="Album not found.";return;}
-  document.title=albumName+" | PrincessTG Music";
-  $("album-title").textContent=albumName;
-  $("album-date").textContent="Release date: "+(metadata?.releaseDate||"TBD");
-  $("album-description").textContent=metadata?.description||"";
-  if(metadata?.coverUrl&&/^https:\/\//i.test(metadata.coverUrl)){
-    $("album-cover").src=metadata.coverUrl;
-    $("album-cover").alt=albumName+" cover";
-    $("album-cover").hidden=false;
-  }
-  const tracks=songs.filter(song=>{
-    const all=Array.isArray(song.albums)?song.albums:[song.album];
-    return all.some(x=>key(x)===key(albumName));
-  });
-  const target=$("album-tracks");
-  target.replaceChildren();
-  let audioIndex=[];
-  try{
-    const response=await fetch("../audioPlayer/audio/index.json",{cache:"no-store"});
-    if(response.ok)audioIndex=await response.json();
-  }catch(e){console.warn("No on-site audio index.",e);}
-  const audioMap=new Map(audioIndex.map(entry=>{
-    const path=typeof entry==="string"?entry:entry?.file||entry?.path||entry?.src||"";
-    return [fileKey(path),path];
-  }).filter(x=>x[0]));
-  tracks.sort((a,b)=>String(a.title).localeCompare(String(b.title)));
-  for(const [number,song] of tracks.entries()){
-    const row=document.createElement("div");row.className="track";
-    const details=document.createElement("div");
-    const title=document.createElement("strong");
-    title.textContent=(number+1)+". "+(song.title||"Untitled");
-    const sub=document.createElement("p");
-    sub.textContent="Release: "+(metadata?.releaseDate||song.releaseDate||"TBD");
-    sub.style.margin="2px 0";
-    details.append(title,sub);
-    const actions=document.createElement("div");
-    const link=document.createElement("a");
-    link.href="../audioPlayer/pages/song.html?id="+encodeURIComponent(song.pageId||slug(song.title));
-    link.textContent="Lyrics & details";
-    actions.append(link);
-    const audioPath=audioMap.get(fileKey(song.file||song.title));
-    if(audioPath){
-      const button=document.createElement("button");
-      button.type="button";button.textContent="Play";
-      button.addEventListener("click",()=>{
-        // Only allow playback of paths returned by the published audio index.
-        const clean=audioPath.replace(/^(?:\.\.\/|\.\/|\/)+/g,"");
-        $("album-player").src=new URL("../audioPlayer/"+clean,document.baseURI).href;
-        $("album-player-section").hidden=false;
-        $("now-playing").textContent=song.title||"Listen";
-        void $("album-player").play();
-      });
-      actions.append(" ",button);
-    }
-    row.append(details,actions);target.append(row);
-  }
-  if(!tracks.length){
-    const p=document.createElement("p");p.textContent="No songs have been assigned yet.";target.append(p);
-  }
-  $("album-status").textContent=tracks.length+" song(s)";
- }catch(e){
-  console.error(e);$("album-status").textContent="Unable to load album. "+e.message;
- }
+const personalKey="princesstg-album-track-order:"+albumId;
+const audio=$("album-player");
+let tracks=[],official=[],currentId="",shuffling=false,repeating=false,shuffleBag=[],history=[];
+let albumName="";
+function setMessage(text){$("album-playback-status").textContent=text;}
+function playable(){return tracks.filter(track=>track.audioKey.startsWith("audio/"));}
+function isPlaying(){return !audio.paused && !audio.ended;}
+function refreshNowPlaying(song){
+  $("now-playing-title").textContent=song?.title||"Choose a song";
+  $("now-playing-album").textContent=song?albumName:"";
+  $("album-lyrics-title").textContent=song?.title?"Lyrics · "+song.title:"Lyrics (expand)";
+  $("album-lyrics-text").textContent=song?.lyrics?.trim()||"Lyrics aren't available for this song yet.";
+  $("album-toggle-play").textContent=isPlaying()?"⏸ Pause":"▶ Play";
 }
-void initialize();
+async function playTrack(track,auto=true,remember=true){
+  if(!track || !track.audioKey.startsWith("audio/")){
+    setMessage("This song has no on-site audio. Its lyrics and details are still available.");
+    refreshNowPlaying(track);
+    return;
+  }
+  const link=audioLink(track.audioKey);
+  if(!link) return;
+  if(remember && currentId && currentId!==track.id) history.push(currentId);
+  currentId=track.id;
+  if(audio.src!==link) audio.src=link;
+  audio.load();
+  refreshNowPlaying(track);
+  renderTracks();
+  if(auto) {
+    try {await audio.play();setMessage("Playing "+track.title);}
+    catch(error){setMessage("Unable to play this song. Choose Play to try again.");}
+  }
+  refreshNowPlaying(track);
+}
+function getNextTrack(auto=false){
+  const available=playable();
+  if(!available.length) return null;
+  if(shuffling){
+    const choices=available.filter(track=>track.id!==currentId);
+    if(!shuffleBag.length){
+      if(auto&&!repeating)return null;
+      shuffleBag=choices.map(x=>x.id);
+      for(let i=shuffleBag.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));
+        [shuffleBag[i],shuffleBag[j]]=[shuffleBag[j],shuffleBag[i]];
+      }
+    }
+    if(!choices.length) return repeating||!auto?available[0]:null;
+    const next=shuffleBag.shift();
+    return available.find(track=>track.id===next)||choices[0];
+  }
+  const index=available.findIndex(track=>track.id===currentId);
+  if(index<0)return available[0];
+  if(index===available.length-1)return auto&&!repeating?null:available[0];
+  return available[index+1];
+}
+function next(auto=false){
+  const track=getNextTrack(auto);
+  if(track)void playTrack(track);
+  else {audio.pause();setMessage(auto?"Album finished.":"No playable songs.");refreshNowPlaying(tracks.find(t=>t.id===currentId));}
+}
+function previous(){
+  const available=playable();
+  if(!available.length)return;
+  if(shuffling&&history.length){
+    const previous=available.find(track=>track.id===history.pop());
+    if(previous){void playTrack(previous,true,false);return;}
+  }
+  const index=available.findIndex(track=>track.id===currentId);
+  void playTrack(available[(index-1+available.length)%available.length],true,false);
+}
+function savedOrder(){
+  try{
+    const ids=JSON.parse(localStorage.getItem(personalKey));
+    return Array.isArray(ids)?ids.filter(id=>typeof id==="string"):null;
+  }catch{return null;}
+}
+function saveOrder(){localStorage.setItem(personalKey,JSON.stringify(tracks.map(track=>track.id)));}
+function move(from,to){
+  if(from<0||to<0||from>=tracks.length||to>=tracks.length||from===to)return;
+  const [track]=tracks.splice(from,1);
+  tracks.splice(to,0,track);
+  shuffleBag=[];
+  saveOrder();
+  renderTracks();
+}
+function newButton(label,click,title,disabled=false){
+  const button=document.createElement("button");
+  button.type="button";button.textContent=label;button.title=title||label;
+  button.setAttribute("aria-label",title||label);
+  button.disabled=disabled;button.addEventListener("click",click);
+  return button;
+}
+function renderTracks(){
+  const target=$("album-tracks");target.replaceChildren();
+  tracks.forEach((song,index)=>{
+    const row=document.createElement("li");row.className="album-track";
+    row.draggable=true;
+    row.classList.toggle("is-playing",currentId===song.id);
+    const grip=document.createElement("span");grip.className="drag-grip";
+    grip.textContent="☰";grip.title="Drag to reorder";
+    const info=document.createElement("div");info.className="album-track-info";
+    const name=document.createElement("strong");name.textContent=(index+1)+". "+song.title;
+    const note=document.createElement("small");
+    note.textContent=song.audioKey.startsWith("audio/")?"Ready to play":"Lyrics and details only";
+    info.append(name,note);
+    const actions=document.createElement("div");actions.className="album-track-actions";
+    const up=newButton("↑",()=>move(index,index-1),"Move "+song.title+" up",index===0);
+    const down=newButton("↓",()=>move(index,index+1),"Move "+song.title+" down",index===tracks.length-1);
+    const play=newButton("▶",()=>void playTrack(song),"Play "+song.title,!song.audioKey.startsWith("audio/"));
+    const lyrics=newButton("Lyrics",()=>{
+      refreshNowPlaying(song);
+      $("album-lyrics-panel").open=true;
+      $("album-lyrics-panel").scrollIntoView({behavior:"smooth",block:"nearest"});
+    },"Read lyrics for "+song.title);
+    const details=document.createElement("a");details.href=songLink(song.id);
+    details.textContent="Details";
+    actions.append(up,down,play,lyrics,details,addToPlaylistControl(()=>[song.audioKey]));
+    row.append(grip,info,actions);
+    row.addEventListener("dragstart",event=>{
+      event.dataTransfer?.setData("text/plain",String(index));
+      if(event.dataTransfer)event.dataTransfer.effectAllowed="move";
+    });
+    row.addEventListener("dragover",event=>{event.preventDefault();if(event.dataTransfer)event.dataTransfer.dropEffect="move";});
+    row.addEventListener("drop",event=>{
+      event.preventDefault();
+      const from=Number(event.dataTransfer?.getData("text/plain"));
+      if(Number.isInteger(from))move(from,index);
+    });
+    target.append(row);
+  });
+  if(!tracks.length){
+    const empty=document.createElement("li");
+    empty.textContent="No songs have been assigned yet.";
+    target.append(empty);
+  }
+}
+function registerControls(){
+  $("album-prev").onclick=previous;
+  $("album-next").onclick=()=>next(false);
+  $("album-toggle-play").onclick=()=>{
+    if(isPlaying())audio.pause();
+    else if(audio.src)void audio.play();
+    else void playTrack(getNextTrack());
+  };
+  $("album-shuffle").onclick=()=>{
+    shuffling=!shuffling;shuffleBag=[];
+    $("album-shuffle").setAttribute("aria-pressed",String(shuffling));
+    setMessage(shuffling?"Shuffle is on.":"Shuffle is off.");
+  };
+  $("album-repeat").onclick=()=>{
+    repeating=!repeating;
+    $("album-repeat").setAttribute("aria-pressed",String(repeating));
+    setMessage(repeating?"Repeat album is on.":"Repeat album is off.");
+  };
+  $("album-reset-order").onclick=()=>{
+    localStorage.removeItem(personalKey);
+    tracks=[...official];
+    shuffleBag=[];
+    renderTracks();
+    setMessage("Restored the official album track order.");
+  };
+  audio.addEventListener("ended",()=>next(true));
+  audio.addEventListener("play",()=>refreshNowPlaying(tracks.find(track=>track.id===currentId)));
+  audio.addEventListener("pause",()=>refreshNowPlaying(tracks.find(track=>track.id===currentId)));
+}
+async function load(){
+  registerControls();
+  if(!albumId){$("album-status").textContent="No album selected.";return;}
+  try{
+    const [songs,paths]=await Promise.all([
+      loadAllSongs("../audioPlayer/audio/song-details.json"),
+      getAudioIndex().catch(()=>[])
+    ]);
+    let metadata=null;
+    try{
+      const snapshot=await getDoc(doc(db,"albums",albumId));
+      if(snapshot.exists())metadata=snapshot.data();
+    }catch(error){console.warn("Album metadata unavailable",error);}
+    albumName=metadata?.name||"";
+    if(!albumName){
+      const names=new Set(songs.flatMap(song=>Array.isArray(song.albums)?song.albums:[song.album]).filter(Boolean));
+      albumName=[...names].find(name=>slug(name)===albumId)||"";
+      if(!albumName){
+        try{
+          const enums=await getDoc(doc(db,"enums","albums"));
+          albumName=(enums.exists()?enums.data().values||[]:[]).find(name=>slug(name)===albumId)||"";
+        }catch(error){console.warn("Legacy album names unavailable",error);}
+      }
+    }
+    if(!albumName){$("album-status").textContent="Album not found.";return;}
+    document.title=albumName+" | PrincessTG Music";
+    $("album-title").textContent=albumName;
+    $("album-date").textContent="Release date · "+(metadata?.releaseDate||"TBD");
+    $("album-description").textContent=metadata?.description||"";
+    if(metadata?.coverUrl&&/^https:\/\//i.test(metadata.coverUrl)){
+      $("album-cover").src=metadata.coverUrl;
+      $("album-cover").alt=albumName+" artwork";
+      $("album-cover").hidden=false;
+      $("album-cover-fallback").hidden=true;
+      $("album-cover").addEventListener("error",()=>{
+        $("album-cover").hidden=true;$("album-cover-fallback").hidden=false;
+      },{once:true});
+    }
+    const owned=songs.filter(song=>{
+      const list=Array.isArray(song.albums)?song.albums:[song.album];
+      return list.some(name=>normalize(name)===normalize(albumName));
+    });
+    official=orderByIds(owned,metadata?.trackOrder||[]).map(song=>({
+      ...song,id:songId(song),audioKey:keyForSong(song,paths)
+    }));
+    const custom=savedOrder();
+    tracks=custom?orderByIds(official,custom):[...official];
+    $("album-playlist-actions").append(
+      addToPlaylistControl(()=>tracks.map(song=>song.audioKey),{label:"+ Add entire album to playlist"})
+    );
+    renderTracks();
+    $("album-status").textContent=tracks.length+" song(s) · "+(custom?"Your personal order":"Official order");
+    refreshNowPlaying(null);
+    if(!playable().length)setMessage("No on-site audio is available yet. Lyrics and track details are still accessible.");
+  }catch(error){
+    console.error("Unable to load album",error);
+    $("album-status").textContent="Unable to load album: "+error.message;
+  }
+}
+void load();
