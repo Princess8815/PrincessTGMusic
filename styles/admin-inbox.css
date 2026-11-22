@@ -1,0 +1,132 @@
+/* PrincessTG Music: Staff Inbox (automatic message list) */
+.admin-inbox-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 20px 0 24px;
+}
+.admin-card button.admin-inbox-tab {
+  background: #374151;
+  color: #f9fafb;
+  border: 2px solid #4b5563;
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+.admin-card button.admin-inbox-tab.has-unread {
+  background: #166534;
+  border-color: #4ade80;
+  color: #f0fdf4;
+}
+.admin-card button.admin-inbox-tab.is-active {
+  outline: 2px solid #c084fc;
+  outline-offset: 2px;
+}
+.admin-card button.admin-inbox-tab:focus-visible,
+.admin-card button.inbox-message-item:focus-visible {
+  outline: 3px solid #e9d5ff;
+  outline-offset: 2px;
+}
+.inbox-unread-count {
+  display: inline-block;
+  min-width: 1.5em;
+  margin-left: 5px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #14532d;
+  font-weight: 700;
+}
+.inbox-heading { margin-bottom: 16px; }
+.inbox-heading h3 { margin: 0 0 7px; }
+.inbox-mail-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 38%) minmax(0, 1fr);
+  gap: 0;
+  border: 1px solid #4b5563;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #111827;
+  min-height: 370px;
+}
+.inbox-mail-list-pane {
+  min-width: 0;
+  border-right: 1px solid #4b5563;
+}
+.inbox-mail-detail-pane { min-width: 0; }
+.inbox-pane-heading {
+  padding: 12px 16px;
+  font-weight: 700;
+  background: #263348;
+  border-bottom: 1px solid #4b5563;
+}
+.inbox-appeal-list {
+  overflow-y: auto;
+  max-height: 510px;
+}
+.admin-card button.inbox-message-item {
+  display: block;
+  width: 100%;
+  padding: 14px 15px;
+  background: #111827;
+  color: #f9fafb;
+  text-align: left;
+  font-weight: 400;
+  border: 0;
+  border-bottom: 1px solid #374151;
+  border-radius: 0;
+}
+.admin-card button.inbox-message-item:hover { background: #1e293b; }
+.admin-card button.inbox-message-item.is-selected { background: #312e81; }
+.admin-card button.inbox-message-item.is-unread {
+  border-left: 5px solid #4ade80;
+  padding-left: 10px;
+  background: #1d2d35;
+}
+.inbox-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.inbox-item-sender { font-size: 0.97rem; font-weight: 600; overflow-wrap: anywhere; }
+.inbox-item-date { display: block; margin-top: 6px; color: #cbd5e1; font-size: .8rem; }
+.inbox-item-preview {
+  display: block;
+  color: #d1d5db;
+  font-size: .89rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 7px;
+}
+.inbox-new-pill {
+  background: #dcfce7;
+  color: #14532d;
+  font-size: .7rem;
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.inbox-appeal-detail { padding: 18px; overflow-wrap: anywhere; }
+.inbox-appeal-detail h4 { margin: 4px 0 12px; font-size: 1.1rem; }
+.inbox-details-grid { display: grid; grid-template-columns: minmax(105px, 145px) minmax(0,1fr); gap: 9px 12px; margin-bottom: 22px; }
+.inbox-details-grid dt { font-weight: 700; color: #cbd5e1; }
+.inbox-details-grid dd { margin: 0; overflow-wrap: anywhere; }
+.inbox-full-message {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #1f2937;
+  padding: 16px;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  line-height: 1.6;
+}
+.inbox-empty { padding: 25px 15px; text-align: center; color: #cbd5e1; }
+@media (max-width: 720px) {
+  .inbox-mail-layout { grid-template-columns: 1fr; }
+  .inbox-mail-list-pane { border-right: 0; border-bottom: 1px solid #4b5563; }
+  .inbox-appeal-list { max-height: 340px; }
+  .inbox-details-grid { grid-template-columns: 1fr; gap: 2px; }
+  .inbox-details-grid dd { margin-bottom: 9px; }
+}

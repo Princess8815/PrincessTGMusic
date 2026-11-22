@@ -76,6 +76,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const submittedByInput = document.getElementById("song-by");
   const lyricsInput = document.getElementById("song-lyrics");
+  const lyricsCollapsedInput = document.getElementById(
+  "add-lyrics-collapsed"
+);
+
+const translationCollapsedInput = document.getElementById(
+  "add-translation-collapsed"
+);
 
 
 // ==========================================
@@ -603,6 +610,8 @@ if (translation.length > 100000) {
         genre,
         releaseDate,
         lyrics,
+        lyricsCollapsed: lyricsCollapsedInput.checked,
+translationCollapsed: translationCollapsedInput.checked,
         ...(translation ? { translation } : {}),
 
         submittedBy: {

@@ -1,0 +1,195 @@
+
+document.addEventListener("DOMContentLoaded", () => {
+  const tabs = [
+    ...document.querySelectorAll("[data-admin-tab]")
+  ];
+
+  const panels = new Map(
+    tabs.map(tab => [
+      tab.dataset.adminTab,
+      document.getElementById(
+        `admin-main-panel-${tab.dataset.adminTab}`
+      )
+    ])
+  );
+
+  const mailButton = document.getElementById(
+    "admin-main-tab-mail"
+  );
+
+  const inbox = document.getElementById("admin-inbox");
+
+  if (!tabs.length || !mailButton) return;
+
+  // ========================================
+  // SWITCH MAIN ADMIN TABS
+  // ========================================
+
+  function activate(name, updateHash = true) {
+    if (!panels.has(name)) return;
+
+    for (const tab of tabs) {
+      const selected = tab.dataset.adminTab === name;
+
+      tab.setAttribute(
+        "aria-selected",
+        String(selected)
+      );
+
+      tab.tabIndex = selected ? 0 : -1;
+
+      panels.get(
+        tab.dataset.adminTab
+      ).hidden = !selected;
+    }
+
+    if (updateHash) {
+      history.replaceState(
+        null,
+        "",
+        `#admin-${name}`
+      );
+    }
+  }
+
+  for (const tab of tabs) {
+    tab.addEventListener("click", () => {
+      activate(tab.dataset.adminTab);
+    });
+  }
+
+  // ========================================
+  // KEYBOARD TAB NAVIGATION
+  // ========================================
+
+  document.getElementById(
+    "admin-main-tabs"
+  )?.addEventListener("keydown", event => {
+    if (![
+      "ArrowRight",
+      "ArrowLeft",
+      "Home",
+      "End"
+    ].includes(event.key)) {
+      return;
+    }
+
+    const index = tabs.indexOf(document.activeElement);
+
+    if (index < 0) return;
+
+    event.preventDefault();
+
+    let next = index;
+
+    if (event.key === "ArrowRight") {
+      next = (index + 1) % tabs.length;
+    }
+
+    if (event.key === "ArrowLeft") {
+      next = (index - 1 + tabs.length) % tabs.length;
+    }
+
+    if (event.key === "Home") next = 0;
+    if (event.key === "End") next = tabs.length - 1;
+
+    tabs[next].focus();
+    activate(tabs[next].dataset.adminTab);
+  });
+
+  // ========================================
+  // TURN MAIL GREEN FOR ANY UNREAD CATEGORY
+  // ========================================
+
+  function refreshMailIndicator() {
+    if (!inbox) return;
+
+    const unreadTabs = [
+      ...inbox.querySelectorAll(
+        ".admin-inbox-tab.has-unread"
+      )
+    ];
+
+    const unreadTotal = unreadTabs.reduce(
+      (sum, tab) => {
+        const badge = tab.querySelector(
+          ".inbox-unread-count"
+        );
+
+        return sum + (
+          Number(badge?.textContent?.trim()) || 0
+        );
+      },
+      0
+    );
+
+    mailButton.classList.toggle(
+      "has-unread",
+      unreadTabs.length > 0
+    );
+
+    let count = document.getElementById(
+      "admin-main-mail-count"
+    );
+
+    if (!count) {
+      count = document.createElement("span");
+      count.id = "admin-main-mail-count";
+      count.style.marginLeft = "7px";
+      mailButton.append(count);
+    }
+
+    count.textContent = unreadTotal
+      ? `(${unreadTotal})`
+      : "";
+
+    mailButton.setAttribute(
+      "aria-label",
+      unreadTotal
+        ? `Mail: ${unreadTotal} unread messages`
+        : "Mail"
+    );
+  }
+
+  // Watches Firestore-driven inbox UI updates.
+  if (inbox) {
+    const observer = new MutationObserver(
+      refreshMailIndicator
+    );
+
+    observer.observe(inbox, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ["class", "hidden"]
+    });
+
+    refreshMailIndicator();
+  }
+
+  // Open a folded editor if a required field
+  // inside it fails form validation.
+  document.addEventListener(
+    "invalid",
+    event => {
+      const editor = event.target.closest?.(
+        "details"
+      );
+
+      if (editor) editor.open = true;
+    },
+    true
+  );
+
+  // Restore an admin tab from the URL hash.
+  const initial = location.hash.replace(
+    /^#admin-/,
+    ""
+  );
+
+  activate(
+    panels.has(initial) ? initial : "mail",
+    false
+  );
+});

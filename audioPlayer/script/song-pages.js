@@ -200,6 +200,19 @@ async function setupTranslation(song) {
   const toggle = $("translationToggle");
   const lyrics = $("songLyrics");
 
+const lyricsPanel = lyrics?.closest("details");
+
+function syncLyricsCollapse(showTranslation = false) {
+  if (!lyricsPanel) return;
+
+  lyricsPanel.open = showTranslation
+    ? song.translationCollapsed === false
+    : song.lyricsCollapsed === false;
+}
+
+syncLyricsCollapse();
+
+
   const originalLyrics = song.lyrics || "";
 
   let englishTranslation = null;
@@ -262,11 +275,15 @@ async function setupTranslation(song) {
 
   toggleContainer.hidden = false;
 
-  toggle.addEventListener("change", () => {
-    lyrics.textContent = toggle.checked
-      ? englishTranslation
-      : originalLyrics;
-  });
+
+toggle.addEventListener("change", () => {
+  lyrics.textContent = toggle.checked
+    ? englishTranslation
+    : originalLyrics;
+
+  syncLyricsCollapse(toggle.checked);
+});
+
 
   lyrics.textContent = originalLyrics;
 }

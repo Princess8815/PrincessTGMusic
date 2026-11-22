@@ -110,6 +110,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const audioInput = $("edit-song-audio");
   const lyricsInput = $("edit-song-lyrics");
+  const lyricsCollapsedInput = $("edit-lyrics-collapsed");
+const translationCollapsedInput = $("edit-translation-collapsed");
 
   // ========================================
   // ENGLISH TRANSLATION CONTROLS
@@ -699,6 +701,12 @@ let originalTitlesById = new Map();
           ? song.lyrics
           : "";
 
+          lyricsCollapsedInput.checked =
+  song.lyricsCollapsed !== false;
+
+translationCollapsedInput.checked =
+  song.translationCollapsed !== false;
+
 
       // ====================================
       // DETECT EXISTING ENGLISH TRANSLATION
@@ -919,16 +927,18 @@ let originalTitlesById = new Map();
       // FIELDS THAT THE EDITOR MAY CHANGE
       // ====================================
 
-      const changes = {
-        title,
-        description,
-        album,
-        genre,
-        releaseDate,
-        lyrics,
-        translation,
-        updatedAt: serverTimestamp()
-      };
+const changes = {
+  title,
+  description,
+  album,
+  genre,
+  releaseDate,
+  lyrics,
+  translation,
+  lyricsCollapsed: lyricsCollapsedInput.checked,
+  translationCollapsed: translationCollapsedInput.checked,
+  updatedAt: serverTimestamp()
+};
 
       // ====================================
       // ATOMIC CREATE OR UPDATE
