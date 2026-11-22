@@ -3,6 +3,7 @@ import {
   deletePlaylist as deleteNamedPlaylist, addToPlaylistControl
 } from "../../script/music-playlists.js";
 import {auth} from "../../script/firebase.js";
+import {wireDragReorder} from "../../script/drag-reorder.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 const AUDIO_INDEX = "audio/index.json";
 const SONG_DETAILS = "audio/song-details.json";
@@ -191,7 +192,22 @@ const sortTracks = (trackList) => {
 };
 
 const updateVisibleTracks = () => {
-	visibleTracks = sortTracks(tracks.filter((track) => currentAlbumFilter === "all" || track.albums.includes(currentAlbumFilter)));
+  const filtered = tracks.filter(track =>
+    currentAlbumFilter === "all" || track.albums.includes(currentAlbumFilter)
+  );
+  const sorted = sortTracks(filtered);
+  const chosen = getSelectedPlaylist();
+  if (!chosen || currentSort !== "custom") {
+    visibleTracks = sorted;
+    return;
+  }
+  // In a personal playlist, use the saved playlist order for its songs.
+  // Unchecked catalog songs stay visible afterwards so they can be added.
+  const rank = new Map(chosen.tracks.map((path, index) => [path, index]));
+  const inPlaylist = sorted.filter(track => rank.has(track.path))
+    .sort((a, b) => rank.get(a.path) - rank.get(b.path));
+  const otherSongs = sorted.filter(track => !rank.has(track.path));
+  visibleTracks = [...inPlaylist, ...otherSongs];
 };
 
 const saveDisabledTracks = () => {
@@ -232,8 +248,8 @@ const renderPlaylistOptions = () => {
 	playlistSelectElement.value = selectedPlaylistId;
 	deletePlaylistButton.disabled = !isCustomPlaylistSelected();
 	playlistHelpElement.textContent = isCustomPlaylistSelected()
-		? "Use each track checkbox to add or remove songs from this custom playlist."
-		: "Create or choose a playlist, then use track checkboxes to customize it.";
+    ? "Drag a ☰ handle or use ↑ ↓ to reorder your playlist. Only checked songs belong to this playlist; unchecked songs remain below so you can add them."
+    : "Drag a ☰ handle or use ↑ ↓ to reorder the full song list. Choose a playlist to manage its own saved order.";
 };
 
 const createTrackRow = (track, index) => {
@@ -252,7 +268,8 @@ const createTrackRow = (track, index) => {
 	const selectedPlaylist = getSelectedPlaylist();
 
 	row.className = "track";
-	row.draggable = currentSort === "custom" && !isCustomPlaylistSelected();
+  // Use a dedicated handle so buttons and checkboxes stay clickable.
+  const mayReorder = !selectedPlaylist || selectedPlaylist.tracks.includes(track.path);
 	row.dataset.path = track.path;
 	row.dataset.index = String(index);
 	row.classList.toggle("track--disabled", disabledTracks.has(track.path));
@@ -321,27 +338,42 @@ details.addEventListener("click", () => {
 	titleBlock.append(title, meta);
     actions.append(enabledLabel, playlistLabel, play, details,
       addToPlaylistControl(() => [track.path]));
-	row.append(titleBlock, actions);
-	item.append(row);
-
-	if (row.draggable) {
-		row.addEventListener("dragstart", (event) => {
-			row.classList.add("dragging");
-			event.dataTransfer?.setData("text/plain", row.dataset.index ?? "");
-			event.dataTransfer.effectAllowed = "move";
-		});
-		row.addEventListener("dragend", () => row.classList.remove("dragging"));
-		row.addEventListener("dragover", (event) => {
-			event.preventDefault();
-			event.dataTransfer.dropEffect = "move";
-		});
-		row.addEventListener("drop", (event) => {
-			event.preventDefault();
-			reorderTracks(Number(event.dataTransfer?.getData("text/plain")), Number(row.dataset.index));
-		});
-	}
-
-	return item;
+  const handle = document.createElement("span");
+  handle.textContent = "☰";
+  handle.title = "Drag to reorder";
+  const nearby = visibleTracks.filter(candidate =>
+    !selectedPlaylist || selectedPlaylist.tracks.includes(candidate.path)
+  );
+  const rank = nearby.findIndex(candidate => candidate.path === track.path);
+  function moveArrow(delta) {
+    const other = nearby[rank + delta];
+    if (other) reorderTracks(track.path, other.path);
+  }
+  if (mayReorder) {
+    const up = document.createElement("button");
+    up.type = "button"; up.textContent = "↑"; up.title = "Move " + track.title + " up";
+    up.setAttribute("aria-label", up.title);
+    up.disabled = rank <= 0;
+    up.addEventListener("click", () => moveArrow(-1));
+    const down = document.createElement("button");
+    down.type = "button"; down.textContent = "↓"; down.title = "Move " + track.title + " down";
+    down.setAttribute("aria-label", down.title);
+    down.disabled = rank >= nearby.length - 1;
+    down.addEventListener("click", () => moveArrow(1));
+    actions.prepend(up, down);
+    wireDragReorder(
+      row, handle, track.path,
+      selectedPlaylist ? "playlist:" + selectedPlaylist.id : "all-songs",
+      reorderTracks
+    );
+  } else {
+    handle.textContent = " ";
+    handle.title = "Check In playlist to add this song before reordering";
+    handle.style.width = "28px";
+  }
+  row.append(handle, titleBlock, actions);
+  item.append(row);
+  return item;
 };
 
 const renderPlaylist = () => {
@@ -354,21 +386,43 @@ const renderPlaylist = () => {
 	setStatus(`Showing ${visibleTracks.length} track${visibleTracks.length === 1 ? "" : "s"}; ${enabledCount} enabled for playback${playlistNote}.`);
 };
 
-const reorderTracks = (fromIndex, toIndex) => {
-	if (fromIndex === toIndex || Number.isNaN(fromIndex) || Number.isNaN(toIndex) || fromIndex < 0 || toIndex < 0 || currentSort !== "custom" || isCustomPlaylistSelected()) {
-		return;
-	}
+const reorderTracks = (fromPath, toPath) => {
+  if (!fromPath || !toPath || fromPath === toPath) return;
+  const chosen = getSelectedPlaylist();
+  // The order being dragged is the currently VISIBLE list, even when
+  // another sort or album filter was selected. Reordering activates Custom.
+  const displayed = visibleTracks
+    .filter(track => !chosen || chosen.tracks.includes(track.path))
+    .map(track => track.path);
+  const from = displayed.indexOf(fromPath);
+  const to = displayed.indexOf(toPath);
+  if (from < 0 || to < 0) return;
 
-	const fromPath = visibleTracks[fromIndex]?.path;
-	const toPath = visibleTracks[toIndex]?.path;
-	const allFromIndex = tracks.findIndex((track) => track.path === fromPath);
-	const allToIndex = tracks.findIndex((track) => track.path === toPath);
-	if (allFromIndex < 0 || allToIndex < 0) return;
+  const reordered = [...displayed];
+  const [moved] = reordered.splice(from, 1);
+  reordered.splice(to, 0);
+  const visibleSet = new Set(displayed);
+  let cursor = 0;
 
-	const [moved] = tracks.splice(allFromIndex, 1);
-	tracks.splice(allToIndex, 0, moved);
-	saveOrder();
-	renderPlaylist();
+  currentSort = "custom";
+  sortSelectElement.value = "custom";
+
+  if (chosen) {
+    // Update only the selected playlist, not the global song order.
+    // Retain songs hidden by the album filter and records without MP3s.
+    chosen.tracks = chosen.tracks.map(path =>
+      visibleSet.has(path) ? reordered[cursor++] : path
+    );
+    saveCustomPlaylists();
+  } else {
+    // Update the global player order without disturbing filtered-out songs.
+    const lookup = new Map(tracks.map(track => [track.path, track]));
+    tracks = tracks.map(track =>
+      visibleSet.has(track.path) ? lookup.get(reordered[cursor++]) : track
+    );
+    saveOrder();
+  }
+  renderPlaylist();
 };
 
 const loadTracks = async () => {
