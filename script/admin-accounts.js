@@ -380,7 +380,10 @@ async function verifyManager() {
     customEnd.value = "";
 
     syncBanSettings();
-    void loadBypass(uid);
+    const ownerControls=managerRole==="owner";
+    verificationTab.hidden=!ownerControls;
+    if(ownerControls)void loadBypass(uid);
+    else activateAccountSubtab("roles");
 
 const protectedAccount =
   data.role === "owner" ||
