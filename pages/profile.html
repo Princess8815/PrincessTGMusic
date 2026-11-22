@@ -376,6 +376,16 @@
             <p class="mail-description">Send private site messages, songs, playlists, and pictures to other members.</p></div>
           <button type="button" class="mail-new-button" id="mail-new">+ New message</button>
         </div>
+        <div id="mail-verification-gate" class="mail-verification-gate" hidden>
+          <h3>Verify your email to unlock Site Mail</h3>
+          <p>Only signed-in members with a verified email address and an active account can use Site Mail. Check your inbox for a verification link, then return here.</p>
+          <div class="mail-verification-actions">
+            <button type="button" id="mail-send-verification">Send verification email</button>
+            <button type="button" id="mail-check-verification" class="mail-secondary">I've verified my email</button>
+          </div>
+          <p id="mail-verification-status" role="status" aria-live="polite"></p>
+        </div>
+        <div id="mail-verified-content">
         <div class="mail-main-tabs" role="group" aria-label="Mail folders">
           <button type="button" id="mail-inbox-button" data-mail-view="inbox" aria-pressed="true">Inbox <span id="mail-unread-count" hidden></span></button>
           <button type="button" id="mail-sent-button" data-mail-view="sent" aria-pressed="false">Sent</button>
@@ -472,6 +482,7 @@
           </div>
           <p class="mail-expiry-note">Mail and attached images are permanently removed after 30 days. You can delete your copy sooner.</p>
         </form>
+        </div>
       </section>
 
       <!-- EMAIL LIST -->
