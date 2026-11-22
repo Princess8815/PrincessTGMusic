@@ -208,6 +208,15 @@ $("profile-playlist-create-form").addEventListener("submit",event=>{
     status("Created "+playlist.name+".");
   }catch(error){status(error.message);}
 });
+$("profile-playlist-send").addEventListener("click",()=>{
+  const playlist=selected();
+  if(!playlist)return;
+  if(!playlist.tracks.length){status("Add some songs before sending this playlist.");return;}
+  if(playlist.tracks.length>150){status("Mail can share playlists with up to 150 songs.");return;}
+  window.dispatchEvent(new CustomEvent("princesstg:mail-share",{
+    detail:{kind:"playlist",name:playlist.name,color:playlist.color,tracks:[...playlist.tracks]}
+  }));
+});
 $("profile-playlist-delete").addEventListener("click",()=>{
   const playlist=selected();if(!playlist)return;
   if(!window.confirm("Delete playlist '"+playlist.name+"' from this browser?"))return;
