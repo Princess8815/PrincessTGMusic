@@ -981,8 +981,27 @@
                 <input id="new-album-date" type="date"><p class="helper">Leave blank for TBD.</p></div>
               <div class="form-field"><label for="new-album-description">Description</label>
                 <textarea id="new-album-description" maxlength="5000"></textarea></div>
+              <div class="form-field">
+                <label for="new-album-onsite" style="display:flex;align-items:center;gap:9px;">
+                  <input id="new-album-onsite" type="checkbox" style="width:auto;min-width:18px;height:18px;">
+                  Use image from this site's images folder
+                </label>
+              </div>
+              <div class="form-field" id="new-album-extension-row" hidden>
+                <label for="new-album-extension">Image file extension</label>
+                <select id="new-album-extension">
+                  <option value="png">.png</option>
+                  <option value="jpg">.jpg</option>
+                  <option value="jpeg">.jpeg</option>
+                  <option value="webp">.webp</option>
+                  <option value="gif">.gif</option>
+                </select>
+                <p class="helper">Uses the album name in lowercase, with hyphens instead of spaces.</p>
+              </div>
               <div class="form-field"><label for="new-album-cover">Cover Image URL (optional)</label>
-                <input id="new-album-cover" type="url" placeholder="https://..."></div>
+                <input id="new-album-cover" type="url" placeholder="https://...">
+                <p class="helper">The URL fills automatically when the on-site checkbox is checked.</p>
+              </div>
               <div class="form-actions"><button type="submit" id="add-album-button">Add Album</button></div>
               <p id="add-album-status" role="status" aria-live="polite"></p>
             </form>
@@ -1002,8 +1021,27 @@
                 <input id="edit-album-date" type="date"></div>
               <div class="form-field"><label for="edit-album-description">Description</label>
                 <textarea id="edit-album-description" maxlength="5000"></textarea></div>
+              <div class="form-field">
+                <label for="edit-album-onsite" style="display:flex;align-items:center;gap:9px;">
+                  <input id="edit-album-onsite" type="checkbox" style="width:auto;min-width:18px;height:18px;">
+                  Use image from this site's images folder
+                </label>
+              </div>
+              <div class="form-field" id="edit-album-extension-row" hidden>
+                <label for="edit-album-extension">Image file extension</label>
+                <select id="edit-album-extension">
+                  <option value="png">.png</option>
+                  <option value="jpg">.jpg</option>
+                  <option value="jpeg">.jpeg</option>
+                  <option value="webp">.webp</option>
+                  <option value="gif">.gif</option>
+                </select>
+                <p class="helper">Uses the album name in lowercase, with hyphens instead of spaces.</p>
+              </div>
               <div class="form-field"><label for="edit-album-cover">Cover Image URL (optional)</label>
-                <input id="edit-album-cover" type="url"></div>
+                <input id="edit-album-cover" type="url" placeholder="https://...">
+                <p class="helper">The URL fills automatically when the on-site checkbox is checked.</p>
+              </div>
               <div class="form-actions"><button type="submit">Save Album &amp; Update Songs</button></div>
             </form>
             <p id="edit-album-status" role="status" aria-live="polite"></p>
