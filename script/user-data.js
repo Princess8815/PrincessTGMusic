@@ -1,5 +1,6 @@
 
 import { auth, db } from "./firebase.js";
+import {hasSiteVerificationAccess} from "./verification-access.js";
 
 import {
   onAuthStateChanged
@@ -58,7 +59,7 @@ export async function waitForUserRecord(uid, maxWaitMs=6000) {
 // site's email address; existing members enroll the next time they log in.
 let directorySync = null;
 async function syncMailDirectory(user) {
-  if (!user?.emailVerified || currentUid !== user.uid) return;
+  if (!hasSiteVerificationAccess(user) || currentUid !== user.uid) return;
   const memberName = String(currentRecord?.auth?.displayName || "");
   if (!memberName.trim()) return;
   // Keep the exact stored public name so Firestore rules can reject a
@@ -189,7 +190,7 @@ onAuthStateChanged(auth, (user) => {
       })
     );
 
-    if (user.emailVerified) {
+    if (hasSiteVerificationAccess(user)) {
       // Update stale auth metadata before indexing the display name.
       // This never exposes users/{uid} documents to other members.
       void saveUserIfChanged()
@@ -328,4 +329,12 @@ window.addEventListener("princesstg:email-verified", () => {
   void saveUserIfChanged()
     .then(() => syncMailDirectory(user))
     .catch(error=>console.warn("Mail directory registration deferred:",error));
+});
+
+window.addEventListener("princesstg:verification-access-changed",event=>{
+  const user=auth.currentUser;
+  if(!user || event.detail?.uid!==user.uid || !hasSiteVerificationAccess(user))return;
+  void saveUserIfChanged()
+    .then(()=>syncMailDirectory(user))
+    .catch(error=>console.warn("Bypassed member directory sync deferred:",error));
 });
