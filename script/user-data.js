@@ -107,6 +107,7 @@ onAuthStateChanged(auth, (user) => {
         const newRecord = {
           auth: getAuthInfo(user),
           role: "user",
+          status: "active",
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         };
