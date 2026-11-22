@@ -1,10 +1,10 @@
 // Shared Firebase email-verification flow for registration, login and Site Mail.
-// Firebase's hosted action handler processes the emailed link. The optional
-// continue URL returns the member to their profile afterwards.
+// Firebase's own hosted action handler processes the emailed link.
+// Do not specify a custom continue URL: it can make mail sending fail when
+// the GitHub Pages domain isn't in the Firebase authorized-domain list.
 import {auth} from "./firebase.js";
 import {sendEmailVerification,reload} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 
-const currentReturnURL=()=>new URL("../pages/profile.html?emailVerification=1#tab-mail",import.meta.url).href;
 const checks=new Map();
 let notifiedUid="";
 
@@ -23,9 +23,17 @@ export function verificationError(error){
       return "This account has an invalid email address.";
     case "auth/unauthorized-continue-uri":
     case "auth/invalid-continue-uri":
-      return "The website must be added under Firebase Authentication → Authorized domains.";
+    case "auth/unauthorized-domain":
+      return "Firebase rejected the verification link domain. Check Authentication → Settings → Authorized domains. ("+code+")";
+    case "auth/quota-exceeded":
+      return "Firebase's email sending quota was reached. Check Authentication usage and retry when the limit resets. ("+code+")";
+    case "auth/operation-not-allowed":
+      return "Email/password sign-in may not be enabled in Firebase Authentication. ("+code+")";
     default:
-      return error?.message ? String(error.message).slice(0,180) : "Verification could not be completed.";
+      // Expose the Firebase error code rather than hiding the root cause
+      // behind a generic 'Something went wrong' message.
+      return (error?.message ? String(error.message).slice(0,160) : "Verification request failed.")+
+        (code?" ("+code+")":"");
   }
 }
 
@@ -33,20 +41,10 @@ export async function sendSiteVerification(user){
   if(!user || auth.currentUser?.uid!==user.uid)
     throw Error("Sign in to the account that needs verification.");
   if(user.emailVerified)return {alreadyVerified:true,usedReturnLink:false};
-  const settings={url:currentReturnURL(),handleCodeInApp:false};
-  try{
-    await sendEmailVerification(user,settings);
-    return {alreadyVerified:false,usedReturnLink:true};
-  }catch(error){
-    // A not-yet-authorized custom website domain should not make email
-    // verification impossible. The default Firebase hosted action link still
-    // works; the member returns to the site manually after confirming it.
-    if(["auth/unauthorized-continue-uri","auth/invalid-continue-uri"].includes(error?.code)){
-      await sendEmailVerification(user);
-      return {alreadyVerified:false,usedReturnLink:false,needsAuthorizedDomain:true};
-    }
-    throw error;
-  }
+  // No actionCodeSettings: Firebase's standard email handler is used.
+  // This requires neither a custom domain nor any email-sending Cloud Function.
+  await sendEmailVerification(user);
+  return {alreadyVerified:false,usedReturnLink:false};
 }
 
 export async function refreshSiteVerification(user){
