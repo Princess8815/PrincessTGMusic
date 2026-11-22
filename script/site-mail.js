@@ -690,11 +690,16 @@ $("mail-send-verification").addEventListener("click",async()=>{
   $("mail-send-verification").disabled=true;
   try{
     const result=await sendSiteVerification(user);
-    $("mail-verification-status").textContent=result.needsAuthorizedDomain
-      ? "Verification link sent. Use Firebase's email link, then return here. Add the site to Authorized domains for a return link."
-      : "Verification link sent. Confirm your address using the Firebase link, then return to the site.";
+    if(auth.currentUser?.uid!==user.uid)return;
+    $("mail-verification-status").textContent=result.alreadyVerified
+      ? "Your email is already verified. Click I've verified my email to unlock Site Mail."
+      : "Firebase accepted a verification request for "+(result.recipient||user.email)+
+        ". Check that address, including Spam/Junk. Acceptance does not guarantee delivery.";
   }catch(error){
-    $("mail-verification-status").textContent="Could not send verification email: "+verificationError(error);
+    if(auth.currentUser?.uid!==user.uid)return;
+    console.error("Site Mail verification request rejected:",error?.code||"unknown",error);
+    $("mail-verification-status").textContent="Firebase did not send a verification email to "+(user.email||"this account")+
+      ": "+verificationError(error);
   }finally{$("mail-send-verification").disabled=false;}
 });
 $("mail-check-verification").addEventListener("click",async()=>{
