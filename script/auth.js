@@ -2,6 +2,9 @@
 import { auth } from "./firebase.js";
 import { saveUserIfChanged } from "./user-data.js";
 import {
+  sendSiteVerification,refreshSiteVerification,verificationError
+} from "./email-verification.js";
+import {
   verifyStaff,
   watchStaffRole
 } from "./staff-auth.js";
@@ -18,8 +21,6 @@ import {
   signInWithPopup,
   signOut,
   sendPasswordResetEmail,
-  sendEmailVerification,
-  reload,
   updateProfile,
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
@@ -201,6 +202,8 @@ adminButton.addEventListener("click", async () => {
   let mode = "login";
   let busy = false;
   let lastVerificationEmailAt = 0;
+  let lastAutomaticCheckAt=0;
+  let automaticCheckPending=false;
   const verifyPanel = $("auth-verify-panel");
   const googleGroup = $("auth-google-group");
   const googleButton = $("auth-google");
@@ -321,6 +324,11 @@ adminButton.addEventListener("click", async () => {
         return "Google sign-in was cancelled.";
       case "auth/invalid-action-code":
         return "This verification link is invalid or has expired. Request a new one.";
+      case "auth/unauthorized-continue-uri":
+      case "auth/invalid-continue-uri":
+        return "Add your website's domain under Firebase Authentication → Authorized domains.";
+      case "auth/user-token-expired":
+        return "Session expired. Sign in again before requesting verification.";
       default:
         return "Authentication could not be completed. Please try again.";
     }
@@ -334,16 +342,19 @@ adminButton.addEventListener("click", async () => {
       return;
     }
     try {
-      await sendEmailVerification(user);
+      const sent=await sendSiteVerification(user);
       lastVerificationEmailAt=Date.now();
-      $("auth-verify-message").textContent =
-        "Verification link sent. Open it from your email, then click I've verified my email.";
+      $("auth-verify-message").textContent = sent.needsAuthorizedDomain
+        ? "Verification email sent using Firebase's standard link. After confirming, return here and select I've verified my email. Add this site's domain in Firebase Authorized domains for an automatic return link."
+        : sent.alreadyVerified
+          ? "This email is already verified. Select I've verified my email to continue."
+          : "Verification email sent. Open the Firebase link, confirm your address, then return here. You can press I've verified my email to refresh your account.";
     } catch (error) {
       $("auth-verify-message").textContent =
         automatic
-          ? "Your account was created. Verification email could not be sent: "+friendlyError(error)+
+          ? "Your account was created, but Firebase could not send verification: "+verificationError(error)+
             " Use Resend verification email to try again."
-          : "Unable to send verification email: "+friendlyError(error);
+          : "Unable to send verification email: "+verificationError(error);
     }
   }
 
@@ -381,18 +392,20 @@ adminButton.addEventListener("click", async () => {
           return;
         }
         showVerification(credential.user);
+        // The user-data listener may have created the Firestore record
+        // before updateProfile completed. Save the final display name.
+        void saveUserIfChanged().catch(error=>{
+          console.warn("New account profile sync deferred:",error);
+        });
         await sendVerification(credential.user,true);
       }else{
         const credential=await signInWithEmailAndPassword(auth,email,userPassword);
-        await reload(credential.user);
-        await credential.user.getIdToken(true);
-        if(credential.user.emailVerified)modal.hidden=true;
+        const verified=await refreshSiteVerification(credential.user);
+        if(verified)modal.hidden=true;
         else showVerification(credential.user,
-          "Your email hasn't been verified yet. Check your verification link or resend it below.");
+          "Your address is still unverified. Open the email link to confirm it, then come back here.");
       }
       syncAuthBar(auth.currentUser);
-      if(auth.currentUser?.emailVerified)
-        window.dispatchEvent(new CustomEvent("princesstg:email-verified"));
     }catch(error){
       console.error("Authentication error:",error);
       setMessage(friendlyError(error),true);
@@ -437,22 +450,20 @@ adminButton.addEventListener("click", async () => {
     button.disabled=true;
     $("auth-verify-message").textContent="Checking verification...";
     try{
-      await reload(user);
-      await user.getIdToken(true);
-      if(!user.emailVerified){
+      const verified=await refreshSiteVerification(user);
+      if(!verified){
         $("auth-verify-message").textContent =
-          "Not verified yet. Open the link in your email, then try again.";
+          "Firebase still shows this address as unverified. Open the link, press Verify on Firebase's page, then try again.";
         return;
       }
       verifyPanel.hidden=true;
       modal.hidden=true;
       syncAuthBar(user);
-      window.dispatchEvent(new CustomEvent("princesstg:email-verified"));
       try { await saveUserIfChanged(); }
       catch (error) { console.warn("Verified status sync deferred:",error); }
     }catch(error){
       $("auth-verify-message").textContent =
-        "Could not check your email status: "+friendlyError(error);
+        "Could not check verification: "+verificationError(error);
     }finally{button.disabled=false;}
   });
 
@@ -510,7 +521,34 @@ $("auth-logout").addEventListener("click", async () => {
 });
 
 
-  onAuthStateChanged(auth, user=>{
+  // Firebase's default email handler verifies the address in another tab.
+  // Refresh automatically when the member returns instead of forcing them
+  // to know which button to click. Throttle to avoid repeated auth requests.
+  async function refreshOnReturn(){
+    const user=auth.currentUser;
+    if(!user||user.emailVerified||automaticCheckPending)return;
+    if(Date.now()-lastAutomaticCheckAt<8000)return;
+    lastAutomaticCheckAt=Date.now();
+    automaticCheckPending=true;
+    try{
+      if(await refreshSiteVerification(user)){
+        syncAuthBar(user);
+        try {await saveUserIfChanged();}
+        catch(error){console.warn("Verified profile sync deferred:",error);}
+      }
+    }catch(error){
+      console.warn("Email verification refresh failed:",error);
+      if(!verifyPanel.hidden)
+        $("auth-verify-message").textContent =
+          "Verification status could not refresh: "+verificationError(error);
+    }finally{automaticCheckPending=false;}
+  }
+  window.addEventListener("focus",()=>void refreshOnReturn());
+  document.addEventListener("visibilitychange",()=>{
+    if(document.visibilityState==="visible")void refreshOnReturn();
+  });
+  onAuthStateChanged(auth,user=>{
     syncAuthBar(user);
+    if(user&&!user.emailVerified)void refreshOnReturn();
   });
 }
