@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="../styles/auth.css">
   <script type="module" src="../script/auth.js"></script>
   <script type="module" src="../script/site-settings.js"></script>
+  <link rel="stylesheet" href="../styles/theme-editor.css">
   <style>
     body{margin:0;background:linear-gradient(140deg,#0d101c,#1b1530);color:#f6f3ff;font-family:system-ui,-apple-system,Arial,sans-serif;line-height:1.65}
     .ptg-settings-page{width:min(780px,94%);margin:34px auto;padding:0 0 40px}
@@ -41,14 +42,6 @@
     <form id="site-settings-form" class="settings-card">
       <div class="settings-grid">
         <div class="settings-field">
-          <label for="settings-accent">Accent color</label>
-          <select id="settings-accent">
-            <option value="violet">Violet (default)</option>
-            <option value="rose">Rose</option>
-            <option value="teal">Teal</option>
-          </select>
-        </div>
-        <div class="settings-field">
           <label for="settings-text">Text size</label>
           <select id="settings-text">
             <option value="normal">Normal</option>
@@ -64,14 +57,31 @@
         <input id="settings-motion" type="checkbox">
         Reduce animations and transitions
       </label>
+      <fieldset class="settings-palette">
+        <legend>Your color palette</legend>
+        <p class="settings-help">Pick a swatch or type each RGB channel from 0 to 255. Your choices preview instantly across the site. Save to keep them on this browser.</p>
+        <div id="settings-rgb-editor" class="settings-rgb-grid"></div>
+        <p id="settings-contrast-warning" class="settings-contrast-warning" role="status" aria-live="polite"></p>
+        <button type="button" id="settings-reset-palette" class="settings-reset-palette secondary">Restore original violet palette</button>
+      </fieldset>
       <div class="settings-actions">
         <button type="submit">Save preferences</button>
-        <button type="button" id="settings-reset" class="secondary">Reset to defaults</button>
+        <button type="button" id="settings-cancel" class="secondary">Undo unsaved changes</button>
+        <button type="button" id="settings-reset" class="secondary">Reset all settings</button>
       </div>
       <p id="settings-status" role="status" aria-live="polite"></p>
-      <div class="settings-preview">
+      <div class="settings-preview" aria-label="Live color preview">
         <strong>Live preview</strong>
-        <p>Your sidebar, footer, and accent colors update as you save. Changes persist on this browser.</p>
+        <p>Preview navigation, cards, buttons, text, and highlights in your chosen colors.</p>
+        <div class="settings-preview-components">
+          <span class="settings-preview-nav">Selected navigation</span>
+          <div class="settings-preview-panel">
+            <strong>Card heading</strong>
+            <p>This sample text shows your text and secondary background colors.</p>
+            <span class="settings-preview-button">Primary action</span>
+            <span class="settings-preview-highlight">Highlight and link color</span>
+          </div>
+        </div>
       </div>
     </form>
   </main>

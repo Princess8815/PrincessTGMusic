@@ -8,8 +8,8 @@
   gap: 15px;
   flex-wrap: wrap;
   padding: 10px 20px;
-  background: #17111f;
-  color: #fff;
+  background: var(--ptg-secondary, #1f2937);
+  color: var(--ptg-text, #f3f4f6);
   font-family: inherit;
   font-size: 14px;
 }
@@ -24,8 +24,8 @@
   padding: 9px 18px;
   border: none;
   border-radius: 7px;
-  background: #b74bd4;
-  color: white;
+  background: var(--ptg-primary, #9f7bff);
+  color: var(--ptg-on-primary, #101118);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
@@ -33,7 +33,7 @@
 
 .auth-bar button:hover,
 .auth-primary:hover {
-  background: #9634b5;
+  background: var(--ptg-hover, #bda7ff);
 }
 
 .auth-modal[hidden],
@@ -61,9 +61,9 @@
   overflow-y: auto;
   box-sizing: border-box;
   padding: 30px;
-  border: 1px solid #b74bd4;
+  border: 1px solid var(--ptg-primary, #9f7bff);
   border-radius: 14px;
-  background: #21182b;
+  background: var(--ptg-secondary, #1f2937);
   color: white;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
 }
@@ -93,7 +93,7 @@
 .auth-tabs button {
   flex: 1;
   padding: 10px;
-  border: 1px solid #b74bd4;
+  border: 1px solid var(--ptg-primary, #9f7bff);
   border-radius: 7px;
   background: transparent;
   color: white;
@@ -101,7 +101,8 @@
 }
 
 .auth-tabs button.active {
-  background: #b74bd4;
+  background: var(--ptg-primary, #9f7bff);
+  color: var(--ptg-on-primary, #101118);
 }
 
 #auth-form {
@@ -126,13 +127,13 @@
   padding: 12px;
   border: 1px solid #777;
   border-radius: 7px;
-  background: #fff;
-  color: #111;
+  background: var(--ptg-tertiary, #111827);
+  color: var(--ptg-text, #f3f4f6);
   font: inherit;
 }
 
 #auth-form input:focus {
-  outline: 2px solid #b74bd4;
+  outline: 2px solid var(--ptg-highlight, #c084fc);
   outline-offset: 2px;
 }
 
@@ -163,7 +164,7 @@
   padding: 5px;
   border: none;
   background: transparent;
-  color: #e6a6f6;
+  color: var(--ptg-highlight, #c084fc);
   font: inherit;
   cursor: pointer;
   text-decoration: underline;
