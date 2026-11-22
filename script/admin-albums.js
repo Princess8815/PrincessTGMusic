@@ -55,6 +55,58 @@ function notifyAlbumsChanged() {
 function existingAlbum(name) {
   return albums.find(x => key(x) === key(name));
 }
+// Optional short-form cover URL for artwork in the published GitHub images folder.
+const IMAGE_FOLDER = "https://princess8815.github.io/PrincessTGMusic/images/";
+const COVER_EXTENSIONS = ["png", "jpg", "jpeg", "webp", "gif"];
+const manualCoverUrls = { new: "", edit: "" };
+
+function siteCoverUrl(prefix) {
+  const name = normalize($(prefix + "-album-name").value);
+  const extension = $(prefix + "-album-extension").value;
+  if (!name || !COVER_EXTENSIONS.includes(extension)) return "";
+  return IMAGE_FOLDER + slug(name) + "." + extension;
+}
+
+function refreshCoverInput(prefix) {
+  const enabled = $(prefix + "-album-onsite").checked;
+  const url = $(prefix + "-album-cover");
+  $(prefix + "-album-extension-row").hidden = !enabled;
+  url.readOnly = enabled;
+  url.value = enabled ? siteCoverUrl(prefix) : manualCoverUrls[prefix];
+}
+
+function loadCoverInput(prefix, existingUrl = "") {
+  const url = String(existingUrl || "");
+  const match = COVER_EXTENSIONS.find(extension =>
+    url === IMAGE_FOLDER + slug($(prefix + "-album-name").value) + "." + extension
+  );
+  $(prefix + "-album-onsite").checked = Boolean(match);
+  if (match) $(prefix + "-album-extension").value = match;
+  manualCoverUrls[prefix] = match ? "" : url;
+  refreshCoverInput(prefix);
+}
+
+function connectCoverControls(prefix) {
+  const checkbox = $(prefix + "-album-onsite");
+  checkbox.addEventListener("change", () => {
+    if (checkbox.checked) {
+      manualCoverUrls[prefix] = $(prefix + "-album-cover").value.trim();
+    }
+    refreshCoverInput(prefix);
+  });
+  $(prefix + "-album-name").addEventListener("input", () => {
+    if (checkbox.checked) refreshCoverInput(prefix);
+  });
+  $(prefix + "-album-extension").addEventListener("change", () => {
+    if (checkbox.checked) refreshCoverInput(prefix);
+  });
+  $(prefix + "-album-cover").addEventListener("input", () => {
+    if (!checkbox.checked) {
+      manualCoverUrls[prefix] = $(prefix + "-album-cover").value;
+    }
+  });
+}
+
 function fillEdit() {
   const name = $("edit-album-select").value;
   $("edit-album-form").hidden = !name;
@@ -63,13 +115,15 @@ function fillEdit() {
   $("edit-album-name").value = name;
   $("edit-album-date").value = dateValue(data.releaseDate);
   $("edit-album-description").value = data.description || "";
-  $("edit-album-cover").value = data.coverUrl || "";
+  loadCoverInput("edit", data.coverUrl || "");
 }
 function collect(prefix) {
   const name = normalize($(prefix + "-album-name").value);
   const releaseDate = $(prefix + "-album-date").value || "tbd";
   const description = $(prefix + "-album-description").value.trim();
-  const coverUrl = $(prefix + "-album-cover").value.trim();
+  const coverUrl = $(prefix + "-album-onsite").checked
+    ? siteCoverUrl(prefix)
+    : $(prefix + "-album-cover").value.trim();
   if (!name || name.length > 100) throw new Error("Album name must contain 1–100 characters.");
   if (description.length > 5000) throw new Error("Description is too long.");
   if (coverUrl && !/^https:\/\//i.test(coverUrl)) throw new Error("Use an HTTPS cover URL.");
@@ -160,6 +214,12 @@ async function applyAlbumChanges(originalName, updated, remove = false) {
   return matches.length;
 }
 document.addEventListener("DOMContentLoaded", async () => {
+  connectCoverControls("new");
+  connectCoverControls("edit");
+  loadCoverInput("new");
+  $("add-album-form").addEventListener("reset", () => {
+    setTimeout(() => loadCoverInput("new"), 0);
+  });
   try {
     await userIsStaff();
     await catalog();
