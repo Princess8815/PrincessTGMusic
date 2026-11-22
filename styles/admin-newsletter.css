@@ -1,0 +1,19 @@
+#newsletter-admin hr {border:0;border-top:1px solid #4b5563;margin:26px 0}
+#newsletter-admin h3 {margin:22px 0 12px;color:#e9d5ff}
+.newsletter-stats {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:20px 0}
+.newsletter-stats > div {background:#111827;border:1px solid #374151;padding:17px;border-radius:10px}
+.newsletter-stats strong {font-size:26px;display:block;color:#c084fc}
+.newsletter-stats span {font-size:12px;color:#cbd5e1}
+.newsletter-list {border:1px solid #374151;border-radius:8px;margin-top:12px;padding:8px;max-height:320px;overflow:auto}
+.newsletter-item {display:flex;justify-content:space-between;align-items:center;gap:14px;padding:13px;border-bottom:1px solid #374151}
+.newsletter-item:last-child {border-bottom:0}
+.newsletter-item small {display:block;color:#cbd5e1;margin-top:4px}
+.newsletter-item-actions {display:flex;gap:8px;flex-wrap:wrap}
+#newsletter-admin .newsletter-item button {padding:8px 12px}
+.newsletter-check {display:flex;align-items:center;gap:10px;cursor:pointer;line-height:1.5}
+#newsletter-admin .newsletter-check input, #add-song-form .newsletter-check input {width:auto;min-width:18px;height:18px}
+#newsletter-status {min-height:22px;margin-top:14px;overflow-wrap:anywhere}
+@media(max-width:650px){.newsletter-stats{grid-template-columns:1fr}.newsletter-item{align-items:flex-start;flex-direction:column}}
+
+.newsletter-schedule-control {padding:16px;margin:16px 0;background:#111827;border:1px solid #4b5563;border-radius:9px}
+#newsletter-admin .newsletter-schedule-control button {margin:12px 0}

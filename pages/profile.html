@@ -7,6 +7,7 @@
 
   <title>My Profile | PrincessTG Music</title>
 
+  <script type="module" src="../script/profile-promotions.js"></script>
   <script type="module" src="../script/profile.js"></script>
 
   <script
@@ -293,6 +294,17 @@
         <p id="newsletter-status"
            class="status"
            role="status"></p>
+
+        <div id="promotions-preference" class="profile-field" hidden>
+  <label for="promotions-opt-in">
+    <input type="checkbox" id="promotions-opt-in" style="width:auto;min-width:18px;height:18px">
+    I want occasional promotional and advertising emails from PrincessTG Music.
+  </label>
+  <p class="muted">Optional and separate from weekly music updates. You can unsubscribe at any time.</p>
+  <p id="promotions-status" class="status" role="status" aria-live="polite"></p>
+</div>
+
+
 
         <p class="muted">
           You can unsubscribe at any time.

@@ -1,0 +1,1076 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Administration | PrincessTG Music</title>
+
+  <link rel="stylesheet" href="../styles/auth.css">
+  <link rel="stylesheet" href="../styles/admin-inbox.css">
+
+  <script type="module" src="../script/auth.js"></script>
+  <script src="../script/genres.js" defer></script>
+  <script type="module" src="../script/admin-songs.js"></script>
+  <script type="module" src="../script/admin-edit-songs.js"></script>
+  <script type="module" src="../script/admin-delete-songs.js"></script>
+  <script type="module" src="../script/admin-accounts.js"></script>
+  <script type="module" src="../script/admin-inbox.js"></script>
+  <script type="module" src="../script/admin-tabs.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body {
+      margin: 0;
+      background: #111827;
+      color: #f9fafb;
+      font-family: Arial, sans-serif;
+      line-height: 1.5;
+    }
+    .admin-main {
+      max-width: 1000px;
+      margin: 35px auto;
+      padding: 20px;
+    }
+    h1 { color: #c084fc; margin-bottom: 10px; }
+    h2 { margin-top: 0; }
+    a { color: #c4b5fd; }
+    .admin-card {
+      margin-top: 0;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      padding: 25px;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      min-width: 0;
+    }
+    .full-width { grid-column: 1 / -1; }
+    label { font-weight: 600; }
+    .required { color: #fda4af; }
+    .helper {
+      color: #cbd5e1;
+      font-size: .9rem;
+      margin: 0;
+    }
+    .admin-card input,
+    .admin-card select,
+    .admin-card textarea {
+      width: 100%;
+      padding: 12px;
+      background: #111827;
+      border: 1px solid #6b7280;
+      border-radius: 7px;
+      color: white;
+      font: inherit;
+    }
+    .admin-card input:focus,
+    .admin-card select:focus,
+    .admin-card textarea:focus {
+      outline: 2px solid #c084fc;
+      outline-offset: 1px;
+    }
+    .admin-card input[readonly] { opacity: .75; }
+    textarea { min-height: 120px; resize: vertical; }
+    #song-lyrics { min-height: 280px; }
+    .form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 25px;
+    }
+    .admin-card button {
+      padding: 12px 20px;
+      border: 0;
+      border-radius: 8px;
+      background: #8b5cf6;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .admin-card button.secondary { background: #374151; }
+    .admin-card button:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+    #add-song-status,
+    #edit-song-save-status,
+    #account-save-status {
+      margin-top: 15px;
+      overflow-wrap: anywhere;
+    }
+    #lyrics-preview {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      background: #111827;
+      padding: 15px;
+      border-radius: 8px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .edit-song-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 16px 0;
+    }
+    .edit-song-filters button.active { background: #7c3aed; }
+    .edit-song-results {
+      list-style: none;
+      padding: 0;
+      margin: 12px 0 24px;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+    .edit-song-results li { margin-bottom: 5px; }
+    .edit-song-results button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 6px;
+    }
+    .edit-song-results button:hover,
+    .edit-song-results button:focus-visible {
+      border-color: #c084fc;
+      background: #312e81;
+    }
+    .edit-result-note {
+      display: block;
+      font-size: .8rem;
+      color: #cbd5e1;
+      font-weight: normal;
+      margin-top: 3px;
+    }
+    #edit-song-form {
+      border-top: 1px solid #374151;
+      padding-top: 20px;
+    }
+    .account-results {
+      max-height: 280px;
+      overflow-y: auto;
+      margin: 12px 0;
+    }
+    .account-result {
+      display: block;
+      width: 100%;
+      margin: 5px 0;
+      text-align: left;
+      background: #111827 !important;
+      border: 1px solid #4b5563 !important;
+    }
+    .account-result:hover { background: #312e81 !important; }
+    .account-result small {
+      display: block;
+      color: #cbd5e1;
+      margin-top: 5px;
+    }
+    #account-editor { margin-top: 24px; }
+    #account-editor hr {
+      border: 0;
+      border-top: 1px solid #4b5563;
+      margin-bottom: 20px;
+    }
+    #account-current-status { font-weight: bold; }
+
+    /* MAIN NAVIGATION */
+    .admin-main-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 22px 0;
+    }
+    .admin-main-tabs button {
+      padding: 12px 18px;
+      border: 2px solid #4b5563;
+      border-radius: 9px;
+      background: #374151;
+      color: #f9fafb;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .admin-main-tabs button[aria-selected="true"] {
+      background: #312e81;
+      border-color: #c084fc;
+      box-shadow: 0 0 0 2px #7c3aed;
+    }
+    .admin-main-tabs button.has-unread {
+      background: #166534;
+      border-color: #4ade80;
+      color: #f0fdf4;
+    }
+    .admin-main-tabs button.has-unread[aria-selected="true"] {
+      box-shadow: 0 0 0 2px #c084fc;
+    }
+    .admin-main-tabs button:focus-visible {
+      outline: 3px solid #c084fc;
+      outline-offset: 3px;
+    }
+
+    /* COLLAPSIBLE LYRIC EDITORS */
+    .admin-editor-details {
+      border: 1px solid #4b5563;
+      border-radius: 9px;
+      padding: 12px 14px;
+      background: #182235;
+    }
+    .admin-editor-details > summary {
+      font-weight: 700;
+      color: #e9d5ff;
+      cursor: pointer;
+      padding: 4px;
+    }
+    .admin-editor-details[open] > summary {
+      margin-bottom: 14px;
+    }
+    .admin-inline-check {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 13px;
+      cursor: pointer;
+    }
+    .admin-card .admin-inline-check input[type="checkbox"] {
+      width: auto;
+      min-width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+    .admin-flag-help {
+      font-size: .86rem;
+      color: #cbd5e1;
+      margin: 4px 0 0;
+    }
+
+    @media (max-width: 650px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .admin-card { padding: 16px; }
+      .admin-main-tabs {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .admin-main-tabs button { padding: 11px 7px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="auth-container"></div>
+
+  <main class="admin-main">
+    <p id="admin-status">Verifying administrator access...</p>
+
+    <div id="admin-content" hidden>
+      <h1>PrincessTG Music Administration</h1>
+      <p>Manage music, account access, and incoming staff messages.</p>
+
+      <!-- MAIN ADMIN TABS -->
+      <nav id="admin-main-tabs"
+           class="admin-main-tabs"
+           role="tablist"
+           aria-label="Admin sections">
+
+        <button type="button" role="tab"
+                id="admin-main-tab-mail"
+                data-admin-tab="mail"
+                aria-controls="admin-main-panel-mail"
+                aria-selected="true">Mail</button>
+
+        <button type="button" role="tab"
+                id="admin-main-tab-add"
+                data-admin-tab="add"
+                aria-controls="admin-main-panel-add"
+                aria-selected="false">Add Song</button>
+
+        <button type="button" role="tab"
+                id="admin-main-tab-edit"
+                data-admin-tab="edit"
+                aria-controls="admin-main-panel-edit"
+                aria-selected="false">Edit Song</button>
+
+        <button type="button" role="tab"
+                id="admin-main-tab-delete"
+                data-admin-tab="delete"
+                aria-controls="admin-main-panel-delete"
+                aria-selected="false">Delete Song</button>
+
+        <button type="button" role="tab"
+                id="admin-main-tab-albums"
+                data-admin-tab="albums"
+                aria-controls="admin-main-panel-albums"
+                aria-selected="false">Albums</button>
+
+        <button type="button" role="tab"
+                id="admin-main-tab-accounts"
+                data-admin-tab="accounts"
+                aria-controls="admin-main-panel-accounts"
+                aria-selected="false">Accounts</button>
+      </nav>
+
+      <!-- MAIL TAB -->
+      <section id="admin-main-panel-mail"
+               class="admin-main-panel"
+               role="tabpanel"
+               aria-labelledby="admin-main-tab-mail">
+
+        <section class="admin-card" id="admin-inbox">
+          <h2>Staff Inbox</h2>
+          <p class="helper">
+            Messages appear automatically.
+            Green tabs indicate unread messages.
+          </p>
+
+          <div class="admin-inbox-tabs"
+               role="tablist"
+               aria-label="Message categories">
+
+            <button type="button"
+                    class="admin-inbox-tab"
+                    id="inbox-tab-appeals"
+                    role="tab"
+                    aria-controls="inbox-panel-appeals"
+                    aria-selected="true">
+              Appeals
+              <span class="inbox-unread-count" hidden></span>
+            </button>
+
+            <button type="button"
+                    class="admin-inbox-tab"
+                    id="inbox-tab-billing"
+                    role="tab"
+                    aria-controls="inbox-panel-billing"
+                    aria-selected="false">
+              Billing Questions
+              <span class="inbox-unread-count" hidden></span>
+            </button>
+
+            <button type="button"
+                    class="admin-inbox-tab"
+                    id="inbox-tab-feedback"
+                    role="tab"
+                    aria-controls="inbox-panel-feedback"
+                    aria-selected="false">
+              Feedback
+              <span class="inbox-unread-count" hidden></span>
+            </button>
+
+            <button type="button"
+                    class="admin-inbox-tab"
+                    id="inbox-tab-flagged"
+                    role="tab"
+                    aria-controls="inbox-panel-flagged"
+                    aria-selected="false">
+              Flagged Messages
+              <span class="inbox-unread-count" hidden></span>
+            </button>
+          </div>
+
+          <section id="inbox-panel-appeals"
+                   role="tabpanel"
+                   aria-labelledby="inbox-tab-appeals">
+
+            <div class="inbox-heading">
+              <h3>Ban Appeals</h3>
+              <p id="inbox-appeal-status"
+                 class="helper"
+                 role="status"
+                 aria-live="polite">
+                Loading appeals from Firestore...
+              </p>
+            </div>
+
+            <div class="inbox-mail-layout">
+              <div class="inbox-mail-list-pane"
+                   aria-label="Received appeals">
+
+                <div class="inbox-pane-heading">
+                  Received Messages
+                </div>
+
+                <div id="inbox-appeal-list"
+                     class="inbox-appeal-list">
+                  <p class="helper">Checking your inbox...</p>
+                </div>
+              </div>
+
+              <div class="inbox-mail-detail-pane"
+                   aria-label="Selected appeal">
+
+                <div class="inbox-pane-heading">Message</div>
+
+                <article id="inbox-appeal-detail"
+                         class="inbox-appeal-detail">
+                  <p class="helper">
+                    Select an appeal on the left to read it.
+                  </p>
+                </article>
+              </div>
+            </div>
+          </section>
+
+          <section id="inbox-panel-billing"
+                   role="tabpanel"
+                   aria-labelledby="inbox-tab-billing"
+                   hidden>
+            <h3>Billing Questions</h3>
+            <p class="helper">
+              Billing messages will appear here
+              when billing is connected.
+            </p>
+          </section>
+
+          <section id="inbox-panel-feedback"
+                   role="tabpanel"
+                   aria-labelledby="inbox-tab-feedback"
+                   hidden>
+            <h3>Feedback</h3>
+            <p class="helper">
+              Feedback messages will appear here
+              when that system is connected.
+            </p>
+          </section>
+
+          <section id="inbox-panel-flagged"
+                   role="tabpanel"
+                   aria-labelledby="inbox-tab-flagged"
+                   hidden>
+            <h3>Flagged Messages</h3>
+            <p class="helper">
+              Flagged messages will appear here
+              when reporting is connected.
+            </p>
+          </section>
+        </section>
+      </section>
+
+      <!-- ADD SONG TAB -->
+      <section id="admin-main-panel-add"
+               class="admin-main-panel"
+               role="tabpanel"
+               aria-labelledby="admin-main-tab-add"
+               hidden>
+
+        <section class="admin-card">
+          <h2>Add Song</h2>
+          <p class="helper">Fields marked * are required.</p>
+
+          <form id="add-song-form">
+            <div class="form-grid">
+
+              <div class="form-field full-width">
+                <label for="song-title">
+                  Song Title <span class="required">*</span>
+                </label>
+                <input id="song-title"
+                       type="text"
+                       maxlength="160"
+                       required>
+              </div>
+
+              <div class="form-field full-width">
+                <label for="song-description">Description</label>
+                <textarea id="song-description"
+                          maxlength="5000"
+                          rows="4"></textarea>
+              </div>
+
+              <div class="form-field">
+                <label for="song-album">
+                  Album <span class="required">*</span>
+                </label>
+                <select id="song-album" required disabled>
+                  <option value="">Loading albums...</option>
+                </select>
+                <p class="helper" id="album-status"></p>
+              </div>
+
+              <div class="form-field">
+                <label for="song-genre">
+                  Genre <span class="required">*</span>
+                </label>
+                <select id="song-genre"
+                        class="genre-select"
+                        required>
+                  <option value="">Select genre</option>
+                </select>
+              </div>
+
+              <div class="form-field">
+                <label for="song-release">Release Date</label>
+                <input id="song-release" type="date">
+                <p class="helper">Leave blank to save "tbd".</p>
+              </div>
+
+              <div class="form-field">
+                <label for="song-by">Submitted By</label>
+                <input id="song-by" type="text" readonly>
+                <p class="helper">
+                  Automatically credited to PrincessTG.
+                </p>
+              </div>
+
+              <div class="form-field full-width">
+                <details class="admin-editor-details" open>
+                  <summary>Original Lyrics Editor</summary>
+
+                  <div class="form-field">
+                    <label for="song-lyrics">
+                      Lyrics <span class="required">*</span>
+                    </label>
+                    <textarea id="song-lyrics"
+                              rows="15"
+                              required
+                              placeholder="Paste the full song lyrics here..."></textarea>
+                    <p class="helper">
+                      Stage labels and parentheses are cleaned
+                      automatically when saving.
+                    </p>
+                  </div>
+
+                  <label class="admin-inline-check"
+                         for="add-lyrics-collapsed">
+                    <input id="add-lyrics-collapsed"
+                           type="checkbox"
+                           checked>
+                    Start original lyrics collapsed on the song page
+                  </label>
+
+                  <p class="admin-flag-help">
+                    Uncheck to display original lyrics expanded by default.
+                  </p>
+                </details>
+              </div>
+
+              <div class="form-field full-width">
+                <label>
+                  <input type="checkbox"
+                         id="add-has-translation"
+                         style="width:auto;">
+                  Include English Translation
+                </label>
+
+                <div id="add-translation-container"
+                     class="form-field"
+                     hidden>
+
+                  <details class="admin-editor-details" open>
+                    <summary>English Translation Editor</summary>
+
+                    <div class="form-field">
+                      <label for="song-translation">
+                        English Translation
+                      </label>
+                      <textarea id="song-translation"
+                                rows="14"
+                                maxlength="100000"
+                                placeholder="Paste the English translation..."></textarea>
+                      <p class="helper">
+                        Preserve blank lines and language labels
+                        such as {Korean} or {German}.
+                      </p>
+                    </div>
+
+                    <label class="admin-inline-check"
+                           for="add-translation-collapsed">
+                      <input id="add-translation-collapsed"
+                             type="checkbox"
+                             checked>
+                      Start English translation collapsed on the song page
+                    </label>
+                  </details>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="button"
+                      id="preview-lyrics"
+                      class="secondary">
+                Preview Cleaned Lyrics
+              </button>
+              <button type="submit" id="save-song" disabled>
+                Save Song to Firestore
+              </button>
+              <button type="reset" class="secondary">
+                Clear Form
+              </button>
+            </div>
+
+            <div id="preview-container" hidden>
+              <h3>Cleaned Lyrics Preview</h3>
+              <pre id="lyrics-preview"></pre>
+            </div>
+
+            <p id="add-song-status"
+               role="status"
+               aria-live="polite"></p>
+          </form>
+        </section>
+      </section>
+
+      <!-- EDIT SONG TAB -->
+      <section id="admin-main-panel-edit"
+               class="admin-main-panel"
+               role="tabpanel"
+               aria-labelledby="admin-main-tab-edit"
+               hidden>
+
+        <section class="admin-card" id="edit-song-section">
+          <h2>Edit Existing Songs</h2>
+          <p class="helper">
+            Search JSON and Firestore songs.
+            Select a song to edit it.
+          </p>
+
+          <div class="form-field">
+            <label for="edit-song-search">Find Song</label>
+            <input type="search"
+                   id="edit-song-search"
+                   placeholder="Start typing a song title..."
+                   autocomplete="off">
+          </div>
+
+          <div class="edit-song-filters">
+            <button type="button" id="edit-filter-all">
+              All Songs
+            </button>
+            <button type="button"
+                    id="edit-filter-no-lyrics"
+                    class="secondary">
+              Missing Lyrics
+            </button>
+            <button type="button"
+                    id="edit-filter-no-db"
+                    class="secondary">
+              Not in Database
+            </button>
+            <button type="button"
+                    id="edit-filter-either"
+                    class="secondary">
+              Either Problem
+            </button>
+            <button type="button"
+                    id="edit-refresh-songs"
+                    class="secondary">
+              Refresh List
+            </button>
+          </div>
+
+          <p id="edit-search-status"
+             class="helper"
+             role="status"
+             aria-live="polite">
+            Loading songs...
+          </p>
+          <ul id="edit-song-results"
+              class="edit-song-results"></ul>
+
+          <form id="edit-song-form" hidden>
+            <h3>Edit Selected Song</h3>
+            <p id="edit-song-source" class="helper"></p>
+
+            <div class="form-grid">
+              <div class="form-field full-width">
+                <label for="edit-song-id">Song ID</label>
+                <input id="edit-song-id" type="text" readonly>
+                <p class="helper">
+                  This ID stays unchanged so existing
+                  song links keep working.
+                </p>
+              </div>
+
+              <div class="form-field full-width">
+                <label for="edit-song-title">
+                  Title <span class="required">*</span>
+                </label>
+                <input id="edit-song-title"
+                       type="text"
+                       maxlength="160"
+                       required>
+              </div>
+
+              <div class="form-field full-width">
+                <label for="edit-song-description">
+                  Description
+                </label>
+                <textarea id="edit-song-description"
+                          rows="4"
+                          maxlength="5000"></textarea>
+              </div>
+
+              <div class="form-field">
+                <label for="edit-song-album">
+                  Album <span class="required">*</span>
+                </label>
+                <select id="edit-song-album" required>
+                  <option value="">N/A</option>
+                </select>
+                <p id="edit-original-album" class="helper"></p>
+              </div>
+
+              <div class="form-field">
+                <label for="edit-song-genre">
+                  Genre <span class="required">*</span>
+                </label>
+                <select id="edit-song-genre" required>
+                  <option value="">Select Genre</option>
+                </select>
+              </div>
+
+              <div class="form-field">
+                <label for="edit-song-release">
+                  Release Date
+                </label>
+                <input id="edit-song-release" type="date">
+                <p id="edit-original-date" class="helper">
+                  Blank saves as tbd.
+                </p>
+              </div>
+
+              <div class="form-field">
+                <label for="edit-song-submitted-by">
+                  Submitted By
+                </label>
+                <input id="edit-song-submitted-by"
+                       type="text"
+                       readonly>
+              </div>
+
+              <div class="form-field full-width">
+                <label for="edit-song-audio">
+                  Existing Audio Reference
+                </label>
+                <input id="edit-song-audio"
+                       type="text"
+                       readonly>
+                <p class="helper">
+                  Audio files are not modified by this editor.
+                </p>
+              </div>
+
+              <div class="form-field full-width">
+                <details class="admin-editor-details" open>
+                  <summary>Original Lyrics Editor</summary>
+
+                  <div class="form-field">
+                    <label for="edit-song-lyrics">
+                      Lyrics <span class="required">*</span>
+                    </label>
+                    <textarea id="edit-song-lyrics"
+                              rows="16"
+                              required
+                              placeholder="Enter song lyrics..."></textarea>
+                    <p class="helper">
+                      Uses the same lyric formatting rules as Add Song.
+                    </p>
+                  </div>
+
+                  <label class="admin-inline-check"
+                         for="edit-lyrics-collapsed">
+                    <input id="edit-lyrics-collapsed"
+                           type="checkbox"
+                           checked>
+                    Start original lyrics collapsed on the song page
+                  </label>
+
+                  <p class="admin-flag-help">
+                    Uncheck to display original lyrics expanded by default.
+                  </p>
+                </details>
+              </div>
+
+              <div class="form-field full-width">
+                <label>
+                  <input type="checkbox"
+                         id="edit-has-translation"
+                         style="width:auto;">
+                  English Translation Available
+                </label>
+
+                <div id="edit-translation-container"
+                     class="form-field"
+                     hidden>
+
+                  <details class="admin-editor-details" open>
+                    <summary>English Translation Editor</summary>
+
+                    <div class="form-field">
+                      <label for="edit-song-translation">
+                        English Translation
+                      </label>
+                      <textarea id="edit-song-translation"
+                                rows="14"
+                                maxlength="100000"
+                                placeholder="Enter English translation..."></textarea>
+                      <p class="helper">
+                        Existing JSON translations load automatically.
+                        Uncheck to remove a song's translation.
+                      </p>
+                    </div>
+
+                    <label class="admin-inline-check"
+                           for="edit-translation-collapsed">
+                      <input id="edit-translation-collapsed"
+                             type="checkbox"
+                             checked>
+                      Start English translation collapsed on the song page
+                    </label>
+                  </details>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" id="edit-song-save">
+                Save Changes to Firestore
+              </button>
+            </div>
+
+            <p id="edit-song-save-status"
+               role="status"
+               aria-live="polite"></p>
+          </form>
+        </section>
+      </section>
+
+      <!-- DELETE SONG TAB -->
+      <section id="admin-main-panel-delete"
+               class="admin-main-panel"
+               role="tabpanel"
+               aria-labelledby="admin-main-tab-delete"
+               hidden>
+
+        <section class="admin-card" id="delete-song-section">
+          <h2>Delete Song From Database</h2>
+          <p class="helper">
+            Deletes the Firestore record only,
+            not MP3 or legacy JSON files.
+          </p>
+
+          <div class="form-field">
+            <label for="delete-song-search">Search Songs</label>
+            <input id="delete-song-search"
+                   type="search"
+                   placeholder="Search by song title or ID..."
+                   autocomplete="off">
+          </div>
+
+          <div class="form-field" style="margin-top:18px;">
+            <label for="delete-song-select">
+              Select Song to Delete
+            </label>
+            <select id="delete-song-select" disabled>
+              <option value="">Loading database songs...</option>
+            </select>
+          </div>
+
+          <p id="delete-song-count"
+             class="helper"
+             style="margin-top:12px;"></p>
+
+          <button type="button"
+                  id="delete-song-refresh"
+                  class="secondary"
+                  style="margin-top:12px;">
+            Refresh Song List
+          </button>
+
+          <div id="delete-song-details" hidden>
+            <h3>Selected Song</h3>
+            <p>
+              <strong>Title:</strong>
+              <span id="delete-song-title"></span>
+            </p>
+            <p>
+              <strong>Database ID:</strong>
+              <span id="delete-song-id"></span>
+            </p>
+            <p style="color:#fca5a5;">
+              Warning: This action cannot be undone.
+            </p>
+
+            <div class="form-field">
+              <label for="delete-song-confirm">
+                Type DELETE to confirm
+              </label>
+              <input id="delete-song-confirm"
+                     type="text"
+                     placeholder="DELETE"
+                     autocomplete="off">
+            </div>
+
+            <button type="button"
+                    id="delete-song-button"
+                    disabled
+                    style="background:#dc2626;margin-top:18px;">
+              Permanently Delete Song
+            </button>
+          </div>
+
+          <p id="delete-song-status"
+             role="status"
+             aria-live="polite"
+             style="margin-top:18px;"></p>
+        </section>
+      </section>
+
+      <!-- ALBUMS TAB -->
+      <section id="admin-main-panel-albums"
+               class="admin-main-panel"
+               role="tabpanel"
+               aria-labelledby="admin-main-tab-albums"
+               hidden>
+
+        <section class="admin-card">
+          <h2>Album Management</h2>
+          <p class="helper">
+            New albums are saved to the database
+            and appear in the Add Song dropdown.
+          </p>
+
+          <form id="add-album-form">
+            <div class="form-field">
+              <label for="new-album-name">
+                New Album Name <span class="required">*</span>
+              </label>
+              <input id="new-album-name"
+                     type="text"
+                     placeholder="Enter album name"
+                     maxlength="100"
+                     required>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" id="add-album-button">
+                Add Album
+              </button>
+            </div>
+
+            <p id="add-album-status"
+               class="helper"
+               role="status"
+               aria-live="polite"></p>
+          </form>
+        </section>
+      </section>
+
+      <!-- ACCOUNTS TAB -->
+      <section id="admin-main-panel-accounts"
+               class="admin-main-panel"
+               role="tabpanel"
+               aria-labelledby="admin-main-tab-accounts"
+               hidden>
+
+        <section class="admin-card"
+                 id="account-management"
+                 hidden>
+
+          <h2>Account Management</h2>
+          <p class="helper">
+            Owners manage roles; active admins
+            may moderate regular accounts.
+          </p>
+
+          <div class="form-field">
+            <label for="account-search">Find Account</label>
+            <input id="account-search"
+                   type="search"
+                   placeholder="Type a name or email..."
+                   autocomplete="off">
+          </div>
+
+          <p id="account-search-status"
+             role="status"
+             aria-live="polite"></p>
+
+          <div id="account-results"
+               class="account-results"></div>
+
+          <button type="button"
+                  id="account-refresh"
+                  class="secondary">
+            Refresh Accounts
+          </button>
+
+          <div id="account-editor" hidden>
+            <hr>
+            <h3 id="account-selected-name"></h3>
+            <p id="account-selected-email"></p>
+            <p>
+              <strong>Current status:</strong>
+              <span id="account-current-status"></span>
+            </p>
+
+            <div class="form-field">
+              <label for="account-role">
+                Set Account Permissions
+              </label>
+              <select id="account-role">
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+                <option value="banned">Banned</option>
+              </select>
+            </div>
+
+            <div id="account-ban-settings" hidden>
+              <div class="form-field">
+                <label for="account-ban-duration">
+                  Ban Duration
+                </label>
+                <select id="account-ban-duration">
+                  <option value="1h">1 Hour</option>
+                  <option value="24h">24 Hours</option>
+                  <option value="7d">7 Days</option>
+                  <option value="30d">30 Days</option>
+                  <option value="90d">90 Days</option>
+                  <option value="custom">Custom End Date</option>
+                  <option value="indefinite">Indefinite</option>
+                </select>
+              </div>
+
+              <div id="account-custom-ban"
+                   class="form-field"
+                   hidden>
+                <label for="account-ban-end">
+                  Ban Ends At
+                </label>
+                <input id="account-ban-end"
+                       type="datetime-local">
+              </div>
+
+              <p class="helper">
+                Banned users can still log in.
+                Their submission permissions remain
+                restricted until the ban ends or is removed.
+              </p>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" id="account-save">
+                Save Account Changes
+              </button>
+            </div>
+
+            <p id="account-save-status"
+               role="status"
+               aria-live="polite"></p>
+          </div>
+        </section>
+      </section>
+
+      <p><a href="../index.html">Back to Home</a></p>
+    </div>
+  </main>
+</body>
+</html>

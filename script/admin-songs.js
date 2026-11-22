@@ -612,6 +612,7 @@ if (translation.length > 100000) {
         lyrics,
         lyricsCollapsed: lyricsCollapsedInput.checked,
 translationCollapsed: translationCollapsedInput.checked,
+        newsletterQueued: document.getElementById("add-newsletter-queue").checked,
         ...(translation ? { translation } : {}),
 
         submittedBy: {

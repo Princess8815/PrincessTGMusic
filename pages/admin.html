@@ -7,6 +7,7 @@
   <title>Administration | PrincessTG Music</title>
 
   <link rel="stylesheet" href="../styles/auth.css">
+  <link rel="stylesheet" href="../styles/admin-newsletter.css">
   <link rel="stylesheet" href="../styles/admin-inbox.css">
 
   <script type="module" src="../script/auth.js"></script>
@@ -16,6 +17,7 @@
   <script type="module" src="../script/admin-delete-songs.js"></script>
   <script type="module" src="../script/admin-accounts.js"></script>
   <script type="module" src="../script/admin-inbox.js"></script>
+  <script type="module" src="../script/admin-newsletter.js"></script>
   <script type="module" src="../script/admin-tabs.js"></script>
 
   <style>
@@ -312,6 +314,12 @@
                 aria-selected="false">Albums</button>
 
         <button type="button" role="tab"
+        id="admin-main-tab-email"
+        data-admin-tab="email"
+        aria-controls="admin-main-panel-email"
+        aria-selected="false">Email Campaigns</button>
+
+        <button type="button" role="tab"
                 id="admin-main-tab-accounts"
                 data-admin-tab="accounts"
                 aria-controls="admin-main-panel-accounts"
@@ -592,6 +600,16 @@
                 </div>
               </div>
             </div>
+
+            <div class="form-field full-width">
+              <label class="newsletter-check" for="add-newsletter-queue">
+                <input type="checkbox" id="add-newsletter-queue">
+                Include this song's link in the next Sunday newsletter
+              </label>
+              <p class="helper">Queues the song after it is saved. It will not send an email immediately.</p>
+            </div>
+            
+            
 
             <div class="form-actions">
               <button type="button"
@@ -964,6 +982,98 @@
           </form>
         </section>
       </section>
+
+<section id="admin-main-panel-email"
+         class="admin-main-panel"
+         role="tabpanel"
+         aria-labelledby="admin-main-tab-email"
+         hidden>
+  <section class="admin-card" id="newsletter-admin">
+    <h2>Newsletter &amp; Email Campaigns</h2>
+    <p class="helper">Weekly newsletters go out Sundays at 9:00 AM Central. Queued song links, the next rotating message, and due planned messages are included.</p>
+
+    <div class="newsletter-stats">
+      <div><strong id="newsletter-subscriber-count">...</strong><span>Weekly subscribers</span></div>
+      <div><strong id="newsletter-promo-count">...</strong><span>Promotional subscribers</span></div>
+      <div><strong id="newsletter-queued-count">...</strong><span>Songs queued</span></div>
+    </div>
+    <div class="newsletter-schedule-control">
+      <label class="newsletter-check" for="newsletter-auto-enabled">
+        <input type="checkbox" id="newsletter-auto-enabled">
+        Automatically send the Sunday 9:00 AM Central newsletter
+      </label>
+      <button type="button" class="secondary" id="newsletter-auto-save">Save Sunday Schedule Setting</button>
+      <p class="helper">Off by default until the owner enables it. Test the newsletter before switching it on.</p>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="secondary" id="newsletter-refresh">Refresh Newsletter Data</button>
+      <button type="button" id="newsletter-test">Send ONE Test Newsletter to My Email</button>
+    </div>
+    <p id="newsletter-status" role="status" aria-live="polite"></p>
+
+    <h3>Next Weekly Issue: Queued Songs</h3>
+    <p class="helper">Check “Include in next weekly email” when adding a song. You can remove a queued song here without deleting it.</p>
+    <div id="newsletter-song-list" class="newsletter-list"><p>Loading...</p></div>
+
+    <hr>
+    <h3>Rotating, Planned, and Advert Messages</h3>
+    <p class="helper">Rotating messages take turns each Sunday. Planned messages appear in the first Sunday issue after their scheduled date and are then deactivated. Advertisements are saved separately and sent only when you press Send.</p>
+    <div id="newsletter-message-list" class="newsletter-list"><p>Loading...</p></div>
+
+    <form id="newsletter-message-form">
+      <input type="hidden" id="newsletter-message-id">
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="newsletter-kind">Message type</label>
+          <select id="newsletter-kind" required>
+            <option value="rotating">Rotating Sunday message</option>
+            <option value="planned">Planned Sunday announcement</option>
+            <option value="advert">Manual advertisement</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="newsletter-title">Internal message name *</label>
+          <input id="newsletter-title" type="text" maxlength="100" required placeholder="Example: New album announcement">
+        </div>
+        <div class="form-field full-width" id="newsletter-subject-wrap" hidden>
+          <label for="newsletter-subject">Email subject for advertisement *</label>
+          <input id="newsletter-subject" type="text" maxlength="160" placeholder="Example: New PrincessTG Merch">
+        </div>
+        <div class="form-field full-width" id="newsletter-date-wrap" hidden>
+          <label for="newsletter-date">Include in first Sunday issue on/after *</label>
+          <input id="newsletter-date" type="datetime-local">
+        </div>
+        <div class="form-field full-width">
+          <label for="newsletter-body">Message text *</label>
+          <textarea id="newsletter-body" rows="8" maxlength="6000" required placeholder="Write the message subscribers will receive..."></textarea>
+        </div>
+        <div class="form-field full-width">
+          <label class="newsletter-check"><input id="newsletter-active" type="checkbox" checked> Active / available to send</label>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="submit" id="newsletter-save">Save Message</button>
+        <button type="button" class="secondary" id="newsletter-new">New / Clear Editor</button>
+      </div>
+    </form>
+
+    <hr>
+    <h3>Send Advertisement Manually</h3>
+    <p class="helper">Only accounts that separately opted into promotional emails will receive adverts. Existing newsletter subscriptions do not automatically include adverts.</p>
+    <div class="form-field">
+      <label for="newsletter-advert-choice">Choose an active saved advert</label>
+      <select id="newsletter-advert-choice"><option value="">No adverts yet</option></select>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="secondary" id="newsletter-advert-test">Send ONE Advert Test to My Email</button>
+      <button type="button" id="newsletter-advert-send">Send This Advert to Opted-in Subscribers</button>
+    </div>
+
+    <hr>
+    <h3>Recent Email Campaigns</h3>
+    <div id="newsletter-campaign-list" class="newsletter-list"><p>No campaigns yet.</p></div>
+  </section>
+</section>
 
       <!-- ACCOUNTS TAB -->
       <section id="admin-main-panel-accounts"
