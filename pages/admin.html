@@ -190,6 +190,13 @@
     }
     #account-current-status { font-weight: bold; }
 
+    #account-verification-status{margin-top:12px;overflow-wrap:anywhere}
+    #account-subpanel-verification h4{font-size:1.07rem;color:#ddd6fe;margin:12px 0 7px}
+    #account-verification-warning{border-left:3px solid #fbbf24;padding-left:12px}
+    #account-verification-bypass-status[data-enabled="true"]{color:#86efac;font-weight:800}
+    #account-verification-toggle[data-action="revoke"]{background:#9f1239}
+    #account-verification-toggle:focus-visible{outline:3px solid #22d3ee;outline-offset:3px}
+
     /* MAIN NAVIGATION */
     .admin-main-tabs {
       display: flex;
@@ -1255,6 +1262,17 @@
               <span id="account-current-status"></span>
             </p>
 
+            <nav class="admin-subtabs account-subtabs" role="tablist"
+                 aria-label="User management actions">
+              <button type="button" id="account-subtab-roles" role="tab"
+                data-account-subtab="roles" aria-controls="account-subpanel-roles"
+                aria-selected="true">Roles &amp; Bans</button>
+              <button type="button" id="account-subtab-verification" role="tab"
+                data-account-subtab="verification" aria-controls="account-subpanel-verification"
+                aria-selected="false">Verification Bypass</button>
+            </nav>
+            <section id="account-subpanel-roles" role="tabpanel"
+                aria-labelledby="account-subtab-roles">
             <div class="form-field">
               <label for="account-role">
                 Set Account Permissions
@@ -1308,6 +1326,29 @@
             <p id="account-save-status"
                role="status"
                aria-live="polite"></p>
+            </section>
+
+            <section id="account-subpanel-verification" role="tabpanel"
+              aria-labelledby="account-subtab-verification" hidden>
+              <h4>Email verification exception</h4>
+              <p class="helper">The owner can allow an account to use
+                member features without proving email ownership. This does
+                <strong>not</strong> set Firebase Authentication's verified flag.</p>
+              <p><strong>Firebase email status:</strong>
+                <span id="account-verification-auth-status">Checking…</span></p>
+              <p><strong>Site exception:</strong>
+                <span id="account-verification-bypass-status">Checking…</span></p>
+              <p id="account-verification-warning" class="helper">
+                Owner only. A bypassed account can use site mail and
+                other verified-only features without confirming its email.</p>
+              <div class="form-actions">
+                <button type="button" id="account-verification-toggle" disabled>
+                  Loading exception…
+                </button>
+              </div>
+              <p id="account-verification-status" role="status"
+                aria-live="polite"></p>
+            </section>
           </div>
         </section>
       </section>
