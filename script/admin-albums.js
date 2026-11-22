@@ -109,6 +109,7 @@ function connectCoverControls(prefix) {
 
 let trackEditor = [];
 let trackEditorName = "";
+let trackEditorLoading = false;
 
 function renderTrackEditor() {
   const list = $("edit-album-track-order");
@@ -159,6 +160,8 @@ function renderTrackEditor() {
 }
 async function loadTrackEditor(name) {
   trackEditorName = name;
+  trackEditorLoading = true;
+  trackEditor = [];
   $("edit-album-track-order").textContent="Loading tracks...";
   try {
     const songs = await songMatches(name);
@@ -171,8 +174,10 @@ async function loadTrackEditor(name) {
       const rb=rank.get(String(b.pageId || slug(b.title))) ?? Number.MAX_SAFE_INTEGER;
       return ra-rb || String(a.title).localeCompare(String(b.title));
     }).map(song=>({id:String(song.pageId || slug(song.title)), title:String(song.title)}));
+    trackEditorLoading = false;
     renderTrackEditor();
   } catch(error) {
+    trackEditorLoading = false;
     $("edit-album-track-order").textContent="Unable to load album tracks: "+error.message;
   }
 }
@@ -180,7 +185,12 @@ async function loadTrackEditor(name) {
 function fillEdit() {
   const name = $("edit-album-select").value;
   $("edit-album-form").hidden = !name;
-  if (!name) return;
+  if (!name) {
+    trackEditorName = "";
+    trackEditor = [];
+    $("edit-album-track-order").replaceChildren();
+    return;
+  }
   const data = records.get(key(name)) || {};
   $("edit-album-name").value = name;
   $("edit-album-date").value = dateValue(data.releaseDate);
@@ -189,6 +199,9 @@ function fillEdit() {
   void loadTrackEditor(name);
 }
 function collect(prefix) {
+  if (prefix === "edit" && (trackEditorLoading || trackEditorName !== $("edit-album-select").value)) {
+    throw new Error("Wait for the album track list to finish loading.");
+  }
   const name = normalize($(prefix + "-album-name").value);
   const releaseDate = $(prefix + "-album-date").value || "tbd";
   const description = $(prefix + "-album-description").value.trim();
