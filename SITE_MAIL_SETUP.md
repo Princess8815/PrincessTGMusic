@@ -173,3 +173,39 @@ here per request, and do not change the live project.
 After a GitHub branch update, run `git status` to check for uncommitted local
 work, then fetch/pull the updated PR branch and hard-refresh the local site.
 Don't discard local edits or overwrite the live Firebase data.
+
+
+## Local development mode toggle: emulators or live Firebase
+
+A new **Settings → Local Firebase connection** control is available on
+`http://localhost` and `http://127.0.0.1` preview sites. It is **not
+displayed or enabled on the public GitHub Pages domain**.
+
+- **Use local Firebase emulators** (default on a new localhost browser origin):
+  Authentication on `127.0.0.1:9099`, Firestore on `127.0.0.1:8080`,
+  and isolated project `demo-princesstg`. Start them with
+  `firebase emulators:start --only auth,firestore --project demo-princesstg`.
+  These services must be running for test accounts, profiles and mail.
+- **Use live Firebase**: the local Live Server preview connects to
+  `music-and-poetry` using real Firebase Authentication and Firestore.
+  **No emulators need to be running**. Bans, messages and deletions affect
+  real data, so the switch requires confirmation and the site displays an
+  amber **LOCAL PREVIEW · LIVE FIREBASE** indicator.
+- The selected mode is saved **per local browser origin**, so a different
+  Live Server hostname or port may default to emulator mode again.
+- Switching forces a full-page reload; Firebase SDK instances cannot
+  be repointed safely while active. The emulator has a separate Firebase
+  app name for independent Auth persistence, so a test-user session is not
+  treated as a live user session.
+- A small local badge on site pages identifies the mode and links to Settings.
+  The badge and toggle never appear on the public site. Live production mode
+  on GitHub Pages is always enforced regardless of stored preferences.
+- You can turn off the emulators after switching the local preview to live
+  mode. Switching back to emulator mode requires restarting both services.
+
+Neither mode automatically copies accounts or documents between local
+emulators and real Firebase. Do not use real credentials for emulator tests.
+
+**For safety:** The mode switch does not alter published Firestore rules.
+Local mail rules must still be loaded in the Firestore emulator. Real mail
+continues to use the project's deployed security rules.
