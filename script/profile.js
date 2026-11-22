@@ -62,9 +62,13 @@ function isBanActive() {
 }
 
 function isActive() {
-  return accountData?.status === "active" ||
+  // Legacy account documents may not have a status field.
+  // Match the rest of the site: only explicit bans/archives restrict access.
+  const status = accountData?.status || "active";
+
+  return status === "active" ||
     (
-      accountData?.status === "banned" &&
+      status === "banned" &&
       !isBanActive()
     );
 }
