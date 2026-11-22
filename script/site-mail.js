@@ -3,9 +3,10 @@ import {
   collection,doc,getDoc,getDocs,query,orderBy,startAt,endAt,startAfter,
   limit,writeBatch,updateDoc,deleteDoc,Timestamp,serverTimestamp
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {
-  onAuthStateChanged,sendEmailVerification,reload
-} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+  sendSiteVerification,refreshSiteVerification,verificationError
+} from "./email-verification.js";
 import {getPlaylists,createPlaylist,addToPlaylistControl,songLink} from "./music-playlists.js";
 import {loadAllSongs} from "./song-data.js";
 
@@ -688,11 +689,12 @@ $("mail-send-verification").addEventListener("click",async()=>{
   if(!user)return;
   $("mail-send-verification").disabled=true;
   try{
-    await sendEmailVerification(user);
-    $("mail-verification-status").textContent=
-      "Verification email sent. Follow the link in your inbox, then click I've verified my email.";
+    const result=await sendSiteVerification(user);
+    $("mail-verification-status").textContent=result.needsAuthorizedDomain
+      ? "Verification link sent. Use Firebase's email link, then return here. Add the site to Authorized domains for a return link."
+      : "Verification link sent. Confirm your address using the Firebase link, then return to the site.";
   }catch(error){
-    $("mail-verification-status").textContent="Could not send verification email: "+errorMessage(error);
+    $("mail-verification-status").textContent="Could not send verification email: "+verificationError(error);
   }finally{$("mail-send-verification").disabled=false;}
 });
 $("mail-check-verification").addEventListener("click",async()=>{
@@ -700,20 +702,18 @@ $("mail-check-verification").addEventListener("click",async()=>{
   if(!user)return;
   $("mail-check-verification").disabled=true;
   try{
-    await reload(user);
-    if(!user.emailVerified){
+    const verified=await refreshSiteVerification(user);
+    if(!verified){
       $("mail-verification-status").textContent=
-        "Not verified yet. Open the verification link in your email first.";
+        "Firebase still shows your email as unverified. Confirm it through the email link, then try again.";
       return;
     }
-    // Force a fresh ID token so Cloud Functions sees email_verified=true.
-    await user.getIdToken(true);
     updateMailVerification(user);
     setStatus("Email verified. Welcome to Site Mail!");
     void refreshFolder("inbox");
     applyShareIntent();
   }catch(error){
-    $("mail-verification-status").textContent="Could not check verification: "+errorMessage(error);
+    $("mail-verification-status").textContent="Could not check verification: "+verificationError(error);
   }finally{$("mail-check-verification").disabled=false;}
 });
 tab.addEventListener("click",()=>{
@@ -754,8 +754,8 @@ onAuthStateChanged(auth,user=>{
     setStatus("Sign in to use site mail.");
     return;
   }
-  // Do not load another member's mail until both the current Firebase user
-  // and the callable's server-side email verification checks pass.
+  // The Firebase account and Firestore Security Rules both require
+  // a verified email. Do not load mail before the account is verified.
   if(!updateMailVerification(user)){
     setStatus("Verify your email to use site mail.");
     return;
