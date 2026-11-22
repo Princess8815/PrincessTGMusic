@@ -56,12 +56,14 @@ body{
 #nowPlaying{
   margin:0;line-height:1.3;font-weight:750;font-size:1rem;
   overflow-wrap:anywhere;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  overflow:hidden;
 }
 .player-panel__buttons{display:flex;align-items:center;gap:7px;flex-shrink:0}
 button{
   border:1px solid var(--accent);border-radius:9px;
   padding:8px 12px;min-height:38px;
-  font:700 .88rem/1.2 inherit;
+  font:inherit;font-size:.88rem;font-weight:700;line-height:1.2;
   cursor:pointer;color:var(--on-accent);background:var(--accent-strong);
 }
 button:hover{filter:brightness(1.08)}
