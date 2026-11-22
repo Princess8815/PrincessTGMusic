@@ -1,6 +1,9 @@
 // Progressive enhancement: preserves all original Home and About content.
 // Without JavaScript every section remains visible.
 function createTabs(main, configuration, prefix){
+  // Keep an insertion marker before moving existing sections into their panels.
+  const marker=document.createComment("PrincessTG tab navigation");
+  main.insertBefore(marker,configuration.position);
   const tabs=document.createElement("div");
   tabs.className="ptg-tab-nav";tabs.setAttribute("role","tablist");
   tabs.setAttribute("aria-label",configuration.label);
@@ -21,8 +24,7 @@ function createTabs(main, configuration, prefix){
     for(const node of nodes)if(node)panel.append(node);
     panels.push({id,button,panel});
   }
-  const first=configuration.position;
-  main.insertBefore(tabs,first);
+  marker.replaceWith(tabs);
   let next=tabs;
   for(const {panel} of panels){next.after(panel);next=panel;}
   function activate(id,hash=false){
