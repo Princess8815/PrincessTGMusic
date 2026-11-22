@@ -1,7 +1,4 @@
-import {auth} from "./firebase.js";
-import {watchStaffRole} from "./staff-auth.js";
-import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-
+// Public navigation renders independently of Firebase; account links attach later.
 const root=new URL("../",import.meta.url);
 const siteUrl=path=>new URL(path,root).href;
 const SETTINGS_KEY="princesstg-site-preferences-v1";
@@ -229,17 +226,33 @@ function init(){
   media.addEventListener?.("change",syncMenu);
   syncMenu();
 
-  // Account items only appear when Firebase confirms the user's role.
-  if(special.profile){
-    onAuthStateChanged(auth,user=>{
-      special.profile.hidden=!user;
-      if(!user)special.admin.hidden=true;
-    });
-  }
-  if(special.admin){
-    watchStaffRole(allowed=>{
-      special.admin.hidden=allowed!==true;
-    });
+  // Firebase may be slow or blocked. The public menu should still work.
+  // Keep account-only links hidden until authentication is verified.
+  void attachAccountVisibility(special);
+}
+async function attachAccountVisibility(special){
+  if(!special.profile && !special.admin)return;
+  try {
+    const [{auth},{watchStaffRole},{onAuthStateChanged}] = await Promise.all([
+      import("./firebase.js"),
+      import("./staff-auth.js"),
+      import("https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js")
+    ]);
+    if(special.profile){
+      onAuthStateChanged(auth,user=>{
+        special.profile.hidden=!user;
+        if(!user && special.admin)special.admin.hidden=true;
+      });
+    }
+    if(special.admin){
+      watchStaffRole(allowed=>{
+        special.admin.hidden=allowed!==true;
+      });
+    }
+  } catch(error){
+    console.warn("Account links unavailable until sign-in initializes:",error);
+    if(special.profile)special.profile.hidden=true;
+    if(special.admin)special.admin.hidden=true;
   }
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});
