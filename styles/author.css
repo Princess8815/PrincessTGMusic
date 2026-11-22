@@ -1,10 +1,10 @@
 :root {
-  --bg: #11131a;
-  --card: #1d2230;
-  --text: #f3f5ff;
-  --muted: #b9bfd4;
-  --accent: #9f7bff;
-  --accent-hover: #bda7ff;
+  --bg: var(--ptg-tertiary, #111827);
+  --card: var(--ptg-secondary, #1f2937);
+  --text: var(--ptg-text, #f3f4f6);
+  --muted: var(--ptg-muted, #cbd5e1);
+  --accent: var(--ptg-primary, #9f7bff);
+  --accent-hover: var(--ptg-hover, #bda7ff);
 }
 
 * {
@@ -14,7 +14,7 @@
 body {
   margin: 0;
   font-family: Arial, Helvetica, sans-serif;
-  background: linear-gradient(160deg, #0d1018, #171d2a 45%, #11131a);
+  background: linear-gradient(160deg, var(--bg), color-mix(in srgb, var(--bg) 78%, var(--card)) 45%, var(--bg));
   color: var(--text);
   line-height: 1.5;
 }
