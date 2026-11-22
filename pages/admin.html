@@ -1042,7 +1042,13 @@
                 <input id="edit-album-cover" type="url" placeholder="https://...">
                 <p class="helper">The URL fills automatically when the on-site checkbox is checked.</p>
               </div>
-              <div class="form-actions"><button type="submit">Save Album &amp; Update Songs</button></div>
+              <div class="form-field">
+                <h3>Official Track Order</h3>
+                <p class="helper">Drag songs or use the arrow buttons. This is the default order everyone starts with. Click Save Album to publish it.</p>
+                <ol id="edit-album-track-order" class="edit-song-results" aria-label="Official album track order"></ol>
+                <button type="button" id="edit-album-order-alpha" class="secondary">Sort A–Z (not saved yet)</button>
+              </div>
+              <div class="form-actions"><button type="submit">Save Album &amp; Track Order</button></div>
             </form>
             <p id="edit-album-status" role="status" aria-live="polite"></p>
           </section>
