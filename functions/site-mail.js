@@ -114,6 +114,14 @@ async function handle(req,{db,Timestamp,HttpsError,crypto}){
   const fail=(code,message)=>{throw new HttpsError(code,message);};
   const uid=req.auth?.uid;
   if(!uid)fail("unauthenticated","Sign in to use site mail.");
+  // Firebase verifies this ID token before invoking the callable. Requiring
+  // email_verified prevents newly registered, unverified accounts from using
+  // recipient search, reads, sends, deletes or any other private mailbox API.
+  if(req.auth.token?.email_verified!==true)
+    fail("permission-denied","Verify your email address before using site mail.");
+  const current=await db.collection("users").doc(uid).get();
+  if(!current.exists||!liveStatus(current.data()))
+    fail("permission-denied","An active member account is required to use site mail.");
   const action=String(req.data?.action||"");
   if(!["search","send","list","read","delete","deleteAll"].includes(action))
     fail("invalid-argument","Unknown mail action.");
@@ -149,12 +157,8 @@ async function handle(req,{db,Timestamp,HttpsError,crypto}){
     const images=safeImages(req.data.images,fail);
     if(!body&&!share&&!images.length)
       fail("invalid-argument","Write a message or attach a song, playlist or image.");
-    const [senderSnap,recipientSnap]=await Promise.all([
-      db.collection("users").doc(uid).get(),
-      db.collection("users").doc(recipientUid).get()
-    ]);
-    if(!senderSnap.exists||!liveStatus(senderSnap.data()))
-      fail("permission-denied","Your account cannot send mail.");
+    const senderSnap=current;
+    const recipientSnap=await db.collection("users").doc(recipientUid).get();
     if(!recipientSnap.exists||!liveStatus(recipientSnap.data()))
       fail("not-found","That recipient is unavailable.");
     await limitSending(db,uid,Timestamp,fail);
