@@ -174,11 +174,14 @@ body.ptg-shell-ready :is(audio,progress,input[type=range],input[type=checkbox],i
 /* Make legacy forms, settings and player embellishments agree with the palette. */
 body.ptg-shell-ready .ptg-settings-page > p,
 body.ptg-shell-ready .settings-card .settings-help{color:var(--ptg-muted)}
-body.ptg-shell-ready :is(.settings-actions button.secondary,.settings-reset-palette,
-  .profile-playlist-create,.profile-playlist-controls button[aria-pressed=true]){
+body.ptg-shell-ready :is(.settings-actions button.secondary,.settings-reset-palette){
   background:var(--ptg-raised) !important;
   color:var(--ptg-text) !important;
   border-color:var(--ptg-border) !important;
+}
+body.ptg-shell-ready .profile-playlist-controls button[aria-pressed=true]{
+  background:var(--ptg-primary) !important;
+  color:var(--ptg-on-primary) !important;
 }
 body.ptg-shell-ready :is(.settings-actions button.secondary,.settings-reset-palette):hover{
   background:var(--ptg-secondary) !important;
