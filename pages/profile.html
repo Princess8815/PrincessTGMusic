@@ -139,21 +139,9 @@
     }
   </style>
 
-  <style>
-    .profile-playlist-actions,.profile-playlist-create,.profile-playlist-controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:10px 0}
-    .profile-playlist-actions label,.profile-playlist-create label{width:100%;font-weight:700}
-    #profile-playlist-select,#profile-playlist-name{flex:1;min-width:min(100%,180px)}
-    .profile-playlist-tracklist{list-style:none;padding:0;margin:15px 0}
-    .profile-playlist-tracklist li{padding:10px 0;border-top:1px solid #4b5563;display:flex;align-items:center;flex-wrap:wrap;gap:8px}
-    .profile-playlist-tracklist .playlist-track-name{flex:1;min-width:150px;overflow-wrap:anywhere}
-    .profile-playlist-tracklist button{padding:8px 11px}
-    .profile-playlist-lyrics{background:#101425;border:1px solid #535070;border-radius:11px;padding:12px}
-    .profile-playlist-lyrics summary{cursor:pointer;color:#d5b9ff;font-weight:bold}
-    .profile-playlist-lyrics pre{white-space:pre-wrap;max-height:340px;overflow:auto;font:1rem/1.7 Georgia,serif}
-    .profile-playlist-now{font-size:1.16rem;color:#e7d4ff}
-    #profile-playlist-player-panel{background:#1c2033;padding:16px;border-radius:12px;margin-top:15px}
-    #profile-playlist-shuffle[aria-pressed=true]{background:#b786ff;color:#160c27}
-  </style>
+  <link rel="stylesheet" href="../styles/profile-dashboard.css">
+  <script type="module" src="../script/profile-tabs.js"></script>
+
 </head>
 
 <body>
@@ -165,15 +153,21 @@
 
     <h1>My Profile</h1>
 
-    <p id="profile-status" role="status" aria-live="polite">
-      Checking your account...
-    </p>
+    <p id="profile-status" role="alert" aria-live="assertive" hidden></p>
 
     <div id="profile-app" hidden>
+      <nav class="profile-tabs" role="tablist" aria-label="Profile sections">
+        <button type="button" id="profile-tab-account" role="tab" aria-controls="profile-panel-account" aria-selected="true" tabindex="0" data-profile-tab="account">Overview</button>
+        <button type="button" id="profile-tab-email" role="tab" aria-controls="profile-panel-email" aria-selected="false" tabindex="-1" data-profile-tab="email">Email & Security</button>
+        <button type="button" id="profile-tab-playlists" role="tab" aria-controls="profile-panel-playlists" aria-selected="false" tabindex="-1" data-profile-tab="playlists">Playlists</button>
+        <button type="button" id="profile-tab-submissions" role="tab" aria-controls="profile-panel-submissions" aria-selected="false" tabindex="-1" data-profile-tab="submissions">My Songs</button>
+        <button type="button" id="profile-tab-newsletter" role="tab" aria-controls="profile-panel-newsletter" aria-selected="false" tabindex="-1" data-profile-tab="newsletter">Email Updates</button>
+        <button type="button" id="profile-tab-delete" class="profile-tab-danger" role="tab" aria-controls="profile-panel-delete" aria-selected="false" tabindex="-1" data-profile-tab="delete">Delete Account</button>
+      </nav>
 
       <!-- BASIC ACCOUNT INFORMATION -->
 
-      <section class="profile-card">
+      <section class="profile-card profile-panel" id="profile-panel-account" role="tabpanel" aria-labelledby="profile-tab-account" data-profile-panel="account">
         <h2>Account Information</h2>
 
         <p>
@@ -230,7 +224,7 @@
 
       <!-- EMAIL MANAGEMENT -->
 
-      <section class="profile-card">
+      <section class="profile-card profile-panel" id="profile-panel-email" role="tabpanel" aria-labelledby="profile-tab-email" data-profile-panel="email" hidden>
         <h2>Email Address</h2>
 
         <p>
@@ -279,7 +273,7 @@
 
       <!-- SUBMISSIONS -->
 
-      <section class="profile-card">
+      <section class="profile-card profile-panel" id="profile-panel-submissions" role="tabpanel" aria-labelledby="profile-tab-submissions" data-profile-panel="submissions" hidden>
         <h2>My Submissions</h2>
 
         <p class="muted">
@@ -295,41 +289,83 @@
             class="submissions-list"></ul>
       </section>
 
-      <!-- PERSONAL MUSIC PLAYLISTS: saved per signed-in account in this browser -->
-      <section class="profile-card" id="profile-playlists-section">
-        <h2>My Music Playlists</h2>
-        <p class="muted">Make playlists from any album or song page, then play them here. Playlists are stored in this browser, not synced across devices.</p>
-        <div class="profile-playlist-actions">
-          <label for="profile-playlist-select">Choose Playlist</label>
-          <select id="profile-playlist-select"><option value="">Select a playlist</option></select>
-          <button type="button" id="profile-playlist-delete" class="secondary">Delete Playlist</button>
+      <!-- PERSONAL MUSIC PLAYLIST LIBRARY -->
+      <section class="profile-card profile-panel profile-playlists" id="profile-panel-playlists"
+               role="tabpanel" aria-labelledby="profile-tab-playlists" data-profile-panel="playlists" hidden>
+        <div class="profile-library-heading">
+          <div><h2>My Playlists</h2>
+          <p class="muted">Organize your music here. Adding a song or album elsewhere saves it to the chosen playlist.</p></div>
+          <p class="muted">Saved in this browser for the signed-in account, not synchronized across devices.</p>
         </div>
-        <div class="profile-playlist-create">
-          <label for="profile-playlist-name">Create a playlist</label>
-          <input id="profile-playlist-name" placeholder="Playlist name" maxlength="90">
-          <button type="button" id="profile-playlist-create">Create</button>
-        </div>
-        <div id="profile-playlist-player-panel" hidden>
-          <div class="profile-playlist-now"><strong id="profile-playlist-now-playing">Choose a song</strong></div>
-          <details class="profile-playlist-lyrics">
-            <summary id="profile-playlist-lyrics-title">Lyrics (expand)</summary>
-            <pre id="profile-playlist-lyrics-text">Choose a track.</pre>
-          </details>
-          <div class="profile-playlist-controls">
-            <button id="profile-playlist-prev" type="button" aria-label="Previous">⏮ Previous</button>
-            <button id="profile-playlist-play" type="button">▶ Play</button>
-            <button id="profile-playlist-next" type="button" aria-label="Next">Next ⏭</button>
-            <button id="profile-playlist-shuffle" type="button" aria-pressed="false">⇄ Shuffle</button>
+        <div class="profile-playlist-layout">
+          <aside class="profile-playlist-sidebar" aria-label="Playlist library">
+            <h3>Your playlists <span id="profile-playlist-count"></span></h3>
+            <label for="profile-playlist-search">Find a playlist</label>
+            <input id="profile-playlist-search" type="search" placeholder="Search playlists" autocomplete="off">
+            <div class="playlist-library-filters">
+              <div><label for="profile-playlist-sort">Sort</label>
+                <select id="profile-playlist-sort">
+                  <option value="recent">Recently edited</option>
+                  <option value="name">Name A–Z</option>
+                  <option value="name-desc">Name Z–A</option>
+                  <option value="tracks">Most songs</option>
+                  <option value="tracks-asc">Fewest songs</option>
+                </select></div>
+              <div><label for="profile-playlist-color-filter">Color</label>
+                <select id="profile-playlist-color-filter"><option value="all">All colors</option></select></div>
+            </div>
+            <ul id="profile-playlist-library" class="playlist-library-list" aria-label="Saved playlists"></ul>
+            <p id="profile-playlist-library-empty" class="muted">No playlists yet. Create one below.</p>
+            <form id="profile-playlist-create-form" class="profile-playlist-create">
+              <h3>Create a playlist</h3>
+              <label for="profile-playlist-name">Playlist name</label>
+              <input id="profile-playlist-name" placeholder="Playlist name" maxlength="90" required>
+              <label for="profile-playlist-create-color">Playlist color</label>
+              <input id="profile-playlist-create-color" type="color" value="#8b5cf6">
+              <button type="submit" id="profile-playlist-create">Create playlist</button>
+            </form>
+          </aside>
+          <div class="profile-playlist-detail">
+            <div id="profile-playlist-empty-state" class="playlist-detail-empty">
+              <h3>Your next soundtrack starts here</h3>
+              <p class="muted">Select a playlist on the left to see all its songs, lyrics, and playback controls.</p>
+            </div>
+            <div id="profile-playlist-selected-panel" hidden>
+              <div class="playlist-detail-header">
+                <div class="playlist-detail-heading"><span id="profile-playlist-selected-swatch" aria-hidden="true"></span>
+                  <div><h3 id="profile-playlist-selected-title">Playlist</h3>
+                  <p id="profile-playlist-selected-meta" class="muted"></p></div></div>
+                <div class="playlist-detail-actions">
+                  <label for="profile-playlist-color">Color</label>
+                  <input type="color" id="profile-playlist-color" value="#8b5cf6" aria-label="Change playlist color">
+                  <button type="button" id="profile-playlist-delete" class="danger-button">Delete playlist</button>
+                </div>
+              </div>
+              <div id="profile-playlist-player-panel" class="playlist-player">
+                <div class="profile-playlist-now"><strong id="profile-playlist-now-playing">Choose a song</strong></div>
+                <details class="profile-playlist-lyrics">
+                  <summary id="profile-playlist-lyrics-title">Lyrics (expand)</summary>
+                  <pre id="profile-playlist-lyrics-text">Choose a track.</pre>
+                </details>
+                <div class="profile-playlist-controls">
+                  <button id="profile-playlist-prev" type="button" aria-label="Previous">⏮ Previous</button>
+                  <button id="profile-playlist-play" type="button">▶ Play</button>
+                  <button id="profile-playlist-next" type="button" aria-label="Next">Next ⏭</button>
+                  <button id="profile-playlist-shuffle" type="button" aria-pressed="false">⇄ Shuffle</button>
+                </div>
+                <audio id="profile-playlist-audio" controls controlslist="nodownload" preload="metadata"></audio>
+              </div>
+              <h4 class="playlist-track-title">Tracks <span class="muted">(drag ☰ to reorder)</span></h4>
+              <ol id="profile-playlist-tracks" class="profile-playlist-tracklist"></ol>
+            </div>
           </div>
-          <audio id="profile-playlist-audio" controls controlslist="nodownload" preload="metadata" style="width:100%;margin-top:14px"></audio>
         </div>
-        <ol id="profile-playlist-tracks" class="profile-playlist-tracklist"></ol>
         <p id="profile-playlist-status" role="status" aria-live="polite" class="status"></p>
       </section>
 
       <!-- EMAIL LIST -->
 
-      <section class="profile-card">
+      <section class="profile-card profile-panel" id="profile-panel-newsletter" role="tabpanel" aria-labelledby="profile-tab-newsletter" data-profile-panel="newsletter" hidden>
         <h2>Email Newsletter</h2>
 
         <p>
@@ -448,7 +484,7 @@
 
       <!-- ACCOUNT DELETION -->
 
-      <section class="profile-card danger">
+      <section class="profile-card danger profile-panel" id="profile-panel-delete" role="tabpanel" aria-labelledby="profile-tab-delete" data-profile-panel="delete" hidden>
         <h2>Danger Zone: Delete Account</h2>
 
         <p>
