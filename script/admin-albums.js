@@ -1,6 +1,7 @@
 import { auth, db } from "./firebase.js";
 import { verifyStaff } from "./staff-auth.js";
 import { loadAllSongs } from "./song-data.js";
+import {wireDragReorder} from "./drag-reorder.js";
 import {
   collection, doc, getDoc, getDocs, writeBatch, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
@@ -116,7 +117,6 @@ function renderTrackEditor() {
   list.replaceChildren();
   trackEditor.forEach((song,index) => {
     const li = document.createElement("li");
-    li.draggable = true;
     li.dataset.index = index;
     li.style.cssText = "display:flex;align-items:center;gap:7px;background:#111827;border:1px solid #4b5563;border-radius:9px;padding:8px;margin:6px 0;";
     const grip = document.createElement("span");
@@ -136,17 +136,12 @@ function renderTrackEditor() {
     const down = document.createElement("button");
     down.type="button";down.className="secondary";down.textContent="↓";down.title="Move down";
     down.disabled=index===trackEditor.length-1;down.onclick=()=>move(1);
-    li.addEventListener("dragstart",event=>{
-      event.dataTransfer.setData("text/plain",String(index));
-      event.dataTransfer.effectAllowed="move";
-    });
-    li.addEventListener("dragover",event=>{event.preventDefault();event.dataTransfer.dropEffect="move";});
-    li.addEventListener("drop",event=>{
-      event.preventDefault();
-      const from=Number(event.dataTransfer.getData("text/plain"));
-      if (!Number.isInteger(from) || from<0 || from>=trackEditor.length || from===index) return;
+    wireDragReorder(li,grip,song.id,"admin-album:"+trackEditorName,(fromId,toId)=>{
+      const from=trackEditor.findIndex(track=>track.id===fromId);
+      const to=trackEditor.findIndex(track=>track.id===toId);
+      if(from<0||to<0||from===to) return;
       const [item]=trackEditor.splice(from,1);
-      trackEditor.splice(index,0,item);
+      trackEditor.splice(to,0,item);
       renderTrackEditor();
     });
     li.append(grip,title,up,down);
