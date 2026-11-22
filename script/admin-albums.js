@@ -107,6 +107,76 @@ function connectCoverControls(prefix) {
   });
 }
 
+let trackEditor = [];
+let trackEditorName = "";
+
+function renderTrackEditor() {
+  const list = $("edit-album-track-order");
+  list.replaceChildren();
+  trackEditor.forEach((song,index) => {
+    const li = document.createElement("li");
+    li.draggable = true;
+    li.dataset.index = index;
+    li.style.cssText = "display:flex;align-items:center;gap:7px;background:#111827;border:1px solid #4b5563;border-radius:9px;padding:8px;margin:6px 0;";
+    const grip = document.createElement("span");
+    grip.textContent = "☰";grip.title="Drag to reorder";grip.style.cursor="grab";
+    const title = document.createElement("span");
+    title.textContent = (index + 1) + ". " + song.title;
+    title.style.flex = "1";
+    function move(delta) {
+      const target = index + delta;
+      if (target < 0 || target >= trackEditor.length) return;
+      [trackEditor[index], trackEditor[target]] = [trackEditor[target], trackEditor[index]];
+      renderTrackEditor();
+    }
+    const up = document.createElement("button");
+    up.type="button";up.className="secondary";up.textContent="↑";up.title="Move up";
+    up.disabled=index===0;up.onclick=()=>move(-1);
+    const down = document.createElement("button");
+    down.type="button";down.className="secondary";down.textContent="↓";down.title="Move down";
+    down.disabled=index===trackEditor.length-1;down.onclick=()=>move(1);
+    li.addEventListener("dragstart",event=>{
+      event.dataTransfer.setData("text/plain",String(index));
+      event.dataTransfer.effectAllowed="move";
+    });
+    li.addEventListener("dragover",event=>{event.preventDefault();event.dataTransfer.dropEffect="move";});
+    li.addEventListener("drop",event=>{
+      event.preventDefault();
+      const from=Number(event.dataTransfer.getData("text/plain"));
+      if (!Number.isInteger(from) || from<0 || from>=trackEditor.length || from===index) return;
+      const [item]=trackEditor.splice(from,1);
+      trackEditor.splice(index,0,item);
+      renderTrackEditor();
+    });
+    li.append(grip,title,up,down);
+    list.append(li);
+  });
+  if (!trackEditor.length) {
+    const item=document.createElement("li");
+    item.textContent="No songs assigned to this album yet.";
+    list.append(item);
+  }
+}
+async function loadTrackEditor(name) {
+  trackEditorName = name;
+  $("edit-album-track-order").textContent="Loading tracks...";
+  try {
+    const songs = await songMatches(name);
+    if (trackEditorName !== name) return;
+    const record = records.get(key(name)) || {};
+    const rank = new Map((Array.isArray(record.trackOrder) ? record.trackOrder : [])
+      .map((id,index)=>[String(id),index]));
+    trackEditor = songs.sort((a,b)=>{
+      const ra=rank.get(String(a.pageId || slug(a.title))) ?? Number.MAX_SAFE_INTEGER;
+      const rb=rank.get(String(b.pageId || slug(b.title))) ?? Number.MAX_SAFE_INTEGER;
+      return ra-rb || String(a.title).localeCompare(String(b.title));
+    }).map(song=>({id:String(song.pageId || slug(song.title)), title:String(song.title)}));
+    renderTrackEditor();
+  } catch(error) {
+    $("edit-album-track-order").textContent="Unable to load album tracks: "+error.message;
+  }
+}
+
 function fillEdit() {
   const name = $("edit-album-select").value;
   $("edit-album-form").hidden = !name;
@@ -116,6 +186,7 @@ function fillEdit() {
   $("edit-album-date").value = dateValue(data.releaseDate);
   $("edit-album-description").value = data.description || "";
   loadCoverInput("edit", data.coverUrl || "");
+  void loadTrackEditor(name);
 }
 function collect(prefix) {
   const name = normalize($(prefix + "-album-name").value);
@@ -127,7 +198,9 @@ function collect(prefix) {
   if (!name || name.length > 100) throw new Error("Album name must contain 1–100 characters.");
   if (description.length > 5000) throw new Error("Description is too long.");
   if (coverUrl && !/^https:\/\//i.test(coverUrl)) throw new Error("Use an HTTPS cover URL.");
-  return { name, releaseDate, description, coverUrl };
+  return { name, releaseDate, description, coverUrl,
+    ...(prefix === "edit" ? {trackOrder:trackEditor.map(song=>song.id)} : {trackOrder:[]})
+  };
 }
 async function songMatches(albumName) {
   const songs = await loadAllSongs("../audioPlayer/audio/song-details.json");
@@ -176,7 +249,12 @@ async function applyAlbumChanges(originalName, updated, remove = false) {
       ...updated, updatedAt: serverTimestamp()
     }, { merge: true });
   }
-  if (!remove) {
+  // Reordering or editing album artwork must not rewrite every song.
+  const mustUpdateSongs = !remove && (
+    key(current) !== key(updated.name) ||
+    (originalRecord?.releaseDate || "tbd") !== updated.releaseDate
+  );
+  if (mustUpdateSongs) {
     // For older songs present only in song-details.json, create a valid
     // Firestore override so no manual JSON edits are necessary.
     const stored = await getDocs(collection(db, "songs"));
@@ -250,6 +328,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       show("add-album-status", "Album added. Open albums/album.html?id=" + slug(data.name));
     } catch(e) { show("add-album-status", e.message, true); }
     finally { button.disabled = false; }
+  });
+  $("edit-album-order-alpha").addEventListener("click", () => {
+    trackEditor.sort((a,b)=>a.title.localeCompare(b.title));
+    renderTrackEditor();
   });
   $("edit-album-select").addEventListener("change", fillEdit);
   $("album-refresh").addEventListener("click", async () => {
