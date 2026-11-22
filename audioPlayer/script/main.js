@@ -400,7 +400,7 @@ const reorderTracks = (fromPath, toPath) => {
 
   const reordered = [...displayed];
   const [moved] = reordered.splice(from, 1);
-  reordered.splice(to, 0);
+  reordered.splice(to, 0, moved);
   const visibleSet = new Set(displayed);
   let cursor = 0;
 
