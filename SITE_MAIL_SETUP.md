@@ -74,3 +74,36 @@ The included checks are static and simulated. **Production Firestore rules and T
 ## Further protection before broad public rollout
 
 Even verified email addresses can belong to spammers. Consider App Check, block/report controls, moderation, and a stronger directory/contact discovery flow. Strict Firestore rules are essential regardless of which UI sends the request.
+
+## Email verification troubleshooting (PR #18 follow-up)
+
+The registration modal and Site Mail verification gate both call the same
+`sendSiteVerification` helper. It now uses `sendEmailVerification(user)`
+**without custom ActionCodeSettings**, so Firebase's hosted handler generates
+the verification link without requiring GitHub Pages as an authorized
+*continue URL*. Users return to the site after confirming their email.
+
+- Firebase **accepted** the request: the UI says that Firebase accepted the
+  request and shows the address it used. Check Inbox, Spam/Junk and Promotions.
+  Delivery, email filtering and delays are controlled by Firebase and the
+  destination provider, not Firestore rules or our JavaScript.
+- Firebase **rejected** the request: the UI shows the returned error code and
+  reason. For `auth/too-many-requests` or `auth/quota-exceeded`, stop
+  retrying and inspect Firebase Auth usage/limits before another attempt.
+  For `auth/network-request-failed`, check browser connectivity.
+- A separate display-name/profile write failure **must not** prevent the
+  newly created account from requesting a verification email.
+- On return, the site refreshes Firebase Auth using `reload(user)` and
+  `user.getIdToken(true)`. The verification badge and mail gate update.
+- Check Firebase Console → **Authentication → Templates → Email address
+  verification** to review the project template, sender and action-link
+  settings. Confirm the user has an actual email/password account in
+  Authentication → Users.
+- Google sign-in is separate: a Google account whose Firebase Auth
+  `emailVerified` is already true does not require a second verification
+  email.
+
+**These checks cannot confirm real email delivery without access to Firebase
+Auth logs and the recipient's inbox.** Neither publishing Firestore rules nor
+deploying a Cloud Function is required to send Firebase Auth verification
+emails. The regular app uses Firebase Authentication's client SDK.
