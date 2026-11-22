@@ -6,7 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <title>My Profile | PrincessTG Music</title>
+  <!-- Shared navigation is loaded directly so it works even if Auth is slow. -->
+  <link rel="stylesheet" href="../styles/site-shell.css" data-ptg-shell-style="1">
+  <script type="module" src="../script/site-shell.js"></script>
 
+  <link rel="stylesheet" href="../styles/auth.css">
+  <script type="module" src="../script/auth.js"></script>
   <script type="module" src="../script/profile-promotions.js"></script>
   <script type="module" src="../script/profile.js"></script>
   <script type="module" src="../script/profile-playlists.js"></script>
