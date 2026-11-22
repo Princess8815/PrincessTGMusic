@@ -41,8 +41,15 @@
 
 <script
   type="module"
+  src="../script/admin-delete-songs.js"
+></script>
+
+<script
+  type="module"
   src="../script/admin-accounts.js"
 ></script>
+
+
 
   <style>
     * {
@@ -880,6 +887,116 @@
     </p>
 
   </form>
+
+</section>
+
+
+<!-- ======================================
+     DELETE SONG FROM FIRESTORE
+====================================== -->
+
+<section class="admin-card" id="delete-song-section">
+
+  <h2>Delete Song From Database</h2>
+
+  <p class="helper">
+    Search and select a song stored in Firestore.
+    This permanently deletes its database record.
+  </p>
+
+  <div class="form-field">
+    <label for="delete-song-search">
+      Search Songs
+    </label>
+
+    <input
+      type="search"
+      id="delete-song-search"
+      placeholder="Search by song title or ID..."
+      autocomplete="off"
+    >
+  </div>
+
+  <div class="form-field" style="margin-top: 18px;">
+    <label for="delete-song-select">
+      Select Song to Delete
+    </label>
+
+    <select id="delete-song-select" disabled>
+      <option value="">
+        Loading database songs...
+      </option>
+    </select>
+  </div>
+
+  <p
+    id="delete-song-count"
+    class="helper"
+    style="margin-top: 12px;"
+  ></p>
+
+  <button
+    type="button"
+    id="delete-song-refresh"
+    class="secondary"
+    style="margin-top: 12px;"
+  >
+    Refresh Song List
+  </button>
+
+  <div id="delete-song-details" hidden>
+
+    <h3>Selected Song</h3>
+
+    <p>
+      <strong>Title:</strong>
+      <span id="delete-song-title"></span>
+    </p>
+
+    <p>
+      <strong>Database ID:</strong>
+      <span id="delete-song-id"></span>
+    </p>
+
+    <p style="color: #fca5a5;">
+      Warning: This action cannot be undone.
+      It removes the Firestore document, not
+      the MP3 or legacy JSON entry.
+    </p>
+
+    <div class="form-field">
+      <label for="delete-song-confirm">
+        Type DELETE to confirm
+      </label>
+
+      <input
+        type="text"
+        id="delete-song-confirm"
+        placeholder="DELETE"
+        autocomplete="off"
+      >
+    </div>
+
+    <button
+      type="button"
+      id="delete-song-button"
+      disabled
+      style="
+        background: #dc2626;
+        margin-top: 18px;
+      "
+    >
+      Permanently Delete Song
+    </button>
+
+  </div>
+
+  <p
+    id="delete-song-status"
+    role="status"
+    aria-live="polite"
+    style="margin-top: 18px;"
+  ></p>
 
 </section>
 

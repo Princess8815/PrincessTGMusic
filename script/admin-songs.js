@@ -49,13 +49,11 @@ function slugify(value) {
 // CURRENT ACCOUNT USERNAME
 // ==========================================
 
-function getUsername(user) {
-  return (
-    user?.displayName?.trim() ||
-    user?.email ||
-    "Unknown User"
-  );
+
+function getUsername() {
+  return "PrincessTG";
 }
+
 
 // ==========================================
 // INITIALIZE PAGE

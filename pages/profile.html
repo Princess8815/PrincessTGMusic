@@ -9,6 +9,11 @@
 
   <script type="module" src="../script/profile.js"></script>
 
+  <script
+  type="module"
+  src="../script/profile-ban.js"
+></script>
+
   <style>
     * {
       box-sizing: border-box;
@@ -293,6 +298,89 @@
           You can unsubscribe at any time.
         </p>
       </section>
+
+
+<!-- ======================================
+     BAN STATUS AND APPEAL
+====================================== -->
+
+<section
+  class="profile-card danger"
+  id="profile-ban-section"
+  hidden
+>
+  <h2>Account Ban</h2>
+
+  <p>
+    Your account is currently restricted.
+    You can still log in and listen to music,
+    but you cannot submit content.
+  </p>
+
+  <p>
+    <strong>Time Remaining:</strong>
+  </p>
+
+  <h3
+    id="ban-time-remaining"
+    role="status"
+    aria-live="polite"
+  >
+    Checking...
+  </h3>
+
+  <p class="muted">
+    Remaining time updates once per minute.
+  </p>
+
+  <button type="button" id="ban-appeal-open" hidden>
+    Appeal This Ban
+  </button>
+
+  <form id="ban-appeal-form" hidden>
+
+    <div class="profile-field">
+      <label for="ban-appeal-message">
+        Explain Your Appeal
+      </label>
+
+      <textarea
+        id="ban-appeal-message"
+        minlength="20"
+        maxlength="3000"
+        rows="9"
+        required
+        placeholder="Explain why you believe your ban should be reconsidered..."
+      ></textarea>
+
+      <p class="muted">
+        20 to 3,000 characters.
+        You can submit only one appeal
+        for this ban.
+      </p>
+    </div>
+
+    <button type="submit" id="ban-appeal-submit">
+      Submit Appeal
+    </button>
+
+    <button
+      type="button"
+      id="ban-appeal-cancel"
+      style="background: #374151;"
+    >
+      Cancel
+    </button>
+
+  </form>
+
+  <p
+    id="ban-appeal-status"
+    role="status"
+    aria-live="polite"
+  ></p>
+</section>
+
 
       <!-- ACCOUNT DELETION -->
 

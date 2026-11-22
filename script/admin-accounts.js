@@ -429,6 +429,18 @@ if (
         ? getBanUntil()
         : null;
 
+
+const banId = banning
+  ? (
+      isBanActive(target) &&
+      typeof target.banId === "string" &&
+      target.banId
+        ? target.banId
+        : crypto.randomUUID()
+    )
+  : null;
+
+
       const action = banning
         ? banUntil
           ? `Ban until ${banUntil.toDate().toLocaleString()}`
@@ -448,12 +460,15 @@ if (
       // UPDATE FIRESTORE ACCOUNT RECORD
       // ====================================
 
-      await updateDoc(targetRef, {
-        role,
-        status,
-        banUntil,
-        updatedAt: serverTimestamp()
-      });
+
+await updateDoc(targetRef, {
+  role,
+  status,
+  banUntil,
+  banId,
+  updatedAt: serverTimestamp()
+});
+
 
       showStatus(
         `Account updated successfully: ${action}`

@@ -1,5 +1,6 @@
 
 import { auth, db } from "./firebase.js";
+import "./ban-expiry.js";
 
 import {
   onAuthStateChanged,
@@ -45,9 +46,29 @@ function setStatus(id, message, error = false) {
     : "#86efac";
 }
 
-function isActive() {
-  return (accountData?.status || "active") === "active";
+
+function isBanActive() {
+  if (accountData?.status !== "banned") {
+    return false;
+  }
+
+  const expiry = accountData.banUntil?.toMillis?.();
+
+  if (!Number.isFinite(expiry)) {
+    return true;
+  }
+
+  return expiry > Date.now();
 }
+
+function isActive() {
+  return accountData?.status === "active" ||
+    (
+      accountData?.status === "banned" &&
+      !isBanActive()
+    );
+}
+
 
 function accountRef(user) {
   return doc(db, "users", user.uid);
@@ -77,8 +98,12 @@ function renderAccount() {
   $("profile-role").textContent =
     accountData.role || "user";
 
-  $("profile-account-status").textContent =
-    accountData.status || "active";
+$("profile-account-status").textContent =
+  isBanActive()
+    ? "banned"
+    : accountData.status === "banned"
+      ? "active (ban expired)"
+      : accountData.status || "active";
 
   $("profile-joined").textContent =
     dateText(accountData.createdAt);
@@ -113,7 +138,7 @@ function renderAccount() {
     $(id).disabled = !active;
   }
 
-  if (accountData.status === "banned") {
+  if (isBanActive()) {
     $("close-details").hidden = true;
 
     setStatus(
@@ -456,7 +481,7 @@ $("close-account-form").addEventListener(
 
     const status = accountData.status || "active";
 
-    if (status === "banned") {
+    if (isBanActive()) {
       setStatus(
         "close-account-status",
         "Banned accounts cannot use this closure workflow.",
@@ -512,7 +537,7 @@ $("close-account-form").addEventListener(
         credential
       );
 
-      if (status === "active") {
+      if (isActive()) {
         // Keep an archival record but remove the
         // bio and newsletter opt-in.
         await updateDoc(accountRef(account), {
@@ -551,6 +576,24 @@ $("close-account-form").addEventListener(
     }
   }
 );
+
+
+window.addEventListener(
+  "princesstg:ban-expired",
+  async () => {
+    if (!account) return;
+
+    const snapshot = await getDocFromServer(
+      accountRef(account)
+    );
+
+    if (!snapshot.exists()) return;
+
+    accountData = snapshot.data();
+    renderAccount();
+  }
+);
+
 
 // ==========================================
 // AUTHENTICATION STATE

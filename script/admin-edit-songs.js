@@ -41,13 +41,11 @@ function slugify(text) {
     .replace(/^-+|-+$/g, "") || "song";
 }
 
-function getUsername(user) {
-  return (
-    user?.displayName?.trim() ||
-    user?.email ||
-    "Administrator"
-  ).slice(0, 150);
+
+function getUsername() {
+  return "PrincessTG";
 }
+
 
 function getGenre(song) {
   if (typeof song.genre === "string") {
@@ -766,9 +764,7 @@ let originalTitlesById = new Map();
       // DISPLAY AUTHOR AND AUDIO REFERENCE
       // ====================================
 
-      submittedByInput.value =
-        song.submittedBy?.username ||
-        "N/A (legacy song)";
+      submittedByInput.value = "PrincessTG";
 
       audioInput.value =
         song.audio?.storagePath ||
