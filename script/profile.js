@@ -618,6 +618,20 @@ window.addEventListener(
 );
 
 
+// The Firebase email link may be confirmed in a second browser tab.
+// Update the visible status on this page when the current Firebase Auth
+// user has reloaded and passed verification, without losing profile edits.
+window.addEventListener("princesstg:email-verified",()=>{
+  const user=auth.currentUser;
+  if(!user?.emailVerified || account?.uid!==user.uid)return;
+  account=user;
+  if(accountData?.auth)accountData.auth.emailVerified=true;
+  const indicator=$("profile-email-verified");
+  if(indicator)indicator.textContent="Email verified";
+  const status=$("profile-email-status");
+  if(status)status.textContent="Email verified successfully.";
+});
+
 // ==========================================
 // AUTHENTICATION STATE
 // ==========================================
