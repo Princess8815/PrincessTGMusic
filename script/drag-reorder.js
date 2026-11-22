@@ -29,6 +29,8 @@ function installStyles() {
 export function wireDragReorder(row, handle, id, group, onMove) {
   if (!row || !handle || !id || !group || typeof onMove !== "function") return;
   installStyles();
+  row.dataset.ptgDragGroup = group;
+  row.dataset.ptgDragId = id;
   handle.classList.add("ptg-drag-handle");
   handle.draggable = true;
   handle.title = "Drag to change song order";
@@ -75,4 +77,53 @@ export function wireDragReorder(row, handle, id, group, onMove) {
     clearHighlight();
     if (sourceId !== id) onMove(sourceId, id);
   });
+
+  // Mobile/touch browsers do not consistently support native HTML drag.
+  // A pointer fallback lets the same dedicated handle reorder on touch.
+  let touchDrag = null;
+  function touchDestination(x, y) {
+    const hovered = document.elementFromPoint(x, y)?.closest?.("[data-ptg-drag-group]");
+    if (
+      hovered?.dataset.ptgDragGroup === group &&
+      hovered.dataset.ptgDragId !== id
+    ) return hovered;
+    return null;
+  }
+  function clearTouch() {
+    touchDrag = null;
+    document.querySelectorAll(".ptg-drag-row--target").forEach(element => {
+      element.classList.remove("ptg-drag-row--target");
+    });
+    row.classList.remove("ptg-drag-row--moving");
+  }
+  handle.addEventListener("pointerdown", event => {
+    if (event.pointerType === "mouse" || event.isPrimary === false) return;
+    touchDrag = {
+      pointerId:event.pointerId, startX:event.clientX, startY:event.clientY,
+      active:false, targetId:null
+    };
+    try {handle.setPointerCapture?.(event.pointerId);} catch {}
+  });
+  handle.addEventListener("pointermove", event => {
+    if (!touchDrag || event.pointerId !== touchDrag.pointerId) return;
+    if (!touchDrag.active &&
+        Math.hypot(event.clientX - touchDrag.startX, event.clientY - touchDrag.startY) < 7) return;
+    touchDrag.active = true;
+    row.classList.add("ptg-drag-row--moving");
+    const hovered = touchDestination(event.clientX, event.clientY);
+    document.querySelectorAll(".ptg-drag-row--target").forEach(element => {
+      if (element !== hovered) element.classList.remove("ptg-drag-row--target");
+    });
+    hovered?.classList.add("ptg-drag-row--target");
+    touchDrag.targetId = hovered?.dataset.ptgDragId || null;
+  });
+  handle.addEventListener("pointerup", event => {
+    if (!touchDrag || event.pointerId !== touchDrag.pointerId) return;
+    const destination = touchDestination(event.clientX, event.clientY);
+    const targetId = destination?.dataset.ptgDragId || touchDrag.targetId;
+    const shouldMove = touchDrag.active && targetId && targetId !== id;
+    clearTouch();
+    if (shouldMove) onMove(id, targetId);
+  });
+  handle.addEventListener("pointercancel", clearTouch);
 }
