@@ -1,6 +1,8 @@
 import {app,auth} from "./firebase.js";
 import {getFunctions,httpsCallable} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-functions.js";
-import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+import {
+  onAuthStateChanged,sendEmailVerification,reload
+} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {getPlaylists,createPlaylist,addToPlaylistControl,songLink} from "./music-playlists.js";
 import {loadAllSongs} from "./song-data.js";
 
@@ -15,6 +17,14 @@ let view="inbox",selectedId="",selectedRecipient=null;
 let messages={inbox:[],sent:[]},cursors={inbox:null,sent:null};
 let renderedBox="inbox",share=null,images=[],catalog=null,recipientRequest=0;
 let searchTimer=null,busy=false;
+const isMailVerified=user=>!!user?.emailVerified;
+function updateMailVerification(user){
+  const verified=isMailVerified(user);
+  $("mail-verification-gate").hidden=!user||verified;
+  $("mail-verified-content").hidden=!user||!verified;
+  $("mail-verification-status").textContent=verified?"":"";
+  return verified;
+}
 const setStatus=(message,isError=false)=>{
   const el=$("mail-status");el.textContent=message;
   el.dataset.error=isError?"true":"false";
@@ -495,8 +505,42 @@ $("mail-compose-form").addEventListener("submit",async event=>{
   }catch(error){setStatus("Could not send mail: "+errorMessage(error),true);}
   finally{busy=false;$("mail-send").disabled=false;}
 });
+$("mail-send-verification").addEventListener("click",async()=>{
+  const user=auth.currentUser;
+  if(!user)return;
+  $("mail-send-verification").disabled=true;
+  try{
+    await sendEmailVerification(user);
+    $("mail-verification-status").textContent=
+      "Verification email sent. Follow the link in your inbox, then click I've verified my email.";
+  }catch(error){
+    $("mail-verification-status").textContent="Could not send verification email: "+errorMessage(error);
+  }finally{$("mail-send-verification").disabled=false;}
+});
+$("mail-check-verification").addEventListener("click",async()=>{
+  const user=auth.currentUser;
+  if(!user)return;
+  $("mail-check-verification").disabled=true;
+  try{
+    await reload(user);
+    if(!user.emailVerified){
+      $("mail-verification-status").textContent=
+        "Not verified yet. Open the verification link in your email first.";
+      return;
+    }
+    // Force a fresh ID token so Cloud Functions sees email_verified=true.
+    await user.getIdToken(true);
+    updateMailVerification(user);
+    setStatus("Email verified. Welcome to Site Mail!");
+    void refreshFolder("inbox");
+    applyShareIntent();
+  }catch(error){
+    $("mail-verification-status").textContent="Could not check verification: "+errorMessage(error);
+  }finally{$("mail-check-verification").disabled=false;}
+});
 tab.addEventListener("click",()=>{
-  if(view!=="compose"&&auth.currentUser)void refreshFolder(view);
+  if(view!=="compose"&&auth.currentUser&&isMailVerified(auth.currentUser))
+    void refreshFolder(view);
 });
 window.addEventListener("princesstg:mail-share",event=>{
   if(!auth.currentUser){setStatus("Sign in to send mail.",true);return;}
@@ -510,7 +554,17 @@ window.addEventListener("princesstg:mail-share",event=>{
 onAuthStateChanged(auth,user=>{
   messages={inbox:[],sent:[]};cursors={inbox:null,sent:null};
   closeReader();updateUnread();
-  if(!user){setStatus("Sign in to use site mail.");return;}
+  if(!user){
+    updateMailVerification(null);
+    setStatus("Sign in to use site mail.");
+    return;
+  }
+  // Do not load another member's mail until both the current Firebase user
+  // and the callable's server-side email verification checks pass.
+  if(!updateMailVerification(user)){
+    setStatus("Verify your email to use site mail.");
+    return;
+  }
   void refreshFolder("inbox");
   applyShareIntent();
 });
