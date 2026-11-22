@@ -3,6 +3,10 @@ import {
   DEFAULT_SETTINGS,DEFAULT_PALETTE,
   rgbFromHex,hexFromRgb,colorContrast
 } from "./site-shell.js";
+import {
+  isLocalPreview,getLocalFirebaseMode,setLocalFirebaseMode,
+  LOCAL_FIREBASE_MODE_KEY
+} from "./firebase-mode.js";
 
 const $=id=>document.getElementById(id);
 const form=$("site-settings-form");
@@ -145,3 +149,63 @@ window.addEventListener("storage",event=>{
     status.textContent="Theme updated from another tab.";
   }
 });
+
+
+// Developer-only Firebase connection switch. The public site never displays
+// this section, and mode selection never changes the already-running SDK.
+function initFirebaseModeSwitch(){
+  if(!isLocalPreview())return;
+  const section=$("local-firebase-settings");
+  const toggle=$("settings-use-emulators");
+  const current=$("settings-firebase-current");
+  const warning=$("settings-firebase-warning");
+  const outcome=$("settings-firebase-status");
+  if(!section||!toggle)return;
+  section.hidden=false;
+
+  function render(){
+    const mode=getLocalFirebaseMode();
+    const emulator=mode==="emulator";
+    toggle.checked=emulator;
+    section.dataset.mode=mode;
+    current.textContent=emulator
+      ? "Current mode: LOCAL EMULATORS · demo-princesstg"
+      : "Current mode: LIVE FIREBASE · music-and-poetry";
+    warning.textContent=emulator
+      ? "Test accounts and messages are isolated. Start the emulators on ports 9099 and 8080."
+      : "Warning: this mode uses real user accounts and the live Firestore database. Tests can change or delete real data.";
+  }
+  render();
+  toggle.addEventListener("change",()=>{
+    const original=getLocalFirebaseMode();
+    const requested=toggle.checked?"emulator":"production";
+    if(original===requested)return;
+    if(requested==="production" && !window.confirm(
+      "Switch this local preview to LIVE Firebase?\\n\\n"+
+      "Your next login, profile changes, bans, and messages will use REAL accounts and REAL database records. "+
+      "Do not run destructive tests in this mode.\\n\\nContinue?"
+    )){
+      toggle.checked=true;
+      return;
+    }
+    try{
+      setLocalFirebaseMode(requested);
+      outcome.textContent="Switching to "+(requested==="emulator"?"local emulators":"live Firebase")+
+        ". Reloading to establish a separate Firebase session...";
+      // Existing Firebase app instances and listeners must never be
+      // repointed while active; the full navigation initializes fresh ones.
+      window.location.reload();
+    }catch(error){
+      render();
+      outcome.textContent="Could not change Firebase mode: "+error.message;
+    }
+  });
+  window.addEventListener("storage",event=>{
+    if(event.key===LOCAL_FIREBASE_MODE_KEY){
+      // Another local tab switched the origin. Reload instead of showing a
+      // mode label that disagrees with active Firebase instances.
+      window.location.reload();
+    }
+  });
+}
+initFirebaseModeSwitch();
