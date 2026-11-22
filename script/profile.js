@@ -44,6 +44,9 @@ function setStatus(id, message, error = false) {
   element.style.color = error
     ? "#fca5a5"
     : "#86efac";
+  // The Overview tab shows status from Firestore. Only reveal the banner
+  // for an error or account restriction, not a lingering loading message.
+  if (id === "profile-status") element.hidden = !error;
 }
 
 
@@ -196,15 +199,30 @@ $("profile-bio").addEventListener(
 // LOAD PROFILE
 // ==========================================
 
-async function loadProfile(user) {
-  const snapshot = await getDocFromServer(
-    accountRef(user)
-  );
+async function loadAccountSnapshot(user) {
+  let timer;
+  try {
+    return await Promise.race([
+      getDocFromServer(accountRef(user)),
+      new Promise((_, reject) => {
+        timer = setTimeout(() =>
+          reject(new Error("Account lookup timed out. Please check your connection and refresh.")), 15000);
+      })
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
+async function loadProfile(user) {
+  let snapshot = await loadAccountSnapshot(user);
   if (!snapshot.exists()) {
-    throw new Error(
-      "Your user record has not been created yet. Refresh after registration finishes."
-    );
+    // Firebase Auth registration can finish before the user document write.
+    await new Promise(resolve => setTimeout(resolve, 900));
+    snapshot = await loadAccountSnapshot(user);
+  }
+  if (!snapshot.exists()) {
+    throw new Error("Your account record is not ready yet. Refresh the page to retry.");
   }
 
   account = user;
@@ -213,7 +231,8 @@ async function loadProfile(user) {
   $("profile-app").hidden = false;
 
   renderAccount();
-  await loadSubmissions(user);
+  // Published songs load in their own tab, without delaying account details.
+  void loadSubmissions(user);
 }
 
 // ==========================================
