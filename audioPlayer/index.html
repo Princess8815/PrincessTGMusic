@@ -1,59 +1,70 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Audio Playlist</title>
-  <link rel="stylesheet" href="styles/main.css" />
-      <link rel="stylesheet" href="../styles/auth.css">
-    <script type="module" src="../script/auth.js"></script>
-  <!-- Navigation remains available even while account services initialize. -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Music Player | PrincessTG Creations</title>
+  <link rel="stylesheet" href="styles/main.css">
+  <link rel="stylesheet" href="../styles/auth.css">
+  <script type="module" src="../script/auth.js"></script>
+  <!-- Navigation and site-wide RGB theme are independent of Firebase loading. -->
   <link rel="stylesheet" href="../styles/site-shell.css" data-ptg-shell-style="1">
   <script type="module" src="../script/site-shell.js"></script>
 </head>
 <body>
   <div id="auth-container"></div>
-  <main class="app">
+
+  <main class="app audio-app">
     <header class="app__header">
-      <h1>Music Player</h1>
+      <div>
+        <h1>Music Player</h1>
+        <p class="app__subtitle">Listen to the full PrincessTG catalog</p>
+      </div>
+      <a class="player-library-link" href="../pages/profile.html#tab-playlists">My Playlists</a>
     </header>
 
-    <section class="controls" aria-label="Playback controls">
-      <button id="playBtn" type="button">Play</button>
-      <button id="stopBtn" type="button">Stop</button>
-      
-      
-      
-      
-      
-      <p id="status" class="status">Loading tracks…</p>
-    </section>
-
-    <section class="now-playing" aria-live="polite">
-      <h2>Now Playing</h2>
-      <p id="nowPlaying">Nothing playing</p>
-      <audio id="player" controls preload="metadata"></audio>
-    </section>
-
-    <section class="song-list">
-      <h2>Song list (drag to reorder)</h2>
-      <section class="controls controls--stacked" aria-label="Song list controls">
-        <p class="status">Play the full catalog here. Manage your saved playlists in <a href="../pages/profile.html#tab-playlists">My Profile → Playlists</a>. Use <strong>+ Playlist</strong> beside any song to add it.</p>
-        <div class="control-group">
-          <label for="albumFilter">Album</label>
-          <select id="albumFilter"></select>
-          <label for="sortSelect">Sort by</label>
-          <select id="sortSelect">
-            <option value="custom">Custom order</option>
-            <option value="title">Title</option>
-            <option value="album">Album</option>
-            <option value="releaseDate">Release date</option>
-          </select>
-          <button id="refreshBtn" type="button">Refresh songs</button>
-          <button id="orderResetBtn" type="button">Reset order</button>
+    <section class="now-playing player-panel" aria-label="Audio playback">
+      <div class="player-panel__top">
+        <div class="player-panel__info">
+          <h2>Now Playing</h2>
+          <p id="nowPlaying" aria-live="polite">Nothing playing</p>
         </div>
-      </section>
-      <ol id="playlist" class="playlist"></ol>
+        <div class="player-panel__buttons">
+          <button id="playBtn" type="button">▶ Play</button>
+          <button id="stopBtn" type="button">■ Stop</button>
+        </div>
+      </div>
+      <audio id="player" aria-label="Music player" controls preload="metadata"></audio>
+    </section>
+
+    <section class="song-list catalog" aria-labelledby="catalog-heading">
+      <div class="catalog__heading">
+        <h2 id="catalog-heading">Songs <span class="catalog__hint-inline">· drag to reorder</span></h2>
+        <p id="status" class="status" role="status" aria-live="polite">Loading tracks…</p>
+      </div>
+      <div class="catalog__toolbar" aria-label="Song list controls">
+        <div class="catalog__filters">
+          <div class="catalog__filter catalog__filter--album">
+            <label for="albumFilter">Album</label>
+            <select id="albumFilter"></select>
+          </div>
+          <div class="catalog__filter">
+            <label for="sortSelect">Sort</label>
+            <select id="sortSelect">
+              <option value="custom">Custom order</option>
+              <option value="title">Title</option>
+              <option value="album">Album</option>
+              <option value="releaseDate">Release date</option>
+            </select>
+          </div>
+        </div>
+        <div class="catalog__buttons">
+          <button id="refreshBtn" type="button" class="secondary catalog__secondary">Refresh</button>
+          <button id="orderResetBtn" type="button" class="catalog__secondary">Reset order</button>
+        </div>
+      </div>
+      <p class="catalog__help">Use <strong>+ Playlist</strong> to save songs. <a href="../pages/profile.html#tab-playlists">Manage playlists</a> in your profile.</p>
+      <ol id="playlist" class="playlist" aria-label="Songs"></ol>
     </section>
   </main>
 

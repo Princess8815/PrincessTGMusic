@@ -119,12 +119,17 @@ function createTrackRow(track,index){
   const titleBlock=document.createElement("div");titleBlock.className="track__title";
   const title=document.createElement("strong");title.textContent=track.title;
   const metadata=document.createElement("div");metadata.className="track__path";
+  // Avoid sprawling file paths on narrow screens. Full path stays available
+  // as a tooltip, while the details page has the complete song information.
   metadata.textContent=formatAlbums(track.albums)+
-    (track.releaseDate?" • "+track.releaseDate:"")+" • "+track.path;
+    (track.releaseDate?" · "+track.releaseDate:"");
+  metadata.title=track.path;
   titleBlock.append(title,metadata);
   const actions=document.createElement("div");actions.className="track__actions";
   const enabled=document.createElement("label");enabled.className="track__toggle";
+  enabled.title="Include this song in playback";
   const checkbox=document.createElement("input");checkbox.type="checkbox";
+  checkbox.setAttribute("aria-label","Enable "+track.title+" for playback");
   checkbox.checked=!disabledTracks.has(track.path);
   checkbox.addEventListener("change",()=>{
     if(checkbox.checked)disabledTracks.delete(track.path);
@@ -134,12 +139,16 @@ function createTrackRow(track,index){
     }
     saveJson(DISABLED_STORAGE_KEY,[...disabledTracks]);renderPlaylist();
   });
-  enabled.append(checkbox," Enabled");
-  const play=document.createElement("button");play.type="button";play.textContent="Play";
+  enabled.append(checkbox," On");
+  const play=document.createElement("button");play.type="button";play.textContent="▶ Play";
   play.className="track__play";play.disabled=disabledTracks.has(track.path);
+  play.title="Play "+track.title;
+  play.setAttribute("aria-label","Play "+track.title);
   play.addEventListener("click",()=>loadTrack(track.path,true));
   const details=document.createElement("button");details.type="button";
-  details.className="track__details";details.textContent="Details";
+  details.className="track__details";details.textContent="Info";
+  details.title="Open details for "+track.title;
+  details.setAttribute("aria-label","Open song details for "+track.title);
   details.addEventListener("click",()=>{
     window.location.href="pages/song.html?id="+encodeURIComponent(track.pageId||slugify(track.title));
   });
@@ -154,10 +163,12 @@ function createTrackRow(track,index){
     });
     return button;
   }
-  actions.append(arrow("↑",-1),arrow("↓",1),enabled,play,details,
+  // Keep the main playback action beside the title; secondary actions
+  // share one tidy row on phones and remain grouped on desktop.
+  actions.append(arrow("↑",-1),arrow("↓",1),enabled,details,
     addToPlaylistControl(()=>[track.path]));
   wireDragReorder(row,handle,track.path,"all-songs",reorderTracks);
-  row.append(handle,titleBlock,actions);item.append(row);
+  row.append(handle,titleBlock,play,actions);item.append(row);
   return item;
 }
 function renderPlaylist(){
@@ -191,7 +202,7 @@ async function loadTracks(){
       };
     }));
     disabledTracks=new Set(readJson(DISABLED_STORAGE_KEY,[]).filter(path=>paths.includes(path)));
-    renderAlbumOptions();renderPlaylist();
+    renderAlbumOptions();syncAlbumAction();renderPlaylist();
   }catch(error){
     tracks=[];visibleTracks=[];renderPlaylist();
     setStatus("Error: "+error.message);
@@ -201,9 +212,13 @@ async function loadTracks(){
 const albumAction=addToPlaylistControl(
   ()=>currentAlbumFilter==="all"?[]:
     tracks.filter(track=>track.albums.includes(currentAlbumFilter)).map(track=>track.path),
-  {label:"+ Save selected album"}
+  {label:"+ Save album"}
 );
 albumFilter.insertAdjacentElement("afterend",albumAction);
+function syncAlbumAction(){
+  albumAction.hidden=currentAlbumFilter==="all";
+}
+syncAlbumAction();
 
 $("playBtn").addEventListener("click",playCurrentOrTop);
 $("stopBtn").addEventListener("click",stopPlayback);
@@ -212,6 +227,10 @@ $("orderResetBtn").addEventListener("click",()=>{
   localStorage.setItem(ORDER_STORAGE_KEY,"[]");void loadTracks();
 });
 player.addEventListener("ended",goNext);
-albumFilter.addEventListener("change",()=>{currentAlbumFilter=albumFilter.value;renderPlaylist();});
+albumFilter.addEventListener("change",()=>{
+  currentAlbumFilter=albumFilter.value;
+  syncAlbumAction();
+  renderPlaylist();
+});
 sortSelect.addEventListener("change",()=>{currentSort=sortSelect.value;renderPlaylist();});
 void loadTracks();
