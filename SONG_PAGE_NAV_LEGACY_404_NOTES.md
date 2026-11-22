@@ -60,9 +60,9 @@ domains.
   dismisses on the **Stay** button.
 - The 404 page has one SVG axolotl, five randomized design possibilities,
   accessible text, keyboard-accessible navigation, and reduced-motion CSS.
-- Static checks passed: **15 checks with one over-broad selector mismatch
-  corrected in the test**. Subsequent focused tests: **18/18 passed**.
-  Automated code/simulation checks do not replace a manual browser review.
+- Static checks confirmed script/style references and fixed CSS nesting.
+  Simulated navigation, legacy dialog and all five random 404 variants:
+  **18/18 passed**. These tests do not replace a manual browser review.
 
 ## Deployment order
 
