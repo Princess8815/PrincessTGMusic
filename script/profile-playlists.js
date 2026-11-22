@@ -1,6 +1,7 @@
 import {auth} from "./firebase.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {loadAllSongs} from "./song-data.js";
+import {wireDragReorder} from "./drag-reorder.js";
 import {
   getPlaylists, createPlaylist, deletePlaylist,
   removeFromPlaylist, movePlaylistSong,
@@ -78,7 +79,10 @@ function renderTracks(){
   playlist.tracks.forEach((key,index)=>{
     const entry=songEntry(key);
     const li=document.createElement("li");
-    li.draggable=true;li.dataset.index=index;
+    li.dataset.index=index;
+    const grip=document.createElement("span");
+    grip.textContent="☰";
+    grip.title="Drag to reorder playlist songs";
     const title=document.createElement("div");
     title.className="playlist-track-name";title.textContent=(index+1)+". "+entry.title;
     if(key===currentKey)title.style.color="#d7b4ff";
@@ -102,16 +106,15 @@ function renderTracks(){
       removeFromPlaylist(selectedId,key);
       if(currentKey===key){audio.pause();audio.removeAttribute("src");currentKey="";audio.load();showCurrent();}
     });
-    li.addEventListener("dragstart",event=>{
-      event.dataTransfer?.setData("text/plain",String(index));
+    wireDragReorder(li,grip,key,"profile-playlist:"+playlist.id,(fromKey,toKey)=>{
+      const latest=getPlaylists().find(p=>p.id===playlist.id);
+      if(!latest) return;
+      const from=latest.tracks.indexOf(fromKey);
+      const to=latest.tracks.indexOf(toKey);
+      if(from<0||to<0) return;
+      movePlaylistSong(playlist.id,from,to);
     });
-    li.addEventListener("dragover",event=>event.preventDefault());
-    li.addEventListener("drop",event=>{
-      event.preventDefault();
-      const from=Number(event.dataTransfer?.getData("text/plain"));
-      if(Number.isInteger(from))movePlaylistSong(selectedId,from,index);
-    });
-    li.append(title,up,down,play,lyrics,link,remove);list.append(li);
+    li.append(grip,title,up,down,play,lyrics,link,remove);list.append(li);
   });
   if(!playlist.tracks.length){
     const item=document.createElement("li");
