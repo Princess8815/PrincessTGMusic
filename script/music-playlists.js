@@ -20,7 +20,7 @@ function persist(data) {
 }
 export function getPlaylists() {
   const key = ownKey();
-  if (!localStorage.getItem(key) && !localStorage.getItem(MIGRATION_FLAG)) {
+  if (auth.currentUser && !localStorage.getItem(key) && !localStorage.getItem(MIGRATION_FLAG)) {
     const old = read(OLD_KEY, []);
     if (Array.isArray(old) && old.length) {
       localStorage.setItem(key, JSON.stringify(old));
@@ -111,10 +111,11 @@ export function audioLink(path) {
 }
 export function orderByIds(songs, ids) {
   const ranks = new Map((Array.isArray(ids) ? ids : []).map((id,i)=>[String(id),i]));
+  const original = new Map(songs.map((song,index)=>[songId(song),index]));
   return [...songs].sort((a,b) => {
     const x=ranks.get(songId(a)) ?? Number.MAX_SAFE_INTEGER;
     const y=ranks.get(songId(b)) ?? Number.MAX_SAFE_INTEGER;
-    return x-y || String(a.title).localeCompare(String(b.title));
+    return x-y || (original.get(songId(a)) ?? 0) - (original.get(songId(b)) ?? 0);
   });
 }
 
@@ -176,7 +177,7 @@ export function addToPlaylistControl(getKeys, options = {}) {
     }catch(err){message.textContent=err.message;}finally{create.disabled=false;}
   });
   root.addEventListener("toggle",()=>{if(root.open)refresh();});
-  window.addEventListener(CHANGE,refresh);
+  // Rebuild choices when the picker opens; detached rows do not retain listeners.
   inner.append(select,add,input,create,message);
   root.append(inner);
   refresh();
