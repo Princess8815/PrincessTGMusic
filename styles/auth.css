@@ -180,3 +180,57 @@
     padding: 24px 18px;
   }
 }
+
+/* Sign in with Google and email-verification gates.
+   The controls use the same five-color palette as the rest of the site. */
+.auth-google-group{margin-top:15px}
+.auth-divider{
+  display:flex;align-items:center;gap:12px;margin:13px 0;
+  font-size:.8rem;text-align:center;color:var(--ptg-muted,#cbd5e1)
+}
+.auth-divider:before,.auth-divider:after{
+  content:"";flex:1;height:1px;background:var(--ptg-border,#55536a)
+}
+.auth-google-button{
+  width:100%;min-height:46px;display:flex;align-items:center;justify-content:center;
+  gap:12px;padding:9px 14px;border-radius:9px;
+  border:1px solid var(--ptg-border,#55536a)!important;
+  background:var(--ptg-tertiary,#111827)!important;
+  color:var(--ptg-text,#f3f4f6)!important;
+  font:inherit;font-weight:750;cursor:pointer
+}
+.auth-google-button:hover,.auth-google-button:focus-visible{
+  border-color:var(--ptg-highlight,#c084fc)!important;
+  background:var(--ptg-raised,#303a4b)!important;
+}
+.auth-google-button:disabled{opacity:.6;cursor:wait}
+.auth-google-mark{
+  display:inline-grid;place-items:center;flex:0 0 26px;height:26px;
+  background:white;color:#4285f4;border-radius:50%;font-weight:850;
+  font-family:Arial,Helvetica,sans-serif;font-size:1.1rem
+}
+.auth-provider-note{
+  margin:9px 0 0;text-align:center;font-size:.76rem;
+  color:var(--ptg-muted,#cbd5e1);line-height:1.4
+}
+.auth-verify-panel{display:grid;gap:10px}
+.auth-verify-panel>p{margin:0;line-height:1.55;color:var(--ptg-text,#f3f4f6)}
+.auth-verify-address{
+  background:var(--ptg-tertiary,#111827);
+  border:1px solid var(--ptg-border,#55536a);padding:11px;
+  border-radius:9px;overflow-wrap:anywhere
+}
+#auth-verify-message{
+  min-height:1.3em;color:var(--ptg-highlight,#c084fc)!important;
+  font-size:.86rem
+}
+.auth-verify-actions{display:grid;gap:10px}
+.auth-verify-actions button{min-height:43px}
+.auth-verify-actions .auth-text-button{
+  width:auto;margin:0 auto;padding:9px 11px;min-height:40px
+}
+@media(max-width:480px){
+  .auth-modal{padding:8px}
+  .auth-dialog{max-height:calc(100dvh - 20px);padding:25px 16px}
+  .auth-google-button{min-height:46px}
+}
