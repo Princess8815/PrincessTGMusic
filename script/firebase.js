@@ -2,6 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
 import { getAuth, connectAuthEmulator } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import { getFirestore, connectFirestoreEmulator } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+import {isLocalPreview,getLocalFirebaseMode,DEMO_FIREBASE_PROJECT} from "./firebase-mode.js";
 
 
 
@@ -17,21 +18,21 @@ const firebaseConfig = {
 };
 
 
-const testingLocally = [
-  "localhost",
-  "127.0.0.1"
-].includes(window.location.hostname);
+// Local previews default to the emulator, but Settings can explicitly
+// switch this browser origin to live Firebase. Public sites are always live.
+const testingLocally=isLocalPreview();
+export const usingLocalFirebaseEmulators=
+  testingLocally&&getLocalFirebaseMode()==="emulator";
 
-// Match the demo project running in the emulator.
-const app = initializeApp(
-  testingLocally
-    ? {
-        ...firebaseConfig,
-        projectId: "demo-princesstg",
-        authDomain: "demo-princesstg.firebaseapp.com"
-      }
-    : firebaseConfig
-);
+// Give the emulator a separate Firebase app name. Firebase Auth persistence
+// uses the app name, keeping local test login state separate from live login.
+const app = usingLocalFirebaseEmulators
+  ? initializeApp({
+      ...firebaseConfig,
+      projectId:DEMO_FIREBASE_PROJECT,
+      authDomain:DEMO_FIREBASE_PROJECT+".firebaseapp.com"
+    },"princesstg-local-emulator")
+  : initializeApp(firebaseConfig);
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -42,7 +43,7 @@ const localFirestoreURL = "http://127.0.0.1:8080";
 let lastEmulatorProbe = null;
 
 export async function checkLocalFirestoreEmulator() {
-  if (!testingLocally) return {connected:true,local:false};
+  if (!usingLocalFirebaseEmulators) return {connected:true,local:false};
   // An HTTP response, even 404, proves a service is listening on port 8080.
   // Use no-cors to avoid depending on an emulator-only CORS header.
   const now=Date.now();
@@ -55,10 +56,10 @@ export async function checkLocalFirestoreEmulator() {
     await fetch(localFirestoreURL+"/", {
       method:"GET",mode:"no-cors",cache:"no-store",signal:controller.signal
     });
-    value={connected:true,local:true,projectId:"demo-princesstg"};
+    value={connected:true,local:true,projectId:DEMO_FIREBASE_PROJECT};
   } catch(error) {
     value={
-      connected:false,local:true,projectId:"demo-princesstg",
+      connected:false,local:true,projectId:DEMO_FIREBASE_PROJECT,
       cause:error?.name==="AbortError"?"timeout":"connection"
     };
   } finally {
@@ -68,9 +69,7 @@ export async function checkLocalFirestoreEmulator() {
   return value;
 }
 
-export const usingLocalFirebaseEmulators=testingLocally;
-
-if (testingLocally) {
+if (usingLocalFirebaseEmulators) {
   connectAuthEmulator(
     auth,
     "http://127.0.0.1:9099"
@@ -84,7 +83,9 @@ if (testingLocally) {
 
   console.log("Using LOCAL Firebase emulators");
 } else {
-  console.log("Using production Firebase");
+  console.log(testingLocally
+    ? "Local preview is explicitly using LIVE Firebase. Changes affect real accounts."
+    : "Using production Firebase");
 }
 
 export { app, auth, db };
