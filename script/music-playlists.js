@@ -7,6 +7,14 @@ const CHANGE = "princesstg:playlists-change";
 const ownKey = () => KEY_PREFIX + (auth.currentUser?.uid || "guest");
 const normalize = x => String(x || "").trim();
 const unique = items => [...new Set((items || []).filter(x => typeof x === "string" && x))];
+export const DEFAULT_PLAYLIST_COLOR = "#8b5cf6";
+export const playlistColor = value => /^#[0-9a-f]{6}$/i.test(String(value || ""))
+  ? String(value).toLowerCase() : DEFAULT_PLAYLIST_COLOR;
+const asPlaylist = p => ({
+  id:p.id, name:p.name, tracks:unique(p.tracks),
+  color:playlistColor(p.color),
+  updatedAt:Number.isFinite(p.updatedAt) ? p.updatedAt : 0
+});
 
 function read(key, fallback) {
   try {
@@ -27,21 +35,22 @@ export function getPlaylists() {
     }
     localStorage.setItem(MIGRATION_FLAG, "yes");
   }
-  return (Array.isArray(read(key, [])) ? read(key, []) : [])
+  const saved = read(key, []);
+  return (Array.isArray(saved) ? saved : [])
     .filter(p => p && typeof p.id === "string" && typeof p.name === "string")
-    .map(p => ({id:p.id, name:p.name, tracks:unique(p.tracks)}));
+    .map(asPlaylist);
 }
 export function savePlaylists(items) {
   if (!Array.isArray(items)) throw Error("Invalid playlist data.");
-  persist(items.map(p => ({id:p.id,name:p.name,tracks:unique(p.tracks)})));
+  persist(items.map(asPlaylist));
 }
-export function createPlaylist(name, tracks = []) {
+export function createPlaylist(name, tracks = [], color = DEFAULT_PLAYLIST_COLOR) {
   const cleaned = normalize(name).replace(/\s+/g, " ");
   if (!cleaned || cleaned.length > 90) throw Error("Playlist name must be between 1 and 90 characters.");
   const next = getPlaylists();
   if (next.some(p => p.name.toLowerCase() === cleaned.toLowerCase())) throw Error("A playlist with that name already exists.");
   const id = "playlist-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,8);
-  const playlist = {id,name:cleaned,tracks:unique(tracks)};
+  const playlist = {id,name:cleaned,tracks:unique(tracks),color:playlistColor(color),updatedAt:Date.now()};
   next.push(playlist);
   savePlaylists(next);
   return playlist;
@@ -55,6 +64,7 @@ export function addToPlaylist(id, keys) {
   if (!playlist) throw Error("Choose a playlist.");
   const before = playlist.tracks.length;
   playlist.tracks = unique([...playlist.tracks, ...unique(keys)]);
+  if (playlist.tracks.length !== before) playlist.updatedAt = Date.now();
   savePlaylists(playlists);
   return playlist.tracks.length - before;
 }
@@ -63,6 +73,7 @@ export function removeFromPlaylist(id, key) {
   const playlist = playlists.find(p => p.id === id);
   if (!playlist) throw Error("Playlist not found.");
   playlist.tracks = playlist.tracks.filter(value => value !== key);
+  playlist.updatedAt = Date.now();
   savePlaylists(playlists);
 }
 export function movePlaylistSong(id, from, to) {
@@ -71,7 +82,18 @@ export function movePlaylistSong(id, from, to) {
   if (!playlist || from < 0 || to < 0 || from >= playlist.tracks.length || to >= playlist.tracks.length) return;
   const [song] = playlist.tracks.splice(from, 1);
   playlist.tracks.splice(to, 0, song);
+  playlist.updatedAt = Date.now();
   savePlaylists(playlists);
+}
+export function setPlaylistColor(id, color) {
+  if (!/^#[0-9a-f]{6}$/i.test(String(color || ""))) throw Error("Choose a valid playlist color.");
+  const playlists = getPlaylists();
+  const playlist = playlists.find(p => p.id === id);
+  if (!playlist) throw Error("Playlist not found.");
+  playlist.color = playlistColor(color);
+  playlist.updatedAt = Date.now();
+  savePlaylists(playlists);
+  return playlist;
 }
 
 const slug = text => normalize(text).normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
