@@ -1,52 +1,60 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Play albums and songs by PrincessTG, browse lyrics, and save personal playlists.">
   <title>Album | PrincessTG Music</title>
   <link rel="icon" href="../images/logo avatar.png">
   <link rel="stylesheet" href="../styles/auth.css">
-  <link rel="stylesheet" href="../styles/styles.css">
+  <link rel="stylesheet" href="./styles/album-player.css">
   <script type="module" src="../script/auth.js"></script>
   <script type="module" src="./script/album-page.js"></script>
-  <style>
-    :root{color-scheme:dark}
-    body{background:#111827;color:#f9fafb;font-family:Arial,sans-serif;line-height:1.6;margin:0}
-    main{max-width:980px;margin:30px auto;padding:20px}
-    .panel{background:#1f2937;border:1px solid #374151;border-radius:14px;padding:24px;margin:18px 0}
-    .heading{display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center}
-    #album-cover{width:170px;height:170px;object-fit:cover;border-radius:10px}
-    h1{color:#c084fc;margin:0}
-    a{color:#c4b5fd} p{overflow-wrap:anywhere}
-    .track{border-top:1px solid #374151;padding:12px 0;display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
-    button{background:#7c3aed;color:#fff;border:0;border-radius:7px;padding:10px 17px;cursor:pointer;font-weight:bold}
-    button:focus-visible,a:focus-visible{outline:2px solid #c4b5fd;outline-offset:3px}
-    audio{width:100%;margin-top:10px}
-    [hidden]{display:none!important}
-    @media(max-width:560px){.heading{grid-template-columns:1fr}#album-cover{width:135px;height:135px}}
-  </style>
 </head>
 <body>
   <div id="auth-container"></div>
-  <main>
-    <p><a href="./index.html">All albums</a> · <a href="../index.html">Home</a></p>
-    <section class="panel">
-      <div class="heading">
-        <img id="album-cover" alt="Album cover" hidden>
-        <div><p id="album-status" role="status">Loading album...</p>
-          <h1 id="album-title">Album</h1>
-          <p id="album-date"></p>
-          <p id="album-description" style="white-space:pre-wrap"></p>
-        </div>
+  <main class="album-shell">
+    <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="./index.html">All albums</a><span> / </span><a href="../index.html">Home</a></nav>
+    <header class="album-hero">
+      <div class="album-cover-box">
+        <img id="album-cover" alt="Album artwork" hidden>
+        <div id="album-cover-fallback" aria-hidden="true">♫</div>
       </div>
+      <div class="album-hero-text">
+        <p class="overline">PRINCESSTG · ALBUM</p>
+        <h1 id="album-title">Loading album...</h1>
+        <p id="album-date" class="album-meta"></p>
+        <p id="album-description" class="album-description"></p>
+        <div id="album-playlist-actions" class="album-hero-actions"></div>
+      </div>
+    </header>
+    <p id="album-status" role="status" aria-live="polite">Loading songs...</p>
+    <section id="album-player-section" class="album-player" aria-labelledby="now-playing-title">
+      <div class="now-playing-top">
+        <div class="player-record" aria-hidden="true">♫</div>
+        <div><p class="overline">NOW PLAYING</p><h2 id="now-playing-title">Choose a song</h2><p id="now-playing-album" class="muted"></p></div>
+      </div>
+      <details id="album-lyrics-panel" class="album-lyrics">
+        <summary id="album-lyrics-title">Lyrics <span class="subtle">(expand)</span></summary>
+        <pre id="album-lyrics-text">Choose a song to display its lyrics.</pre>
+      </details>
+      <div class="player-toolbar" aria-label="Album playback controls">
+        <button type="button" id="album-prev" aria-label="Previous song" title="Previous song">⏮</button>
+        <button type="button" id="album-toggle-play" class="play-primary" aria-label="Play or pause">▶ Play</button>
+        <button type="button" id="album-next" aria-label="Next song" title="Next song">⏭</button>
+        <button type="button" id="album-shuffle" aria-pressed="false" title="Shuffle album">⇄ Shuffle</button>
+        <button type="button" id="album-repeat" aria-pressed="false" title="Repeat album">↻ Repeat</button>
+      </div>
+      <audio id="album-player" controls controlslist="nodownload" preload="metadata"></audio>
+      <p id="album-playback-status" class="muted" role="status" aria-live="polite">Choose a track to begin.</p>
     </section>
-    <section class="panel" aria-label="Album songs">
-      <h2>Songs</h2>
-      <div id="album-tracks"></div>
-    </section>
-    <section class="panel" id="album-player-section" hidden>
-      <h2 id="now-playing">Listen</h2>
-      <audio id="album-player" controls preload="metadata" controlslist="nodownload"></audio>
+    <section class="album-track-section" aria-labelledby="album-tracks-title">
+      <div class="track-header">
+        <div><p class="overline">TRACKLIST</p><h2 id="album-tracks-title">Songs</h2></div>
+        <button type="button" id="album-reset-order" class="quiet-button">↺ Reset to album default</button>
+      </div>
+      <p class="muted small">Drag the handle or use ↑ ↓ to set your personal track order. Changes are saved on this device.</p>
+      <ol id="album-tracks" aria-label="Album songs"></ol>
     </section>
   </main>
 </body>
