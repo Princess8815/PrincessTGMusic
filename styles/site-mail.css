@@ -139,3 +139,22 @@
   .mail-list-actions button{font-size:.72rem;padding:6px}
   .mail-row-date{font-size:.65rem}
 }
+
+/* Only verified, active members may enter the private mailbox. */
+.mail-verification-gate{
+  padding:clamp(16px,3vw,24px);
+  margin:10px 0 16px;
+  border:1px solid var(--ptg-border,#514862);
+  border-left:4px solid var(--ptg-highlight,#c084fc);
+  border-radius:12px;
+  background:var(--ptg-secondary,#1f2937);
+  color:var(--ptg-text,#f3f4f6);
+}
+.mail-verification-gate h3{margin:0 0 8px;color:var(--ptg-highlight,#c084fc)}
+.mail-verification-gate p{margin:0 0 14px;line-height:1.55}
+.mail-verification-actions{display:flex;gap:10px;flex-wrap:wrap}
+.mail-verification-actions button{min-height:42px;padding:9px 13px}
+#mail-verification-status{margin:12px 0 0;font-size:.87rem;overflow-wrap:anywhere}
+@media(max-width:520px){
+ .mail-verification-actions button{flex:1 1 180px}
+}
