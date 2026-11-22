@@ -60,6 +60,18 @@ html[data-ptg-contrast="high"] .ptg-sidebar{background:#08080c;border-color:#d4b
 html[data-ptg-contrast="high"] .ptg-sidebar .ptg-nav-link{color:#fff!important}
 html[data-ptg-contrast="high"] .ptg-global-footer{background:#09090b;border-color:#a98ee2;color:#fff}
 html[data-ptg-motion="reduce"] *,html[data-ptg-motion="reduce"] *::before,html[data-ptg-motion="reduce"] *::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+
+/* Shared visual polish that does not override each feature's own controls. */
+body.ptg-shell-ready .hero{min-height:clamp(110px,16vw,175px);margin-top:13px;margin-bottom:14px}
+.ptg-page-intro{padding:23px 25px 20px;margin:6px 0 18px;border-radius:16px;background:linear-gradient(115deg,#2d2346,#191d31);border:1px solid #574673;box-shadow:0 12px 30px #08050c33;color:#f7f1ff}
+.ptg-page-intro h1{font-size:clamp(1.6rem,3.2vw,2.4rem);margin:0 0 5px}
+.ptg-page-intro p{margin:0;color:#cec4e2}
+.ptg-tab-panel > section,.ptg-shell-ready .about-page .intro-card{box-shadow:0 12px 30px #05040b33}
+.ptg-tab-panel > section:focus-within{border-color:#8064ad}
+.ptg-shell-ready .auth-bar{max-width:1100px;margin-inline:auto}
+.ptg-shell-ready .auth-bar-actions{display:flex;gap:8px;flex-wrap:wrap}
+.ptg-shell-ready .auth-bar button:not([hidden]){border-radius:9px}
+
 @media (max-width:850px){
  :root{--ptg-sidebar-width:0px}
  body.ptg-shell-ready{padding-left:0;padding-top:var(--ptg-bar-height)}
