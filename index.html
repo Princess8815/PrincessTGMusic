@@ -14,7 +14,10 @@
     <link rel="stylesheet" href="./styles/auth.css">
     <script type="module" src="./script/auth.js"></script>
   <script type="module" src="./script/page-tabs.js"></script>
-  </head>
+    <!-- Navigation remains available even while account services initialize. -->
+  <link rel="stylesheet" href="./styles/site-shell.css" data-ptg-shell-style="1">
+  <script type="module" src="./script/site-shell.js"></script>
+</head>
   <body>
     <div id="auth-container"></div>
 
