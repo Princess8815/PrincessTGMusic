@@ -114,3 +114,28 @@ body.ptg-shell-ready > main:has(#profile-app) .profile-card {
 }
 
 @media(prefers-reduced-motion:reduce){.ptg-sidebar,.ptg-footer-socials a{transition:none!important}}
+
+
+/* Local-only developer indicator. The public site never renders this badge. */
+.ptg-local-firebase-badge{
+  position:fixed;right:14px;bottom:14px;z-index:1100;
+  display:flex;flex-wrap:wrap;align-items:center;gap:7px 11px;
+  width:min(420px,calc(100vw - 28px));
+  padding:10px 13px;border-radius:12px;
+  background:#1d2d29;color:#dcfce7;border:1px solid #52a98d;
+  box-shadow:0 7px 23px #0009;font:600 .8rem/1.4 system-ui,Arial,sans-serif;
+}
+.ptg-local-firebase-badge strong{font-weight:850;letter-spacing:.015em}
+.ptg-local-firebase-badge span{font-size:.75rem;opacity:.9}
+.ptg-local-firebase-badge a{
+  margin-left:auto;color:inherit;text-decoration:underline;
+  text-underline-offset:3px;font-size:.8rem;font-weight:750
+}
+.ptg-local-firebase-badge a:focus-visible{outline:2px solid currentColor;outline-offset:3px}
+.ptg-local-firebase-badge[data-mode="production"]{
+  background:#42271d;border-color:#f59e0b;color:#fff3cc
+}
+@media(max-width:480px){
+  .ptg-local-firebase-badge{right:7px;bottom:7px;width:calc(100vw - 14px);padding:9px}
+  .ptg-local-firebase-badge span{display:none}
+}

@@ -16,6 +16,15 @@ function mount() {
   box.append(label,addToPlaylistControl(async()=>[
     keyForSong({title,pageId:id},await getAudioIndex().catch(()=>[]))
   ]));
+  const send=document.createElement("a");
+  send.textContent="✉ Send by site mail";
+  send.style.cssText="padding:8px 12px;border:1px solid var(--ptg-border,#74608e);border-radius:9px;text-decoration:none;font-weight:700";
+  const destination=new URL("../pages/profile.html",import.meta.url);
+  destination.searchParams.set("mailSong","song:"+id);
+  destination.searchParams.set("mailTitle",title);
+  destination.hash="tab-mail";
+  send.href=destination.href;
+  box.append(send);
   header.insertAdjacentElement("afterend",box);
 }
 function mountLegacyAlbum() {

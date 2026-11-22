@@ -63,3 +63,13 @@
 .profile-playlist-tracklist .dragging{opacity:.6}
 @media(max-width:860px){main{max-width:100%}.profile-playlist-layout{grid-template-columns:1fr}.profile-playlist-sidebar{display:block}.playlist-library-list{max-height:220px}.profile-tabs{flex-wrap:nowrap;overflow:auto;scrollbar-width:thin}}
 @media(max-width:540px){.profile-card{padding:16px}.profile-playlist-sidebar,.profile-playlist-detail{padding:12px}.playlist-library-filters{grid-template-columns:1fr 1fr}.playlist-detail-actions{width:100%}.profile-playlist-controls button{flex:1}}
+
+/* Recover when a local Firestore emulator has not started yet. */
+.profile-retry-button{
+  display:inline-block;min-height:42px;margin:0 0 16px;padding:9px 18px;
+  border-radius:9px;border:1px solid #b694e3;background:#7040ab;
+  color:#fff;font:inherit;font-weight:700;cursor:pointer
+}
+.profile-retry-button:hover{background:#8553ba}
+.profile-retry-button:focus-visible{outline:2px solid #22d3ee;outline-offset:3px}
+.profile-retry-button:disabled{opacity:.6;cursor:wait}

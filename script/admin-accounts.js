@@ -8,7 +8,8 @@ import {
   getDocsFromServer,
   updateDoc,
   serverTimestamp,
-  Timestamp
+  Timestamp,
+  writeBatch
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -33,12 +34,146 @@ document.addEventListener("DOMContentLoaded", async () => {
   const saveButton = $("account-save");
   const saveStatus = $("account-save-status");
   const refreshButton = $("account-refresh");
+  const verificationTab=$("account-subtab-verification");
+  const verificationStatus=$("account-verification-status");
+  const bypassStatus=$("account-verification-bypass-status");
+  const authStatus=$("account-verification-auth-status");
+  const bypassButton=$("account-verification-toggle");
 
   if (!section) return;
 
   let accounts = [];
   let selectedUid = null;
   let managerRole = null;
+  let selectedBypass=false;
+  let bypassLoading=false;
+
+  function activateAccountSubtab(which){
+    const choices=["roles","verification"];
+    if(!choices.includes(which))return;
+    for(const name of choices){
+      const button=$("account-subtab-"+name);
+      const panel=$("account-subpanel-"+name);
+      if(!button||!panel)continue;
+      const active=name===which;
+      button.setAttribute("aria-selected",String(active));
+      button.tabIndex=active?0:-1;
+      panel.hidden=!active;
+    }
+  }
+  for(const tab of document.querySelectorAll("[data-account-subtab]")){
+    tab.addEventListener("click",()=>activateAccountSubtab(tab.dataset.accountSubtab));
+  }
+  verificationTab?.parentElement?.addEventListener("keydown",event=>{
+    if(!["ArrowLeft","ArrowRight","Home","End"].includes(event.key))return;
+    if(!event.target?.dataset?.accountSubtab)return;
+    event.preventDefault();
+    const next=event.key==="Home"?"roles"
+      :event.key==="End"?"verification"
+      :event.target.dataset.accountSubtab==="roles"?"verification":"roles";
+    activateAccountSubtab(next);
+    $("account-subtab-"+next).focus();
+  });
+
+  async function loadBypass(uid){
+    bypassLoading=true;
+    bypassButton.disabled=true;
+    bypassStatus.textContent="Checking…";
+    verificationStatus.textContent="";
+    const target=accounts.find(item=>item.uid===uid);
+    authStatus.textContent=target?.auth?.emailVerified===true
+      ? "Verified in last saved profile" : "Not verified in last saved profile";
+    try{
+      const snap=await getDocFromServer(doc(db,"verificationOverrides",uid));
+      if(selectedUid!==uid)return;
+      selectedBypass=snap.exists()&&snap.data().enabled===true;
+      bypassStatus.textContent=selectedBypass?"Bypass ENABLED":"Bypass disabled";
+      bypassStatus.dataset.enabled=String(selectedBypass);
+      bypassButton.dataset.action=selectedBypass?"revoke":"grant";
+      bypassButton.textContent=selectedBypass
+        ? "Revoke verification bypass" : "Grant verification bypass";
+    }catch(error){
+      if(selectedUid!==uid)return;
+      verificationStatus.textContent="Cannot load exception: "+error.message;
+      bypassStatus.textContent="Unavailable";
+      selectedBypass=false;
+      bypassButton.disabled=true;
+      return;
+    }finally{
+      if(selectedUid===uid){
+        bypassLoading=false;
+        bypassButton.disabled=managerRole!=="owner"
+          ||uid===auth.currentUser?.uid
+          ||target?.role==="owner"
+          ||target?.status==="archived";
+      }
+    }
+    if(managerRole!=="owner")verificationStatus.textContent=
+      "Only the site owner can grant or revoke verification exceptions.";
+  }
+
+  bypassButton.addEventListener("click",async()=>{
+    const uid=selectedUid;
+    if(!uid||bypassLoading)return;
+    bypassLoading=true;bypassButton.disabled=true;
+    try{
+      const role=await verifyManager();
+      if(role!=="owner")throw Error("Only the active site owner may change verification bypasses.");
+      if(uid===auth.currentUser?.uid)throw Error("You cannot bypass verification on your own account.");
+      const targetRef=doc(db,"users",uid);
+      const snap=await getDocFromServer(targetRef);
+      if(!snap.exists())throw Error("Target account no longer exists.");
+      const target=snap.data();
+      if(target.role==="owner"||target.status==="archived")
+        throw Error("Owner and archived accounts are protected.");
+      const next=!selectedBypass;
+      const label=target.auth?.displayName||target.auth?.email||uid;
+      if(!window.confirm(
+        (next?"GRANT":"REVOKE")+" email verification BYPASS for "+label+"?\n\n"+
+        (next
+          ?"This account will use member features without proving ownership of its email address. Firebase Auth will remain unverified."
+          :"This account will need genuine Firebase email verification to regain verified-only features.")+
+        "\n\nConfirm this owner-only exception change?"
+      ))return;
+      const audit=doc(collection(db,"verificationOverrideAudit"));
+      const override=doc(db,"verificationOverrides",uid);
+      const targetEmail=String(target.auth?.email||"");
+      const batch=writeBatch(db);
+      batch.set(override,{
+        enabled:next,
+        updatedAt:serverTimestamp(),
+        updatedBy:auth.currentUser.uid,
+        targetEmail,
+        auditId:audit.id
+      });
+      batch.set(audit,{
+        targetUid:uid,
+        enabled:next,
+        actorUid:auth.currentUser.uid,
+        targetEmail,
+        createdAt:serverTimestamp()
+      });
+      await batch.commit();
+      await loadBypass(uid);
+      if(selectedUid===uid){
+        verificationStatus.textContent=
+          next?"Bypass granted. This account may now use verified-only site features."
+              :"Bypass revoked. Genuine email verification is required again.";
+        verificationStatus.style.color="#86efac";
+      }
+    }catch(error){
+      console.error("Owner verification bypass action failed:",error);
+      verificationStatus.textContent="Bypass change failed: "+error.message;
+      verificationStatus.style.color="#fca5a5";
+    }finally{
+      bypassLoading=false;
+      const target=accounts.find(item=>item.uid===uid);
+      bypassButton.disabled=selectedUid!==uid||managerRole!=="owner"
+        ||uid===auth.currentUser?.uid||target?.role==="owner"
+        ||target?.status==="archived";
+    }
+  });
+  activateAccountSubtab("roles");
 
   const durations = {
     "1h": 60 * 60 * 1000,
@@ -245,7 +380,10 @@ async function verifyManager() {
     customEnd.value = "";
 
     syncBanSettings();
-
+    const ownerControls=managerRole==="owner";
+    verificationTab.hidden=!ownerControls;
+    if(ownerControls)void loadBypass(uid);
+    else activateAccountSubtab("roles");
 
 const protectedAccount =
   data.role === "owner" ||

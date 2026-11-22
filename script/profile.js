@@ -1,5 +1,7 @@
 
-import { auth, db } from "./firebase.js";
+import { auth, db, usingLocalFirebaseEmulators, checkLocalFirestoreEmulator } from "./firebase.js";
+import {hasOwnerVerificationBypass} from "./verification-access.js";
+import { waitForUserRecord } from "./user-data.js";
 import "./ban-expiry.js";
 
 import {
@@ -127,7 +129,9 @@ $("profile-account-status").textContent =
   $("profile-email-verified").textContent =
     account.emailVerified
       ? "Email verified"
-      : "Email not verified";
+      : hasOwnerVerificationBypass(account)
+        ? "Email not verified · owner-approved site bypass"
+        : "Email not verified";
 
   updateBioCount();
   renderNewsletter();
@@ -206,7 +210,10 @@ async function loadAccountSnapshot(user) {
       getDocFromServer(accountRef(user)),
       new Promise((_, reject) => {
         timer = setTimeout(() =>
-          reject(new Error("Account lookup timed out. Please check your connection and refresh.")), 15000);
+          reject(new Error(usingLocalFirebaseEmulators
+            ? "The Firestore emulator did not answer the account lookup on port 8080. Check the Firestore service in the emulator dashboard, then select Retry."
+            : "Account lookup timed out. Check your connection and retry.")),
+          usingLocalFirebaseEmulators ? 8500 : 15000);
       })
     ]);
   } finally {
@@ -215,14 +222,32 @@ async function loadAccountSnapshot(user) {
 }
 
 async function loadProfile(user) {
+  if(usingLocalFirebaseEmulators) {
+    // Signing in only proves the Auth emulator on 9099 is alive, not that
+    // Firestore on 8080 has started. Detect that before a long SDK timeout.
+    const firestore=await checkLocalFirestoreEmulator();
+    if(!firestore.connected){
+      throw new Error(
+        "The Auth emulator is connected, but the Firestore emulator is not responding at 127.0.0.1:8080. " +
+        "Open http://localhost:4000/firestore and confirm Firestore is running, " +
+        "or restart: firebase emulators:start --only auth,firestore --project demo-princesstg"
+      );
+    }
+  }
+
+  // Firebase Auth sign-in can finish before the users/{uid} record is
+  // created. Wait for the existing account initialization transaction.
+  await waitForUserRecord(user.uid, 6000);
   let snapshot = await loadAccountSnapshot(user);
   if (!snapshot.exists()) {
-    // Firebase Auth registration can finish before the user document write.
-    await new Promise(resolve => setTimeout(resolve, 900));
+    await waitForUserRecord(user.uid, 3500);
     snapshot = await loadAccountSnapshot(user);
   }
   if (!snapshot.exists()) {
-    throw new Error("Your account record is not ready yet. Refresh the page to retry.");
+    throw new Error(usingLocalFirebaseEmulators
+      ? "This test user exists in Authentication but not in Firestore users/. " +
+        "Check the emulator Firestore tab, then select Retry to initialize the profile."
+      : "Your account record is not ready yet. Try again shortly.");
   }
 
   account = user;
@@ -618,33 +643,67 @@ window.addEventListener(
 );
 
 
+// The Firebase email link may be confirmed in a second browser tab.
+// Update the visible status on this page when the current Firebase Auth
+// user has reloaded and passed verification, without losing profile edits.
+window.addEventListener("princesstg:verification-access-changed",event=>{
+  if(account?.uid!==event.detail?.uid)return;
+  const indicator=$("profile-email-verified");
+  if(indicator){
+    indicator.textContent=account.emailVerified?"Email verified"
+      :event.detail?.bypassed
+        ?"Email not verified · owner-approved site bypass"
+        :"Email not verified";
+  }
+});
+window.addEventListener("princesstg:email-verified",()=>{
+  const user=auth.currentUser;
+  if(!user?.emailVerified || account?.uid!==user.uid)return;
+  account=user;
+  if(accountData?.auth)accountData.auth.emailVerified=true;
+  const indicator=$("profile-email-verified");
+  if(indicator)indicator.textContent="Email verified";
+  const status=$("profile-email-status");
+  if(status)status.textContent="Email verified successfully.";
+});
+
 // ==========================================
 // AUTHENTICATION STATE
 // ==========================================
 
-onAuthStateChanged(auth, async user => {
-  $("profile-app").hidden = true;
-
-
-if (!user) {
-  window.location.replace(
-    new URL("../index.html", import.meta.url).href
-  );
-
-  return;
-}
-
-
+let loadingProfile = false;
+async function tryLoadProfile(user) {
+  if(!user || loadingProfile)return;
+  loadingProfile=true;
+  $("profile-retry").hidden=true;
+  $("profile-retry").disabled=true;
+  $("profile-status").hidden=true;
   try {
-    // Overview reads the real status from Firestore. The banner is for errors,
-    // so loading does not leave an unnecessary account status message.
     await loadProfile(user);
-
-  } catch (error) {
-    setStatus(
-      "profile-status",
-      `Could not load profile: ${error.message}`,
-      true
-    );
+    $("profile-retry").hidden=true;
+  } catch(error) {
+    console.error("Profile initialization failed:",error);
+    const isPermissionDenied=error?.code==="permission-denied";
+    setStatus("profile-status",
+      "Could not load profile: "+(isPermissionDenied
+        ? "Firestore security rules denied access to this account. Check emulator rules for users/{uid}."
+        : error?.message||"Unknown Firestore error."),true);
+    $("profile-retry").hidden=false;
+  } finally {
+    loadingProfile=false;
+    $("profile-retry").disabled=false;
   }
+}
+$("profile-retry").addEventListener("click",()=>{
+  void tryLoadProfile(auth.currentUser);
+});
+onAuthStateChanged(auth,user=>{
+  $("profile-app").hidden=true;
+  if(!user){
+    window.location.replace(
+      new URL("../index.html",import.meta.url).href
+    );
+    return;
+  }
+  void tryLoadProfile(user);
 });
