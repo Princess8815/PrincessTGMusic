@@ -2,29 +2,95 @@
 const root=new URL("../",import.meta.url);
 const siteUrl=path=>new URL(path,root).href;
 const SETTINGS_KEY="princesstg-site-preferences-v1";
-export const DEFAULT_SETTINGS=Object.freeze({accent:"violet",text:"normal",contrast:"normal",motion:"normal"});
-const OPTIONS={accent:["violet","rose","teal"],text:["normal","large"],contrast:["normal","high"],motion:["normal","reduce"]};
+const FIELDS=["primary","secondary","tertiary","textColor","highlight"];
+export const DEFAULT_PALETTE=Object.freeze({
+  primary:"#9f7bff",
+  secondary:"#1f2937",
+  tertiary:"#111827",
+  textColor:"#f3f4f6",
+  highlight:"#c084fc"
+});
+export const DEFAULT_SETTINGS=Object.freeze({
+  ...DEFAULT_PALETTE,text:"normal",contrast:"normal",motion:"normal"
+});
+const OPTIONS={text:["normal","large"],contrast:["normal","high"],motion:["normal","reduce"]};
+const LEGACY_ACCENTS={
+  violet:{primary:"#9f7bff",highlight:"#c084fc"},
+  rose:{primary:"#f28cbe",highlight:"#fa95c6"},
+  teal:{primary:"#65d9d0",highlight:"#67e7d6"}
+};
+const isHex=value=>typeof value==="string"&&/^#[0-9a-f]{6}$/i.test(value);
+export function normalizeColor(value){
+  if(!isHex(value))throw Error("Use a six-digit hex/RGB color.");
+  return value.toLowerCase();
+}
+export function rgbFromHex(hex){
+  const value=normalizeColor(hex);
+  return [1,3,5].map(at=>parseInt(value.slice(at,at+2),16));
+}
+export function hexFromRgb(red,green,blue){
+  const values=[red,green,blue];
+  if(values.some(n=>!Number.isInteger(Number(n))||Number(n)<0||Number(n)>255))
+    throw Error("RGB channels must be whole numbers from 0 to 255.");
+  return "#"+values.map(n=>Number(n).toString(16).padStart(2,"0")).join("");
+}
+function channelLum(channel){
+  const value=channel/255;
+  return value<=0.04045?value/12.92:Math.pow((value+0.055)/1.055,2.4);
+}
+export function colorContrast(a,b){
+  const left=rgbFromHex(a).map(channelLum);
+  const right=rgbFromHex(b).map(channelLum);
+  const lum=channels=>channels[0]*0.2126+channels[1]*0.7152+channels[2]*0.0722;
+  const x=lum(left),y=lum(right);
+  return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);
+}
+function readableOn(hex){
+  return colorContrast(hex,"#101118")>=colorContrast(hex,"#ffffff")?"#101118":"#ffffff";
+}
 export function getSiteSettings(){
   let saved={};
   try{saved=JSON.parse(localStorage.getItem(SETTINGS_KEY)||"{}")||{};}catch{}
+  if(typeof saved!=="object"||Array.isArray(saved))saved={};
   const settings={...DEFAULT_SETTINGS};
-  for(const [name,allowed] of Object.entries(OPTIONS)){
+  if(LEGACY_ACCENTS[saved.accent] && !isHex(saved.primary) && !isHex(saved.highlight))
+    Object.assign(settings,LEGACY_ACCENTS[saved.accent]);
+  for(const [name,allowed] of Object.entries(OPTIONS))
     if(allowed.includes(saved[name]))settings[name]=saved[name];
-  }
+  for(const name of FIELDS)
+    if(isHex(saved[name]))settings[name]=saved[name].toLowerCase();
   return settings;
 }
 export function applySiteSettings(settings=getSiteSettings()){
   const html=document.documentElement;
   for(const [name,allowed] of Object.entries(OPTIONS)){
-    const value=allowed.includes(settings[name])?settings[name]:DEFAULT_SETTINGS[name];
-    html.dataset["ptg"+name[0].toUpperCase()+name.slice(1)]=value;
+    html.dataset["ptg"+name[0].toUpperCase()+name.slice(1)]=
+      allowed.includes(settings[name])?settings[name]:DEFAULT_SETTINGS[name];
   }
+  const values={};
+  for(const field of FIELDS)
+    values[field]=isHex(settings[field])?settings[field].toLowerCase():DEFAULT_PALETTE[field];
+  const props={
+    "--ptg-primary":values.primary,
+    "--ptg-secondary":values.secondary,
+    "--ptg-tertiary":values.tertiary,
+    "--ptg-text":values.textColor,
+    "--ptg-highlight":values.highlight,
+    "--ptg-on-primary":readableOn(values.primary),
+    "--ptg-on-highlight":readableOn(values.highlight)
+  };
+  for(const [name,value] of Object.entries(props))html.style.setProperty(name,value);
+  html.style.colorScheme=colorContrast(values.tertiary,"#ffffff")>
+    colorContrast(values.tertiary,"#101118")?"dark":"light";
 }
 export function saveSiteSettings(next){
+  if(!next||typeof next!=="object")throw Error("Invalid settings.");
   const data={...getSiteSettings(),...next};
-  for(const [name,allowed] of Object.entries(OPTIONS)){
-    if(!allowed.includes(data[name]))throw Error("Invalid "+name+" setting");
-  }
+  for(const [name,allowed] of Object.entries(OPTIONS))
+    if(!allowed.includes(data[name]))throw Error("Invalid "+name+" setting.");
+  for(const name of FIELDS)data[name]=normalizeColor(data[name]);
+  // Legacy preset was migrated to the explicit five-channel palette.
+  delete data.accent;
   localStorage.setItem(SETTINGS_KEY,JSON.stringify(data));
   applySiteSettings(data);
   window.dispatchEvent(new CustomEvent("princesstg:settings-changed",{detail:data}));
@@ -32,6 +98,17 @@ export function saveSiteSettings(next){
 }
 
 applySiteSettings();
+window.addEventListener("storage",event=>{
+  if(event.key===SETTINGS_KEY)applySiteSettings(getSiteSettings());
+});
+function installThemeCSS(){
+  if(document.querySelector('link[data-ptg-theme-style]'))return;
+  const css=document.createElement("link");
+  css.rel="stylesheet";
+  css.href=siteUrl("styles/site-theme.css");
+  css.dataset.ptgThemeStyle="1";
+  document.head.append(css);
+}
 if(!document.querySelector('link[data-ptg-shell-style]')){
   const css=document.createElement("link");
   css.rel="stylesheet";
@@ -39,6 +116,7 @@ if(!document.querySelector('link[data-ptg-shell-style]')){
   css.dataset.ptgShellStyle="1";
   document.head.append(css);
 }
+installThemeCSS();
 const SVG=(paths)=>'<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'+paths+'</svg>';
 const ICONS={
   home:SVG('<path d="m3 10 9-7 9 7v10h-6v-6H9v6H3z"/>'),
