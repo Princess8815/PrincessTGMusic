@@ -14,8 +14,12 @@ import "./site-shell.js";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
   signOut,
   sendPasswordResetEmail,
+  sendEmailVerification,
+  reload,
   updateProfile,
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
@@ -84,9 +88,29 @@ if (!container) {
           </button>
         </form>
 
+        <div id="auth-google-group" class="auth-google-group">
+          <div class="auth-divider"><span>or continue with</span></div>
+          <button id="auth-google" class="auth-google-button" type="button">
+            <span class="auth-google-mark" aria-hidden="true">G</span>
+            Continue with Google
+          </button>
+          <p class="auth-provider-note">Google accounts can sign in without a separate site password.</p>
+        </div>
+
         <button id="auth-reset" class="auth-text-button" type="button">
           Forgot Password?
         </button>
+
+        <section id="auth-verify-panel" class="auth-verify-panel" hidden aria-label="Email verification">
+          <p>To protect member accounts, please verify your email address before using member features.</p>
+          <p class="auth-verify-address">Verification email: <strong id="auth-verify-email"></strong></p>
+          <p id="auth-verify-message" role="status" aria-live="polite"></p>
+          <div class="auth-verify-actions">
+            <button type="button" id="auth-resend-verification" class="auth-primary">Resend verification email</button>
+            <button type="button" id="auth-check-verification" class="auth-primary">I've verified my email</button>
+            <button type="button" id="auth-use-another" class="auth-text-button">Use another account</button>
+          </div>
+        </section>
       </div>
     </div>
   `;
@@ -105,7 +129,7 @@ if (profileButton) {
   });
 
   onAuthStateChanged(auth, user => {
-    profileButton.hidden = !user;
+    profileButton.hidden = !user?.emailVerified;
   });
 }
 
@@ -173,36 +197,83 @@ adminButton.addEventListener("click", async () => {
 
   let mode = "login";
   let busy = false;
+  let lastVerificationEmailAt = 0;
+  const verifyPanel = $("auth-verify-panel");
+  const googleGroup = $("auth-google-group");
+  const googleButton = $("auth-google");
+  const googleProvider = new GoogleAuthProvider();
+  googleProvider.setCustomParameters({prompt:"select_account"});
 
   function setMessage(text, error = false) {
     message.textContent = text;
     message.classList.toggle("auth-error", error);
   }
 
+  function showAuthForms() {
+    verifyPanel.hidden = true;
+    form.hidden = false;
+    $("auth-google-group").hidden = false;
+    $("auth-reset").hidden = mode === "register";
+    $("auth-login-tab").parentElement.hidden = false;
+  }
+
   function setMode(nextMode) {
     mode = nextMode;
     form.reset();
     setMessage("");
-
+    showAuthForms();
     const registering = mode === "register";
-
     $("auth-heading").textContent =
       registering ? "Create Your Account" : "Welcome Back";
-
     submit.textContent = registering ? "Create Account" : "Sign In";
     nameGroup.hidden = !registering;
     $("auth-name").required = registering;
-
     password.autocomplete =
       registering ? "new-password" : "current-password";
-
     $("auth-reset").hidden = registering;
-
     loginTab.classList.toggle("active", !registering);
     registerTab.classList.toggle("active", registering);
   }
 
+  function showVerification(user, text = "") {
+    if (!user || user.emailVerified) return;
+    modal.hidden = false;
+    form.hidden = true;
+    loginTab.parentElement.hidden = true;
+    googleGroup.hidden = true;
+    $("auth-reset").hidden = true;
+    verifyPanel.hidden = false;
+    $("auth-heading").textContent = "Verify Your Email";
+    $("auth-verify-email").textContent = user.email || "your email address";
+    if (text) $("auth-verify-message").textContent = text;
+    $("auth-open").hidden = false;
+    $("auth-open").textContent = "Verify Email";
+  }
+
+  function syncAuthBar(user) {
+    const loggedIn=!!user;
+    const verified=!!user?.emailVerified;
+    $("auth-open").hidden = loggedIn && verified;
+    $("auth-open").textContent = loggedIn ? "Verify Email" : "Login / Register";
+    $("auth-logout").hidden = !loggedIn;
+    $("auth-welcome").textContent = loggedIn
+      ? verified
+        ? `Welcome, ${user.displayName || user.email || "Member"}!`
+        : "Email verification required"
+      : "";
+    if (loggedIn && !verified) showVerification(user);
+    else if (verified) {
+      verifyPanel.hidden = true;
+      modal.hidden = true;
+    }
+  }
+
   function openModal() {
+    const user = auth.currentUser;
+    if (user && !user.emailVerified) {
+      showVerification(user);
+      return;
+    }
     setMode("login");
     modal.hidden = false;
     $("auth-email").focus();
@@ -216,9 +287,11 @@ adminButton.addEventListener("click", async () => {
   }
 
   function friendlyError(error) {
-    switch (error.code) {
+    switch (error?.code) {
       case "auth/email-already-in-use":
-        return "This email already has an account.";
+        return "This email already has an account. Sign in instead.";
+      case "auth/account-exists-with-different-credential":
+        return "An account already uses this email with another sign-in method. Please sign in with that method first.";
       case "auth/invalid-email":
         return "Please enter a valid email address.";
       case "auth/weak-password":
@@ -230,72 +303,159 @@ adminButton.addEventListener("click", async () => {
       case "auth/network-request-failed":
         return "Network error. Please check your connection.";
       case "auth/operation-not-allowed":
-        return "Email/password login is not enabled in Firebase.";
+        return "This sign-in method must be enabled in Firebase Authentication first.";
+      case "auth/unauthorized-domain":
+        return "Add this website's domain to Firebase Authentication's authorized domains.";
+      case "auth/popup-blocked":
+        return "Your browser blocked the Google sign-in popup. Please allow popups for this site and try again.";
+      case "auth/popup-closed-by-user":
+      case "auth/cancelled-popup-request":
+        return "Google sign-in was cancelled.";
+      case "auth/invalid-action-code":
+        return "This verification link is invalid or has expired. Request a new one.";
       default:
-        return "Something went wrong. Please try again.";
+        return "Authentication could not be completed. Please try again.";
+    }
+  }
+
+  async function sendVerification(user,automatic=false) {
+    const now=Date.now();
+    if(now-lastVerificationEmailAt<60000) {
+      $("auth-verify-message").textContent =
+        "A link was recently sent. Check your inbox or spam folder before requesting another.";
+      return;
+    }
+    try {
+      await sendEmailVerification(user);
+      lastVerificationEmailAt=Date.now();
+      $("auth-verify-message").textContent =
+        "Verification link sent. Open it from your email, then click I've verified my email.";
+    } catch (error) {
+      $("auth-verify-message").textContent =
+        automatic
+          ? "Your account was created. Verification email could not be sent: "+friendlyError(error)+
+            " Use Resend verification email to try again."
+          : "Unable to send verification email: "+friendlyError(error);
     }
   }
 
   $("auth-open").addEventListener("click", openModal);
   $("auth-close").addEventListener("click", closeModal);
-
-  modal.addEventListener("click", (event) => {
-    if (event.target === modal) closeModal();
+  modal.addEventListener("click", event=>{
+    if(event.target===modal)closeModal();
   });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !modal.hidden) closeModal();
+  document.addEventListener("keydown",event=>{
+    if(event.key==="Escape"&&!modal.hidden)closeModal();
   });
+  loginTab.addEventListener("click",()=>setMode("login"));
+  registerTab.addEventListener("click",()=>setMode("register"));
 
-  loginTab.addEventListener("click", () => setMode("login"));
-  registerTab.addEventListener("click", () => setMode("register"));
-
-  form.addEventListener("submit", async (event) => {
+  form.addEventListener("submit",async event=>{
     event.preventDefault();
-    if (busy) return;
-
-    const email = $("auth-email").value.trim();
-    const userPassword = password.value;
-    const displayName = $("auth-name").value.trim();
-
-    if (mode === "register" && !displayName) {
-      setMessage("Please enter a display name.", true);
+    if(busy)return;
+    const email=$("auth-email").value.trim();
+    const userPassword=password.value;
+    const displayName=$("auth-name").value.trim();
+    if(mode==="register"&&!displayName){
+      setMessage("Please enter a display name.",true);
       return;
     }
-
-    busy = true;
-    submit.disabled = true;
-    setMessage("");
-
-    try {
-      if (mode === "register") {
-        const credential = await createUserWithEmailAndPassword(
-          auth, email, userPassword
-        );
-
-        try {
-          await updateProfile(credential.user, { displayName });
-        } catch (profileError) {
-          console.error("Display name update failed:", profileError);
-          setMessage(
-            "Account created, but your display name could not be saved.",
-            true
-          );
+    busy=true;submit.disabled=true;setMessage("");
+    try{
+      if(mode==="register"){
+        const credential=await createUserWithEmailAndPassword(auth,email,userPassword);
+        try{
+          await updateProfile(credential.user,{displayName});
+        }catch(error){
+          console.error("Unable to set display name:",error);
+          showVerification(credential.user,
+            "Your account was created, but its display name was not saved.");
           return;
         }
-      } else {
-        await signInWithEmailAndPassword(auth, email, userPassword);
+        showVerification(credential.user);
+        await sendVerification(credential.user,true);
+      }else{
+        const credential=await signInWithEmailAndPassword(auth,email,userPassword);
+        await reload(credential.user);
+        await credential.user.getIdToken(true);
+        if(credential.user.emailVerified)modal.hidden=true;
+        else showVerification(credential.user,
+          "Your email hasn't been verified yet. Check your verification link or resend it below.");
       }
+      syncAuthBar(auth.currentUser);
+      if(auth.currentUser?.emailVerified)
+        window.dispatchEvent(new CustomEvent("princesstg:email-verified"));
+    }catch(error){
+      console.error("Authentication error:",error);
+      setMessage(friendlyError(error),true);
+    }finally{busy=false;submit.disabled=false;}
+  });
 
-      modal.hidden = true;
-      form.reset();
-    } catch (error) {
-      console.error("Authentication error:", error);
-      setMessage(friendlyError(error), true);
-    } finally {
-      busy = false;
-      submit.disabled = false;
-    }
+  googleButton.addEventListener("click",async()=>{
+    if(busy)return;
+    busy=true;googleButton.disabled=true;setMessage("");
+    try{
+      // Popup is opened directly from the click handler. Redirect sign-in
+      // is deliberately avoided on third-party GitHub Pages hosting.
+      const credential=await signInWithPopup(auth,googleProvider);
+      await credential.user.getIdToken(true);
+      if(credential.user.emailVerified){
+        modal.hidden=true;
+        window.dispatchEvent(new CustomEvent("princesstg:email-verified"));
+      }else{
+        showVerification(credential.user,
+          "Google hasn't confirmed this email as verified yet. Verify it to continue.");
+      }
+      syncAuthBar(credential.user);
+    }catch(error){
+      console.error("Google sign-in error:",error);
+      setMessage(friendlyError(error),true);
+    }finally{busy=false;googleButton.disabled=false;}
+  });
+
+  $("auth-resend-verification").addEventListener("click",async()=>{
+    const user=auth.currentUser;
+    if(!user || user.emailVerified)return;
+    const button=$("auth-resend-verification");
+    button.disabled=true;
+    try{await sendVerification(user);}
+    finally{button.disabled=false;}
+  });
+
+  $("auth-check-verification").addEventListener("click",async()=>{
+    const user=auth.currentUser;
+    if(!user)return;
+    const button=$("auth-check-verification");
+    button.disabled=true;
+    $("auth-verify-message").textContent="Checking verification...";
+    try{
+      await reload(user);
+      await user.getIdToken(true);
+      if(!user.emailVerified){
+        $("auth-verify-message").textContent =
+          "Not verified yet. Open the link in your email, then try again.";
+        return;
+      }
+      verifyPanel.hidden=true;
+      modal.hidden=true;
+      syncAuthBar(user);
+      window.dispatchEvent(new CustomEvent("princesstg:email-verified"));
+    }catch(error){
+      $("auth-verify-message").textContent =
+        "Could not check your email status: "+friendlyError(error);
+    }finally{button.disabled=false;}
+  });
+
+  $("auth-use-another").addEventListener("click",async()=>{
+    if(busy)return;
+    busy=true;
+    try{
+      await signOut(auth);
+      setMode("login");
+      modal.hidden=false;
+    }catch(error){
+      $("auth-verify-message").textContent="Could not change account: "+friendlyError(error);
+    }finally{busy=false;}
   });
 
   $("auth-reset").addEventListener("click", async () => {
@@ -340,18 +500,7 @@ $("auth-logout").addEventListener("click", async () => {
 });
 
 
-  onAuthStateChanged(auth, (user) => {
-    const loggedIn = Boolean(user);
-
-    $("auth-open").hidden = loggedIn;
-    $("auth-logout").hidden = !loggedIn;
-
-    $("auth-welcome").textContent = loggedIn
-      ? `Welcome, ${user.displayName || user.email || "Member"}!`
-      : "";
-
-    if (loggedIn) {
-      modal.hidden = true;
-    }
+  onAuthStateChanged(auth, user=>{
+    syncAuthBar(user);
   });
 }
