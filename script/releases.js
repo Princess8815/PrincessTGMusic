@@ -1,3 +1,4 @@
+import {addToPlaylistControl} from "./music-playlists.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   "use strict";
@@ -286,8 +287,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       `${song.genres.join(", ") || "Uncategorised genre"}`;
 
     link.append(title, detail);
-
-    return link;
+    const wrapper=document.createElement("div");
+    wrapper.style.cssText="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0";
+    wrapper.append(link,addToPlaylistControl(()=>["song:"+song.pageId]));
+    return wrapper;
   }
 
   // ==========================================
