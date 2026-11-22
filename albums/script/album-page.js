@@ -12,7 +12,7 @@ const normalize=x=>String(x||"").trim().replace(/\s+/g," ").toLowerCase();
 const slug=x=>String(x||"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
 const personalKey="princesstg-album-track-order:"+albumId;
 const audio=$("album-player");
-let tracks=[],official=[],currentId="",shuffling=false,repeating=false,shuffleBag=[],history=[];
+let tracks=[],official=[],currentId="",shuffling=false,repeating=false,shuffleBag=[],shuffleCycleStarted=false,history=[];
 let albumName="";
 function setMessage(text){$("album-playback-status").textContent=text;}
 function playable(){return tracks.filter(track=>track.audioKey.startsWith("audio/"));}
@@ -50,8 +50,9 @@ function getNextTrack(auto=false){
   if(shuffling){
     const choices=available.filter(track=>track.id!==currentId);
     if(!shuffleBag.length){
-      if(auto&&!repeating)return null;
+      if(auto&&shuffleCycleStarted&&!repeating)return null;
       shuffleBag=choices.map(x=>x.id);
+      shuffleCycleStarted=true;
       for(let i=shuffleBag.length-1;i>0;i--){
         const j=Math.floor(Math.random()*(i+1));
         [shuffleBag[i],shuffleBag[j]]=[shuffleBag[j],shuffleBag[i]];
@@ -93,6 +94,7 @@ function move(from,to){
   const [track]=tracks.splice(from,1);
   tracks.splice(to,0,track);
   shuffleBag=[];
+  shuffleCycleStarted=false;
   saveOrder();
   $("album-status").textContent=tracks.length+" song(s) · Your personal order";
   renderTracks();
@@ -157,7 +159,7 @@ function registerControls(){
     else void playTrack(getNextTrack());
   };
   $("album-shuffle").onclick=()=>{
-    shuffling=!shuffling;shuffleBag=[];
+    shuffling=!shuffling;shuffleBag=[];shuffleCycleStarted=false;
     $("album-shuffle").setAttribute("aria-pressed",String(shuffling));
     setMessage(shuffling?"Shuffle is on.":"Shuffle is off.");
   };
@@ -170,6 +172,7 @@ function registerControls(){
     localStorage.removeItem(personalKey);
     tracks=[...official];
     shuffleBag=[];
+    shuffleCycleStarted=false;
     $("album-status").textContent=tracks.length+" song(s) · Official order";
     renderTracks();
     setMessage("Restored the official album track order.");
