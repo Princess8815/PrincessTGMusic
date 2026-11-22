@@ -1,5 +1,6 @@
 
 import { auth, db, usingLocalFirebaseEmulators, checkLocalFirestoreEmulator } from "./firebase.js";
+import {hasOwnerVerificationBypass} from "./verification-access.js";
 import { waitForUserRecord } from "./user-data.js";
 import "./ban-expiry.js";
 
@@ -128,7 +129,9 @@ $("profile-account-status").textContent =
   $("profile-email-verified").textContent =
     account.emailVerified
       ? "Email verified"
-      : "Email not verified";
+      : hasOwnerVerificationBypass(account)
+        ? "Email not verified · owner-approved site bypass"
+        : "Email not verified";
 
   updateBioCount();
   renderNewsletter();
@@ -643,6 +646,16 @@ window.addEventListener(
 // The Firebase email link may be confirmed in a second browser tab.
 // Update the visible status on this page when the current Firebase Auth
 // user has reloaded and passed verification, without losing profile edits.
+window.addEventListener("princesstg:verification-access-changed",event=>{
+  if(account?.uid!==event.detail?.uid)return;
+  const indicator=$("profile-email-verified");
+  if(indicator){
+    indicator.textContent=account.emailVerified?"Email verified"
+      :event.detail?.bypassed
+        ?"Email not verified · owner-approved site bypass"
+        :"Email not verified";
+  }
+});
 window.addEventListener("princesstg:email-verified",()=>{
   const user=auth.currentUser;
   if(!user?.emailVerified || account?.uid!==user.uid)return;
