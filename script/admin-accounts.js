@@ -154,11 +154,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         createdAt:serverTimestamp()
       });
       await batch.commit();
-      verificationStatus.textContent=
-        next?"Bypass granted. This account may now use verified-only site features."
-            :"Bypass revoked. Genuine email verification is required again.";
-      verificationStatus.style.color="#86efac";
       await loadBypass(uid);
+      if(selectedUid===uid){
+        verificationStatus.textContent=
+          next?"Bypass granted. This account may now use verified-only site features."
+              :"Bypass revoked. Genuine email verification is required again.";
+        verificationStatus.style.color="#86efac";
+      }
     }catch(error){
       console.error("Owner verification bypass action failed:",error);
       verificationStatus.textContent="Bypass change failed: "+error.message;
