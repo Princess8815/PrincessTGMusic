@@ -52,6 +52,9 @@
     @media(max-width:600px) { .roadmap-card-head { flex-direction: column; gap: .4rem; } .roadmap-top { padding: 1.2rem 1rem; } }
     @media(prefers-reduced-motion: no-preference) { .roadmap-card { transition: border-color .2s ease, transform .2s ease; } .roadmap-card:hover { border-color: rgba(159,123,255,.48); transform: translateY(-2px); } }
   </style>
+  <!-- Navigation remains available even while account services initialize. -->
+  <link rel="stylesheet" href="../styles/site-shell.css" data-ptg-shell-style="1">
+  <script type="module" src="../script/site-shell.js"></script>
 </head>
 <body>
   <div id="auth-container"></div>
