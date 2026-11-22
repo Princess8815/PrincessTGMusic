@@ -1,15 +1,188 @@
-import {app,auth} from "./firebase.js";
-import {getFunctions,httpsCallable} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-functions.js";
+import {auth,db} from "./firebase.js";
+import {
+  collection,doc,getDoc,getDocs,query,orderBy,startAt,endAt,startAfter,
+  limit,writeBatch,updateDoc,deleteDoc,Timestamp,serverTimestamp
+} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 import {
   onAuthStateChanged,sendEmailVerification,reload
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {getPlaylists,createPlaylist,addToPlaylistControl,songLink} from "./music-playlists.js";
 import {loadAllSongs} from "./song-data.js";
 
-// Mail stays on the server. The browser never directly reads private mail
-// documents or writes recipients' records in Firestore.
-const call=httpsCallable(getFunctions(app,"us-central1"),"siteMail");
-const api=async(action,args={})=>(await call({action,...args})).data;
+// Firestore owns mailbox storage and enforces permissions through Security
+// Rules. All messages are written as two atomic copies plus a rate-limit
+// receipt. Firestore TTL removes them after 30 days, with no Cloud Function.
+const MAIL_ROOT="siteMailboxes";
+const DIRECTORY="siteMailDirectory";
+const THROTTLE="siteMailThrottle";
+const MAIL_TTL_MS=30*24*60*60*1000;
+const MAIL_PAGE_SIZE=30;
+const senderActiveStatus=data=>{
+  const status=data?.status||"active";
+  return status==="active"||(status==="banned"&&
+    Number.isFinite(data.banUntil?.toMillis?.())&&
+    data.banUntil.toMillis()<=Date.now());
+};
+function mailError(message,code="failed-precondition"){
+  const error=new Error(message);error.code=code;return error;
+}
+function folderName(box){
+  if(!["inbox","sent"].includes(box))
+    throw mailError("Choose Inbox or Sent.");
+  return box==="inbox"?"siteInbox":"siteSent";
+}
+function mailboxRef(uid,box,id){
+  return doc(db,MAIL_ROOT,uid,folderName(box),id);
+}
+const displayName=data=>{
+  const name=String(data?.auth?.displayName||"").trim();
+  return name||"Site member";
+};
+function messageSummary(snapshot,box){
+  const d=snapshot.data();
+  return {
+    id:snapshot.id,senderUid:d.senderUid,recipientUid:d.recipientUid,
+    senderName:d.senderName,recipientName:d.recipientName,
+    subject:d.subject,shareKind:d.share?.kind||null,
+    imageCount:d.images?.length||0,hasImage:!!d.images?.length,
+    createdAt:d.createdAt?.toMillis?.()||0,
+    expiresAt:d.expiresAt?.toMillis?.()||0,
+    read:box==="sent"||!!d.readAt
+  };
+}
+async function memberAuth(){
+  const user=auth.currentUser;
+  if(!user)throw mailError("Sign in to use Site Mail.","unauthenticated");
+  if(!user.emailVerified)
+    throw mailError("Verify your email before using Site Mail.","permission-denied");
+  const data=(await getDoc(doc(db,"users",user.uid))).data();
+  if(!data||!senderActiveStatus(data))
+    throw mailError("Only active members can use Site Mail.","permission-denied");
+  return {user,data};
+}
+async function mailSearch(searchText){
+  const keyword=String(searchText||"").trim();
+  if(keyword.length<2)return {users:[]};
+  const variants=[keyword,keyword[0].toUpperCase()+keyword.slice(1),
+    keyword[0].toLowerCase()+keyword.slice(1)].filter(Boolean);
+  const found=new Map();
+  const collections=collection(db,DIRECTORY);
+  const results=await Promise.all([...new Set(variants)].map(term=>
+    getDocs(query(collections,orderBy("name"),startAt(term),
+      endAt(term+"\\uf8ff"),limit(12)))));
+  for(const result of results){
+    for(const snapshot of result.docs){
+      if(snapshot.id===auth.currentUser?.uid)continue;
+      const member=snapshot.data();
+      const name=String(member.name||"").trim();
+      if(name)found.set(snapshot.id,{uid:snapshot.id,name});
+    }
+  }
+  return {users:[...found.values()].slice(0,12)};
+}
+async function mailSend(args,member){
+  const to=String(args.recipientUid||"").trim();
+  if(!/^[a-zA-Z0-9_-]{8,140}$/.test(to)||to===member.user.uid)
+    throw mailError("Choose another site member from the search.");
+  const recipientDoc=await getDoc(doc(db,DIRECTORY,to));
+  if(!recipientDoc.exists())
+    throw mailError("That member is not in the verified member directory.");
+  const subject=String(args.subject||"").trim(),body=String(args.body||"").trim();
+  if(!subject||subject.length>120||body.length>6000)
+    throw mailError("Subject must be 1–120 characters and text at most 6,000 characters.");
+  const share=args.share||null,images=args.images||[];
+  if(!body&&!share&&!images.length)
+    throw mailError("Write a message or attach a song, playlist or picture.");
+  if(!Array.isArray(images)||images.length>3||
+     images.some(image=>!/^data:image\\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(image?.dataUrl||"")||
+       image.dataUrl.length>200000))
+    throw mailError("Only up to three compressed JPEG images are allowed. Audio is blocked.");
+  if(share&&(!["song","playlist"].includes(share.kind)))
+    throw mailError("Only site songs and site playlists can be shared.");
+  const rateRef=doc(db,THROTTLE,member.user.uid);
+  const previous=await getDoc(rateRef);
+  const now=Date.now();
+  const state=previous.data();
+  if(state?.lastSentAt?.toMillis?.()>now-15000)
+    throw mailError("Please allow 15 seconds between messages.","resource-exhausted");
+  const sameDay=state?.dayStart?.toMillis?.()>now-86400000;
+  const dayCount=sameDay?(Number(state.dayCount)||0)+1:1;
+  if(dayCount>50)
+    throw mailError("Daily limit of 50 messages reached. Try again tomorrow.","resource-exhausted");
+  const sentRef=doc(collection(db,MAIL_ROOT,member.user.uid,"siteSent"));
+  const id=sentRef.id;
+  const nowStamp=serverTimestamp();
+  const expiry=Timestamp.fromMillis(now+MAIL_TTL_MS);
+  const payload={
+    senderUid:member.user.uid,recipientUid:to,
+    senderName:displayName(member.data),
+    recipientName:String(recipientDoc.data().name||"Site member").trim(),
+    subject,body,share,images,
+    createdAt:nowStamp,expiresAt:expiry,readAt:null
+  };
+  const batch=writeBatch(db);
+  batch.set(sentRef,{...payload,folder:"sent"});
+  batch.set(mailboxRef(to,"inbox",id),{...payload,folder:"inbox"});
+  batch.set(rateRef,{
+    lastSentAt:serverTimestamp(),
+    dayStart:sameDay?state.dayStart:serverTimestamp(),
+    dayCount,lastMessageId:id
+  });
+  await batch.commit();
+  return {id,sentAt:now,expiresAt:now+MAIL_TTL_MS};
+}
+async function mailList(uid,box,cursor){
+  const coll=collection(db,MAIL_ROOT,uid,folderName(box));
+  const parts=[orderBy("createdAt","desc"),limit(MAIL_PAGE_SIZE)];
+  if(cursor){
+    const last=await getDoc(mailboxRef(uid,box,cursor));
+    if(!last.exists())throw mailError("Mail changed. Refresh your folder.");
+    parts.push(startAfter(last));
+  }
+  const result=await getDocs(query(coll,...parts));
+  const now=Date.now();
+  return {
+    messages:result.docs.filter(item=>item.data().expiresAt?.toMillis?.()>now)
+      .map(snapshot=>messageSummary(snapshot,box)),
+    nextCursor:result.size===MAIL_PAGE_SIZE?result.docs[result.docs.length-1].id:null
+  };
+}
+async function mailRead(uid,box,id){
+  const ref=mailboxRef(uid,box,id);
+  const snap=await getDoc(ref);
+  if(!snap.exists())throw mailError("This message was deleted or no longer exists.","not-found");
+  const data=snap.data();
+  if(data.expiresAt?.toMillis?.()<=Date.now())
+    throw mailError("This message expired after 30 days.","not-found");
+  if(box==="inbox"&&!data.readAt){
+    await updateDoc(ref,{readAt:serverTimestamp()});
+  }
+  return {mail:{...messageSummary(snap,box),read:true,
+    body:data.body||"",share:data.share||null,images:data.images||[]}};
+}
+async function mailDeleteAll(uid,box){
+  const batch=writeBatch(db);
+  const items=await getDocs(query(collection(db,MAIL_ROOT,uid,folderName(box)),limit(180)));
+  items.docs.forEach(item=>batch.delete(item.ref));
+  if(!items.empty)await batch.commit();
+  return {deleted:items.size,hasMore:items.size===180};
+}
+async function api(action,args={}){
+  const {user,data}=await memberAuth();
+  if(action==="search")return mailSearch(args.query);
+  if(action==="send")return mailSend(args,{user,data});
+  const box=args.box==="sent"?"sent":"inbox";
+  if(action==="list")return mailList(user.uid,box,args.cursor);
+  if(action==="deleteAll")return mailDeleteAll(user.uid,box);
+  if(!/^[a-zA-Z0-9_-]{8,140}$/.test(String(args.id||"")))
+    throw mailError("Invalid message ID.");
+  if(action==="read")return mailRead(user.uid,box,args.id);
+  if(action==="delete"){
+    await deleteDoc(mailboxRef(user.uid,box,args.id));
+    return {deleted:true};
+  }
+  throw mailError("Unknown mail operation.");
+}
 const $=id=>document.getElementById(id);
 const folders=["inbox","sent","compose"];
 const tab=$("profile-tab-mail");
