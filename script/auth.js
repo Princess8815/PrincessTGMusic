@@ -9,6 +9,7 @@ import "./song-links.js";
 import "./ban-expiry.js";
 import "./audio-download-controls.js";
 import "./playlist-quick-add.js";
+import "./site-shell.js";
 
 import {
   createUserWithEmailAndPassword,
