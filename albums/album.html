@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Album | PrincessTG Music</title>
+  <link rel="icon" href="../images/logo avatar.png">
+  <link rel="stylesheet" href="../styles/auth.css">
+  <link rel="stylesheet" href="../styles/styles.css">
+  <script type="module" src="../script/auth.js"></script>
+  <script type="module" src="./script/album-page.js"></script>
+  <style>
+    :root{color-scheme:dark}
+    body{background:#111827;color:#f9fafb;font-family:Arial,sans-serif;line-height:1.6;margin:0}
+    main{max-width:980px;margin:30px auto;padding:20px}
+    .panel{background:#1f2937;border:1px solid #374151;border-radius:14px;padding:24px;margin:18px 0}
+    .heading{display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center}
+    #album-cover{width:170px;height:170px;object-fit:cover;border-radius:10px}
+    h1{color:#c084fc;margin:0}
+    a{color:#c4b5fd} p{overflow-wrap:anywhere}
+    .track{border-top:1px solid #374151;padding:12px 0;display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+    button{background:#7c3aed;color:#fff;border:0;border-radius:7px;padding:10px 17px;cursor:pointer;font-weight:bold}
+    button:focus-visible,a:focus-visible{outline:2px solid #c4b5fd;outline-offset:3px}
+    audio{width:100%;margin-top:10px}
+    [hidden]{display:none!important}
+    @media(max-width:560px){.heading{grid-template-columns:1fr}#album-cover{width:135px;height:135px}}
+  </style>
+</head>
+<body>
+  <div id="auth-container"></div>
+  <main>
+    <p><a href="./index.html">All albums</a> · <a href="../index.html">Home</a></p>
+    <section class="panel">
+      <div class="heading">
+        <img id="album-cover" alt="Album cover" hidden>
+        <div><p id="album-status" role="status">Loading album...</p>
+          <h1 id="album-title">Album</h1>
+          <p id="album-date"></p>
+          <p id="album-description" style="white-space:pre-wrap"></p>
+        </div>
+      </div>
+    </section>
+    <section class="panel" aria-label="Album songs">
+      <h2>Songs</h2>
+      <div id="album-tracks"></div>
+    </section>
+    <section class="panel" id="album-player-section" hidden>
+      <h2 id="now-playing">Listen</h2>
+      <audio id="album-player" controls preload="metadata" controlslist="nodownload"></audio>
+    </section>
+  </main>
+</body>
+</html>
