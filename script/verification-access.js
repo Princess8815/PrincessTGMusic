@@ -6,18 +6,19 @@ import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/fire
 import {doc,getDoc,onSnapshot} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
 const overrides=new Map();
-function eligibleOverride(snapshot,user){
-  return !!user && snapshot.exists()
-    && snapshot.data().enabled===true
-    && snapshot.data().targetEmail===user.email;
+function exceptionFromSnapshot(snapshot){
+  const data=snapshot.exists()?snapshot.data():null;
+  return data?.enabled===true&&typeof data.targetEmail==="string"
+    ? {enabled:true,targetEmail:data.targetEmail} : null;
 }
 let stopOverride=()=>{};
 
 export function hasSiteVerificationAccess(user){
-  return !!user && (user.emailVerified===true || overrides.get(user.uid)===true);
+  return !!user && (user.emailVerified===true || hasOwnerVerificationBypass(user));
 }
 export function hasOwnerVerificationBypass(user){
-  return !!user && overrides.get(user.uid)===true;
+  return !!user && overrides.get(user.uid)?.enabled===true
+    && overrides.get(user.uid).targetEmail===user.email;
 }
 function publish(user){
   if(!user || auth.currentUser?.uid!==user.uid)return;
@@ -32,8 +33,9 @@ export async function refreshSiteVerificationAccess(user){
   try{
     const snapshot=await getDoc(doc(db,"verificationOverrides",user.uid));
     if(auth.currentUser?.uid!==user.uid)return false;
-    const allowed=eligibleOverride(snapshot,user);
-    overrides.set(user.uid,allowed);
+    const state=exceptionFromSnapshot(snapshot);
+    overrides.set(user.uid,state);
+    const allowed=hasOwnerVerificationBypass(user);
     publish(user);
     return allowed;
   }catch(error){
@@ -57,7 +59,7 @@ onAuthStateChanged(auth,user=>{
   }
   stopOverride=onSnapshot(doc(db,"verificationOverrides",user.uid),snapshot=>{
     if(auth.currentUser?.uid!==user.uid)return;
-    overrides.set(user.uid,eligibleOverride(snapshot,user));
+    overrides.set(user.uid,exceptionFromSnapshot(snapshot));
     publish(user);
   },error=>{
     overrides.delete(user.uid);
