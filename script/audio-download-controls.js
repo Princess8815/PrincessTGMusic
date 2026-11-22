@@ -16,12 +16,13 @@ function syncAudio(){
     if(!link?.classList?.contains("princesstg-admin-audio-download")){
       link=document.createElement("a");
       link.className="princesstg-admin-audio-download";
-      link.style.cssText="display:inline-block;margin:8px 0;color:#c4b5fd;font-weight:bold";
+      link.style.cssText="margin:8px 0;color:#c4b5fd;font-weight:bold";
       link.textContent="Download audio (admin)";
       audio.insertAdjacentElement("afterend",link);
     }
     const url=audioUrl(audio);
     link.hidden=!staffAllowed||!url;
+    link.style.display=staffAllowed&&url?"inline-block":"none";
     if(staffAllowed&&url){
       link.href=url;
       link.download=decodeURIComponent(new URL(url,document.baseURI).pathname.split("/").pop());
