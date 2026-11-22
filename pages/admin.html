@@ -13,6 +13,8 @@
   <script type="module" src="../script/auth.js"></script>
   <script src="../script/genres.js" defer></script>
   <script type="module" src="../script/admin-songs.js"></script>
+  <script type="module" src="../script/admin-albums.js"></script>
+  <script type="module" src="../script/admin-genres.js"></script>
   <script type="module" src="../script/admin-edit-songs.js"></script>
   <script type="module" src="../script/admin-delete-songs.js"></script>
   <script type="module" src="../script/admin-accounts.js"></script>
@@ -264,6 +266,12 @@
       }
       .admin-main-tabs button { padding: 11px 7px; }
     }
+    .admin-subtabs { display:flex; flex-wrap:wrap; gap:9px; margin:0 0 15px; }
+    .admin-subtabs button { border:1px solid #6b7280; background:#252b3b; color:#f9fafb; padding:11px 20px; border-radius:8px; cursor:pointer; font-weight:700; }
+    .admin-subtabs button[aria-selected="true"] { background:#7c3aed; border-color:#c4b5fd; }
+    .admin-subpanel[hidden] { display:none !important; }
+    .admin-subpanel .form-field { margin-top:15px; }
+    .admin-main-panel .admin-main-panel { margin-top:0; }
   </style>
 </head>
 
@@ -290,28 +298,22 @@
                 aria-selected="true">Mail</button>
 
         <button type="button" role="tab"
-                id="admin-main-tab-add"
-                data-admin-tab="add"
-                aria-controls="admin-main-panel-add"
-                aria-selected="false">Add Song</button>
-
-        <button type="button" role="tab"
-                id="admin-main-tab-edit"
-                data-admin-tab="edit"
-                aria-controls="admin-main-panel-edit"
-                aria-selected="false">Edit Song</button>
-
-        <button type="button" role="tab"
-                id="admin-main-tab-delete"
-                data-admin-tab="delete"
-                aria-controls="admin-main-panel-delete"
-                aria-selected="false">Delete Song</button>
+                id="admin-main-tab-music"
+                data-admin-tab="music"
+                aria-controls="admin-main-panel-music"
+                aria-selected="false">Music</button>
 
         <button type="button" role="tab"
                 id="admin-main-tab-albums"
                 data-admin-tab="albums"
                 aria-controls="admin-main-panel-albums"
                 aria-selected="false">Albums</button>
+
+        <button type="button" role="tab"
+                id="admin-main-tab-genres"
+                data-admin-tab="genres"
+                aria-controls="admin-main-panel-genres"
+                aria-selected="false">Genres</button>
 
         <button type="button" role="tab"
         id="admin-main-tab-email"
@@ -461,6 +463,21 @@
           </section>
         </section>
       </section>
+
+      <!-- MUSIC: Add / Edit / Delete share one parent tab -->
+      <section id="admin-main-panel-music"
+               class="admin-main-panel"
+               role="tabpanel"
+               aria-labelledby="admin-main-tab-music"
+               hidden>
+        <nav class="admin-subtabs" aria-label="Music management">
+          <button type="button" id="admin-main-tab-add" data-admin-subtab="music:add"
+                  aria-controls="admin-main-panel-add" aria-selected="true">Add</button>
+          <button type="button" id="admin-main-tab-edit" data-admin-subtab="music:edit"
+                  aria-controls="admin-main-panel-edit" aria-selected="false">Edit</button>
+          <button type="button" id="admin-main-tab-delete" data-admin-subtab="music:delete"
+                  aria-controls="admin-main-panel-delete" aria-selected="false">Delete</button>
+        </nav>
 
       <!-- ADD SONG TAB -->
       <section id="admin-main-panel-add"
@@ -943,47 +960,116 @@
         </section>
       </section>
 
-      <!-- ALBUMS TAB -->
-      <section id="admin-main-panel-albums"
-               class="admin-main-panel"
-               role="tabpanel"
-               aria-labelledby="admin-main-tab-albums"
-               hidden>
+      </section><!-- /music parent -->
 
-        <section class="admin-card">
-          <h2>Album Management</h2>
-          <p class="helper">
-            New albums are saved to the database
-            and appear in the Add Song dropdown.
-          </p>
-
-          <form id="add-album-form">
-            <div class="form-field">
-              <label for="new-album-name">
-                New Album Name <span class="required">*</span>
-              </label>
-              <input id="new-album-name"
-                     type="text"
-                     placeholder="Enter album name"
-                     maxlength="100"
-                     required>
-            </div>
-
-            <div class="form-actions">
-              <button type="submit" id="add-album-button">
-                Add Album
-              </button>
-            </div>
-
-            <p id="add-album-status"
-               class="helper"
-               role="status"
-               aria-live="polite"></p>
-          </form>
+      <!-- ALBUM MANAGEMENT: one dynamic page, database-backed -->
+      <section id="admin-main-panel-albums" class="admin-main-panel"
+               role="tabpanel" aria-labelledby="admin-main-tab-albums" hidden>
+        <nav class="admin-subtabs" aria-label="Album management">
+          <button type="button" data-admin-subtab="albums:add" aria-selected="true">Add</button>
+          <button type="button" data-admin-subtab="albums:edit" aria-selected="false">Edit</button>
+          <button type="button" data-admin-subtab="albums:delete" aria-selected="false">Delete</button>
+        </nav>
+        <section class="admin-subpanel" data-admin-subpanel="albums:add">
+          <section class="admin-card">
+            <h2>Add Album</h2>
+            <p class="helper">Create a Firestore album record. Existing album names remain available for older songs.</p>
+            <form id="add-album-form">
+              <div class="form-field"><label for="new-album-name">Album Name *</label>
+                <input id="new-album-name" maxlength="100" required></div>
+              <div class="form-field"><label for="new-album-date">Release Date</label>
+                <input id="new-album-date" type="date"><p class="helper">Leave blank for TBD.</p></div>
+              <div class="form-field"><label for="new-album-description">Description</label>
+                <textarea id="new-album-description" maxlength="5000"></textarea></div>
+              <div class="form-field"><label for="new-album-cover">Cover Image URL (optional)</label>
+                <input id="new-album-cover" type="url" placeholder="https://..."></div>
+              <div class="form-actions"><button type="submit" id="add-album-button">Add Album</button></div>
+              <p id="add-album-status" role="status" aria-live="polite"></p>
+            </form>
+          </section>
+        </section>
+        <section class="admin-subpanel" data-admin-subpanel="albums:edit" hidden>
+          <section class="admin-card">
+            <h2>Edit Album</h2>
+            <p class="helper">Changing the release date updates all associated songs, including older JSON-only songs through Firestore overrides.</p>
+            <button type="button" class="secondary" id="album-refresh">Refresh Albums</button>
+            <div class="form-field"><label for="edit-album-select">Choose Album</label>
+              <select id="edit-album-select"><option value="">Choose an album...</option></select></div>
+            <form id="edit-album-form" hidden>
+              <div class="form-field"><label for="edit-album-name">Album Name *</label>
+                <input id="edit-album-name" maxlength="100" required></div>
+              <div class="form-field"><label for="edit-album-date">Release Date</label>
+                <input id="edit-album-date" type="date"></div>
+              <div class="form-field"><label for="edit-album-description">Description</label>
+                <textarea id="edit-album-description" maxlength="5000"></textarea></div>
+              <div class="form-field"><label for="edit-album-cover">Cover Image URL (optional)</label>
+                <input id="edit-album-cover" type="url"></div>
+              <div class="form-actions"><button type="submit">Save Album &amp; Update Songs</button></div>
+            </form>
+            <p id="edit-album-status" role="status" aria-live="polite"></p>
+          </section>
+        </section>
+        <section class="admin-subpanel" data-admin-subpanel="albums:delete" hidden>
+          <section class="admin-card">
+            <h2>Delete Album</h2>
+            <p class="helper">Albums containing songs cannot be deleted until those songs have been reassigned. Audio files and song records are never deleted here.</p>
+            <div class="form-field"><label for="delete-album-select">Choose Album</label>
+              <select id="delete-album-select"><option value="">Choose an album...</option></select></div>
+            <div class="form-field"><label for="delete-album-confirm">Type DELETE to confirm</label>
+              <input id="delete-album-confirm" placeholder="DELETE" autocomplete="off"></div>
+            <button type="button" id="delete-album-button" style="background:#dc2626;">Delete Album</button>
+            <p id="delete-album-status" role="status" aria-live="polite"></p>
+          </section>
         </section>
       </section>
 
-<section id="admin-main-panel-email"
+      <!-- GENRE MANAGEMENT -->
+      <section id="admin-main-panel-genres" class="admin-main-panel"
+               role="tabpanel" aria-labelledby="admin-main-tab-genres" hidden>
+        <nav class="admin-subtabs" aria-label="Genre management">
+          <button type="button" data-admin-subtab="genres:add" aria-selected="true">Add</button>
+          <button type="button" data-admin-subtab="genres:edit" aria-selected="false">Edit</button>
+          <button type="button" data-admin-subtab="genres:delete" aria-selected="false">Delete</button>
+        </nav>
+        <section class="admin-subpanel" data-admin-subpanel="genres:add">
+          <section class="admin-card">
+            <h2>Add Genre</h2>
+            <form id="add-genre-form">
+              <div class="form-field"><label for="new-genre-name">Genre Name *</label>
+                <input id="new-genre-name" maxlength="100" required></div>
+              <div class="form-actions"><button type="submit">Add Genre</button></div>
+            </form>
+            <p id="add-genre-status" role="status"></p>
+          </section>
+        </section>
+        <section class="admin-subpanel" data-admin-subpanel="genres:edit" hidden>
+          <section class="admin-card">
+            <h2>Edit Genre</h2>
+            <div class="form-field"><label for="edit-genre-select">Choose Genre</label>
+              <select id="edit-genre-select"></select></div>
+            <form id="edit-genre-form">
+              <div class="form-field"><label for="edit-genre-name">New Name *</label>
+                <input id="edit-genre-name" maxlength="100" required></div>
+              <div class="form-actions"><button type="submit">Save Genre &amp; Update Songs</button></div>
+            </form>
+            <p id="edit-genre-status" role="status"></p>
+          </section>
+        </section>
+        <section class="admin-subpanel" data-admin-subpanel="genres:delete" hidden>
+          <section class="admin-card">
+            <h2>Delete Genre</h2>
+            <p class="helper">A genre used by any song must be reassigned before deletion.</p>
+            <div class="form-field"><label for="delete-genre-select">Choose Genre</label>
+              <select id="delete-genre-select"></select></div>
+            <div class="form-field"><label for="delete-genre-confirm">Type DELETE to confirm</label>
+              <input id="delete-genre-confirm" placeholder="DELETE" autocomplete="off"></div>
+            <button type="button" id="delete-genre-button" style="background:#dc2626;">Delete Genre</button>
+            <p id="delete-genre-status" role="status"></p>
+          </section>
+        </section>
+      </section>
+
+      <section id="admin-main-panel-email"
          class="admin-main-panel"
          role="tabpanel"
          aria-labelledby="admin-main-tab-email"
