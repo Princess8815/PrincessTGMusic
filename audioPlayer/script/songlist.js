@@ -1,26 +1,76 @@
-
 /* ==========================================
-   REDIRECT OLD SONG PAGES
+   LEGACY SONG LINK NOTICE
+   Older /audioPlayer/pages/<slug>.html links remain usable, but
+   visitors choose when to open the maintained song.html?id=<slug> route.
+   No automatic redirects or dependency on Firebase.
 ========================================== */
+(function showLegacySongNotice(){
+  const pageId=document.body?.dataset?.songId;
+  if(!pageId)return; // Do not show on the current song.html page.
 
-(function redirectLegacySongPage() {
+  const destination=new URL("song.html",window.location.href);
+  destination.searchParams.set("id",pageId);
 
-  const pageId = document.body.dataset.songId;
+  const style=document.createElement("style");
+  style.textContent=`
+    .ptg-legacy-dialog {
+      position:fixed;inset:0;margin:auto;max-width:min(510px,calc(100% - 32px));
+      box-sizing:border-box;padding:clamp(20px,5vw,32px);
+      border:2px solid #c084fc;border-radius:18px;
+      background:#1c2333;color:#f8fafc;
+      box-shadow:0 24px 90px #000b;text-align:left;
+      font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;
+    }
+    .ptg-legacy-dialog::backdrop {background:rgba(4,7,18,.83);}
+    .ptg-legacy-dialog h2 {font-size:1.55rem;color:#e9d5ff;margin:0 0 12px;}
+    .ptg-legacy-dialog p {margin:0 0 19px;color:#dbe4ef;}
+    .ptg-legacy-actions {display:flex;flex-wrap:wrap;gap:11px;}
+    .ptg-legacy-dialog button {
+      flex:1 1 185px;min-height:44px;border:1px solid #bd9aff;
+      border-radius:9px;cursor:pointer;padding:10px 14px;
+      background:#a78bfa;color:#151020;font:700 1rem system-ui,sans-serif;
+    }
+    .ptg-legacy-dialog button.ptg-legacy-stay {
+      background:#293246;color:#f7f5ff;border-color:#7d849e;
+    }
+    .ptg-legacy-dialog button:focus-visible {
+      outline:3px solid #22d3ee;outline-offset:3px;
+    }
+    @media (max-width:480px){.ptg-legacy-dialog{font-size:15px;}}
+  `;
+  document.head.append(style);
 
-  if (!pageId) return;
-
-  const url = new URL(
-    "song.html",
-    window.location.href
-  );
-
-  url.searchParams.set("id", pageId);
-
-  window.location.replace(url.href);
-
+  const dialog=document.createElement("dialog");
+  dialog.className="ptg-legacy-dialog";
+  dialog.setAttribute("aria-labelledby","ptg-legacy-title");
+  dialog.setAttribute("aria-describedby","ptg-legacy-explanation");
+  const title=document.createElement("h2");
+  title.id="ptg-legacy-title";
+  title.textContent="This song link is deprecated";
+  const explanation=document.createElement("p");
+  explanation.id="ptg-legacy-explanation";
+  explanation.textContent="You opened an older PrincessTG song page. " +
+    "The updated song page has the latest navigation and features. " +
+    "Would you like to go there now?";
+  const actions=document.createElement("div");
+  actions.className="ptg-legacy-actions";
+  const go=document.createElement("button");
+  go.type="button";
+  go.textContent="Open updated song page";
+  go.addEventListener("click",()=>window.location.assign(destination.href));
+  const stay=document.createElement("button");
+  stay.type="button";stay.className="ptg-legacy-stay";
+  stay.textContent="Stay on old page";
+  stay.addEventListener("click",()=>{
+    if(typeof dialog.close==="function")dialog.close();
+    else dialog.remove();
+  });
+  actions.append(go,stay);
+  dialog.append(title,explanation,actions);
+  document.body.append(dialog);
+  if(typeof dialog.showModal==="function")dialog.showModal();
+  else dialog.setAttribute("open","");
 })();
-
-
 
 const SITE_URL = "https://princess8815.github.io/PrincessTGMusic";
 const LOGO_URL = `${SITE_URL}/images/logo%20avatar.png`;
