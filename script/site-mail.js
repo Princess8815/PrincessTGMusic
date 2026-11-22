@@ -544,12 +544,29 @@ tab.addEventListener("click",()=>{
 });
 window.addEventListener("princesstg:mail-share",event=>{
   if(!auth.currentUser){setStatus("Sign in to send mail.",true);return;}
+  if(!isMailVerified(auth.currentUser)){
+    tab.click();
+    updateMailVerification(auth.currentUser);
+    setStatus("Verify your email before sharing music by site mail.",true);
+    return;
+  }
   const item=event.detail;
   if(!item||!["song","playlist"].includes(item.kind))return;
   beginCompose();
   addShare(item);
   $("mail-subject").value=item.kind==="playlist"
     ?item.name+" playlist":item.title||"A song for you";
+});
+window.addEventListener("princesstg:email-verified",()=>{
+  const user=auth.currentUser;
+  if(!isMailVerified(user))return;
+  updateMailVerification(user);
+  if(view!=="compose")void refreshFolder(view);
+  applyShareIntent();
+});
+window.addEventListener("princesstg-user-ready",()=>{
+  if(auth.currentUser?.emailVerified && view!=="compose")
+    void refreshFolder(view);
 });
 onAuthStateChanged(auth,user=>{
   messages={inbox:[],sent:[]};cursors={inbox:null,sent:null};
