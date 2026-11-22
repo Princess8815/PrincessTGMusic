@@ -4,6 +4,8 @@
 
 The **My Profile → Mail** tab uses Firebase callable Cloud Functions to send private, authenticated in-site mail between accounts. It is **not external SMTP email** and does not send real email notifications.
 
+**Mail access requires all three conditions:** (1) a signed-in Firebase user, (2) a **verified email address** (the Firebase Auth `email_verified` claim), and (3) an **active member document** in Firestore (or a ban whose end time has already passed). All mail callable actions, including recipient search, Inbox/Sent listing, reading, deleting, bulk deleting, and sending, enforce this on the server. The mail page displays a verification gate that can send a verification email and refresh the ID token after the user confirms the link. Only active recipients are eligible for new messages.
+
 Members can search other members by display name, send/receive/reply, open mail with sent/expiry times, delete individual mail or clear Inbox/Sent, send site song references, send a snapshot of a locally saved playlist, and attach up to **three pictures**. Picture uploads are converted client-side into compressed JPEG images (typically under 140 KB each). No user-provided audio files, SVG, HTML, executables, or other file types may be sent.
 
 ### Retention, deletion and copies
@@ -21,6 +23,8 @@ The underlying `siteMailMessages/{messageId}` record remains stored until its ex
 ## Required security review before deployment
 
 These are **private message collections**. The application never requests them directly from the browser: all searches, sends, reads and deletes go through the `siteMail` callable, which verifies Firebase Auth, checks sender and recipient account statuses, limits sending to 8 messages/minute and 50 messages/day, and limits the attachment payload.
+
+**Email verification does not guarantee a well-intentioned user.** Real attackers may verify new addresses. Before broader release, add App Check, an abuse reporting/blocking workflow, and registration rate limiting. App Check enforcement should only be enabled after client initialization and testing, to avoid blocking genuine members.
 
 **IMPORTANT:** The currently deployed Firestore Security Rules are *not included* in this repository. There is no `firestore.rules` entry in `firebase.json`. Do not deploy a new generic rules file over the existing project rules without inspecting and merging them.
 
