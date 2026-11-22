@@ -1,0 +1,65 @@
+/* Profile dashboard: tab navigation, account panels, and personal playlist library. */
+.profile-tabs{display:flex;gap:8px;flex-wrap:wrap;padding:10px;margin:20px 0 8px;border-radius:14px;background:#171b2b;border:1px solid #3f3a59}
+.profile-tabs [role=tab]{background:transparent;border:1px solid transparent;border-radius:9px;color:#dcd4f2;font-size:.95rem;padding:10px 14px;white-space:nowrap}
+.profile-tabs [role=tab]:hover,.profile-tabs [role=tab]:focus-visible{background:#34304c;outline:2px solid #c4b5fd;outline-offset:2px}
+.profile-tabs [role=tab][aria-selected=true]{background:#7040ab;border-color:#b694e3;color:white}
+.profile-tabs .profile-tab-danger{color:#fda4af;border-color:#8e333c}
+.profile-tabs .profile-tab-danger[aria-selected=true]{background:#b91c1c;border-color:#ef4444;color:#fff}
+.profile-panel{margin-top:14px}
+#profile-panel-delete{border:2px solid #ef4444;background:#2b151c}
+#profile-panel-delete details{margin-top:20px;padding:14px;border:1px solid #8b4349;border-radius:10px}
+#profile-panel-delete summary{cursor:pointer;color:#fecaca;font-weight:700}
+#profile-panel-delete form{padding-top:12px}
+.profile-playlists{--playlist-color:#8b5cf6}
+.profile-library-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.profile-library-heading h2{margin:0 0 6px}
+.profile-library-heading p{margin:0 0 8px}
+.profile-library-heading>p{max-width:330px;font-size:.86rem}
+.profile-playlist-layout{display:grid;grid-template-columns:minmax(235px,300px) minmax(0,1fr);gap:18px;align-items:start}
+.profile-playlist-sidebar,.profile-playlist-detail{border:1px solid #3d455e;border-radius:14px;background:#171c2d;padding:16px;min-width:0}
+.profile-playlist-sidebar h3{margin:0 0 12px;color:#d8b4fe}
+.profile-playlist-sidebar label,.profile-playlist-detail label{display:block;font-size:.88rem;font-weight:700;margin:9px 0 5px}
+.profile-playlist-sidebar input,.profile-playlist-sidebar select,.profile-playlist-detail input[type=color]{width:100%;min-width:0;color:#f3f4f6;background:#101525;border:1px solid #575571;border-radius:9px;padding:9px;min-height:40px;font:inherit}
+.profile-playlist-sidebar input[type=color],.profile-playlist-detail input[type=color]{padding:3px;max-width:88px;cursor:pointer}
+.playlist-library-filters{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.playlist-library-list{list-style:none;padding:0;margin:15px 0;display:grid;gap:7px;max-height:500px;overflow:auto}
+.playlist-library-list li{min-width:0}
+.playlist-library-list button{width:100%;padding:11px 10px;text-align:left;background:#252a3e;border:1px solid #48495e;display:flex;gap:10px;align-items:center;min-width:0}
+.playlist-library-list button[aria-current=true]{background:#36314f;border-color:var(--playlist-color);box-shadow:inset 3px 0 var(--playlist-color)}
+.playlist-library-list button:hover,.playlist-library-list button:focus-visible{background:#39334e;outline:2px solid #b9a0ee}
+.playlist-library-swatch,#profile-playlist-selected-swatch{display:block;flex:0 0 15px;width:15px;height:38px;border-radius:6px;background:var(--playlist-color);box-shadow:0 0 0 1px #fff4}
+.playlist-library-name{min-width:0;flex:1;overflow-wrap:anywhere}
+.playlist-library-name strong{display:block;font-size:.94rem}
+.playlist-library-name small{display:block;color:#d1d5db;margin-top:3px;font-weight:400}
+.profile-playlist-create{border-top:1px solid #48475e;padding-top:16px;margin-top:16px;display:grid;gap:4px}
+.profile-playlist-create button{margin-top:10px}
+#profile-playlist-library-empty{font-size:.9rem}
+.playlist-detail-empty{border:1px dashed #786895;padding:28px;border-radius:12px;text-align:center}
+.playlist-detail-empty h3{color:#dfc4ff;margin-top:0}
+.playlist-detail-header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:15px}
+.playlist-detail-heading{display:flex;align-items:center;min-width:0;gap:10px}
+.playlist-detail-heading h3{margin:0;color:#f0dbff;overflow-wrap:anywhere}
+.playlist-detail-heading p{margin:4px 0}
+.playlist-detail-actions{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.playlist-detail-actions label{margin:0}
+.playlist-detail-actions .danger-button{width:auto;padding:10px 12px;background:#991b1b}
+.playlist-player{background:#22283d;border-radius:12px;padding:15px;border:1px solid #3a405c}
+.profile-playlist-now{color:#e9d5ff;font-size:1.1rem;margin-bottom:12px;overflow-wrap:anywhere}
+.profile-playlist-lyrics{background:#101525;border:1px solid #555073;border-radius:10px;padding:11px}
+.profile-playlist-lyrics summary{cursor:pointer;color:#ddbfff;font-weight:bold}
+.profile-playlist-lyrics pre{white-space:pre-wrap;max-height:320px;overflow:auto;font:1rem/1.65 Georgia,serif}
+.profile-playlist-controls{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.profile-playlist-controls button{padding:9px 11px}
+#profile-playlist-shuffle[aria-pressed=true]{background:#c6a0fb;color:#1d1035}
+#profile-playlist-audio{width:100%}
+.playlist-track-title{font-size:1rem;margin:18px 0 8px}
+.playlist-track-title span{font-size:.8rem;font-weight:400}
+.profile-playlist-tracklist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.profile-playlist-tracklist li{display:flex;align-items:center;flex-wrap:wrap;gap:8px;background:#252a3e;border:1px solid #3f415a;border-radius:10px;padding:10px}
+.profile-playlist-tracklist .playlist-track-name{flex:1;min-width:145px;overflow-wrap:anywhere}
+.profile-playlist-tracklist button{padding:7px 10px}
+.profile-playlist-tracklist a{font-weight:600}
+.profile-playlist-tracklist .ptg-drag-handle{flex:0 0 30px;cursor:grab}
+.profile-playlist-tracklist .dragging{opacity:.6}
+@media(max-width:860px){main{max-width:100%}.profile-playlist-layout{grid-template-columns:1fr}.profile-playlist-sidebar{display:block}.playlist-library-list{max-height:220px}.profile-tabs{flex-wrap:nowrap;overflow:auto;scrollbar-width:thin}}
+@media(max-width:540px){.profile-card{padding:16px}.profile-playlist-sidebar,.profile-playlist-detail{padding:12px}.playlist-library-filters{grid-template-columns:1fr 1fr}.playlist-detail-actions{width:100%}.profile-playlist-controls button{flex:1}}
