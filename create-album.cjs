@@ -402,9 +402,14 @@ function renderPage(album, tracks) {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="${escapeHtml(album.description || "Listen to " + album.name + " by PrincessTG.")}">
   <title>${escapeHtml(album.name)} | PrincessTG Music</title>
+  <link rel="stylesheet" href="../styles/auth.css">
+  <link rel="stylesheet" href="../styles/site-shell.css" data-ptg-shell-style="1">
+  <script type="module" src="../script/site-shell.js"></script>
+  <script type="module" src="../script/auth.js"></script>
   <style>${PAGE_CSS}</style>
 </head>
 <body>
+  <div id="auth-container"></div>
   <header class="hero"><a href="../index.html" aria-label="PrincessTG Music home"></a></header>
   <main>
     <a class="back-link" href="./index.html">\u2190 All albums</a>
@@ -569,6 +574,8 @@ const INDEX_PAGE = String.raw`<!DOCTYPE html>
     }
   </style>
     <link rel="stylesheet" href="../styles/auth.css">
+    <link rel="stylesheet" href="../styles/site-shell.css" data-ptg-shell-style="1">
+    <script type="module" src="../script/site-shell.js"></script>
     <script type="module" src="../script/auth.js"></script>
 </head>
 <body>
