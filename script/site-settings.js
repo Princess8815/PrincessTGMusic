@@ -181,9 +181,9 @@ function initFirebaseModeSwitch(){
     const requested=toggle.checked?"emulator":"production";
     if(original===requested)return;
     if(requested==="production" && !window.confirm(
-      "Switch this local preview to LIVE Firebase?\\n\\n"+
+      "Switch this local preview to LIVE Firebase?\n\n"+
       "Your next login, profile changes, bans, and messages will use REAL accounts and REAL database records. "+
-      "Do not run destructive tests in this mode.\\n\\nContinue?"
+      "Do not run destructive tests in this mode.\n\nContinue?"
     )){
       toggle.checked=true;
       return;
