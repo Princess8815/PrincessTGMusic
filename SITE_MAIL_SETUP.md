@@ -107,3 +107,20 @@ the verification link without requiring GitHub Pages as an authorized
 Auth logs and the recipient's inbox.** Neither publishing Firestore rules nor
 deploying a Cloud Function is required to send Firebase Auth verification
 emails. The regular app uses Firebase Authentication's client SDK.
+
+
+### Why one account receives verification email but others do not
+
+Verification emails are sent by **Firebase Authentication**, not Firestore or a site-mail Cloud Function. Every request targets the **currently signed-in** user's Firebase email. PR #18 now requests verification immediately after account creation, before saving the user's optional profile information, so an unrelated database/profile failure cannot block the email request.
+
+On the verification screen, confirm the **actual account email** displayed. A request to verify another user is not possible from the owner's logged-in account.
+
+Firebase enforces per-project sending quotas and automatic abuse protections, sometimes including limits based on repeated registrations from a shared IP. These limits can prevent additional test accounts from receiving emails, even when an established account succeeds. Firebase documents the limits at https://firebase.google.com/docs/auth/limits.
+
+For a failed test, note the precise on-screen result:
+
+- **Firebase accepted a verification request for X**: Firebase accepted the API call, but this is not proof that X's provider delivered it. Check Inbox, Spam/Junk, Promotions, Firebase Authentication → Templates → Email address verification, and the address shown on the screen.
+- **Firebase did not send** with `auth/too-many-requests`, `auth/quota-exceeded` or another code: it was rejected. Stop repeated requests, check quotas and rate limits, and retry after restrictions lift. Do not keep creating test accounts to work around a restriction.
+- **Account created but no verification request appears**: check browser JavaScript console for the actual Authentication error, and verify the account exists under Firebase Authentication → Users.
+
+The two verification buttons (login and profile mail) now deduplicate overlapping calls for the same account. An accepted request is tracked per current account rather than applying the owner's cooldown to another signed-in account. No Firebase email verification bypass or admin claim override is used.
