@@ -171,6 +171,35 @@ body.ptg-shell-ready .auth-text-button{color:var(--ptg-highlight)}
 body.ptg-shell-ready :is(audio,progress,input[type=range],input[type=checkbox],input[type=radio]){
   accent-color:var(--ptg-primary);
 }
+/* Make legacy forms, settings and player embellishments agree with the palette. */
+body.ptg-shell-ready .ptg-settings-page > p,
+body.ptg-shell-ready .settings-card .settings-help{color:var(--ptg-muted)}
+body.ptg-shell-ready :is(.settings-actions button.secondary,.settings-reset-palette,
+  .profile-playlist-create,.profile-playlist-controls button[aria-pressed=true]){
+  background:var(--ptg-raised) !important;
+  color:var(--ptg-text) !important;
+  border-color:var(--ptg-border) !important;
+}
+body.ptg-shell-ready :is(.settings-actions button.secondary,.settings-reset-palette):hover{
+  background:var(--ptg-secondary) !important;
+}
+body.ptg-shell-ready :is(.challenge-card,.challenge-form input:not([type=checkbox]),
+  .challenge-form select,.challenge-form textarea,.roadmap-card,.album-track-section){
+  border-color:var(--ptg-border);
+}
+body.ptg-shell-ready :is(.album-cover-box,.player-record){
+  border-color:var(--ptg-border);
+}
+body.ptg-shell-ready .album-cover-box{
+  background:linear-gradient(135deg,color-mix(in srgb,var(--ptg-primary) 24%,var(--ptg-secondary)),var(--ptg-secondary));
+}
+body.ptg-shell-ready .player-record{
+  background:radial-gradient(circle,var(--ptg-highlight) 0 14%,var(--ptg-tertiary) 15% 38%,
+    var(--ptg-primary) 39% 45%,var(--ptg-tertiary) 46%);
+  color:var(--ptg-on-highlight);
+}
+body.ptg-shell-ready :is(.profile-playlist-now,.roadmap-tag,
+  .overline,.roadmap-kicker,.roadmap-phase,.ptg-page-intro h1){color:var(--ptg-highlight)}
 /* Honor optional high-contrast navigation and preserve status semantics. */
 html[data-ptg-contrast=high] body.ptg-shell-ready .ptg-sidebar,
 html[data-ptg-contrast=high] body.ptg-shell-ready .ptg-global-footer{
