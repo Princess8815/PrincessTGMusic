@@ -1,6 +1,7 @@
 
 import { auth } from "./firebase.js";
 import { saveUserIfChanged } from "./user-data.js";
+import {hasSiteVerificationAccess,refreshSiteVerificationAccess} from "./verification-access.js";
 import {
   sendSiteVerification,refreshSiteVerification,verificationError
 } from "./email-verification.js";
@@ -130,13 +131,17 @@ if (profileButton) {
   });
 
   onAuthStateChanged(auth, user => {
-    profileButton.hidden = !user?.emailVerified;
+    profileButton.hidden = !hasSiteVerificationAccess(user);
   });
   window.addEventListener("princesstg:email-verified",()=>{
-    profileButton.hidden = !auth.currentUser?.emailVerified;
+    profileButton.hidden = !hasSiteVerificationAccess(auth.currentUser);
   });
 }
 
+
+  window.addEventListener("princesstg:verification-access-changed",()=>{
+    if(profileButton)profileButton.hidden=!hasSiteVerificationAccess(auth.currentUser);
+  });
 
   const $ = (id) => document.getElementById(id);
 
@@ -243,7 +248,7 @@ adminButton.addEventListener("click", async () => {
   }
 
   function showVerification(user, text = "") {
-    if (!user || user.emailVerified) return;
+    if (!user || hasSiteVerificationAccess(user)) return;
     modal.hidden = false;
     form.hidden = true;
     loginTab.parentElement.hidden = true;
@@ -259,7 +264,7 @@ adminButton.addEventListener("click", async () => {
 
   function syncAuthBar(user) {
     const loggedIn=!!user;
-    const verified=!!user?.emailVerified;
+    const verified=hasSiteVerificationAccess(user);
     $("auth-open").hidden = loggedIn && verified;
     $("auth-open").textContent = loggedIn ? "Verify Email" : "Login / Register";
     $("auth-logout").hidden = !loggedIn;
@@ -282,7 +287,7 @@ adminButton.addEventListener("click", async () => {
 
   function openModal() {
     const user = auth.currentUser;
-    if (user && !user.emailVerified) {
+    if (user && !hasSiteVerificationAccess(user)) {
       showVerification(user);
       return;
     }
@@ -403,7 +408,8 @@ adminButton.addEventListener("click", async () => {
         });
       }else{
         const credential=await signInWithEmailAndPassword(auth,email,userPassword);
-        const verified=await refreshSiteVerification(credential.user);
+        const verified=await refreshSiteVerificationAccess(credential.user)
+          || await refreshSiteVerification(credential.user);
         if(verified)modal.hidden=true;
         else showVerification(credential.user,
           "Your address is still unverified. Open the email link to confirm it, then come back here.");
@@ -423,7 +429,7 @@ adminButton.addEventListener("click", async () => {
       // is deliberately avoided on third-party GitHub Pages hosting.
       const credential=await signInWithPopup(auth,googleProvider);
       await credential.user.getIdToken(true);
-      if(credential.user.emailVerified){
+      if(credential.user.emailVerified || await refreshSiteVerificationAccess(credential.user)){
         modal.hidden=true;
         window.dispatchEvent(new CustomEvent("princesstg:email-verified"));
       }else{
@@ -529,7 +535,7 @@ $("auth-logout").addEventListener("click", async () => {
   // to know which button to click. Throttle to avoid repeated auth requests.
   async function refreshOnReturn(){
     const user=auth.currentUser;
-    if(!user||user.emailVerified||automaticCheckPending)return;
+    if(!user||hasSiteVerificationAccess(user)||automaticCheckPending)return;
     if(Date.now()-lastAutomaticCheckAt<8000)return;
     lastAutomaticCheckAt=Date.now();
     automaticCheckPending=true;
@@ -552,6 +558,10 @@ $("auth-logout").addEventListener("click", async () => {
   });
   onAuthStateChanged(auth,user=>{
     syncAuthBar(user);
-    if(user&&!user.emailVerified)void refreshOnReturn();
+    if(user&&!hasSiteVerificationAccess(user))void refreshOnReturn();
+  });
+  window.addEventListener("princesstg:verification-access-changed",event=>{
+    if(event.detail?.uid!==auth.currentUser?.uid)return;
+    syncAuthBar(auth.currentUser);
   });
 }
