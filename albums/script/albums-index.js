@@ -1,6 +1,7 @@
 import {db} from "../../script/firebase.js";
 import {loadAllSongs} from "../../script/song-data.js";
 import {collection,doc,getDoc,getDocs} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+import {addToPlaylistControl,keyForSong,getAudioIndex} from "../../script/music-playlists.js";
 const grid=document.getElementById("album-grid");
 const search=document.getElementById("search");
 const status=document.getElementById("status");
@@ -37,7 +38,11 @@ function makeCard(album){
   const link=document.createElement("a");link.className="open-album";
   link.href="./album.html?id="+encodeURIComponent(album.id||slug(album.name));
   link.textContent="Open album";link.setAttribute("aria-label","Open "+album.name);
-  article.append(h2,count,date,link);grid.append(article);
+  const addAll=addToPlaylistControl(async()=> {
+    const paths=await getAudioIndex().catch(()=>[]);
+    return (album.songs||[]).map(song=>keyForSong(song,paths));
+  },{label:"+ Add full album"});
+  article.append(h2,count,date,link,addAll);grid.append(article);
   return {name:album.name,count:album.count,element:article};
 }
 async function loadAlbums(){
@@ -51,8 +56,9 @@ async function loadAlbums(){
       for(const name of names){
         if(typeof name!=="string"||!name.trim())continue;
         const id=key(name);
-        if(!albums.has(id))albums.set(id,{name:name.trim(),count:0});
+        if(!albums.has(id))albums.set(id,{name:name.trim(),count:0,songs:[]});
         albums.get(id).count++;
+        albums.get(id).songs.push(song);
       }
     }
     try{
@@ -60,12 +66,12 @@ async function loadAlbums(){
         getDoc(doc(db,"enums","albums")),getDocs(collection(db,"albums"))
       ]);
       for(const name of enums.exists()&&Array.isArray(enums.data().values)?enums.data().values:[]){
-        if(name&&!albums.has(key(name)))albums.set(key(name),{name,count:0});
+        if(name&&!albums.has(key(name)))albums.set(key(name),{name,count:0,songs:[]});
       }
       rich.forEach(item=>{
         const record=item.data(),name=record.name;
         if(!name)return;
-        const existing=albums.get(key(name))||{name,count:0};
+        const existing=albums.get(key(name))||{name,count:0,songs:[]};
         albums.set(key(name),{...existing,...record,id:item.id});
       });
     }catch(e){console.warn("Album metadata unavailable; using song catalog.",e);}
