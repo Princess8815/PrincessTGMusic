@@ -636,11 +636,8 @@ if (!user) {
 
 
   try {
-    setStatus(
-      "profile-status",
-      "Loading your account..."
-    );
-
+    // Overview reads the real status from Firestore. The banner is for errors,
+    // so loading does not leave an unnecessary account status message.
     await loadProfile(user);
 
   } catch (error) {
