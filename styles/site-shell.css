@@ -92,4 +92,29 @@ body.ptg-shell-ready .hero{min-height:clamp(110px,16vw,175px);margin-top:13px;ma
  .ptg-shell-ready > main{width:min(96%,1100px)}
 }
 @media (max-width:420px) {.ptg-global-footer .ptg-footer-inner{justify-content:center;text-align:center}}
+
+/* Keep account management content inside the usable space beside the sidebar. */
+body.ptg-shell-ready .admin-main,
+body.ptg-shell-ready > main:has(#profile-app) {
+  width: min(1100px, 96%);
+  min-width: 0;
+  margin-inline: auto;
+}
+body.ptg-shell-ready .admin-main .admin-card,
+body.ptg-shell-ready > main:has(#profile-app) .profile-card {
+  min-width: 0;
+  max-width: 100%;
+}
+@media (min-width: 851px) and (max-width: 1100px) {
+  body.ptg-shell-ready .admin-main .form-grid {grid-template-columns:1fr}
+}
+@media (max-width: 850px) {
+  body.ptg-shell-ready .admin-main,
+  body.ptg-shell-ready > main:has(#profile-app) {
+    width: min(100%, 1100px);
+    padding-inline: max(14px, 3.5vw);
+    margin-top: 15px;
+  }
+}
+
 @media(prefers-reduced-motion:reduce){.ptg-sidebar,.ptg-footer-socials a{transition:none!important}}
