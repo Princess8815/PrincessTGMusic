@@ -2,6 +2,7 @@
 import {
   loadSong
 } from "../../script/song-data.js";
+import {addToPlaylistControl, keyForSong, getAudioIndex} from "../../script/music-playlists.js";
 
 // ==========================================
 // PAGE SETTINGS
@@ -425,6 +426,13 @@ async function initializeSongPage() {
 
     updateMetadata(song);
     setupSongSharing(song, pageId);
+    const playlistActions = $("song-playlist-actions");
+    if (playlistActions) {
+      playlistActions.replaceChildren(addToPlaylistControl(
+        async () => [keyForSong(song, await getAudioIndex().catch(() => []))]
+      ));
+    }
+
 
     // ======================================
     // LOAD OPTIONAL FEATURES
