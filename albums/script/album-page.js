@@ -94,6 +94,7 @@ function move(from,to){
   tracks.splice(to,0,track);
   shuffleBag=[];
   saveOrder();
+  $("album-status").textContent=tracks.length+" song(s) · Your personal order";
   renderTracks();
 }
 function newButton(label,click,title,disabled=false){
@@ -169,6 +170,7 @@ function registerControls(){
     localStorage.removeItem(personalKey);
     tracks=[...official];
     shuffleBag=[];
+    $("album-status").textContent=tracks.length+" song(s) · Official order";
     renderTracks();
     setMessage("Restored the official album track order.");
   };
@@ -218,6 +220,7 @@ async function load(){
       const list=Array.isArray(song.albums)?song.albums:[song.album];
       return list.some(name=>normalize(name)===normalize(albumName));
     });
+    owned.sort((a,b)=>String(a.title).localeCompare(String(b.title)));
     official=orderByIds(owned,metadata?.trackOrder||[]).map(song=>({
       ...song,id:songId(song),audioKey:keyForSong(song,paths)
     }));
