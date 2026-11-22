@@ -1,5 +1,6 @@
 import {db} from "../../script/firebase.js";
 import {loadAllSongs} from "../../script/song-data.js";
+import {wireDragReorder} from "../../script/drag-reorder.js";
 import {
   getAudioIndex, keyForSong, songId, songLink, audioLink,
   orderByIds, addToPlaylistControl
@@ -110,7 +111,6 @@ function renderTracks(){
   const target=$("album-tracks");target.replaceChildren();
   tracks.forEach((song,index)=>{
     const row=document.createElement("li");row.className="album-track";
-    row.draggable=true;
     row.classList.toggle("is-playing",currentId===song.id);
     const grip=document.createElement("span");grip.className="drag-grip";
     grip.textContent="☰";grip.title="Drag to reorder";
@@ -132,15 +132,10 @@ function renderTracks(){
     details.textContent="Details";
     actions.append(up,down,play,lyrics,details,addToPlaylistControl(()=>[song.audioKey]));
     row.append(grip,info,actions);
-    row.addEventListener("dragstart",event=>{
-      event.dataTransfer?.setData("text/plain",String(index));
-      if(event.dataTransfer)event.dataTransfer.effectAllowed="move";
-    });
-    row.addEventListener("dragover",event=>{event.preventDefault();if(event.dataTransfer)event.dataTransfer.dropEffect="move";});
-    row.addEventListener("drop",event=>{
-      event.preventDefault();
-      const from=Number(event.dataTransfer?.getData("text/plain"));
-      if(Number.isInteger(from))move(from,index);
+    wireDragReorder(row,grip,song.id,"album:"+albumId,(sourceId,targetId)=>{
+      const from=tracks.findIndex(track=>track.id===sourceId);
+      const to=tracks.findIndex(track=>track.id===targetId);
+      move(from,to);
     });
     target.append(row);
   });
