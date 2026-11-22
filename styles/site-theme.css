@@ -1,0 +1,192 @@
+/* Unified PrincessTG Creations palette. Loaded automatically by site-shell.js.
+   The five --ptg-* colors are defined by Settings; these are the owner's
+   original violet/charcoal defaults when no preferences have been saved. */
+:root {
+  --ptg-primary:#9f7bff;
+  --ptg-secondary:#1f2937;
+  --ptg-tertiary:#111827;
+  --ptg-text:#f3f4f6;
+  --ptg-highlight:#c084fc;
+  --ptg-on-primary:#101118;
+  --ptg-on-highlight:#101118;
+  --ptg-shell-accent:var(--ptg-highlight);
+  --ptg-muted:color-mix(in srgb,var(--ptg-text) 72%,var(--ptg-secondary));
+  --ptg-raised:color-mix(in srgb,var(--ptg-secondary) 84%,var(--ptg-text) 16%);
+  --ptg-sunken:color-mix(in srgb,var(--ptg-tertiary) 92%,black 8%);
+  --ptg-border:color-mix(in srgb,var(--ptg-text) 20%,var(--ptg-secondary));
+  --ptg-hover:color-mix(in srgb,var(--ptg-primary) 78%,white);
+  /* Compatibility for stylesheets authored before the shared theme. */
+  --bg:var(--ptg-tertiary);
+  --card:var(--ptg-secondary);
+  --panel:var(--ptg-secondary);
+  --panel-light:var(--ptg-raised);
+  --text:var(--ptg-text);
+  --muted:var(--ptg-muted);
+  --accent:var(--ptg-primary);
+  --accent-strong:var(--ptg-primary);
+  --accent-hover:var(--ptg-hover);
+  --purple:var(--ptg-primary);
+  --soft:var(--ptg-highlight);
+  --edge:var(--ptg-border);
+}
+html{accent-color:var(--ptg-primary)}
+body.ptg-shell-ready{
+  background:radial-gradient(ellipse at 65% -25%,color-mix(in srgb,var(--ptg-primary) 12%,var(--ptg-tertiary)),transparent 53%),
+    linear-gradient(155deg,var(--ptg-tertiary),color-mix(in srgb,var(--ptg-tertiary) 83%,var(--ptg-secondary))) !important;
+  color:var(--ptg-text) !important;
+}
+/* Sidebar and footer now use the same colors as the rest of the website. */
+body.ptg-shell-ready .ptg-sidebar{
+  background:linear-gradient(165deg,var(--ptg-secondary),
+    color-mix(in srgb,var(--ptg-secondary) 52%,var(--ptg-tertiary))) !important;
+  border-color:var(--ptg-border);color:var(--ptg-text);
+}
+body.ptg-shell-ready .ptg-brand,
+body.ptg-shell-ready .ptg-mobile-title{color:var(--ptg-text) !important}
+body.ptg-shell-ready .ptg-brand-icon{
+  background:color-mix(in srgb,var(--ptg-primary) 18%,var(--ptg-secondary));
+}
+body.ptg-shell-ready .ptg-brand small,
+body.ptg-shell-ready .ptg-nav-label,
+body.ptg-shell-ready .ptg-sidebar-bottom{color:var(--ptg-muted)}
+body.ptg-shell-ready .ptg-sidebar .ptg-nav-link{color:var(--ptg-text) !important}
+body.ptg-shell-ready .ptg-sidebar .ptg-nav-link svg{stroke:var(--ptg-highlight)}
+body.ptg-shell-ready .ptg-sidebar .ptg-nav-link:hover{
+  background:var(--ptg-raised);border-color:var(--ptg-border);
+}
+body.ptg-shell-ready .ptg-sidebar .ptg-nav-link[aria-current="page"]{
+  background:linear-gradient(90deg,color-mix(in srgb,var(--ptg-primary) 36%,var(--ptg-secondary)),var(--ptg-secondary));
+  border-color:var(--ptg-primary);color:var(--ptg-text) !important;
+}
+body.ptg-shell-ready .ptg-global-footer{
+  background:var(--ptg-secondary);border-color:var(--ptg-border);color:var(--ptg-muted);
+}
+body.ptg-shell-ready .ptg-footer-socials a{
+  background:var(--ptg-raised);border-color:var(--ptg-border);
+}
+body.ptg-shell-ready .ptg-footer-socials a:hover{background:color-mix(in srgb,var(--ptg-primary) 22%,var(--ptg-secondary))}
+body.ptg-shell-ready .ptg-footer-socials svg{stroke:var(--ptg-text)}
+body.ptg-shell-ready .ptg-mobile-topbar{
+  background:var(--ptg-secondary);border-color:var(--ptg-border);color:var(--ptg-text);
+}
+body.ptg-shell-ready .ptg-mobile-toggle{
+  background:var(--ptg-primary);border-color:var(--ptg-border);color:var(--ptg-on-primary);
+}
+body.ptg-shell-ready .ptg-mobile-toggle svg{stroke:var(--ptg-on-primary)}
+/* Reusable page panels: homepage, player, album, submissions, profiles. */
+body.ptg-shell-ready :is(
+ .app,.profile-card:not(.danger),.admin-card,.settings-card,.now-playing,.song-list,
+ .album-player,.album-track-section,.playlist-player,.profile-playlist-sidebar,
+ .profile-playlist-detail,.roadmap-card,.story,.content-card,.intro-card,
+ .challenge-card,.profile-playlist-tracklist li,.playlist-library-list button,
+ .track,.album-card,.album-hero,.ptg-page-intro
+){
+  background:var(--ptg-secondary) !important;
+  color:var(--ptg-text);
+  border-color:var(--ptg-border) !important;
+}
+body.ptg-shell-ready > main:not(.app):not(.album-shell) > section:not(.danger){
+  background:color-mix(in srgb,var(--ptg-secondary) 84%,transparent) !important;
+  border-color:var(--ptg-border) !important;
+}
+body.ptg-shell-ready :is(.album-lyrics,.profile-playlist-lyrics,.story-text,.roadmap-filter,
+  .playlist-detail-empty,.settings-preview,.ptg-tab-nav,.profile-tabs,.auth-dialog){
+  background:var(--ptg-sunken) !important;
+  border-color:var(--ptg-border) !important;
+  color:var(--ptg-text);
+}
+body.ptg-shell-ready :is(.album-track.is-playing,.track.active,.playlist-library-list button[aria-current=true]){
+  background:color-mix(in srgb,var(--ptg-primary) 18%,var(--ptg-secondary)) !important;
+  border-color:var(--ptg-primary) !important;
+}
+body.ptg-shell-ready :is(.profile-tabs [role=tab][aria-selected=true],
+  .ptg-tab-nav [role=tab][aria-selected=true],.auth-tabs button.active){
+  background:var(--ptg-primary) !important;
+  color:var(--ptg-on-primary) !important;
+  border-color:var(--ptg-primary) !important;
+}
+/* Preserve dangerous actions as red, regardless of custom palette. */
+body.ptg-shell-ready :is(.profile-tabs .profile-tab-danger,
+  .profile-tabs .profile-tab-danger[aria-selected=true],
+  .danger-button,#stopBtn,#orderResetBtn) {
+  /* See specific preserved danger backgrounds in their feature CSS. */
+}
+body.ptg-shell-ready .profile-tabs .profile-tab-danger[aria-selected=true]{
+  background:#b91c1c !important;color:#fff !important;border-color:#ef4444 !important;
+}
+body.ptg-shell-ready .profile-card.danger,
+body.ptg-shell-ready #profile-panel-delete{background:#2b151c !important;border-color:#ef4444 !important}
+body.ptg-shell-ready :is(#stopBtn,#orderResetBtn,.danger-button){
+  background:#dc2626 !important;color:#fff !important;
+}
+body.ptg-shell-ready :is(.app,.album-shell,.profile-card,.admin-card,.settings-card) h1,
+body.ptg-shell-ready :is(.app,.album-shell,.profile-card,.admin-card,.settings-card) h2,
+body.ptg-shell-ready .profile-library-heading h2{color:var(--ptg-highlight)}
+body.ptg-shell-ready :is(.muted,.subtle,.helper,.album-meta,
+  .album-description,.settings-card p,.track__path,.profile-library-heading p){
+  color:var(--ptg-muted);
+}
+body.ptg-shell-ready a:not(.ptg-nav-link):not(.ptg-brand):not(.ptg-mobile-title):not(.open-album){
+  color:var(--ptg-highlight);
+}
+body.ptg-shell-ready a:not(.ptg-nav-link):not(.ptg-brand):not(.ptg-mobile-title):hover{
+  text-decoration-color:var(--ptg-primary);
+}
+body.ptg-shell-ready :is(input:not([type=color]):not([type=checkbox]):not([type=radio]),
+  textarea,select){
+  background:var(--ptg-sunken) !important;
+  border-color:var(--ptg-border) !important;
+  color:var(--ptg-text) !important;
+}
+body.ptg-shell-ready input::placeholder,
+body.ptg-shell-ready textarea::placeholder{color:var(--ptg-muted)}
+body.ptg-shell-ready :is(input,textarea,select,button,a,summary):focus-visible{
+  outline:3px solid var(--ptg-highlight) !important;outline-offset:2px;
+}
+/* Common action buttons use the same primary hue. Specific semantic controls
+   (delete, stop, tabs, secondary and disabled controls) keep their semantics. */
+body.ptg-shell-ready button:not(.danger-button):not(.secondary):not(.auth-close)
+  :not(.ptg-mobile-toggle):not([role=tab]):not(#stopBtn):not(#orderResetBtn)
+  :not(:disabled):not([aria-pressed=true]),
+body.ptg-shell-ready :is(.challenge-submit,.new-entry-button,.open-album,.auth-primary){
+  background:var(--ptg-primary) !important;
+  border-color:var(--ptg-primary) !important;
+  color:var(--ptg-on-primary) !important;
+}
+body.ptg-shell-ready button:not(.danger-button):not(.secondary):not(.auth-close)
+  :not(.ptg-mobile-toggle):not([role=tab]):not(#stopBtn):not(#orderResetBtn)
+  :not(:disabled):not([aria-pressed=true]):hover{
+  background:var(--ptg-hover) !important;
+}
+body.ptg-shell-ready :is(.ptg-add-playlist summary,.album-lyrics summary,
+  .profile-playlist-lyrics summary,.profile-playlist-now,.overline,.roadmap-kicker,
+  .roadmap-phase,.settings-preview strong){color:var(--ptg-highlight)}
+body.ptg-shell-ready :is(.profile-playlist-tracklist li,.album-track,.track,
+  .roadmap-card,.profile-playlist-sidebar,.profile-playlist-detail){
+  border-color:var(--ptg-border);
+}
+body.ptg-shell-ready :is(.ptg-add-playlist__content,.playlist-library-list button){
+  background:var(--ptg-secondary);color:var(--ptg-text);
+}
+body.ptg-shell-ready :is(.ptg-add-playlist summary,.profile-playlist-playlist-actions){
+  border-color:var(--ptg-primary);
+}
+body.ptg-shell-ready .auth-bar{
+  background:var(--ptg-secondary) !important;color:var(--ptg-text);
+}
+body.ptg-shell-ready .auth-dialog{border-color:var(--ptg-primary) !important}
+body.ptg-shell-ready .auth-tabs button{border-color:var(--ptg-primary);color:var(--ptg-text)}
+body.ptg-shell-ready .auth-text-button{color:var(--ptg-highlight)}
+body.ptg-shell-ready :is(audio,progress,input[type=range],input[type=checkbox],input[type=radio]){
+  accent-color:var(--ptg-primary);
+}
+/* Honor optional high-contrast navigation and preserve status semantics. */
+html[data-ptg-contrast=high] body.ptg-shell-ready .ptg-sidebar,
+html[data-ptg-contrast=high] body.ptg-shell-ready .ptg-global-footer{
+  background:#08080c !important;border-color:var(--ptg-highlight) !important;
+}
+html[data-ptg-contrast=high] body.ptg-shell-ready .ptg-sidebar .ptg-nav-link,
+html[data-ptg-contrast=high] body.ptg-shell-ready .ptg-global-footer{color:#fff !important}
+@media(max-width:850px){
+  body.ptg-shell-ready .ptg-sidebar{background:var(--ptg-secondary) !important}
+}
