@@ -7,6 +7,7 @@ import {
 } from "./staff-auth.js";
 import "./song-links.js";
 import "./ban-expiry.js";
+import "./audio-download-controls.js";
 
 import {
   createUserWithEmailAndPassword,
