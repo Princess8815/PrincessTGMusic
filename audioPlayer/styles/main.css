@@ -100,7 +100,7 @@ audio {
   border-radius: 8px;
   padding: 0.55rem 0.75rem;
   background: color-mix(in oklab, var(--panel), black 10%);
-  cursor: grab;
+  cursor: default;
 }
 
 .track.dragging {
@@ -209,3 +209,10 @@ input:disabled + span {
 .track--not-in-playlist .track__title {
   opacity: 0.7;
 }
+
+/* Playlist drag handles work independently of playback and selection controls. */
+.track > .ptg-drag-handle { flex: 0 0 32px; }
+.track__title { flex: 1 1 160px; min-width: 0; overflow-wrap: anywhere; }
+.track__actions { flex: 0 1 auto; }
+.track__actions button[aria-label^="Move"] { min-width: 35px; padding-inline: 9px; }
+@media (max-width: 620px) { .track { flex-wrap: wrap; } .track__actions { width: 100%; justify-content: flex-start; } }
