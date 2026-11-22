@@ -498,6 +498,15 @@ $("mail-compose-form").addEventListener("submit",async event=>{
 tab.addEventListener("click",()=>{
   if(view!=="compose"&&auth.currentUser)void refreshFolder(view);
 });
+window.addEventListener("princesstg:mail-share",event=>{
+  if(!auth.currentUser){setStatus("Sign in to send mail.",true);return;}
+  const item=event.detail;
+  if(!item||!["song","playlist"].includes(item.kind))return;
+  beginCompose();
+  addShare(item);
+  $("mail-subject").value=item.kind==="playlist"
+    ?item.name+" playlist":item.title||"A song for you";
+});
 onAuthStateChanged(auth,user=>{
   messages={inbox:[],sent:[]};cursors={inbox:null,sent:null};
   closeReader();updateUnread();
