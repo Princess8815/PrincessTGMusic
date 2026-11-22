@@ -262,6 +262,17 @@ form.addEventListener("reset", () => {
   }
 
 
+// Keep the Add Song selector synchronized with album management.
+window.addEventListener("princesstg:albums-updated", () => {
+  const selected = albumSelect.value;
+  void loadAlbums().then(() => {
+    if (allowedAlbums.includes(selected)) albumSelect.value = selected;
+  }).catch(error => {
+    console.error("Album selector refresh failed:", error);
+    albumStatus.textContent = error.message;
+  });
+});
+
 // Album Add/Edit/Delete now belongs to admin-albums.js.
 // Keep song loading and saving independent of album management.
 
