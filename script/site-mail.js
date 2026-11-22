@@ -746,8 +746,11 @@ function syncSiteMailAccess(){
   const unlocked=updateMailVerification(user);
   if(!unlocked){
     messages={inbox:[],sent:[]};
-    $( "mail-message-list" ).replaceChildren();
-    $( "mail-message-view" ).replaceChildren();
+    cursors={inbox:null,sent:null};
+    closeReader();
+    $("mail-message-list").replaceChildren();
+    updateUnread();
+    setStatus("Site Mail requires email verification or an owner-approved bypass.",true);
     return;
   }
   if(view!=="compose")void refreshFolder(view);
@@ -767,10 +770,10 @@ onAuthStateChanged(auth,user=>{
     setStatus("Sign in to use site mail.");
     return;
   }
-  // The Firebase account and Firestore Security Rules both require
-  // a verified email. Do not load mail before the account is verified.
+  // Firebase Auth verification or an owner-only bypass is required, and
+  // Firestore Security Rules independently enforce the same condition.
   if(!updateMailVerification(user)){
-    setStatus("Verify your email to use site mail.");
+    setStatus("Verify your email or ask the owner to approve a site-only bypass.");
     return;
   }
   void refreshFolder("inbox");
