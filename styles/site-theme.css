@@ -106,11 +106,6 @@ body.ptg-shell-ready :is(.profile-tabs [role=tab][aria-selected=true],
   border-color:var(--ptg-primary) !important;
 }
 /* Preserve dangerous actions as red, regardless of custom palette. */
-body.ptg-shell-ready :is(.profile-tabs .profile-tab-danger,
-  .profile-tabs .profile-tab-danger[aria-selected=true],
-  .danger-button,#stopBtn,#orderResetBtn) {
-  /* See specific preserved danger backgrounds in their feature CSS. */
-}
 body.ptg-shell-ready .profile-tabs .profile-tab-danger[aria-selected=true]{
   background:#b91c1c !important;color:#fff !important;border-color:#ef4444 !important;
 }
@@ -145,17 +140,13 @@ body.ptg-shell-ready :is(input,textarea,select,button,a,summary):focus-visible{
 }
 /* Common action buttons use the same primary hue. Specific semantic controls
    (delete, stop, tabs, secondary and disabled controls) keep their semantics. */
-body.ptg-shell-ready button:not(.danger-button):not(.secondary):not(.auth-close)
-  :not(.ptg-mobile-toggle):not([role=tab]):not(#stopBtn):not(#orderResetBtn)
-  :not(:disabled):not([aria-pressed=true]),
+body.ptg-shell-ready button:not(.danger-button):not(.secondary):not(.auth-close):not(.ptg-mobile-toggle):not([role=tab]):not(#stopBtn):not(#orderResetBtn):not(:disabled):not([aria-pressed=true]),
 body.ptg-shell-ready :is(.challenge-submit,.new-entry-button,.open-album,.auth-primary){
   background:var(--ptg-primary) !important;
   border-color:var(--ptg-primary) !important;
   color:var(--ptg-on-primary) !important;
 }
-body.ptg-shell-ready button:not(.danger-button):not(.secondary):not(.auth-close)
-  :not(.ptg-mobile-toggle):not([role=tab]):not(#stopBtn):not(#orderResetBtn)
-  :not(:disabled):not([aria-pressed=true]):hover{
+body.ptg-shell-ready button:not(.danger-button):not(.secondary):not(.auth-close):not(.ptg-mobile-toggle):not([role=tab]):not(#stopBtn):not(#orderResetBtn):not(:disabled):not([aria-pressed=true]):hover{
   background:var(--ptg-hover) !important;
 }
 body.ptg-shell-ready :is(.ptg-add-playlist summary,.album-lyrics summary,
@@ -168,7 +159,7 @@ body.ptg-shell-ready :is(.profile-playlist-tracklist li,.album-track,.track,
 body.ptg-shell-ready :is(.ptg-add-playlist__content,.playlist-library-list button){
   background:var(--ptg-secondary);color:var(--ptg-text);
 }
-body.ptg-shell-ready :is(.ptg-add-playlist summary,.profile-playlist-playlist-actions){
+body.ptg-shell-ready :is(.ptg-add-playlist summary,.playlist-library-list){
   border-color:var(--ptg-primary);
 }
 body.ptg-shell-ready .auth-bar{
