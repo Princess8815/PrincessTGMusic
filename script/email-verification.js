@@ -6,13 +6,14 @@ import {auth} from "./firebase.js";
 import {sendEmailVerification,reload} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 
 const checks=new Map();
+const sends=new Map();
 let notifiedUid="";
 
 export function verificationError(error){
   const code=error?.code||"";
   switch(code){
     case "auth/too-many-requests":
-      return "Firebase is temporarily limiting verification emails. Try again later.";
+      return "Firebase blocked additional verification requests temporarily. This may affect several test accounts using the same IP. Stop retrying for now and inspect Firebase Authentication limits. ("+code+")";
     case "auth/network-request-failed":
       return "Connection lost. Check your internet and try again.";
     case "auth/user-token-expired":
@@ -20,7 +21,9 @@ export function verificationError(error){
     case "auth/user-disabled":
       return "This login expired or is disabled. Sign out and sign in again.";
     case "auth/invalid-email":
-      return "This account has an invalid email address.";
+      return "This account has an invalid email address. ("+code+")";
+    case "auth/missing-email":
+      return "This login does not have an email address for Firebase to verify. ("+code+")";
     case "auth/unauthorized-continue-uri":
     case "auth/invalid-continue-uri":
     case "auth/unauthorized-domain":
@@ -38,13 +41,29 @@ export function verificationError(error){
 }
 
 export async function sendSiteVerification(user){
-  if(!user || auth.currentUser?.uid!==user.uid)
-    throw Error("Sign in to the account that needs verification.");
+  if(!user || auth.currentUser?.uid!==user.uid){
+    const error=new Error("The signed-in account changed. Sign in to the account that needs verification.");
+    error.code="auth/account-mismatch";
+    throw error;
+  }
   if(user.emailVerified)return {alreadyVerified:true,usedReturnLink:false};
-  // No actionCodeSettings: Firebase's standard email handler is used.
-  // This requires neither a custom domain nor any email-sending Cloud Function.
-  await sendEmailVerification(user);
-  return {alreadyVerified:false,usedReturnLink:false};
+  if(!user.email){
+    const error=new Error("No email address is associated with the current Firebase account.");
+    error.code="auth/missing-email";
+    throw error;
+  }
+  // Two verification buttons exist (login and profile mail). Deduplicate
+  // simultaneous requests for this UID to avoid accidental rapid repeats.
+  if(sends.has(user.uid))return sends.get(user.uid);
+  const pending=(async()=>{
+    // Firebase Auth sends to user.email, not an arbitrary entered address.
+    // No Cloud Function or Firestore permission is involved in delivery.
+    await sendEmailVerification(user);
+    return {alreadyVerified:false,usedReturnLink:false,recipient:user.email};
+  })();
+  sends.set(user.uid,pending);
+  try{return await pending;}
+  finally{if(sends.get(user.uid)===pending)sends.delete(user.uid);}
 }
 
 export async function refreshSiteVerification(user){

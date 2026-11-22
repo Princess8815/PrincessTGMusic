@@ -344,19 +344,19 @@ adminButton.addEventListener("click", async () => {
     }
     try {
       const sent=await sendSiteVerification(user);
+      if(auth.currentUser?.uid!==user.uid)return;
       lastVerificationEmailAt=Date.now();
       lastVerificationUid=user.uid;
       $("auth-verify-message").textContent = sent.alreadyVerified
-        ? "Your address is already verified. Select I've verified my email to continue."
-        : "Firebase accepted the verification email request for "+(user.email||"your address")+
-          ". Check your inbox and Spam folder. Open the verification link, then return here and select I've verified my email.";
+        ? "This account is already verified. Select I've verified my email to continue."
+        : "Firebase accepted a verification request for "+(user.email||"this account")+
+          ". Check that address, including Spam/Junk. If nothing arrives, Firebase may have filtered or rate-limited delivery.";
     } catch (error) {
-      console.error("Firebase verification email request failed:",error?.code,error);
+      console.error("Firebase verification request rejected:",error?.code||"unknown",error);
+      if(auth.currentUser?.uid!==user.uid)return;
       $("auth-verify-message").textContent =
-        automatic
-          ? "Your account was created, but Firebase rejected the verification email: "+verificationError(error)+
-            ". Use Resend verification email to try again."
-          : "Firebase could not send the verification email: "+verificationError(error);
+        (automatic?"The account was created, but the email was not sent: ":"Verification email was not sent: ")+
+        verificationError(error);
     }
   }
 
@@ -385,21 +385,22 @@ adminButton.addEventListener("click", async () => {
     try{
       if(mode==="register"){
         const credential=await createUserWithEmailAndPassword(auth,email,userPassword);
+        // Request verification FIRST. A slow/denied Firestore profile write
+        // or display-name update must never delay the new user's email.
+        showVerification(credential.user,
+          "Requesting your verification email for "+(credential.user.email||"this account")+"...");
+        await sendVerification(credential.user,true);
+        // Profile metadata is optional for Firebase Auth verification.
         try{
           await updateProfile(credential.user,{displayName});
         }catch(error){
-          console.error("Unable to set display name:",error);
-          // An optional profile-data error must never prevent sending the
-          // verification email to the account that was successfully created.
-          console.warn("Account created; continuing with email verification.");
+          console.error("Display name update failed after verification request:",error);
         }
-        showVerification(credential.user);
-        // The user-data listener may have created the Firestore record
-        // before updateProfile completed. Save the final display name.
+        // The Firestore user record can initialize before updateProfile.
+        // Sync the completed display name without blocking the Auth email.
         void saveUserIfChanged().catch(error=>{
           console.warn("New account profile sync deferred:",error);
         });
-        await sendVerification(credential.user,true);
       }else{
         const credential=await signInWithEmailAndPassword(auth,email,userPassword);
         const verified=await refreshSiteVerification(credential.user);
