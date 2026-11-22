@@ -1,4 +1,5 @@
 // Public navigation renders independently of Firebase; account links attach later.
+import {isLocalPreview,getLocalFirebaseMode} from "./firebase-mode.js";
 const root=new URL("../",import.meta.url);
 const siteUrl=path=>new URL(path,root).href;
 const SETTINGS_KEY="princesstg-site-preferences-v1";
@@ -253,11 +254,35 @@ function buildMobileBar(){
   bar.append(button,brand);document.body.prepend(bar);
   return button;
 }
+function buildLocalFirebaseBadge(){
+  if(!isLocalPreview()||document.getElementById("ptg-local-firebase-badge"))
+    return;
+  const live=getLocalFirebaseMode()==="production";
+  const badge=document.createElement("aside");
+  badge.id="ptg-local-firebase-badge";
+  badge.className="ptg-local-firebase-badge";
+  badge.dataset.mode=live?"production":"emulator";
+  badge.setAttribute("aria-label","Local Firebase connection");
+  const label=document.createElement("strong");
+  label.textContent=live
+    ? "LOCAL PREVIEW · LIVE FIREBASE"
+    : "LOCAL PREVIEW · TEST EMULATORS";
+  const help=document.createElement("span");
+  help.textContent=live
+    ? "Real accounts and data"
+    : "Isolated test accounts";
+  const change=document.createElement("a");
+  change.href=siteUrl("pages/settings.html");
+  change.textContent="Change mode";
+  badge.append(label,help,change);
+  document.body.append(badge);
+}
 function init(){
   if(document.getElementById("ptg-site-sidebar"))return;
   const {aside,special}=buildSidebar();
   const toggle=buildMobileBar();
   buildFooter();
+  buildLocalFirebaseBadge();
   document.body.classList.add("ptg-shell-ready");
 
   const media=window.matchMedia("(max-width:850px)");
