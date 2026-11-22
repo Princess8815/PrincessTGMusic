@@ -33,6 +33,25 @@ let lastSavedAuth = null;
 let sessionVersion = 0;
 let readyPromise = null;
 let writingPromise = null;
+let initializationError = null;
+
+// Profile pages wait for their own Firebase user record rather than racing
+// new-account initialization with a second, independent Firestore lookup.
+export async function waitForUserRecord(uid, maxWaitMs=6000) {
+  if (!uid || currentUid!==uid || !readyPromise) return null;
+  let timeout;
+  try {
+    await Promise.race([
+      readyPromise,
+      new Promise(resolve=>{timeout=setTimeout(resolve,maxWaitMs);})
+    ]);
+  } finally {
+    if(timeout)clearTimeout(timeout);
+  }
+  if (currentUid!==uid) return null;
+  if (initializationError) throw initializationError;
+  return currentRecord;
+}
 
 // Public mail directory contains display names only, never private emails,
 // roles, passwords, or account records. It is opt-in via verification of the
@@ -95,6 +114,7 @@ onAuthStateChanged(auth, (user) => {
   lastSavedAuth = null;
   readyPromise = null;
   writingPromise = null;
+  initializationError = null;
 
   if (!user) {
     console.log("User database: Signed out.");
@@ -178,10 +198,10 @@ onAuthStateChanged(auth, (user) => {
     }
 
   })().catch(error => {
-    console.error(
-      "Unable to initialize user database:",
-      error
-    );
+    if (session===sessionVersion) initializationError=error;
+    console.error("Unable to initialize user database:",error);
+    // Existing account documents are retained; never create a temporary
+    // local replacement that could obscure Firestore rule/connection failures.
   });
 });
 

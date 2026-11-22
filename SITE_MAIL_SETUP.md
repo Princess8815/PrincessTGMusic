@@ -124,3 +124,52 @@ For a failed test, note the precise on-screen result:
 - **Account created but no verification request appears**: check browser JavaScript console for the actual Authentication error, and verify the account exists under Firebase Authentication → Users.
 
 The two verification buttons (login and profile mail) now deduplicate overlapping calls for the same account. An accepted request is tracked per current account rather than applying the owner's cooldown to another signed-in account. No Firebase email verification bypass or admin claim override is used.
+
+
+## Local emulator: profile read times out after test-user sign-in
+
+Seeing the Firebase banner "Running in emulator mode" proves that the
+**Authentication emulator (9099)** is connected; it does **not** prove that
+the **Firestore emulator (8080)** is running. Profile information, including
+`users/{uid}`, lives in Firestore, not in Firebase Authentication.
+
+The website uses demo project `demo-princesstg` on
+`localhost`/`127.0.0.1`. Firebase CLI must use **the same demo ID**:
+
+```cmd
+firebase emulators:start --only auth,firestore --project demo-princesstg
+```
+
+Run from the repository root and **keep that terminal open**. Because
+`firebase.json` was updated to bind all emulator services to
+`127.0.0.1`, restart the CLI after pulling changes.
+
+In a second terminal, test whether Firestore is reachable:
+
+```cmd
+curl -i http://127.0.0.1:8080/
+```
+
+Any HTTP response, even `404`, confirms that something is listening.
+`Failed to connect`, `Connection refused`, or a hanging connection means
+the Firestore emulator isn't responding. Open the dashboard at
+`http://127.0.0.1:4000/firestore` and confirm Firestore appears in the
+emulator's running-services table. Ensure the terminal still uses **Java 21+**.
+The dashboard itself running does not imply Firestore started successfully.
+
+When Firestore is available, the web app's `script/user-data.js` automatically
+creates new test profiles under `users/{uid}` after Firebase Auth sign-in.
+The updated profile page waits for that initialization and offers **Retry
+loading profile**. If initialization was denied, the page shows a rules error,
+not an endless spinner. Missing documents are **not** silently replaced by
+fake browser-only account records.
+
+**Security warning:** Firestore emulator rules are open by default if no
+`firestore.rules` file is supplied. For meaningful private-mail and ban
+testing, load the owner's separate reviewed rules text into a local
+`firestore.rules` and point `firebase.json` at it. Rules are not committed
+here per request, and do not change the live project.
+
+After a GitHub branch update, run `git status` to check for uncommitted local
+work, then fetch/pull the updated PR branch and hard-refresh the local site.
+Don't discard local edits or overwrite the live Firebase data.
