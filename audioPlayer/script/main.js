@@ -1,3 +1,7 @@
+import {
+  getPlaylists, savePlaylists, createPlaylist as createNamedPlaylist,
+  deletePlaylist as deleteNamedPlaylist, addToPlaylistControl
+} from "../../script/music-playlists.js";
 const AUDIO_INDEX = "audio/index.json";
 const SONG_DETAILS = "audio/song-details.json";
 const ORDER_STORAGE_KEY = "audio-player-order-v1";
@@ -193,7 +197,7 @@ const saveDisabledTracks = () => {
 };
 
 const saveCustomPlaylists = () => {
-	saveJsonStorage(PLAYLISTS_STORAGE_KEY, customPlaylists);
+  savePlaylists(customPlaylists);
 };
 
 const saveSelectedPlaylist = () => {
@@ -313,7 +317,8 @@ details.addEventListener("click", () => {
 
 
 	titleBlock.append(title, meta);
-	actions.append(enabledLabel, playlistLabel, play, details);
+    actions.append(enabledLabel, playlistLabel, play, details,
+      addToPlaylistControl(() => [track.path]));
 	row.append(titleBlock, actions);
 	item.append(row);
 
@@ -408,10 +413,9 @@ const loadTracks = async () => {
 		}));
 
 		disabledTracks = new Set(readJsonStorage(DISABLED_STORAGE_KEY, []).filter((path) => paths.includes(path)));
-		customPlaylists = readJsonStorage(PLAYLISTS_STORAGE_KEY, []).map((playlist) => ({
-			...playlist,
-			tracks: (playlist.tracks ?? []).filter((path) => paths.includes(path)),
-		}));
+        // Shared playlists also include song-only items with no MP3.
+        // Do not filter those out or overwrite their saved contents.
+        customPlaylists = getPlaylists();
 		selectedPlaylistId = localStorage.getItem(SELECTED_PLAYLIST_STORAGE_KEY) || "all";
 		renderAlbumOptions();
 		renderPlaylistOptions();
@@ -423,6 +427,28 @@ const loadTracks = async () => {
 		setStatus(`Error: (${error.message})`);
 	}
 };
+
+// Add a whole selected album to a personal playlist without leaving this page.
+const albumPlaylistAction = addToPlaylistControl(
+  () => currentAlbumFilter === "all" ? [] :
+    tracks.filter(track => track.albums.includes(currentAlbumFilter)).map(track => track.path),
+  {label:"+ Save selected album"}
+);
+albumFilterElement.insertAdjacentElement("afterend", albumPlaylistAction);
+
+// Listen for changes on the album, song, and profile playlist tools.
+window.addEventListener("princesstg:playlists-change", () => {
+  customPlaylists = getPlaylists();
+  renderPlaylistOptions();
+  renderPlaylist();
+});
+window.addEventListener("storage", event => {
+  if (event.key?.startsWith("princesstg-playlists-v2:")) {
+    customPlaylists = getPlaylists();
+    renderPlaylistOptions();
+    renderPlaylist();
+  }
+});
 
 playButton.addEventListener("click", playFromCurrentOrTop);
 stopButton.addEventListener("click", stopPlayback);
@@ -452,8 +478,14 @@ createPlaylistButton.addEventListener("click", () => {
 		setStatus("Enter a playlist name first.");
 		return;
 	}
-	const playlist = { id: makePlaylistId(), name, tracks: getPlayableTracks().map((track) => track.path) };
-	customPlaylists.push(playlist);
+    let playlist;
+    try {
+      playlist = createNamedPlaylist(name, getPlayableTracks().map(track=>track.path));
+    } catch(error) {
+      setStatus(error.message);
+      return;
+    }
+    customPlaylists = getPlaylists();
 	selectedPlaylistId = playlist.id;
 	newPlaylistNameElement.value = "";
 	saveCustomPlaylists();
@@ -464,7 +496,8 @@ createPlaylistButton.addEventListener("click", () => {
 deletePlaylistButton.addEventListener("click", () => {
 	const playlist = getSelectedPlaylist();
 	if (!playlist) return;
-	customPlaylists = customPlaylists.filter((item) => item.id !== playlist.id);
+    deleteNamedPlaylist(playlist.id);
+    customPlaylists = getPlaylists();
 	selectedPlaylistId = "all";
 	saveCustomPlaylists();
 	saveSelectedPlaylist();
