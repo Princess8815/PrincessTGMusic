@@ -1,0 +1,12 @@
+.ptg-add-playlist {display:inline-block;position:relative;margin:3px 0;color:#f2eaff;font-size:.88rem}
+.ptg-add-playlist summary{list-style:none;cursor:pointer;background:#35244b;border:1px solid #7956a3;border-radius:9px;padding:7px 11px;font-weight:700;white-space:nowrap}
+.ptg-add-playlist summary::-webkit-details-marker{display:none}
+.ptg-add-playlist summary:hover,.ptg-add-playlist summary:focus-visible{background:#6d32aa;outline:2px solid #d5b4ff;outline-offset:2px}
+.ptg-add-playlist__content{display:grid;grid-template-columns:minmax(120px,1fr) auto;gap:8px;position:absolute;top:100%;right:0;z-index:30;min-width:min(330px,85vw);border:1px solid #8a60bc;border-radius:12px;background:#171a29;box-shadow:0 14px 35px #0009;padding:12px}
+.ptg-add-playlist__content input,.ptg-add-playlist__content select{min-width:0;max-width:100%;background:#0d1220;color:#f5efff;border:1px solid #665178;border-radius:7px;padding:8px}
+.ptg-add-playlist__content button{color:#fff;background:#7b35ba;padding:8px;border:0;border-radius:7px;cursor:pointer}
+.ptg-playlist-message{grid-column:1/-1;margin:0;font-size:.8rem;color:#d7caf1}
+.ptg-music-button{background:#6335a1;color:white;border:1px solid #9f85cb;border-radius:8px;padding:9px 12px;cursor:pointer}
+.ptg-music-button[aria-pressed="true"]{background:#bd8cff;color:#1b122a}
+.ptg-music-button:focus-visible{outline:3px solid #d0b6ff;outline-offset:2px}
+@media(max-width:600px){.ptg-add-playlist__content{right:auto;left:0}}
