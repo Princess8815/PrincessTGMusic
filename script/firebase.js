@@ -36,6 +36,40 @@ const app = initializeApp(
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// Keep local-only diagnostics separate from production services. The demo
+// project ID must match the CLI flag --project demo-princesstg.
+const localFirestoreURL = "http://127.0.0.1:8080";
+let lastEmulatorProbe = null;
+
+export async function checkLocalFirestoreEmulator() {
+  if (!testingLocally) return {connected:true,local:false};
+  // An HTTP response, even 404, proves a service is listening on port 8080.
+  // Use no-cors to avoid depending on an emulator-only CORS header.
+  const now=Date.now();
+  if(lastEmulatorProbe && now-lastEmulatorProbe.checkedAt<2500)
+    return lastEmulatorProbe.value;
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),3000);
+  let value;
+  try {
+    await fetch(localFirestoreURL+"/", {
+      method:"GET",mode:"no-cors",cache:"no-store",signal:controller.signal
+    });
+    value={connected:true,local:true,projectId:"demo-princesstg"};
+  } catch(error) {
+    value={
+      connected:false,local:true,projectId:"demo-princesstg",
+      cause:error?.name==="AbortError"?"timeout":"connection"
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+  lastEmulatorProbe={value,checkedAt:Date.now()};
+  return value;
+}
+
+export const usingLocalFirebaseEmulators=testingLocally;
+
 if (testingLocally) {
   connectAuthEmulator(
     auth,
