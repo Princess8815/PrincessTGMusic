@@ -209,3 +209,51 @@ emulators and real Firebase. Do not use real credentials for emulator tests.
 **For safety:** The mode switch does not alter published Firestore rules.
 Local mail rules must still be loaded in the Firestore emulator. Real mail
 continues to use the project's deployed security rules.
+
+
+## Owner-granted verification bypass (not Firebase email verification)
+
+**Admin → Accounts → select user → Verification Bypass** has owner-only
+Grant/Revoke actions. This is a **site access exception**, not a claim
+that the user owns the email address. Firebase Authentication
+`emailVerified` remains unchanged. Regular members still receive and
+use normal email verification, unless the site owner makes an exception.
+
+- Only an **active, genuinely email-verified owner** can grant/revoke.
+  Admins and users cannot change exceptions. Owners cannot exempt themselves
+  or another owner, and archived accounts are protected.
+- The `verificationOverrides/{uid}` record stores `enabled`, `updatedBy`,
+  `updatedAt`, `targetEmail`, and `auditId`. An immutable
+  `verificationOverrideAudit/{auditId}` record records each grant/revoke.
+  The admin UI writes both records in one Firestore batch.
+- The bypass only applies while the user's current authenticated email
+  matches the approved email. Email changes require fresh owner approval.
+- On grant, the login verification gate and Site Mail unlock and the member
+  can join the public display-name directory. On revocation, the user is
+  re-locked unless their Firebase email has been genuinely verified.
+- The user's profile correctly states **Email not verified · owner-approved
+  site bypass**. It never labels an unverified email as verified.
+- The direct-mail Firestore rules allow verified users **or a valid owner-only
+  exception**, but still require an active account and private mailbox access.
+
+### Required one-time rules update, provided separately as text
+
+The owner asked that Firestore rules **not be committed to this PR**.
+Use the complete `PrincessTG_Firestore_Rules_Direct_Mail_With_Verification_Bypass.txt`
+supplied in this chat, based on the previously supplied full direct-mail rules.
+Review and publish it in Firestore Database → Rules. For testing, save a copy
+as a local `firestore.rules` file and add its path to `firebase.json`
+**locally**, so your Firestore emulator enforces the same protections.
+
+Without this update, an owner may see `permission-denied` when viewing
+or changing bypass records, and a bypassed user cannot access Site Mail.
+**Do not add broad wildcard allowances** to work around permission errors.
+Do not grant exceptions by writing `users/{uid}.auth.emailVerified = true`;
+rules bind that value to Firebase's actual ID token and it is not trustworthy
+as proof of verification.
+
+Firebase's actual emailVerified field may only be changed by legitimate
+verification or privileged Firebase Admin SDK operations. The current
+client-only site does not and cannot impersonate such a server operation.
+
+Live Firebase Rules emulator tests and production deployment are still needed.
