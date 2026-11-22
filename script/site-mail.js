@@ -1,4 +1,5 @@
 import {auth,db} from "./firebase.js";
+import {hasSiteVerificationAccess} from "./verification-access.js";
 import {
   collection,doc,getDoc,getDocs,query,orderBy,startAt,endAt,startAfter,
   limit,writeBatch,updateDoc,deleteDoc,Timestamp,serverTimestamp
@@ -54,8 +55,8 @@ function messageSummary(snapshot,box){
 async function memberAuth(){
   const user=auth.currentUser;
   if(!user)throw mailError("Sign in to use Site Mail.","unauthenticated");
-  if(!user.emailVerified)
-    throw mailError("Verify your email before using Site Mail.","permission-denied");
+  if(!hasSiteVerificationAccess(user))
+    throw mailError("Email verification or owner-granted site bypass is required for Site Mail.","permission-denied");
   const data=(await getDoc(doc(db,"users",user.uid))).data();
   if(!data||!senderActiveStatus(data))
     throw mailError("Only active members can use Site Mail.","permission-denied");
@@ -191,7 +192,7 @@ let view="inbox",selectedId="",selectedRecipient=null;
 let messages={inbox:[],sent:[]},cursors={inbox:null,sent:null};
 let renderedBox="inbox",share=null,images=[],catalog=null,recipientRequest=0;
 let searchTimer=null,busy=false;
-const isMailVerified=user=>!!user?.emailVerified;
+const isMailVerified=user=>hasSiteVerificationAccess(user);
 function updateMailVerification(user){
   const verified=isMailVerified(user);
   $("mail-verification-gate").hidden=!user||verified;
@@ -740,15 +741,22 @@ window.addEventListener("princesstg:mail-share",event=>{
   $("mail-subject").value=item.kind==="playlist"
     ?item.name+" playlist":item.title||"A song for you";
 });
-window.addEventListener("princesstg:email-verified",()=>{
+function syncSiteMailAccess(){
   const user=auth.currentUser;
-  if(!isMailVerified(user))return;
-  updateMailVerification(user);
+  const unlocked=updateMailVerification(user);
+  if(!unlocked){
+    messages={inbox:[],sent:[]};
+    $( "mail-message-list" ).replaceChildren();
+    $( "mail-message-view" ).replaceChildren();
+    return;
+  }
   if(view!=="compose")void refreshFolder(view);
   applyShareIntent();
-});
+}
+window.addEventListener("princesstg:email-verified",syncSiteMailAccess);
+window.addEventListener("princesstg:verification-access-changed",syncSiteMailAccess);
 window.addEventListener("princesstg-user-ready",()=>{
-  if(auth.currentUser?.emailVerified && view!=="compose")
+  if(isMailVerified(auth.currentUser) && view!=="compose")
     void refreshFolder(view);
 });
 onAuthStateChanged(auth,user=>{
