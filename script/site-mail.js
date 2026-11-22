@@ -35,7 +35,7 @@ function mailboxRef(uid,box,id){
   return doc(db,MAIL_ROOT,uid,folderName(box),id);
 }
 const displayName=data=>{
-  const name=String(data?.auth?.displayName||"").trim();
+  const name=String(data?.auth?.displayName||"");
   return name||"Site member";
 };
 function messageSummary(snapshot,box){
@@ -116,7 +116,7 @@ async function mailSend(args,member){
   const payload={
     senderUid:member.user.uid,recipientUid:to,
     senderName:displayName(member.data),
-    recipientName:String(recipientDoc.data().name||"Site member").trim(),
+    recipientName:String(recipientDoc.data().name||"Site member"),
     subject,body,share,images,
     createdAt:nowStamp,expiresAt:expiry,readAt:null
   };
@@ -214,6 +214,10 @@ function safeTime(ms){
 }
 const errorMessage=error=>{
   const msg=String(error?.message||"Request failed");
+  if(error?.code==="permission-denied")
+    return "Permission denied. Verify your email and confirm the new direct-mail Firestore rules are published.";
+  if(error?.code==="unavailable")
+    return "Firestore is temporarily unavailable. Check your connection and try again.";
   return msg.replace(/^.*?siteMail:\s*/,"").slice(0,240);
 };
 function unreadCount(){
@@ -433,7 +437,8 @@ async function findUsers(textValue){
       button.addEventListener("click",()=>chooseRecipient(user));
       root.append(button);
     }
-    if(!result.users.length)root.append(element("p","","No matching members found."));
+    if(!result.users.length)root.append(element("p","",
+      "No matching members yet. Members appear after verifying their email and signing in."));
     root.hidden=false;
   }catch(error){
     setStatus("Recipient search unavailable: "+errorMessage(error),true);
