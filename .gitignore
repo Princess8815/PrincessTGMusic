@@ -3,3 +3,13 @@
 eslint.config.mjs
 pnpm-lock.yaml
 package.json
+
+# Firebase Emulator Suite local diagnostics and state
+firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
+firestore-debug.*.log
+ui-debug.log
+database-debug.log
+firebase-export/
+.emulator-data/
