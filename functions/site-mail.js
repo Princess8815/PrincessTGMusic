@@ -115,7 +115,7 @@ async function handle(req,{db,Timestamp,HttpsError,crypto}){
   const uid=req.auth?.uid;
   if(!uid)fail("unauthenticated","Sign in to use site mail.");
   const action=String(req.data?.action||"");
-  if(!["search","send","list","read","delete"].includes(action))
+  if(!["search","send","list","read","delete","deleteAll"].includes(action))
     fail("invalid-argument","Unknown mail action.");
 
   if(action==="search"){
@@ -188,6 +188,15 @@ async function handle(req,{db,Timestamp,HttpsError,crypto}){
     const now=Date.now();
     const items=snap.docs.filter(doc=>doc.data().expiresAt?.toMillis?.()>now).map(summary);
     return {messages:items,nextCursor:snap.size===PAGE_SIZE?snap.docs[snap.docs.length-1].id:null};
+  }
+  if(action==="deleteAll"){
+    const coll=db.collection(BOXES).doc(uid).collection(box);
+    const snap=await coll.limit(180).get();
+    if(snap.empty)return {deleted:0,hasMore:false};
+    const batch=db.batch();
+    for(const message of snap.docs)batch.delete(message.ref);
+    await batch.commit();
+    return {deleted:snap.size,hasMore:snap.size===180};
   }
   const id=text(req.data.id);
   if(!/^[a-f0-9-]{36}$/i.test(id))fail("invalid-argument","Invalid mail ID.");
