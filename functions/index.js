@@ -558,3 +558,20 @@ exports.newsletterUnsubscribe = onRequest({region:REGION,
     res.status(500).send("Unsubscribe failed. Please try again later.");
   }
 });
+
+
+// ==========================================
+// PRIVATE IN-SITE MAIL (NOT EXTERNAL EMAIL)
+// ==========================================
+// These callables use Admin SDK authorization and per-user private envelopes.
+// Attachments are compressed images within Firestore, never audio uploads.
+const siteMailService = require("./site-mail");
+exports.siteMail = onCall({region:REGION,timeoutSeconds:60,
+  maxInstances:12,memory:"512MiB"}, async request =>
+  siteMailService.handle(request,{db,Timestamp,HttpsError,crypto})
+);
+// Purge both personal mailbox copies plus inline image data after 30 days.
+// The callable also refuses expired messages before the cleanup job runs.
+exports.siteMailCleanup = onSchedule({
+  schedule:"every 6 hours",timeZone:"Etc/UTC",region:REGION,timeoutSeconds:540
+},async()=>siteMailService.cleanup({db,Timestamp,logger}));
