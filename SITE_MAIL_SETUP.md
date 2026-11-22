@@ -45,7 +45,7 @@ These functions use Admin SDK, so they bypass Firestore Rules on the server. Use
 
 ## Function deployment
 
-The current `firebase.json` uses the `newsletters` codebase and `functions/index.js`. The new `siteMail` callable and `siteMailCleanup` scheduled function are exported from that existing entry point. Ensure your local functions deployment environment has the dependencies already used by `functions/index.js` (Firebase Admin and Functions).
+The current `firebase.json` uses the `newsletters` codebase and `functions/index.js`. The new `siteMail` callable and `siteMailCleanup` scheduled function are exported from that existing entry point. This branch adds `functions/package.json` with a supported Node.js 22 runtime and the Firebase Admin and Functions dependencies. Run `npm install` inside the `functions` directory before deploying, and review the generated dependency lockfile.
 
 Review the project, select it with Firebase CLI and deploy the new functions:
 
