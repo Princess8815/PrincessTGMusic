@@ -89,6 +89,10 @@ async function applyAlbumChanges(originalName, updated, remove = false) {
   if (!remove && key(updated.name) !== key(originalName) && existingAlbum(updated.name)) {
     throw new Error("An album with that name already exists.");
   }
+  if (!remove && slug(updated.name) !== slug(originalName) &&
+      albums.some(name => name !== originalName && slug(name) === slug(updated.name))) {
+    throw new Error("Another album already uses this page ID. Choose a different name.");
+  }
   const matches = await songMatches(current);
   if (remove && matches.length) {
     throw new Error("This album has " + matches.length + " song(s). Reassign them before deleting it.");
@@ -170,6 +174,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       await userIsStaff();
       const data = collect("new");
       if (existingAlbum(data.name)) throw new Error("Album already exists.");
+      if (albums.some(name => slug(name) === slug(data.name))) {
+        throw new Error("Another album has the same page ID. Choose a different name.");
+      }
       const snapshot = await getDoc(albumRef);
       const values = snapshot.exists() ? snapshot.data().values : [];
       if (!Array.isArray(values)) throw new Error("Invalid album list.");
