@@ -75,8 +75,13 @@ function createIssues(song,approvedAlbums){
   const description=String(data.description||"");
   if(!title||title.length>160)
     issues.push("title must be 1–160 characters");
-  if(!approvedAlbums.has(album))
-    issues.push("album \""+(album||"(blank)")+"\" is not in the approved Firestore album list");
+  if(!approvedAlbums.has(album)){
+    const probable=[...approvedAlbums].find(name=>
+      name.toLocaleLowerCase()===album.toLocaleLowerCase());
+    issues.push("album \""+(album||"(blank)")+
+      "\" is not an exact match in Firestore's approved album list"+
+      (probable?" (did you mean \""+probable+"\"?)":"; add or correct it under Admin → Albums"));
+  }
   if(date!=="tbd"&&!/^\d{4}-\d{2}-\d{2}$/.test(date))
     issues.push("release date \""+date+"\" must be YYYY-MM-DD or tbd");
   if(!lyrics.trim())
