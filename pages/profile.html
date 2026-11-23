@@ -14,6 +14,7 @@
   <script type="module" src="../script/auth.js"></script>
   <script type="module" src="../script/profile-promotions.js"></script>
   <script type="module" src="../script/profile.js"></script>
+  <script type="module" src="../script/profile-health.js"></script>
   <script type="module" src="../script/profile-playlists.js"></script>
   <script type="module" src="../script/site-mail.js"></script>
   <link rel="stylesheet" href="../styles/site-mail.css">
@@ -142,6 +143,16 @@
   </style>
 
   <link rel="stylesheet" href="../styles/profile-dashboard.css">
+  <style>
+    .profile-health-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin:18px 0}
+    .profile-health-summary>div{padding:14px;border:1px solid #5e6385;border-radius:12px;background:#171e31}
+    .profile-health-summary span{display:block;color:#c2d1e3;font-size:.85rem}
+    .profile-health-summary strong{display:block;color:#bbf7d0;font-size:1.2rem;overflow-wrap:anywhere}
+    .profile-health-cta{display:inline-block;border-radius:10px;padding:12px 18px;
+      background:#a78bfa;color:#171027;text-decoration:none;font-weight:800;margin-top:8px}
+    .profile-health-cta:focus-visible{outline:3px solid #5eead4;outline-offset:3px}
+    @media(max-width:520px){.profile-health-summary{grid-template-columns:1fr}}
+  </style>
   <script type="module" src="../script/profile-tabs.js"></script>
 
 </head>
@@ -163,6 +174,7 @@
         <button type="button" id="profile-tab-account" role="tab" aria-controls="profile-panel-account" aria-selected="true" tabindex="0" data-profile-tab="account">Overview</button>
         <button type="button" id="profile-tab-email" role="tab" aria-controls="profile-panel-email" aria-selected="false" tabindex="-1" data-profile-tab="email">Email & Security</button>
         <button type="button" id="profile-tab-playlists" role="tab" aria-controls="profile-panel-playlists" aria-selected="false" tabindex="-1" data-profile-tab="playlists">Playlists</button>
+        <button type="button" id="profile-tab-health" role="tab" aria-controls="profile-panel-health" aria-selected="false" tabindex="-1" data-profile-tab="health">Health</button>
         <button type="button" id="profile-tab-mail" role="tab" aria-controls="profile-panel-mail" aria-selected="false" tabindex="-1" data-profile-tab="mail">Mail <span id="profile-mail-unread" class="mail-tab-count" hidden></span></button>
         <button type="button" id="profile-tab-submissions" role="tab" aria-controls="profile-panel-submissions" aria-selected="false" tabindex="-1" data-profile-tab="submissions">My Songs</button>
         <button type="button" id="profile-tab-newsletter" role="tab" aria-controls="profile-panel-newsletter" aria-selected="false" tabindex="-1" data-profile-tab="newsletter">Email Updates</button>
@@ -224,6 +236,22 @@
              class="status"
              role="status"></p>
         </form>
+      </section>
+
+      <!-- PRIVATE HEALTH JOURNAL SHORTCUT -->
+      <section class="profile-card profile-panel" id="profile-panel-health"
+        role="tabpanel" aria-labelledby="profile-tab-health" data-profile-panel="health" hidden>
+        <h2>My Health Tracker</h2>
+        <p class="muted">Food diary, morning weight, meal planning, home workouts and analytics,
+          all saved privately under your own account.</p>
+        <div class="profile-health-summary">
+          <div><span>Latest morning weight</span><strong id="profile-health-weight">Not logged</strong></div>
+          <div><span>Current week's calorie average</span><strong id="profile-health-week">Not logged</strong></div>
+          <div><span>Current month's calorie average</span><strong id="profile-health-month">Not logged</strong></div>
+          <div><span>Current week's workout time</span><strong id="profile-health-workout">0 min</strong></div>
+        </div>
+        <p id="profile-health-status" class="muted" role="status" aria-live="polite">Open this tab to load your private summary.</p>
+        <a href="health.html" class="profile-health-cta">Open Health Tracker &amp; Meal Planner</a>
       </section>
 
       <!-- EMAIL MANAGEMENT -->
