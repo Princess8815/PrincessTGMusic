@@ -47,6 +47,9 @@ async function refresh(force=false){
 button?.addEventListener("click",()=>void refresh(true));
 if(location.hash==="#tab-health")void refresh(true);
 onAuthStateChanged(auth,user=>{
-  if(!user){lastUid=null;lastLoaded=0;reset();}
-  else if(location.hash==="#tab-health")void refresh(true);
+  if(user?.uid!==lastUid){
+    lastUid=null;lastLoaded=0;reset();
+    message(user?"Open Health to load your private summary.":"Sign in to view your private health summary.");
+  }
+  if(user&&location.hash==="#tab-health")void refresh(true);
 });
