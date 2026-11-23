@@ -89,7 +89,7 @@ function mergeSong(jsonSong, databaseSong, id) {
     ? jsonSong.releaseDate.trim() : "";
   const databaseDate = String(databaseSong?.releaseDate || "").trim();
   const isCustom = original && original.toLowerCase() !== "tbd"
-    && !/^\\d{4}-\\d{2}-\\d{2}$/.test(original);
+    && !/^\d{4}-\d{2}-\d{2}$/.test(original);
   if (isCustom && (!databaseSong || !databaseDate || databaseDate.toLowerCase() === "tbd")) {
     merged.displayReleaseDate = original;
   }
