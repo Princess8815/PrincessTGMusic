@@ -22,9 +22,25 @@ export function mondayOf(key){
   return localDay(date);
 }
 export function monthOf(key){return String(key||"").slice(0,7);}
+// A missing calorie value means Untracked, not zero.
+// Zero is tracked only when it was explicitly entered as 0.
+export function hasTrackedCalories(food){
+  if(!food||food.calories===null||food.calories===undefined||
+     (typeof food.calories==="string"&&!food.calories.trim()))return false;
+  const value=Number(food.calories);
+  return Number.isFinite(value)&&value>=0;
+}
+export function untrackedFoodCount(day){
+  return (Array.isArray(day?.foods)?day.foods:[])
+    .filter(food=>!hasTrackedCalories(food)).length;
+}
+export function hasCompleteFoodLog(day){
+  return Array.isArray(day?.foods)&&day.foods.length>0
+    &&day.foods.every(hasTrackedCalories);
+}
 export function caloriesOn(day){
   return (Array.isArray(day?.foods)?day.foods:[]).reduce((sum,food)=>
-    sum+Math.max(0,Number(food.calories)||0),0);
+    sum+(hasTrackedCalories(food)?Number(food.calories):0),0);
 }
 export function workoutMinutes(day){
   return (Array.isArray(day?.workouts)?day.workouts:[]).reduce((sum,entry)=>
@@ -35,7 +51,9 @@ export function average(numbers){
 }
 export function periodStats(days,predicate){
   const selected=days.filter(day=>predicate(day.date));
-  const calories=selected.filter(day=>Array.isArray(day.foods)&&day.foods.length);
+  // Days with an untracked food item have incomplete daily totals.
+  // Exclude them from calorie averages rather than understating intake.
+  const calories=selected.filter(hasCompleteFoodLog);
   const weights=selected.filter(day=>Number(day.weightLb)>0);
   const workouts=selected.flatMap(day=>Array.isArray(day.workouts)?day.workouts:[]);
   return {
