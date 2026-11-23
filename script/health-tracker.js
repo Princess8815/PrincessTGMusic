@@ -39,6 +39,10 @@ const emptyDay=date=>({date,weightLb:null,foods:[],workouts:[],plans:[]});
 const getDay=date=>state.days.get(date)||emptyDay(date);
 const allDays=()=>[...state.days.values()];
 const totalPlanned=day=>(day.plans||[]).reduce((a,p)=>a+(Number(p.calories)||0),0);
+const hasFoodEntries=day=>Array.isArray(day?.foods)&&day.foods.length>0;
+// A blank food diary is unknown, not a 0-calorie day. An explicitly logged
+// zero-calorie food, however, is a real zero and remains in the averages.
+const foodTotalText=day=>hasFoodEntries(day)?calories(caloriesOn(day)):"Untracked";
 function setStatus(text,error=false){
   const el=$("health-sync-status");
   el.textContent=text;
@@ -249,11 +253,11 @@ function updateFoodPreview(){
       :"Enter calories and servings to calculate the total.";
 }
 function renderFoodDiary(day){
-  $("health-food-total").textContent=calories(caloriesOn(day));
+  $("health-food-total").textContent=foodTotalText(day);
   const list=$("health-food-list");
   list.replaceChildren();
   if(!day.foods.length){
-    emptyList(list,"No food recorded on this date yet.");
+    emptyList(list,"Untracked · No food items recorded on this date yet.");
     return;
   }
   for(const entry of [...day.foods].reverse()){
@@ -383,7 +387,12 @@ function drawTrends(){
     const date=shiftDay(today,i-(count-1));
     return getDay(date);
   });
-  drawBarChart("health-calorie-chart",make(14),false);
+  const calorieDays=make(14);
+  drawBarChart("health-calorie-chart",calorieDays,false);
+  const missing=calorieDays.filter(day=>!hasFoodEntries(day)).map(day=>day.date.slice(5));
+  $("health-untracked-food-dates").textContent=missing.length
+    ?"Untracked food dates: "+missing.join(", ")+"."
+    :"Food recorded on all 14 days.";
   drawBarChart("health-weight-chart",make(30),true);
 }
 function renderTable(id,rows,periodTitle){
@@ -398,7 +407,7 @@ function renderTable(id,rows,periodTitle){
   for(const row of [...rows].reverse()){
     const tr=document.createElement("tr");
     [row.label,row.loggedDays+" day"+(row.loggedDays===1?"":"s"),
-      row.calorieAverage===null?"Not logged":calories(row.calorieAverage),
+      row.calorieAverage===null?"Untracked":calories(row.calorieAverage),
       row.weightAverage===null?"Not logged":pounds(row.weightAverage),
       row.workoutMinutes+" min"].forEach(value=>tr.append(text("td",value)));
     body.append(tr);
@@ -409,8 +418,16 @@ function renderTable(id,rows,periodTitle){
 function renderAnalytics(){
   const days=allDays(),today=TODAY();
   const week=weeklyStats(days,today),month=monthlyStats(days,today);
-  const weekText=week.calorieAverage===null?"Not logged":calories(week.calorieAverage);
-  const monthText=month.calorieAverage===null?"Not logged":calories(month.calorieAverage);
+  const weekText=week.calorieAverage===null?"Untracked":calories(week.calorieAverage);
+  const monthText=month.calorieAverage===null?"Untracked":calories(month.calorieAverage);
+  $("health-week-weight-average").textContent=
+    week.weightAverage===null?"Not logged":pounds(week.weightAverage);
+  $("health-month-weight-average").textContent=
+    month.weightAverage===null?"Not logged":pounds(month.weightAverage);
+  $("health-week-weight-count").textContent=
+    week.weightDays+" morning weigh-in"+(week.weightDays===1?"":"s")+" this week";
+  $("health-month-weight-count").textContent=
+    month.weightDays+" morning weigh-in"+(month.weightDays===1?"":"s")+" this month";
   $("health-week-average").textContent=weekText;
   $("health-month-average").textContent=monthText;
   $("health-week-count").textContent=week.loggedDays+" day(s) with food logged";
@@ -448,15 +465,23 @@ function render(){
   const day=getDay(state.day);
   $("health-date").value=state.day;
   $("health-plan-date").value=state.planDate;
-  $("health-today-calories").textContent=calories(caloriesOn(day));
+  $("health-today-calories").textContent=foodTotalText(day);
+  $("health-day-food-status").textContent=hasFoodEntries(day)
+    ?day.foods.length+" food item"+(day.foods.length===1?"":"s")+" logged"
+    :"No food items logged for this date";
   $("health-current-weight").textContent=pounds(day.weightLb);
   const target=Number(state.settings.calorieTarget);
   $("health-target-display").textContent=target>0?calories(target):"Not set";
   const left=target-caloriesOn(day);
-  $("health-remaining").textContent=target>0?
-    (left>=0?calories(left)+" remaining":calories(-left)+" over target"):"Set a target";
+  $("health-remaining").textContent=!hasFoodEntries(day)
+    ?"Untracked"
+    :target>0
+      ?(left>=0?calories(left)+" remaining":calories(-left)+" over target")
+      :"Set a target";
   $("health-day-summary").textContent=state.day+": "+
-    day.foods.length+" food entry/entries · "+calories(caloriesOn(day))+
+    (hasFoodEntries(day)
+      ?day.foods.length+" food item(s) · "+foodTotalText(day)
+      :"Food: Untracked")+
     " · "+day.workouts.length+" workout(s) · "+
     (day.weightLb?pounds(day.weightLb):"No morning weight")+".";
   renderFoodDiary(day);
