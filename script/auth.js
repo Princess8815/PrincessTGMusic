@@ -556,12 +556,44 @@ $("auth-logout").addEventListener("click", async () => {
   document.addEventListener("visibilitychange",()=>{
     if(document.visibilityState==="visible")void refreshOnReturn();
   });
+  // On navigation Firebase Auth restores the user BEFORE the Firestore
+  // owner-bypass record is available. Resolve the server-side exception
+  // first, so approved members never see a flashing "Verify Your Email".
+  let authDisplayVersion=0;
+  let activeAccessCheckUid="";
   onAuthStateChanged(auth,user=>{
-    syncAuthBar(user);
-    if(user&&!hasSiteVerificationAccess(user))void refreshOnReturn();
+    const version=++authDisplayVersion;
+    activeAccessCheckUid="";
+    if(!user){
+      syncAuthBar(null);
+      return;
+    }
+    if(user.emailVerified){
+      activeAccessCheckUid=user.uid;
+      syncAuthBar(user);
+      return;
+    }
+    // While loading, hide the verification action and don't open the modal.
+    $("auth-open").hidden=true;
+    $("auth-welcome").textContent="Checking account access...";
+    activeAccessCheckUid="";
+    void (async()=>{
+      try{
+        await refreshSiteVerificationAccess(user);
+      }catch(error){
+        console.warn("Initial site access check failed:",error);
+      }
+      if(version!==authDisplayVersion||auth.currentUser?.uid!==user.uid)return;
+      activeAccessCheckUid=user.uid;
+      syncAuthBar(user);
+      if(!hasSiteVerificationAccess(user))void refreshOnReturn();
+    })();
   });
   window.addEventListener("princesstg:verification-access-changed",event=>{
     if(event.detail?.uid!==auth.currentUser?.uid)return;
+    // A Firestore listener can resolve while the initial Auth callback is
+    // pending. Only render after the first access check has finished.
+    if(activeAccessCheckUid!==event.detail.uid)return;
     syncAuthBar(auth.currentUser);
   });
 }
