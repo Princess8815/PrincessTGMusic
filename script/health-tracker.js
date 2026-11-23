@@ -199,7 +199,11 @@ function renderFoodLookup(inputId,resultsId,populate=true){
       );
       item.title="Approximate calories. Food packaging may differ.";
       item.addEventListener("click",()=>{
-        if(!populate)return;
+        if(!populate){
+          $("health-public-food-selected").textContent=food.name+" · "+food.portion+
+            " · approximately "+calories(food.calories)+". Check the food label for accuracy.";
+          return;
+        }
         $("health-food-name").value=food.name;
         $("health-food-calories").value=food.calories;
         $("health-food-portion").value=food.portion;
