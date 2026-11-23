@@ -506,6 +506,11 @@ function wireEvents(){
     button.addEventListener("click",()=>chooseTab(button.dataset.healthTab));
   for(const button of document.querySelectorAll("[data-health-jump]"))
     button.addEventListener("click",()=>chooseTab(button.dataset.healthJump));
+  $("health-guest-signin").addEventListener("click",()=>{
+    const authButton=$("auth-open");
+    if(authButton&&!authButton.hidden)authButton.click();
+    else alert("Use the site's Login / Register button in the account menu.");
+  });
   $("health-date").value=state.day;
   $("health-plan-date").value=state.planDate;
   $("health-date").addEventListener("change",event=>void changeDay(event.target.value));
@@ -614,7 +619,11 @@ async function exportData(){
       exportedAt:new Date().toISOString(),
       format:"princesstg-health-v1",
       settings:state.settings,
-      days:snapshot.docs.map(x=>({...x.data(),date:x.id,updatedAt:null}))
+      days:snapshot.docs.map(x=>{
+        const value=x.data();
+        return {...value,date:x.id,
+          updatedAt:value.updatedAt?.toDate?.()?.toISOString?.()||null};
+      })
     };
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
     const url=URL.createObjectURL(blob);
