@@ -143,7 +143,6 @@
   </style>
 
   <link rel="stylesheet" href="../styles/profile-dashboard.css">
-  <link rel="stylesheet" href="../styles/profile-health.css">
   <style>
     .profile-health-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin:18px 0}
     .profile-health-summary>div{padding:14px;border:1px solid #5e6385;border-radius:12px;background:#171e31}
@@ -154,6 +153,8 @@
     .profile-health-cta:focus-visible{outline:3px solid #5eead4;outline-offset:3px}
     @media(max-width:520px){.profile-health-summary{grid-template-columns:1fr}}
   </style>
+  <!-- Dedicated health analytics styles override the older compact summary. -->
+  <link rel="stylesheet" href="../styles/profile-health.css">
   <script type="module" src="../script/profile-tabs.js"></script>
 
 </head>
