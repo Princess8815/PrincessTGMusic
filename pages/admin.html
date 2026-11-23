@@ -18,6 +18,7 @@
   <script type="module" src="../script/admin-songs.js"></script>
   <script type="module" src="../script/admin-albums.js"></script>
   <script type="module" src="../script/admin-genres.js"></script>
+  <script type="module" src="../script/admin-bulk-genres.js"></script>
   <script type="module" src="../script/admin-edit-songs.js"></script>
   <script type="module" src="../script/admin-delete-songs.js"></script>
   <script type="module" src="../script/admin-accounts.js"></script>
@@ -282,6 +283,28 @@
     .admin-subpanel[hidden] { display:none !important; }
     .admin-subpanel .form-field { margin-top:15px; }
     .admin-main-panel .admin-main-panel { margin-top:0; }
+
+    /* Genre bulk editor keeps long catalogs navigable and save actions visible. */
+    .bulk-genre-toolbar{display:flex;gap:14px;align-items:end;flex-wrap:wrap;margin:18px 0 10px}
+    .bulk-genre-toolbar>.form-field{flex:1 1 300px}
+    .bulk-genre-list{max-height:min(64vh,670px);overflow:auto;display:grid;gap:8px;
+      margin:12px 0;border:1px solid #475569;border-radius:12px;padding:9px;
+      background:#111827;min-height:88px}
+    .bulk-genre-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,245px);
+      align-items:center;gap:12px;padding:11px 12px;background:#1f2937;
+      border:1px solid #42516a;border-radius:10px}
+    .bulk-genre-row[data-selected="true"]{border-color:#b39aff;background:#292444}
+    .bulk-genre-row strong{display:block;overflow-wrap:anywhere}
+    .bulk-genre-row small{display:block;color:#cbd5e1;font-size:.83rem;margin-top:3px;overflow-wrap:anywhere}
+    .bulk-genre-row label{font-size:.83rem;color:#e9d5ff;font-weight:750}
+    .bulk-genre-row select{width:100%;margin-top:4px}
+    .bulk-genre-empty{margin:auto;color:#cbd5e1;text-align:center;padding:18px 10px}
+    .bulk-genre-actions{position:sticky;bottom:0;z-index:1;display:flex;align-items:center;
+      flex-wrap:wrap;gap:11px;padding:12px;border:1px solid #536276;
+      border-radius:12px;background:#1e293b;box-shadow:0 -8px 20px #0005}
+    .bulk-genre-actions #bulk-genre-selected{margin-right:auto;font-weight:750}
+    #bulk-genre-status{margin-top:12px;overflow-wrap:anywhere;white-space:pre-wrap}
+    @media(max-width:600px){.bulk-genre-row{grid-template-columns:minmax(0,1fr)}}
   </style>
 </head>
 
@@ -1084,6 +1107,7 @@
           <button type="button" data-admin-subtab="genres:add" aria-selected="true">Add</button>
           <button type="button" data-admin-subtab="genres:edit" aria-selected="false">Edit</button>
           <button type="button" data-admin-subtab="genres:delete" aria-selected="false">Delete</button>
+          <button type="button" data-admin-subtab="genres:bulk" aria-selected="false">Bulk Assign</button>
         </nav>
         <section class="admin-subpanel" data-admin-subpanel="genres:add">
           <section class="admin-card">
@@ -1119,6 +1143,41 @@
               <input id="delete-genre-confirm" placeholder="DELETE" autocomplete="off"></div>
             <button type="button" id="delete-genre-button" style="background:#dc2626;">Delete Genre</button>
             <p id="delete-genre-status" role="status"></p>
+          </section>
+        </section>
+        <section class="admin-subpanel" data-admin-subpanel="genres:bulk" hidden>
+          <section class="admin-card" id="bulk-genre-editor">
+            <h2>Bulk Genre Editor</h2>
+            <p class="helper">Shows only songs with no assigned genre. Choose a genre beside
+              any songs you want to update, then save all selections together.
+              Songs with existing genres are excluded and protected from being overwritten.</p>
+            <div class="bulk-genre-toolbar">
+              <div class="form-field">
+                <label for="bulk-genre-search">Find an unassigned song</label>
+                <input id="bulk-genre-search" type="search"
+                  placeholder="Search song titles or albums..." autocomplete="off">
+              </div>
+              <button type="button" class="secondary" id="bulk-genre-refresh">
+                Refresh List
+              </button>
+            </div>
+            <p id="bulk-genre-count" class="helper" role="status" aria-live="polite">
+              Open this tab to load songs without a genre.
+            </p>
+            <div id="bulk-genre-list" class="bulk-genre-list" role="list"
+              aria-label="Songs without an assigned genre"></div>
+            <div class="bulk-genre-actions">
+              <span id="bulk-genre-selected" class="helper" aria-live="polite">
+                0 songs selected
+              </span>
+              <button type="button" class="secondary" id="bulk-genre-clear" disabled>
+                Clear Selections
+              </button>
+              <button type="button" id="bulk-genre-save" disabled>
+                Save All Selected Genres
+              </button>
+            </div>
+            <p id="bulk-genre-status" role="status" aria-live="polite"></p>
           </section>
         </section>
       </section>
