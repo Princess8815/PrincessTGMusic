@@ -129,7 +129,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const requestedHash = location.hash.replace(/^#admin-/, "");
   const legacyMusic = ["add", "edit", "delete"].includes(requestedHash)
     ? requestedHash : null;
-  const nestedMatch = requestedHash.match(/^(music|albums|genres)-(add|edit|delete)$/);
+  const nestedMatch = requestedHash.match(/^(music|albums|genres)-(add|edit|delete|bulk)$/);
   if (legacyMusic) activateSub("music", legacyMusic);
   if (nestedMatch) activateSub(nestedMatch[1], nestedMatch[2]);
 
