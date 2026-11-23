@@ -18,7 +18,7 @@
     <header class="health-hero">
       <p class="health-eyebrow">Your personal wellbeing workspace</p>
       <h1>Health Tracker &amp; Meal Planner</h1>
-      <p>Record meals, morning weight, and workouts. Plan ahead and watch your trends without losing yesterday's entries.</p>
+      <p>Record meals, morning weight, and workouts. Plan ahead and watch your trends without losing yesterday's entries. Don't know a food's calories? Save it as Untracked.</p>
       <p class="health-privacy"><span aria-hidden="true">🔒</span> Available to every visitor. Sign in to save your entries privately to your account.</p>
     </header>
 
@@ -80,7 +80,7 @@
         <div class="health-two-column">
           <section class="health-card">
             <h2>Calorie trend</h2>
-            <p>Last 14 days. Dates without food entries are <strong>Untracked</strong>, never counted as 0 kcal.</p>
+            <p>Last 14 days. Dates with no food entries or any food missing calories are <strong>Untracked</strong>, never counted as 0 kcal.</p>
             <svg id="health-calorie-chart" viewBox="0 0 720 235" role="img" aria-label="Daily logged calories chart"></svg>
             <p id="health-untracked-food-dates" class="health-hint" aria-live="polite"></p>
           </section>
@@ -138,8 +138,8 @@
               <label>Meal
                 <select id="health-food-meal"><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option><option>Other</option></select>
               </label>
-              <label>Calories per serving
-                <input id="health-food-calories" type="number" min="0" max="20000" step="0.1" inputmode="decimal" required>
+              <label>Calories per serving (optional)
+                <input id="health-food-calories" type="number" min="0" max="20000" step="0.1" inputmode="decimal" placeholder="Leave blank for Untracked">
               </label>
               <label>Number of servings
                 <input id="health-food-servings" type="number" min="0.05" max="100" step="0.05" value="1" inputmode="decimal" required>
@@ -151,7 +151,7 @@
                 <input id="health-food-notes" maxlength="240" placeholder="Homemade, food label, etc.">
               </label>
             </div>
-            <p id="health-food-preview" class="health-hint" aria-live="polite">Total calories will appear here.</p>
+            <p id="health-food-preview" class="health-hint" aria-live="polite">Leave calories blank to save this food as Untracked.</p>
             <button type="submit">Add food entry</button>
           </form>
         </section>
@@ -262,12 +262,12 @@
         </div>
         <section class="health-card">
           <h2>Weekly calorie averages</h2>
-          <p>Average is calculated from days with food logged, not from unlogged days.</p>
+          <p>Only days with calorie amounts for every logged food item count toward the average. Blank and partially untracked days are excluded, not treated as zero.</p>
           <div id="health-weekly-table" class="health-table-wrap"></div>
         </section>
         <section class="health-card">
           <h2>Monthly calorie averages</h2>
-          <p>Compare your logged-day averages and logged morning weights month by month.</p>
+          <p>Compare calorie averages from fully tracked days and morning weight averages month by month. Untracked food entries do not count as zero.</p>
           <div id="health-monthly-table" class="health-table-wrap"></div>
         </section>
         <section class="health-card">
