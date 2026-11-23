@@ -84,7 +84,8 @@ export function healthAlerts(days,today=localDay()){
     alerts.push({
       id:"untracked",level:"info",title:"Some food calories are Untracked",
       description:untracked+" item"+(untracked===1?"":"s")+" across "+partial.length+
-        " recent day"+(partial.length===1?"":"s")+" lack calorie amounts. "+
+        " recent day"+(partial.length===1?"":"s")+
+        (untracked===1?" lacks":" lack")+" calorie amounts. "+
         "Those days are excluded from calorie averages; an entered 0 kcal still counts."
     });
   }
