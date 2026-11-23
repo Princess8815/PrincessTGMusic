@@ -317,8 +317,10 @@ async function refresh(force=false){
         (error?.message||"unknown error")+
         ". Check your Firestore health rules and internet connection.",true);
     }finally{
-      if(token===generation)refreshButton.disabled=false;
-      loading=null;
+      if(token===generation){
+        refreshButton.disabled=false;
+        loading=null;
+      }
     }
   })();
   return loading;
