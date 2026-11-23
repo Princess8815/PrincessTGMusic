@@ -212,6 +212,15 @@ function renderFoodLookup(inputId,resultsId,populate=true){
       );
       item.title="Approximate calories. Food packaging may differ.";
       item.addEventListener("click",()=>{
+        if(populate==="plan"){
+          $("health-plan-name").value=food.name;
+          $("health-plan-calories").value=food.calories;
+          $("health-plan-notes").value="Reference serving: "+food.portion+
+            ". Confirm calories from the packaging.";
+          chooseTab("planner");
+          $("health-plan-name").focus();
+          return;
+        }
         if(!populate){
           $("health-public-food-selected").textContent=food.name+" · "+food.portion+
             " · approximately "+calories(food.calories)+". Check the food label for accuracy.";
@@ -524,6 +533,7 @@ function wireEvents(){
   for(const id of ["health-food-calories","health-food-servings"])
     $(id).addEventListener("input",updateFoodPreview);
   renderFoodLookup("health-food-search","health-food-results",true);
+  renderFoodLookup("health-plan-food-search","health-plan-food-results","plan");
   renderFoodLookup("health-public-food-search","health-public-food-results",false);
   $("health-weight-form").addEventListener("submit",event=>{
     event.preventDefault();
