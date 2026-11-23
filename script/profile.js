@@ -18,6 +18,8 @@ import {
   doc,
   getDocFromServer,
   getDocs,
+  getDocsFromServer,
+  writeBatch,
   query,
   where,
   updateDoc,
@@ -516,6 +518,20 @@ $("newsletter-button").addEventListener(
   }
 );
 
+// Delete private health records while the user can still authorize their
+// own Firestore subcollection. Deleting Firebase Auth alone does NOT delete
+// Firestore subcollections. This runs after archiving but before Auth removal.
+async function deletePrivateHealthBeforeClosure(uid){
+  const snapshot=await getDocsFromServer(collection(db,"users",uid,"healthDays"));
+  const references=snapshot.docs.map(entry=>entry.ref);
+  references.push(doc(db,"users",uid,"healthSettings","main"));
+  for(let start=0;start<references.length;start+=400){
+    const batch=writeBatch(db);
+    for(const item of references.slice(start,start+400))batch.delete(item);
+    await batch.commit();
+  }
+}
+
 // ==========================================
 // DELETE LOGIN AND ARCHIVE ACCOUNT
 // ==========================================
@@ -601,6 +617,11 @@ $("close-account-form").addEventListener(
         accountData.bio = "";
         accountData.newsletterSubscribed = false;
       }
+
+      // Remove health diary, workout, weight and meal-planning data
+      // before deleting the sign-in credentials. An error stops closure
+      // rather than silently leaving private health records orphaned.
+      await deletePrivateHealthBeforeClosure(account.uid);
 
       // Delete the actual Firebase Auth login.
       await deleteUser(account);
