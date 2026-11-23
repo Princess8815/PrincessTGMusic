@@ -162,6 +162,10 @@
         <section class="health-card">
           <h2>Plan meals for any date</h2>
           <p>Choose a date, including a future date. Planned meals don't count as eaten until you add them to your diary.</p>
+          <label for="health-plan-food-search">Quick-fill a meal using calorie lookup</label>
+          <input id="health-plan-food-search" type="search" autocomplete="off"
+            placeholder="Search foods, then click to fill the meal form">
+          <div id="health-plan-food-results" class="health-food-results" role="list"></div>
           <form id="health-plan-form">
             <div class="health-form-grid">
               <label>Plan date
