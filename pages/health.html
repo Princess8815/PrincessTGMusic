@@ -28,6 +28,17 @@
       <a href="profile.html">Go to your profile</a>
     </section>
 
+    <section class="health-card" id="health-guest-lookup">
+      <h2>Free calorie quick lookup</h2>
+      <p>Search common foods and select one for an approximate per-serving estimate. Labels and recipes can differ.</p>
+      <label for="health-public-food-search">Food name</label>
+      <input id="health-public-food-search" type="search" autocomplete="off"
+        placeholder="Search common foods...">
+      <div id="health-public-food-results" class="health-food-results" role="list"></div>
+      <p id="health-public-food-selected" class="health-hint" role="status">Select a food to see its reference serving and estimate.</p>
+      <a href="https://fdc.nal.usda.gov/" target="_blank" rel="noopener noreferrer">Open USDA FoodData Central</a>
+    </section>
+
     <div id="health-private" hidden>
       <div class="health-toolbar health-card">
         <div class="health-date-group">
