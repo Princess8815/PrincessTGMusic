@@ -58,9 +58,16 @@ async function readApprovedAlbums(){
   return new Set(snap.data().values.filter(x=>typeof x==="string"));
 }
 function normalizeReleaseDate(value){
-  const date=clean(value)||"tbd";
-  // Firestore requires lowercase "tbd". Preserve valid ISO dates.
-  return date.toLowerCase()==="tbd"?"tbd":date;
+  const date=clean(value);
+  // Firestore's releaseDate is a machine-readable YYYY-MM-DD or "tbd".
+  // The untouched JSON value stays available for public display, including
+  // playful custom dates like bREAKING tHE rULES.
+  return /^\d{4}-\d{2}-\d{2}$/.test(date)?date:"tbd";
+}
+function hasCustomReleaseDate(value){
+  const date=clean(value);
+  return !!date && date.toLowerCase()!=="tbd"
+    && !/^\d{4}-\d{2}-\d{2}$/.test(date);
 }
 function createIssues(song,approvedAlbums){
   // Existing Firestore records use the update rule; only JSON-only songs
@@ -82,8 +89,6 @@ function createIssues(song,approvedAlbums){
       "\" is not an exact match in Firestore's approved album list"+
       (probable?" (did you mean \""+probable+"\"?)":"; add or correct it under Admin → Albums"));
   }
-  if(date!=="tbd"&&!/^\d{4}-\d{2}-\d{2}$/.test(date))
-    issues.push("release date \""+date+"\" must be YYYY-MM-DD or tbd");
   if(!lyrics.trim())
     issues.push("lyrics are missing; the current Firestore create rules require lyrics");
   if(description.length>5000)
@@ -233,8 +238,13 @@ document.addEventListener("DOMContentLoaded",()=>{
         warning.setAttribute("role","note");
         meta.append(warning);
         row.dataset.blocked="true";
+      }
+      if(song.dbSong===null && hasCustomReleaseDate(song.display.releaseDate)){
+        meta.append(textNode("small","Original display release date will stay \""+
+          clean(song.display.releaseDate)+"\". Firestore stores tbd internally.",
+          "bulk-genre-date-note"));
       }else if(song.dbSong===null && normalizeReleaseDate(song.display.releaseDate)!==clean(song.display.releaseDate||"tbd")){
-        meta.append(textNode("small","Legacy date will be normalized to lowercase tbd in Firestore.","bulk-genre-date-note"));
+        meta.append(textNode("small","Firestore stores lowercase tbd; existing JSON display text is unchanged.","bulk-genre-date-note"));
       }
       const label=document.createElement("label");
       const fieldId="bulk-genre-choice-"+index;
