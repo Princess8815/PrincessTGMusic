@@ -140,13 +140,13 @@ body.ptg-shell-ready :is(input,textarea,select,button,a,summary):focus-visible{
 }
 /* Common action buttons use the same primary hue. Specific semantic controls
    (delete, stop, tabs, secondary and disabled controls) keep their semantics. */
-body.ptg-shell-ready button:not(.danger-button):not(.secondary):not(.auth-close):not(.ptg-mobile-toggle):not([role=tab]):not(#stopBtn):not(#orderResetBtn):not(:disabled):not([aria-pressed=true]),
+body.ptg-shell-ready button:not(.danger-button):not(.secondary):not(.mail-secondary):not(.mail-danger):not(.auth-close):not(.ptg-mobile-toggle):not([role=tab]):not(#stopBtn):not(#orderResetBtn):not(:disabled):not([aria-pressed=true]),
 body.ptg-shell-ready :is(.challenge-submit,.new-entry-button,.open-album,.auth-primary){
   background:var(--ptg-primary) !important;
   border-color:var(--ptg-primary) !important;
   color:var(--ptg-on-primary) !important;
 }
-body.ptg-shell-ready button:not(.danger-button):not(.secondary):not(.auth-close):not(.ptg-mobile-toggle):not([role=tab]):not(#stopBtn):not(#orderResetBtn):not(:disabled):not([aria-pressed=true]):hover{
+body.ptg-shell-ready button:not(.danger-button):not(.secondary):not(.mail-secondary):not(.mail-danger):not(.auth-close):not(.ptg-mobile-toggle):not([role=tab]):not(#stopBtn):not(#orderResetBtn):not(:disabled):not([aria-pressed=true]):hover{
   background:var(--ptg-hover) !important;
 }
 body.ptg-shell-ready :is(.ptg-add-playlist summary,.album-lyrics summary,

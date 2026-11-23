@@ -15,6 +15,8 @@
   <script type="module" src="../script/profile-promotions.js"></script>
   <script type="module" src="../script/profile.js"></script>
   <script type="module" src="../script/profile-playlists.js"></script>
+  <script type="module" src="../script/site-mail.js"></script>
+  <link rel="stylesheet" href="../styles/site-mail.css">
 
   <script
   type="module"
@@ -154,12 +156,14 @@
     <h1>My Profile</h1>
 
     <p id="profile-status" role="alert" aria-live="assertive" hidden></p>
+    <button type="button" id="profile-retry" class="profile-retry-button" hidden>Retry loading profile</button>
 
     <div id="profile-app" hidden>
       <nav class="profile-tabs" role="tablist" aria-label="Profile sections">
         <button type="button" id="profile-tab-account" role="tab" aria-controls="profile-panel-account" aria-selected="true" tabindex="0" data-profile-tab="account">Overview</button>
         <button type="button" id="profile-tab-email" role="tab" aria-controls="profile-panel-email" aria-selected="false" tabindex="-1" data-profile-tab="email">Email & Security</button>
         <button type="button" id="profile-tab-playlists" role="tab" aria-controls="profile-panel-playlists" aria-selected="false" tabindex="-1" data-profile-tab="playlists">Playlists</button>
+        <button type="button" id="profile-tab-mail" role="tab" aria-controls="profile-panel-mail" aria-selected="false" tabindex="-1" data-profile-tab="mail">Mail <span id="profile-mail-unread" class="mail-tab-count" hidden></span></button>
         <button type="button" id="profile-tab-submissions" role="tab" aria-controls="profile-panel-submissions" aria-selected="false" tabindex="-1" data-profile-tab="submissions">My Songs</button>
         <button type="button" id="profile-tab-newsletter" role="tab" aria-controls="profile-panel-newsletter" aria-selected="false" tabindex="-1" data-profile-tab="newsletter">Email Updates</button>
         <button type="button" id="profile-tab-delete" class="profile-tab-danger" role="tab" aria-controls="profile-panel-delete" aria-selected="false" tabindex="-1" data-profile-tab="delete">Delete Account</button>
@@ -339,6 +343,7 @@
                 <div class="playlist-detail-actions">
                   <label for="profile-playlist-color">Color</label>
                   <input type="color" id="profile-playlist-color" value="#8b5cf6" aria-label="Change playlist color">
+                  <button type="button" id="profile-playlist-send">✉ Send playlist</button>
                   <button type="button" id="profile-playlist-delete" class="danger-button">Delete playlist</button>
                 </div>
               </div>
@@ -362,6 +367,123 @@
           </div>
         </div>
         <p id="profile-playlist-status" role="status" aria-live="polite" class="status"></p>
+      </section>
+
+      <!-- MEMBER-TO-MEMBER PRIVATE SITE MAIL -->
+      <section class="profile-card profile-panel mail-profile-panel" id="profile-panel-mail"
+               role="tabpanel" aria-labelledby="profile-tab-mail" data-profile-panel="mail" hidden>
+        <div class="mail-heading">
+          <div><h2>Site Mail</h2>
+            <p class="mail-description">Send private site messages, songs, playlists, and pictures to other members.</p></div>
+          <button type="button" class="mail-new-button" id="mail-new">+ New message</button>
+        </div>
+        <div id="mail-verification-gate" class="mail-verification-gate" hidden>
+          <h3>Verify your email to unlock Site Mail</h3>
+          <p>Only signed-in members with a verified email address and an active account can use Site Mail. Check your inbox for a verification link, then return here.</p>
+          <div class="mail-verification-actions">
+            <button type="button" id="mail-send-verification">Send verification email</button>
+            <button type="button" id="mail-check-verification" class="mail-secondary">I've verified my email</button>
+          </div>
+          <p id="mail-verification-status" role="status" aria-live="polite"></p>
+        </div>
+        <div id="mail-verified-content" hidden>
+        <div class="mail-main-tabs" role="group" aria-label="Mail folders">
+          <button type="button" id="mail-inbox-button" data-mail-view="inbox" aria-pressed="true">Inbox <span id="mail-unread-count" hidden></span></button>
+          <button type="button" id="mail-sent-button" data-mail-view="sent" aria-pressed="false">Sent</button>
+          <button type="button" id="mail-compose-button" data-mail-view="compose" aria-pressed="false">Compose</button>
+        </div>
+        <p id="mail-status" class="mail-status" role="status" aria-live="polite"></p>
+        <div id="mail-browser" class="mail-browser">
+          <aside class="mail-list-column" aria-label="Messages">
+            <div class="mail-list-heading">
+              <h3 id="mail-folder-title">Inbox</h3>
+              <div class="mail-list-actions">
+                <button type="button" id="mail-refresh" class="mail-secondary">Refresh</button>
+                <button type="button" id="mail-delete-all" class="mail-danger">Delete all</button>
+              </div>
+            </div>
+            <div id="mail-message-list" class="mail-message-list" aria-label="Mail list"></div>
+            <p id="mail-list-empty" class="mail-empty" hidden>No messages here yet.</p>
+            <button type="button" id="mail-load-more" class="mail-secondary" hidden>Load older mail</button>
+          </aside>
+          <article class="mail-reader" id="mail-reader" aria-label="Selected message">
+            <div id="mail-reader-empty" class="mail-reader-empty">
+              <h3>Choose a message</h3>
+              <p>Open an item from your mail list to read it here.</p>
+            </div>
+            <div id="mail-reader-open" hidden>
+              <div class="mail-reader-actions">
+                <button type="button" id="mail-back" class="mail-secondary">← Messages</button>
+                <button type="button" id="mail-reply" class="mail-secondary">Reply</button>
+                <button type="button" id="mail-delete" class="mail-danger">Delete</button>
+              </div>
+              <h3 id="mail-open-subject"></h3>
+              <dl class="mail-message-meta">
+                <div><dt id="mail-open-person-label">From</dt><dd id="mail-open-person"></dd></div>
+                <div><dt>Sent</dt><dd id="mail-open-date"></dd></div>
+                <div><dt>Auto-deletes</dt><dd id="mail-open-expiry"></dd></div>
+              </dl>
+              <div id="mail-open-body" class="mail-message-body"></div>
+              <div id="mail-open-share" class="mail-shared-item" hidden></div>
+              <div id="mail-open-images" class="mail-image-gallery" aria-label="Attached images"></div>
+            </div>
+          </article>
+        </div>
+
+        <form id="mail-compose-form" class="mail-compose" hidden>
+          <h3>Compose a message</h3>
+          <div class="mail-form-field mail-recipient-picker">
+            <label for="mail-recipient-search">To <span class="mail-required">*</span></label>
+            <input type="search" id="mail-recipient-search" placeholder="Search a member by display name"
+                   maxlength="45" autocomplete="off" aria-describedby="mail-recipient-help">
+            <small id="mail-recipient-help">Type at least 2 letters, then choose the member. Email addresses stay private.</small>
+            <div id="mail-recipient-results" class="mail-recipient-results" hidden></div>
+            <div id="mail-recipient-selected" class="mail-recipient-selected" hidden>
+              <span id="mail-recipient-selected-name"></span>
+              <button type="button" id="mail-recipient-clear" aria-label="Remove recipient">×</button>
+            </div>
+          </div>
+          <div class="mail-form-field">
+            <label for="mail-subject">Subject <span class="mail-required">*</span></label>
+            <input id="mail-subject" type="text" maxlength="120" required placeholder="Subject">
+          </div>
+          <div class="mail-form-field">
+            <label for="mail-body">Message</label>
+            <textarea id="mail-body" rows="6" maxlength="6000" placeholder="Write your message..."></textarea>
+            <small id="mail-body-count">0 / 6000</small>
+          </div>
+          <fieldset class="mail-attach-fieldset">
+            <legend>Attach something</legend>
+            <p>Share music already on the site, or upload up to 3 pictures. Audio files cannot be uploaded.</p>
+            <div class="mail-attach-tabs">
+              <button type="button" id="mail-add-song" class="mail-secondary">♫ Song</button>
+              <button type="button" id="mail-add-playlist" class="mail-secondary">≡ Playlist</button>
+              <label for="mail-images-input" class="mail-image-picker">▧ Images <input id="mail-images-input" type="file"
+                accept="image/jpeg,image/png,image/webp" multiple></label>
+            </div>
+            <div id="mail-song-chooser" class="mail-share-chooser" hidden>
+              <label for="mail-song-search">Find a song</label>
+              <input id="mail-song-search" type="search" placeholder="Search the song catalog" maxlength="100">
+              <div id="mail-song-results" class="mail-song-results"></div>
+            </div>
+            <div id="mail-playlist-chooser" class="mail-share-chooser" hidden>
+              <label for="mail-playlist-select">Choose your playlist</label>
+              <select id="mail-playlist-select"></select>
+              <button type="button" id="mail-playlist-attach">Attach selected playlist</button>
+            </div>
+            <div id="mail-share-preview" class="mail-share-preview" hidden>
+              <span id="mail-share-name"></span>
+              <button type="button" id="mail-share-remove" class="mail-secondary">Remove</button>
+            </div>
+            <div id="mail-image-previews" class="mail-image-previews" aria-label="Selected pictures"></div>
+          </fieldset>
+          <div class="mail-compose-actions">
+            <button type="submit" id="mail-send">Send mail</button>
+            <button type="button" id="mail-cancel" class="mail-secondary">Cancel</button>
+          </div>
+          <p class="mail-expiry-note">Mail expires after 30 days. Firestore's automatic cleanup usually removes the stored messages and pictures within the following 24 hours. You can delete your copy sooner.</p>
+        </form>
+        </div>
       </section>
 
       <!-- EMAIL LIST -->

@@ -27,6 +27,14 @@
     .settings-preview{border:1px solid #605474;border-radius:12px;padding:15px;margin-top:22px;background:#252239}
     .settings-preview strong{color:var(--ptg-shell-accent,#b48cff)}
     #settings-status{min-height:24px}
+    .settings-dev-card{margin-bottom:20px;border-color:#8f6bb2}
+    .settings-dev-card h2{margin:0 0 8px;color:#d7b8ff;font-size:1.3rem}
+    .settings-dev-card p{margin:8px 0}
+    #settings-firebase-current{font-weight:800;color:#a7f3d0}
+    .settings-dev-card[data-mode="production"]{border-color:#f59e0b;background:#33261e}
+    .settings-dev-card[data-mode="production"] #settings-firebase-current{color:#fde68a}
+    #settings-firebase-warning{font-weight:750;color:#facc15}
+    .settings-firebase-note{font-size:.9rem}
     @media(max-width:550px){.settings-grid{grid-template-columns:1fr}}
   </style>
   <!-- Navigation remains available even while account services initialize. -->
@@ -39,6 +47,22 @@
     <p style="color:#c2a2f4;font-weight:800;letter-spacing:.14em;text-transform:uppercase;font-size:.78rem">Personalize your experience</p>
     <h1>Settings</h1>
     <p>Change how PrincessTG Creations looks and feels on this browser. These preferences don't change your account or your music.</p>
+    <section id="local-firebase-settings" class="settings-card settings-dev-card" hidden
+      aria-labelledby="local-firebase-heading">
+      <h2 id="local-firebase-heading">Local Firebase connection</h2>
+      <p>This switch only appears on localhost or 127.0.0.1. It doesn't change
+      the public website or your GitHub settings.</p>
+      <label class="settings-check" for="settings-use-emulators">
+        <input id="settings-use-emulators" type="checkbox">
+        Use local Firebase emulators for test accounts
+      </label>
+      <p id="settings-firebase-current" role="status" aria-live="polite"></p>
+      <p id="settings-firebase-warning"></p>
+      <p id="settings-firebase-status" role="status" aria-live="polite"></p>
+      <p class="settings-firebase-note">Changing modes reloads this page. The
+      emulators are optional in Live Firebase mode, but must be running
+      to use test accounts in Emulator mode.</p>
+    </section>
     <form id="site-settings-form" class="settings-card">
       <div class="settings-grid">
         <div class="settings-field">

@@ -1,5 +1,6 @@
 
 import { auth, db } from "./firebase.js";
+import {hasSiteVerificationAccess} from "./verification-access.js";
 
 import {
   onAuthStateChanged
@@ -7,6 +8,8 @@ import {
 
 import {
   doc,
+  getDoc,
+  setDoc,
   runTransaction,
   updateDoc,
   serverTimestamp
@@ -31,6 +34,46 @@ let lastSavedAuth = null;
 let sessionVersion = 0;
 let readyPromise = null;
 let writingPromise = null;
+let initializationError = null;
+
+// Profile pages wait for their own Firebase user record rather than racing
+// new-account initialization with a second, independent Firestore lookup.
+export async function waitForUserRecord(uid, maxWaitMs=6000) {
+  if (!uid || currentUid!==uid || !readyPromise) return null;
+  let timeout;
+  try {
+    await Promise.race([
+      readyPromise,
+      new Promise(resolve=>{timeout=setTimeout(resolve,maxWaitMs);})
+    ]);
+  } finally {
+    if(timeout)clearTimeout(timeout);
+  }
+  if (currentUid!==uid) return null;
+  if (initializationError) throw initializationError;
+  return currentRecord;
+}
+
+// Public mail directory contains display names only, never private emails,
+// roles, passwords, or account records. It is opt-in via verification of the
+// site's email address; existing members enroll the next time they log in.
+let directorySync = null;
+async function syncMailDirectory(user) {
+  if (!hasSiteVerificationAccess(user) || currentUid !== user.uid) return;
+  const memberName = String(currentRecord?.auth?.displayName || "");
+  if (!memberName.trim()) return;
+  // Keep the exact stored public name so Firestore rules can reject a
+  // forged directory entry without needing to expose private user profiles.
+  if (directorySync) return directorySync;
+  directorySync = (async () => {
+    const memberRef = doc(db, "siteMailDirectory", user.uid);
+    const previous = await getDoc(memberRef);
+    if (previous.exists() && previous.data()?.name === memberName) return;
+    await setDoc(memberRef, {name:memberName, updatedAt:serverTimestamp()});
+  })();
+  try {await directorySync;}
+  finally {directorySync = null;}
+}
 
 // ==========================================
 // GET SAFE AUTH INFORMATION
@@ -72,6 +115,7 @@ onAuthStateChanged(auth, (user) => {
   lastSavedAuth = null;
   readyPromise = null;
   writingPromise = null;
+  initializationError = null;
 
   if (!user) {
     console.log("User database: Signed out.");
@@ -146,11 +190,19 @@ onAuthStateChanged(auth, (user) => {
       })
     );
 
+    if (hasSiteVerificationAccess(user)) {
+      // Update stale auth metadata before indexing the display name.
+      // This never exposes users/{uid} documents to other members.
+      void saveUserIfChanged()
+        .then(() => syncMailDirectory(user))
+        .catch(error => console.warn("Mail directory registration deferred:",error));
+    }
+
   })().catch(error => {
-    console.error(
-      "Unable to initialize user database:",
-      error
-    );
+    if (session===sessionVersion) initializationError=error;
+    console.error("Unable to initialize user database:",error);
+    // Existing account documents are retained; never create a temporary
+    // local replacement that could obscure Firestore rule/connection failures.
   });
 });
 
@@ -224,6 +276,9 @@ export async function saveUserIfChanged() {
         ...currentRecord,
         auth: authInfo
       };
+      void syncMailDirectory(user).catch(error=>{
+        console.warn("Mail directory update deferred:",error);
+      });
     }
 
     console.log("User changes saved.");
@@ -267,3 +322,19 @@ document.addEventListener(
     }
   }
 );
+
+window.addEventListener("princesstg:email-verified", () => {
+  const user = auth.currentUser;
+  if (!user?.emailVerified) return;
+  void saveUserIfChanged()
+    .then(() => syncMailDirectory(user))
+    .catch(error=>console.warn("Mail directory registration deferred:",error));
+});
+
+window.addEventListener("princesstg:verification-access-changed",event=>{
+  const user=auth.currentUser;
+  if(!user || event.detail?.uid!==user.uid || !hasSiteVerificationAccess(user))return;
+  void saveUserIfChanged()
+    .then(()=>syncMailDirectory(user))
+    .catch(error=>console.warn("Bypassed member directory sync deferred:",error));
+});
