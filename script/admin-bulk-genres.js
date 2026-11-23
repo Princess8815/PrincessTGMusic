@@ -7,6 +7,7 @@ import {
 const $=id=>document.getElementById(id);
 const SONGS_JSON="../audioPlayer/audio/song-details.json";
 const GENRES_DOC=()=>doc(db,"enums","genres");
+const ALBUMS_DOC=()=>doc(db,"enums","albums");
 const SONGS_REF=()=>collection(db,"songs");
 const MAX_PARALLEL_SAVES=4;
 
@@ -48,6 +49,41 @@ async function readGenres(){
   const result=genreNames(values);
   if(!result.length)throw Error("No available genres. Add genres in the Genres tab first.");
   return result;
+}
+async function readApprovedAlbums(){
+  const snap=await getDocFromServer(ALBUMS_DOC());
+  if(!snap.exists()||!Array.isArray(snap.data().values)){
+    throw Error("Cannot verify the approved album list (enums/albums).");
+  }
+  return new Set(snap.data().values.filter(x=>typeof x==="string"));
+}
+function normalizeReleaseDate(value){
+  const date=clean(value)||"tbd";
+  // Firestore requires lowercase "tbd". Preserve valid ISO dates.
+  return date.toLowerCase()==="tbd"?"tbd":date;
+}
+function createIssues(song,approvedAlbums){
+  // Existing Firestore records use the update rule; only JSON-only songs
+  // need to satisfy the much stricter new-song create validation.
+  if(song.dbSong!==null)return [];
+  const data=song.display||{};
+  const issues=[];
+  const title=clean(song.title);
+  const album=String(data.album||"");
+  const date=normalizeReleaseDate(data.releaseDate);
+  const lyrics=String(data.lyrics||"");
+  const description=String(data.description||"");
+  if(!title||title.length>160)
+    issues.push("title must be 1–160 characters");
+  if(!approvedAlbums.has(album))
+    issues.push("album \""+(album||"(blank)")+"\" is not in the approved Firestore album list");
+  if(date!=="tbd"&&!/^\d{4}-\d{2}-\d{2}$/.test(date))
+    issues.push("release date \""+date+"\" must be YYYY-MM-DD or tbd");
+  if(!lyrics.trim())
+    issues.push("lyrics are missing; the current Firestore create rules require lyrics");
+  if(description.length>5000)
+    issues.push("description is too long");
+  return issues;
 }
 async function readUnassignedSongs(){
   // Read BOTH sources successfully before deciding a song has no genre.
@@ -99,7 +135,7 @@ function newSongDocument(song,genre,user){
     description:String(source.description||""),
     album:String(source.album||""),
     genre,
-    releaseDate:String(source.releaseDate||"tbd"),
+    releaseDate:normalizeReleaseDate(source.releaseDate),
     lyrics:String(source.lyrics||""),
     translation:String(source.translation||""),
     lyricsCollapsed:source.lyricsCollapsed!==false,
@@ -138,7 +174,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   const selectedLabel=$("bulk-genre-selected");
   const status=$("bulk-genre-status");
 
-  let genres=[],candidates=[],selection=new Map();
+  let genres=[],approvedAlbums=new Set(),candidates=[],selection=new Map();
   let loading=null,ready=false,saving=false;
 
   function message(value,error=false){
@@ -147,9 +183,12 @@ document.addEventListener("DOMContentLoaded",()=>{
   }
   function updateControls(){
     const n=selection.size;
-    selectedLabel.textContent=n+" song"+(n===1?"":"s")+" selected"+
-      (n?" · including filtered-out selections":"");
-    save.disabled=!ready||saving||n===0;
+    const readyCount=candidates.filter(song=>selection.has(song.id)
+      &&createIssues(song,approvedAlbums).length===0).length;
+    const blockedCount=n-readyCount;
+    selectedLabel.textContent=n+" song"+(n===1?"":"s")+" selected · "+
+      readyCount+" ready"+(blockedCount?" · "+blockedCount+" needs metadata fixes":"");
+    save.disabled=!ready||saving||readyCount===0;
     clear.disabled=!ready||saving||n===0;
     refresh.disabled=!!loading||saving;
     search.disabled=!ready||saving;
@@ -161,8 +200,10 @@ document.addEventListener("DOMContentLoaded",()=>{
       !query || song.title.toLocaleLowerCase().includes(query)||
       String(song.display.album||"").toLocaleLowerCase().includes(query)
     );
+    const blockedTotal=candidates.filter(song=>createIssues(song,approvedAlbums).length).length;
     count.textContent=candidates.length+" song"+(candidates.length===1?"":"s")+
-      " without genres · "+visible.length+" shown";
+      " without genres · "+visible.length+" shown"+
+      (blockedTotal?" · "+blockedTotal+" need metadata fixes before Firestore can create them":"");
     if(!visible.length){
       const text=!candidates.length
         ?"All songs have a genre! Nothing to assign."
@@ -180,6 +221,16 @@ document.addEventListener("DOMContentLoaded",()=>{
         textNode("strong",song.title),
         textNode("small","Album: "+(clean(song.display.album)||"Uncategorized"))
       );
+      const issues=createIssues(song,approvedAlbums);
+      if(issues.length){
+        const warning=textNode("small","Cannot create Firestore record yet: "+
+          issues.join("; ")+".","bulk-genre-warning");
+        warning.setAttribute("role","note");
+        meta.append(warning);
+        row.dataset.blocked="true";
+      }else if(song.dbSong===null && normalizeReleaseDate(song.display.releaseDate)!==clean(song.display.releaseDate||"tbd")){
+        meta.append(textNode("small","Legacy date will be normalized to lowercase tbd in Firestore.","bulk-genre-date-note"));
+      }
       const label=document.createElement("label");
       const fieldId="bulk-genre-choice-"+index;
       label.htmlFor=fieldId;
@@ -212,16 +263,23 @@ document.addEventListener("DOMContentLoaded",()=>{
     loading=(async()=>{
       if(!(await verifyStaff())||!auth.currentUser)
         throw Error("Administrator permissions required.");
-      const [names,unassigned]=await Promise.all([readGenres(),readUnassignedSongs()]);
-      genres=names;candidates=unassigned;
+      const [names,albums,unassigned]=await Promise.all([
+        readGenres(),readApprovedAlbums(),readUnassignedSongs()
+      ]);
+      genres=names;approvedAlbums=albums;candidates=unassigned;
       const allowed=new Set(genres);
       const validIds=new Set(candidates.map(song=>song.id));
       selection=new Map([...selection].filter(([id,g])=>validIds.has(id)&&allowed.has(g)));
       ready=true;
       render();
-      if(!keepMessage)message(candidates.length
-        ?"Select genres for the songs you want, then click Save All Selected Genres."
-        :"Every song already has a genre.");
+      if(!keepMessage){
+        const blocked=candidates.filter(song=>createIssues(song,approvedAlbums).length).length;
+        message(candidates.length
+          ?"Select genres and click Save All. "+
+            (blocked?blocked+" JSON-only songs need metadata corrections; their individual reasons appear in the list."
+              :"All listed songs are ready for genre assignment.")
+          :"Every song already has a genre.");
+      }
     })();
     updateControls();
     try{
@@ -280,13 +338,24 @@ document.addEventListener("DOMContentLoaded",()=>{
       if(!(await verifyStaff())||!auth.currentUser)
         throw Error("Administrator permissions required.");
       const user=auth.currentUser;
-      const currentGenres=new Set(await readGenres());
+      const [latestGenres,latestAlbums]=await Promise.all([readGenres(),readApprovedAlbums()]);
+      const currentGenres=new Set(latestGenres);
       const invalid=jobs.filter(job=>!currentGenres.has(job.genre));
       if(invalid.length)throw Error("Some genre options changed. Refresh genres before saving.");
+      approvedAlbums=latestAlbums;
+      const eligible=[],blocked=[];
+      for(const job of jobs){
+        const issues=createIssues(job.song,latestAlbums);
+        if(issues.length)blocked.push({job,issues});
+        else eligible.push(job);
+      }
+      // Never send obviously invalid new documents just to obtain 23
+      // indistinguishable permission-denied errors. Keep their selections
+      // for after the owner corrects their JSON metadata / album mapping.
       let cursor=0,completed=0;
       async function worker(){
-        while(cursor<jobs.length){
-          const {song,genre}=jobs[cursor++];
+        while(cursor<eligible.length){
+          const {song,genre}=eligible[cursor++];
           try{
             const result=await assignMissingGenre(song,genre,user);
             if(result==="saved")results.saved++;
@@ -297,23 +366,28 @@ document.addEventListener("DOMContentLoaded",()=>{
             errors.push(song.title+": "+(error?.message||"save failed"));
           }
           completed++;
-          if(completed%5===0||completed===jobs.length)
-            message("Saving genres: "+completed+"/"+jobs.length+" processed...");
+          if(completed%5===0||completed===eligible.length)
+            message("Saving genres: "+completed+"/"+eligible.length+" eligible records processed...");
         }
       }
-      await Promise.all(Array.from({length:Math.min(MAX_PARALLEL_SAVES,jobs.length)},worker));
+      await Promise.all(Array.from({length:Math.min(MAX_PARALLEL_SAVES,eligible.length)},worker));
       const summary=results.saved+" saved, "+results.skipped+
-        " skipped because they already had a genre, "+results.failed+" failed.";
+        " skipped because they already had a genre, "+blocked.length+
+        " blocked by missing/invalid JSON metadata, "+results.failed+" Firestore write failures.";
       // Locally remove confirmed writes even if the refresh request fails.
       const successful=new Set(jobs.filter(job=>!selection.has(job.song.id)).map(job=>job.song.id));
       candidates=candidates.filter(song=>!successful.has(song.id));
       render();
       const reloaded=await reload({keepMessage:true});
+      const blockedDetails=blocked.slice(0,8).map(({job,issues})=>
+        job.song.title+": "+issues.join("; ")).join("\n");
       message(summary+
         (reloaded?"":"\nThe list could not refresh. Use Refresh List to retry.")+
-        (errors.length?"\n"+errors.slice(0,5).join("\n")+
+        (blockedDetails?"\nNot sent to Firestore:\n"+blockedDetails+
+          (blocked.length>8?"\nAnd "+(blocked.length-8)+" more; see song rows for reasons.":""):"")+
+        (errors.length?"\nFirestore denied these:\n"+errors.slice(0,5).join("\n")+
           (errors.length>5?"\nAnd "+(errors.length-5)+" more errors.":""):""),
-        results.failed>0||!reloaded);
+        results.failed>0||blocked.length>0||!reloaded);
     }catch(error){
       message("Could not complete bulk save: "+error.message,true);
     }finally{
