@@ -73,3 +73,48 @@ This is a stacked pull request.
    if GitHub does not update it automatically.
 
 Do not merge #19 ahead of #18.
+
+
+## Test real 404 responses locally (no Live Server needed)
+
+With PR #19 checked out, open the VS Code terminal in the **repository root**:
+
+```cmd
+node dev-server.js
+```
+
+The script starts its own local HTTP server on `127.0.0.1:5502`, separate
+from VS Code Live Server's usual port 5501. Open:
+
+- Home: `http://127.0.0.1:5502/`
+- A missing URL: `http://127.0.0.1:5502/something-that-does-not-exist`
+- A maintained song: `http://127.0.0.1:5502/audioPlayer/pages/song.html?id=100-voices`
+- Old URL warning: `http://127.0.0.1:5502/audioPlayer/pages/100-voices.html`
+
+A missing URL now returns HTTP **404** with the customized, randomized
+axolotl art. You can refresh to get a different single axolotl.
+
+Run `node dev-server.js 5503` to use another port. Press **Ctrl+C** in
+the server terminal to stop it. No `npm install` or third-party packages
+are necessary. Audio playback supports HTTP Range requests for seeking.
+Local `/PrincessTGMusic/` links are also recognized.
+
+**Firebase note:** the hostname/port creates a distinct browser origin:
+if you selected Live Firebase under Live Server on port 5501, the new
+5502 page does not inherit that selection. The site's default on every
+new local origin is **emulator mode**. If you are not running both Firebase
+emulators, open `http://127.0.0.1:5502/pages/settings.html` and
+switch that origin to **Live Firebase**, being mindful that live tests
+can change real accounts and data.
+
+Do not expect the VS Code **Go Live** extension itself to display the
+custom 404. It has its own missing-page handling. Use the Node server
+URL on port 5502 to test this behavior.
+
+### Additional tests
+
+- **12/12 mocked HTTP tests passed:** GET/HEAD responses, real 404 content,
+  JavaScript MIME, GitHub Pages prefix, missing-page link, HTTP 405,
+  private file blocking, audio Range/206 and invalid range/416.
+- Integration testing against a live Node HTTP listener and browser
+  navigation remains a manual acceptance step.
