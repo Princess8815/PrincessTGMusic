@@ -516,6 +516,7 @@ function wireEvents(){
   $("health-date").addEventListener("change",event=>void changeDay(event.target.value));
   $("health-today-button").addEventListener("click",()=>void changeDay(TODAY()));
   $("health-refresh").addEventListener("click",()=>void refreshFromServer());
+  $("health-retry").addEventListener("click",()=>void initializeForUser(auth.currentUser));
   $("health-prev-day").addEventListener("click",()=>void changeDay(shiftDay(state.day,-1)));
   $("health-next-day").addEventListener("click",()=>void changeDay(shiftDay(state.day,1)));
   $("health-plan-date").addEventListener("change",event=>void changePlanDate(event.target.value));
@@ -661,11 +662,26 @@ async function deleteAllData(){
 }
 async function initializeForUser(user){
   const version=++state.version;
+  const changedAccount=state.user?.uid!==user?.uid;
   state.user=user;state.ready=false;state.days.clear();
   state.settings={...DEFAULT_SETTINGS};
+  if(changedAccount){
+    state.day=TODAY();
+    state.planDate=TODAY();
+    $("health-date").value=state.day;
+    $("health-plan-date").value=state.planDate;
+  }
+  $("health-calorie-target").value="";
+  $("health-goal-weight").value="";
+  $("health-start-weight").value="";
   $("health-guest").hidden=!!user;
   $("health-guest-lookup").hidden=!!user;
-  $("health-private").hidden=!user;
+  // Do not show potentially stale data from the last signed-in account
+  // while Firestore is still loading this user's private records.
+  $("health-private").hidden=true;
+  $("health-loading").hidden=!user;
+  $("health-retry").hidden=true;
+  $("health-load-message").textContent="Checking this account's health records...";
   if(!user)return;
   setStatus("Loading your private journal...");
   try{
@@ -674,12 +690,19 @@ async function initializeForUser(user){
     await Promise.all([fetchDay(state.day),fetchDay(state.planDate)]);
     if(version!==state.version||auth.currentUser?.uid!==user.uid)return;
     state.ready=true;
+    $("health-loading").hidden=true;
+    $("health-private").hidden=false;
     render();void renderPlanWeek();
     setStatus("Your journal is ready. Saved entries sync to your account.");
   }catch(error){
     console.error("Health tracker load failed",error);
-    if(version===state.version)setStatus("Unable to load private journal: "+
-      error.message+". Check the deployed health Firestore rules and network connection.",true);
+    if(version===state.version){
+      const message="Unable to load private journal: "+error.message+
+        ". Check the deployed health Firestore rules and network connection.";
+      $("health-load-message").textContent=message;
+      $("health-retry").hidden=false;
+      setStatus(message,true);
+    }
   }
 }
 
