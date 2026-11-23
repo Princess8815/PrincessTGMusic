@@ -745,6 +745,8 @@ let mailAuthGeneration=0;
 let pendingMailAccessUid=null;
 function syncSiteMailAccess(){
   const user=auth.currentUser;
+  // A listener may fire before this page's Auth initialization callback.
+  if(mailAuthGeneration===0)return;
   // Don't momentarily display the verification gate while the owner's
   // bypass record is being fetched on first page navigation.
   if(user && pendingMailAccessUid===user.uid)return;
