@@ -1,0 +1,64 @@
+/* Detailed personal health dashboard inside Profile → Health.
+   Uses existing site palette; all records shown are loaded from the signed-in UID. */
+.profile-health{min-width:0;overflow-wrap:anywhere}
+.profile-health-head{display:flex;gap:20px;justify-content:space-between;align-items:start;flex-wrap:wrap}
+.profile-health-head h2{margin:0;color:#e9d5ff;font-size:clamp(1.35rem,3vw,1.8rem)}
+.profile-health-head p{margin:6px 0}
+.profile-health-eyebrow{text-transform:uppercase;color:#a7f3d0;letter-spacing:.13em;font-size:.73rem;font-weight:800}
+.profile-health-head-actions{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.profile-health-head-actions>button,.profile-health-cta{padding:10px 13px;border-radius:9px;font-size:.87rem}
+.profile-health-head-actions>button{background:#303957;border:1px solid #8589bc;color:#fff;cursor:pointer}
+.profile-health-head-actions>button:disabled{opacity:.55;cursor:wait}
+.profile-health-cta{display:inline-flex;align-items:center;min-height:44px;line-height:1.2}
+.profile-health-summary{grid-template-columns:repeat(4,minmax(0,1fr))}
+.profile-health-summary>div{display:flex;flex-direction:column;justify-content:center;gap:5px;min-width:0}
+.profile-health-summary strong{font-size:clamp(1rem,2.5vw,1.35rem)}
+.profile-health-summary small{color:#cbd5e1;font-size:.75rem}
+.profile-health-section{border-top:1px solid #5c5871;padding-top:18px;margin:22px 0}
+.profile-health-section h3{color:#dfc7ff;font-size:1.12rem;margin:0 0 10px}
+.profile-health-section h4{color:#b9f4ea;font-size:.97rem;margin:0 0 9px}
+.profile-health-section-title{display:flex;gap:15px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.profile-health-section-title p{margin:4px 0}
+.profile-health-small{font-size:.78rem;color:#b7c5de}
+.profile-health-alert-list{display:grid;gap:10px;margin:12px 0}
+.profile-health-alert{padding:13px 15px;border:1px solid #64748b;border-left:4px solid #94a3b8;border-radius:10px;background:#182335}
+.profile-health-alert[data-level=attention]{background:#3b3023;border-color:#ae8a50;border-left-color:#ffd089}
+.profile-health-alert[data-level=info]{border-left-color:#87dbe1}
+.profile-health-alert strong{display:block;color:#f9fafb;margin:0 0 5px}
+.profile-health-alert p{margin:0;color:#d5deed;font-size:.87rem}
+.profile-health-alert a{display:inline-block;margin-top:5px;font-size:.83rem}
+.profile-health-charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.profile-health-charts>div{min-width:0;background:#171e30;border:1px solid #4f596e;border-radius:12px;padding:12px}
+.profile-health-charts svg{width:100%;height:auto;max-height:235px;display:block}
+.profile-health-charts svg text{font:12px system-ui,Arial,sans-serif;fill:#d3dff1}
+.profile-health-charts svg .axis-grid{stroke:#526078;stroke-width:1}
+.profile-health-charts svg .bar{fill:#ae9cfa}
+.profile-health-charts svg .line{stroke:#8fe8cf;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.profile-health-charts svg .dot{fill:#8fe8cf}
+.profile-health-year-label{font-size:.83rem;font-weight:700;color:#e9d5ff;display:grid;gap:4px}
+.profile-health-year-label select{width:170px;max-width:100%;border-radius:8px;border:1px solid #78819d;background:#141e30;color:white;padding:9px;font:inherit}
+.profile-health-legend{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.profile-health-legend span{padding:7px 10px;border-radius:9px;background:#242a40;border:1px solid #535b76;font-size:.8rem;color:#d8e3f2}
+.profile-health-table-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:22px 0 8px}
+.profile-health-table-heading h4{margin:0}
+.profile-health-table-heading span{color:#c3d1e7;font-size:.82rem}
+.profile-health-history-list{display:grid;gap:8px;min-width:0}
+.profile-health-period{border-radius:10px;border:1px solid #4f5e78;background:#151e31;min-width:0}
+.profile-health-period summary{cursor:pointer;padding:12px;list-style-position:inside;font-weight:700;color:#efe8ff}
+.profile-health-period summary:hover,.profile-health-period summary:focus-visible{background:#2d3150;border-radius:10px;outline:2px solid #bba9ef;outline-offset:2px}
+.profile-health-period-summary{display:inline-flex;align-items:baseline;gap:7px 12px;flex-wrap:wrap;margin-left:4px;max-width:calc(100% - 30px);vertical-align:middle;font-size:.83rem;font-weight:500}
+.profile-health-period-summary strong{color:#ddf7e9;font-size:.85rem}
+.profile-health-period-summary span{color:#c8d2e5}
+.profile-health-period-body{padding:12px;border-top:1px solid #4e566d}
+.profile-health-breakdown{overflow:auto;max-width:100%}
+.profile-health-breakdown table{border-collapse:collapse;width:100%;min-width:615px;font-size:.81rem}
+.profile-health-breakdown td,.profile-health-breakdown th{border-bottom:1px solid #3e4862;padding:8px 10px;text-align:left;white-space:nowrap}
+.profile-health-breakdown th{background:#222a40;color:#e9d5ff}
+.profile-health-breakdown td{color:#e8eef9}
+.profile-health-breakdown tr:last-child td{border-bottom:0}
+.profile-health-period-note{font-size:.8rem;color:#c4d0e1;margin:4px 0}
+.profile-health-disclaimer{font-size:.8rem;color:#c8d1e2;border-top:1px solid #444a63;padding-top:15px}
+.profile-health-empty{border:1px dashed #65718b;border-radius:11px;padding:16px;color:#d4deeb;font-size:.89rem}
+@media(max-width:900px){.profile-health-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:630px){.profile-health-charts{grid-template-columns:1fr}.profile-health-head-actions{width:100%}.profile-health-head-actions>*{flex:1}.profile-health-summary{grid-template-columns:1fr 1fr}.profile-health-period-summary{font-size:.79rem}}
+@media(max-width:410px){.profile-health-summary{grid-template-columns:1fr}.profile-health-year-label{width:100%}.profile-health-year-label select{width:100%}}
