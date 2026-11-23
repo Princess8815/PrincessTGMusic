@@ -138,8 +138,8 @@
               <label>Meal
                 <select id="health-food-meal"><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option><option>Other</option></select>
               </label>
-              <label>Calories per serving (optional)
-                <input id="health-food-calories" type="number" min="0" max="20000" step="0.1" inputmode="decimal" placeholder="Leave blank for Untracked">
+              <label>Calories per serving (optional; enter 0 for zero-calorie food)
+                <input id="health-food-calories" type="number" min="0" max="20000" step="0.1" inputmode="decimal" placeholder="Blank = Untracked; 0 = zero calories">
               </label>
               <label>Number of servings
                 <input id="health-food-servings" type="number" min="0.05" max="100" step="0.05" value="1" inputmode="decimal" required>
@@ -151,7 +151,7 @@
                 <input id="health-food-notes" maxlength="240" placeholder="Homemade, food label, etc.">
               </label>
             </div>
-            <p id="health-food-preview" class="health-hint" aria-live="polite">Leave calories blank to save this food as Untracked.</p>
+            <p id="health-food-preview" class="health-hint" aria-live="polite">Enter 0 to log a zero-calorie item. Leave calories blank only when unknown (Untracked).</p>
             <button type="submit">Add food entry</button>
           </form>
         </section>
