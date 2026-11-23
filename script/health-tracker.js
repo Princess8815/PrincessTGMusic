@@ -7,6 +7,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 import {
   localDay,parseDay,shiftDay,mondayOf,monthOf,caloriesOn,workoutMinutes,
+  hasTrackedCalories,hasCompleteFoodLog,untrackedFoodCount,
   weeklyStats,monthlyStats,recentWeeks,recentMonths,lastDays,pounds,calories
 } from "./health-math.js";
 import {searchFoods} from "./health-foods.js";
@@ -42,7 +43,13 @@ const totalPlanned=day=>(day.plans||[]).reduce((a,p)=>a+(Number(p.calories)||0),
 const hasFoodEntries=day=>Array.isArray(day?.foods)&&day.foods.length>0;
 // A blank food diary is unknown, not a 0-calorie day. An explicitly logged
 // zero-calorie food, however, is a real zero and remains in the averages.
-const foodTotalText=day=>hasFoodEntries(day)?calories(caloriesOn(day)):"Untracked";
+const foodTotalText=day=>{
+  if(!hasFoodEntries(day))return "Untracked";
+  const missing=untrackedFoodCount(day);
+  if(missing===day.foods.length)return "Untracked";
+  const known=calories(caloriesOn(day));
+  return missing?known+" + "+missing+" Untracked":known;
+};
 function setStatus(text,error=false){
   const el=$("health-sync-status");
   el.textContent=text;
@@ -245,12 +252,14 @@ function renderFoodLookup(inputId,resultsId,populate=true){
   draw();
 }
 function updateFoodPreview(){
-  const each=Number($("health-food-calories").value);
+  const raw=$("health-food-calories").value.trim();
+  const each=raw===""?null:Number(raw);
   const qty=Number($("health-food-servings").value);
-  $("health-food-preview").textContent=
-    Number.isFinite(each)&&Number.isFinite(qty)&&each>=0&&qty>0?
-      "Total: "+calories(each*qty)+" ("+qty+" serving"+(qty===1?"":"s")+")"
-      :"Enter calories and servings to calculate the total.";
+  $("health-food-preview").textContent=raw===""
+    ?"Untracked · No calories entered. The food will save without a calorie estimate."
+    :Number.isFinite(each)&&Number.isFinite(qty)&&each>=0&&qty>0
+      ?"Total: "+calories(each*qty)+" ("+qty+" serving"+(qty===1?"":"s")+")"
+      :"Enter a valid calorie amount and number of servings.";
 }
 function renderFoodDiary(day){
   $("health-food-total").textContent=foodTotalText(day);
@@ -263,7 +272,8 @@ function renderFoodDiary(day){
   for(const entry of [...day.foods].reverse()){
     const detail=(entry.meal||"Meal")+" · "+entry.servings+" × "+entry.portion+
       (entry.notes?" · "+entry.notes:"");
-    list.append(entryLine(entry.name+" · "+calories(entry.calories),detail,[
+    list.append(entryLine(entry.name+" · "+
+      (hasTrackedCalories(entry)?calories(entry.calories):"Untracked"),detail,[
       {label:"Remove",danger:true,action:()=>removeEntry(state.day,"foods",entry.id)}
     ]));
   }
@@ -333,7 +343,7 @@ function drawBarChart(id,days,weight=false){
   const rect={left:55,right:695,top:20,bottom:188};
   const values=days.map(day=>weight?
     (Number(day.weightLb)>0?Number(day.weightLb):null):
-    (day.foods?.length?caloriesOn(day):null));
+    (hasCompleteFoodLog(day)?caloriesOn(day):null));
   const existing=values.filter(value=>value!==null);
   if(!existing.length){
     svg.append(svgEl("text",{x:360,y:116,"text-anchor":"middle"},
@@ -389,7 +399,7 @@ function drawTrends(){
   });
   const calorieDays=make(14);
   drawBarChart("health-calorie-chart",calorieDays,false);
-  const missing=calorieDays.filter(day=>!hasFoodEntries(day)).map(day=>day.date.slice(5));
+  const missing=calorieDays.filter(day=>!hasCompleteFoodLog(day)).map(day=>day.date.slice(5));
   $("health-untracked-food-dates").textContent=missing.length
     ?"Untracked food dates: "+missing.join(", ")+"."
     :"Food recorded on all 14 days.";
@@ -466,14 +476,16 @@ function render(){
   $("health-date").value=state.day;
   $("health-plan-date").value=state.planDate;
   $("health-today-calories").textContent=foodTotalText(day);
+  const untrackedItems=untrackedFoodCount(day);
   $("health-day-food-status").textContent=hasFoodEntries(day)
-    ?day.foods.length+" food item"+(day.foods.length===1?"":"s")+" logged"
+    ?day.foods.length+" food item"+(day.foods.length===1?"":"s")+
+      " logged"+(untrackedItems?" · "+untrackedItems+" Untracked":"")
     :"No food items logged for this date";
   $("health-current-weight").textContent=pounds(day.weightLb);
   const target=Number(state.settings.calorieTarget);
   $("health-target-display").textContent=target>0?calories(target):"Not set";
   const left=target-caloriesOn(day);
-  $("health-remaining").textContent=!hasFoodEntries(day)
+  $("health-remaining").textContent=!hasCompleteFoodLog(day)
     ?"Untracked"
     :target>0
       ?(left>=0?calories(left)+" remaining":calories(-left)+" over target")
@@ -578,10 +590,11 @@ function wireEvents(){
     event.preventDefault();
     const name=brief($("health-food-name").value,120);
     if(!name){setStatus("Enter a food name.",true);return;}
-    const unitCalories=number($("health-food-calories").value,0,20000);
+    const rawCalories=$("health-food-calories").value.trim();
+    const unitCalories=rawCalories===""?null:number(rawCalories,0,20000);
     const servings=number($("health-food-servings").value,.05,100);
-    const total=Math.round(unitCalories*servings*10)/10;
-    if(total>25000){setStatus("Total calories exceed the entry limit.",true);return;}
+    const total=unitCalories===null?null:Math.round(unitCalories*servings*10)/10;
+    if(total!==null&&total>25000){setStatus("Total calories exceed the entry limit.",true);return;}
     const entry={id:makeId(),name,unitCalories,servings,calories:total,
       meal:MEALS.includes($("health-food-meal").value)?$("health-food-meal").value:"Other",
       portion:brief($("health-food-portion").value,80)||"serving",
