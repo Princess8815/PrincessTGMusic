@@ -130,6 +130,7 @@ const ICONS={
   about:SVG('<circle cx="12" cy="8" r="4"/><path d="M4 21c0-5 3-8 8-8s8 3 8 8"/>'),
   roadmap:SVG('<path d="M5 20V4m0 2c3-3 5 3 8 0s5 3 8 0v9c-3 3-5-3-8 0s-5-3-8 0"/>'),
   profile:SVG('<circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/>'),
+  health:SVG('<path d="M20.5 8.5c0 4.5-8.5 10.5-8.5 10.5S3.5 13 3.5 8.5C3.5 3.5 9 3 12 7c3-4 8.5-3.5 8.5 1.5z"/><path d="M7 11h3l1.4-2 2 4 1.4-2H17"/>'),
   admin:SVG('<path d="M4 9h16v12H4zM8 9V6a4 4 0 0 1 8 0v3M12 13v4"/>'),
   settings:SVG('<circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M19 5l-2 2M7 17l-2 2"/>'),
   hamburger:SVG('<path d="M4 6h16M4 12h16M4 18h16"/>'),
@@ -149,6 +150,8 @@ const GROUPS=[
     ["Accidental Songwriter","pages/Accidental-Songwriters-Challenge.html","challenges"],
     ["Poetry","pages/poems-home.html","poetry"],
     ["Stories","arts/artsLanding.html","stories"]]},
+  {title:"Wellness",links:[
+    ["Health Tracker","pages/health.html","health"]]},
   {title:"Account",links:[
     ["My Profile","pages/profile.html","profile","profile"],
     ["Admin Panel","pages/admin.html","admin","admin"],
