@@ -20,11 +20,10 @@
 
   <link rel="stylesheet" href="../styles/main.css">
   <link rel="stylesheet" href="../../styles/auth.css">
-
-  <script
-    type="module"
-    src="../../script/auth.js"
-  ></script>
+  <!-- Shared navigation must initialize independently of Auth and song data. -->
+  <link rel="stylesheet" href="../../styles/site-shell.css" data-ptg-shell-style="1">
+  <script type="module" src="../../script/site-shell.js"></script>
+  <script type="module" src="../../script/auth.js"></script>
 
   <script
     type="module"
@@ -32,83 +31,65 @@
   ></script>
 
   <style>
-    [hidden] {
-      display: none !important;
+    [hidden] { display: none !important; }
+    .ptg-song-main {
+      width: min(1050px, 96%);
+      max-width: 100%;
+      margin: 26px auto 42px;
+      padding: clamp(14px, 3vw, 28px);
+      border: 1px solid var(--ptg-border, #485063);
+      border-radius: 16px;
+      background: var(--ptg-secondary, #1f2937);
+      box-sizing: border-box;
+      min-width: 0;
     }
-
+    .ptg-song-main .app__header { margin-bottom: 20px; }
+    .ptg-song-main .now-playing { min-width: 0; }
     #songLyrics {
       white-space: pre-wrap;
       overflow-wrap: anywhere;
+      max-width: 100%;
     }
-
     .translation-toggle-container {
       display: flex;
       align-items: center;
       gap: 10px;
       margin: 15px 0;
     }
-
-    .translation-toggle-container input {
-      width: 18px;
-      height: 18px;
+    .translation-toggle-container input { width: 18px; height: 18px; }
+    #songPlayer { width: 100%; margin: 10px 0; }
+    .song-error { color: #ff9e9e; }
+    .song-share-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
     }
-
-    .song-navigation {
-      margin-bottom: 20px;
-    }
-
-    .song-navigation a {
-      color: #b893ff;
-    }
-
-    #songPlayer {
+    #songShareMessage {
+      display: block;
       width: 100%;
-      margin: 10px 0;
+      box-sizing: border-box;
+      margin-top: 8px;
+      padding: 10px;
+      border-radius: 6px;
+      background: var(--ptg-tertiary, #171717);
+      color: var(--ptg-text, #fff);
+      border: 1px solid var(--ptg-border, #666);
+      font: inherit;
     }
-
-    .song-error {
-      color: #ff9e9e;
-
-
-/* ======================================
-   SONG SHARING
-====================================== */
-
-.song-share-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 12px;
-}
-
-#songShareMessage {
-  display: block;
-  margin-top: 8px;
-  padding: 10px;
-  border-radius: 6px;
-  font: inherit;
-  background: #171717;
-  color: white;
-  border: 1px solid #666;
-}
-
-.song-share-buttons button {
-  padding: 10px 16px;
-  cursor: pointer;
-}
-
-#songShareStatus:empty {
-  display: none;
-}
-
+    .song-share-buttons button { padding: 10px 16px; cursor: pointer; }
+    #songShareStatus:empty { display: none; }
+    @media (max-width: 850px) {
+      body.ptg-shell-ready > .ptg-song-main {
+        width: calc(100% - 24px);
+        padding: 16px;
+        margin: 14px auto 30px;
+      }
     }
   </style>
-  <!-- Navigation remains available even while account services initialize. -->
-  <link rel="stylesheet" href="../../styles/site-shell.css" data-ptg-shell-style="1">
-  <script type="module" src="../../script/site-shell.js"></script>
 </head>
 
-<body>
+<body class="ptg-song-detail-page">
 
   <div id="auth-container"></div>
 

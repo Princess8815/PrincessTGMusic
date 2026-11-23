@@ -1,5 +1,5 @@
 import {auth,db} from "./firebase.js";
-import {hasSiteVerificationAccess} from "./verification-access.js";
+import {hasSiteVerificationAccess,refreshSiteVerificationAccess} from "./verification-access.js";
 import {
   collection,doc,getDoc,getDocs,query,orderBy,startAt,endAt,startAfter,
   limit,writeBatch,updateDoc,deleteDoc,Timestamp,serverTimestamp
@@ -741,8 +741,15 @@ window.addEventListener("princesstg:mail-share",event=>{
   $("mail-subject").value=item.kind==="playlist"
     ?item.name+" playlist":item.title||"A song for you";
 });
+let mailAuthGeneration=0;
+let pendingMailAccessUid=null;
 function syncSiteMailAccess(){
   const user=auth.currentUser;
+  // A listener may fire before this page's Auth initialization callback.
+  if(mailAuthGeneration===0)return;
+  // Don't momentarily display the verification gate while the owner's
+  // bypass record is being fetched on first page navigation.
+  if(user && pendingMailAccessUid===user.uid)return;
   const unlocked=updateMailVerification(user);
   if(!unlocked){
     messages={inbox:[],sent:[]};
@@ -763,6 +770,8 @@ window.addEventListener("princesstg-user-ready",()=>{
     void refreshFolder(view);
 });
 onAuthStateChanged(auth,user=>{
+  const generation=++mailAuthGeneration;
+  pendingMailAccessUid=null;
   messages={inbox:[],sent:[]};cursors={inbox:null,sent:null};
   closeReader();updateUnread();
   if(!user){
@@ -770,12 +779,29 @@ onAuthStateChanged(auth,user=>{
     setStatus("Sign in to use site mail.");
     return;
   }
-  // Firebase Auth verification or an owner-only bypass is required, and
-  // Firestore Security Rules independently enforce the same condition.
-  if(!updateMailVerification(user)){
-    setStatus("Verify your email or ask the owner to approve a site-only bypass.");
+  // Hide both views until Firestore confirms whether an owner approved an
+  // exception. Showing the verification form first caused a visible flash.
+  if(!hasSiteVerificationAccess(user)){
+    pendingMailAccessUid=user.uid;
+    $("mail-verification-gate").hidden=true;
+    $("mail-verified-content").hidden=true;
+    setStatus("Checking email verification access...");
+    void (async()=>{
+      await refreshSiteVerificationAccess(user);
+      if(generation!==mailAuthGeneration||auth.currentUser?.uid!==user.uid)return;
+      pendingMailAccessUid=null;
+      if(!updateMailVerification(user)){
+        setStatus("Verify your email or ask the owner to approve a site-only bypass.");
+        return;
+      }
+      void refreshFolder("inbox");
+      applyShareIntent();
+    })();
     return;
   }
+  // Firebase Auth verification or an owner-only bypass is required, and
+  // Firestore Security Rules independently enforce the same condition.
+  updateMailVerification(user);
   void refreshFolder("inbox");
   applyShareIntent();
 });
