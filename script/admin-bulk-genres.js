@@ -224,12 +224,15 @@ document.addEventListener("DOMContentLoaded",()=>{
         :"Every song already has a genre.");
     })();
     updateControls();
-    try{await loading;}
-    catch(error){
+    try{
+      await loading;
+      return true;
+    }catch(error){
       ready=false;
       list.replaceChildren(textNode("p","Could not load unassigned songs.","bulk-genre-empty"));
       count.textContent="Genre list unavailable";
       message("Cannot load bulk genre editor: "+error.message,true);
+      return false;
     }finally{
       loading=null;
       updateControls();
@@ -305,9 +308,12 @@ document.addEventListener("DOMContentLoaded",()=>{
       const successful=new Set(jobs.filter(job=>!selection.has(job.song.id)).map(job=>job.song.id));
       candidates=candidates.filter(song=>!successful.has(song.id));
       render();
-      await reload({keepMessage:true});
-      message(summary+(errors.length?"\n"+errors.slice(0,5).join("\n")+
-        (errors.length>5?"\nAnd "+(errors.length-5)+" more errors.":""):""),results.failed>0);
+      const reloaded=await reload({keepMessage:true});
+      message(summary+
+        (reloaded?"":"\nThe list could not refresh. Use Refresh List to retry.")+
+        (errors.length?"\n"+errors.slice(0,5).join("\n")+
+          (errors.length>5?"\nAnd "+(errors.length-5)+" more errors.":""):""),
+        results.failed>0||!reloaded);
     }catch(error){
       message("Could not complete bulk save: "+error.message,true);
     }finally{
