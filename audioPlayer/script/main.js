@@ -122,7 +122,7 @@ function createTrackRow(track,index){
   // Avoid sprawling file paths on narrow screens. Full path stays available
   // as a tooltip, while the details page has the complete song information.
   metadata.textContent=formatAlbums(track.albums)+
-    (track.releaseDate?" · "+track.releaseDate:"");
+    (track.displayReleaseDate?" · "+track.displayReleaseDate:"");
   metadata.title=track.path;
   titleBlock.append(title,metadata);
   const actions=document.createElement("div");actions.className="track__actions";
@@ -198,7 +198,8 @@ async function loadTracks(){
         path,title:detail.title||fallback,
         pageId:detail.pageId||slugify(detail.title||fallback),
         albums:normalizeAlbums(detail.album),
-        releaseDate:detail.releaseDate||""
+        releaseDate:detail.releaseDate||"",
+        displayReleaseDate:detail.displayReleaseDate||detail.releaseDate||""
       };
     }));
     disabledTracks=new Set(readJson(DISABLED_STORAGE_KEY,[]).filter(path=>paths.includes(path)));

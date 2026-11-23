@@ -409,7 +409,7 @@ async function initializeSongPage() {
 
     setText(
       "songDate",
-      song.releaseDate || "tbd"
+      song.displayReleaseDate || song.releaseDate || "tbd"
     );
 
     setText(
