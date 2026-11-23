@@ -76,12 +76,32 @@ async function loadJSON(jsonURL) {
 // ==========================================
 
 function mergeSong(jsonSong, databaseSong, id) {
-  return {
+  const merged = {
     ...(jsonSong || {}),
     ...(databaseSong || {}),
-
     pageId: id
   };
+  // JSON can retain a playful human-readable release label while Firestore
+  // requires a machine-readable releaseDate (YYYY-MM-DD or "tbd").
+  // The explicit displayReleaseDate takes priority over the legacy fallback.
+  const original = typeof jsonSong?.releaseDate === "string"
+    ? jsonSong.releaseDate.trim() : "";
+  const explicitDisplay = typeof jsonSong?.displayReleaseDate === "string"
+    ? jsonSong.displayReleaseDate.trim() : "";
+  const legacyDisplay = original && original.toLowerCase() !== "tbd"
+    && !/^\d{4}-\d{2}-\d{2}$/.test(original) ? original : "";
+  const originalDisplay = explicitDisplay || legacyDisplay;
+  const databaseDate = typeof databaseSong?.releaseDate === "string"
+    ? databaseSong.releaseDate.trim() : "";
+  if (originalDisplay &&
+      (!databaseSong || !databaseDate || databaseDate.toLowerCase() === "tbd")) {
+    merged.displayReleaseDate = originalDisplay;
+  } else if (jsonSong && databaseDate &&
+             databaseDate.toLowerCase() !== "tbd") {
+    // A genuine scheduled date in Firestore overrides an old JSON joke.
+    delete merged.displayReleaseDate;
+  }
+  return merged;
 }
 
 // ==========================================

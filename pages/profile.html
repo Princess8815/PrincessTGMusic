@@ -14,6 +14,7 @@
   <script type="module" src="../script/auth.js"></script>
   <script type="module" src="../script/profile-promotions.js"></script>
   <script type="module" src="../script/profile.js"></script>
+  <script type="module" src="../script/profile-health.js"></script>
   <script type="module" src="../script/profile-playlists.js"></script>
   <script type="module" src="../script/site-mail.js"></script>
   <link rel="stylesheet" href="../styles/site-mail.css">
@@ -142,6 +143,18 @@
   </style>
 
   <link rel="stylesheet" href="../styles/profile-dashboard.css">
+  <style>
+    .profile-health-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin:18px 0}
+    .profile-health-summary>div{padding:14px;border:1px solid #5e6385;border-radius:12px;background:#171e31}
+    .profile-health-summary span{display:block;color:#c2d1e3;font-size:.85rem}
+    .profile-health-summary strong{display:block;color:#bbf7d0;font-size:1.2rem;overflow-wrap:anywhere}
+    .profile-health-cta{display:inline-block;border-radius:10px;padding:12px 18px;
+      background:#a78bfa;color:#171027;text-decoration:none;font-weight:800;margin-top:8px}
+    .profile-health-cta:focus-visible{outline:3px solid #5eead4;outline-offset:3px}
+    @media(max-width:520px){.profile-health-summary{grid-template-columns:1fr}}
+  </style>
+  <!-- Dedicated health analytics styles override the older compact summary. -->
+  <link rel="stylesheet" href="../styles/profile-health.css">
   <script type="module" src="../script/profile-tabs.js"></script>
 
 </head>
@@ -163,6 +176,7 @@
         <button type="button" id="profile-tab-account" role="tab" aria-controls="profile-panel-account" aria-selected="true" tabindex="0" data-profile-tab="account">Overview</button>
         <button type="button" id="profile-tab-email" role="tab" aria-controls="profile-panel-email" aria-selected="false" tabindex="-1" data-profile-tab="email">Email & Security</button>
         <button type="button" id="profile-tab-playlists" role="tab" aria-controls="profile-panel-playlists" aria-selected="false" tabindex="-1" data-profile-tab="playlists">Playlists</button>
+        <button type="button" id="profile-tab-health" role="tab" aria-controls="profile-panel-health" aria-selected="false" tabindex="-1" data-profile-tab="health">Health</button>
         <button type="button" id="profile-tab-mail" role="tab" aria-controls="profile-panel-mail" aria-selected="false" tabindex="-1" data-profile-tab="mail">Mail <span id="profile-mail-unread" class="mail-tab-count" hidden></span></button>
         <button type="button" id="profile-tab-submissions" role="tab" aria-controls="profile-panel-submissions" aria-selected="false" tabindex="-1" data-profile-tab="submissions">My Songs</button>
         <button type="button" id="profile-tab-newsletter" role="tab" aria-controls="profile-panel-newsletter" aria-selected="false" tabindex="-1" data-profile-tab="newsletter">Email Updates</button>
@@ -224,6 +238,85 @@
              class="status"
              role="status"></p>
         </form>
+      </section>
+
+      <!-- PRIVATE, FULL HEALTH ANALYTICS -->
+      <section class="profile-card profile-panel profile-health" id="profile-panel-health"
+        role="tabpanel" aria-labelledby="profile-tab-health" data-profile-panel="health" hidden>
+        <div class="profile-health-head">
+          <div>
+            <p class="profile-health-eyebrow">Private health dashboard</p>
+            <h2>My Health Analytics</h2>
+            <p class="muted">Weekly and monthly trends from your own food, morning weight, and workout entries.</p>
+          </div>
+          <div class="profile-health-head-actions">
+            <button id="profile-health-refresh" type="button">Refresh analytics</button>
+            <a href="health.html" class="profile-health-cta">Open Health Tracker &amp; Meal Planner</a>
+          </div>
+        </div>
+        <p id="profile-health-status" class="muted" role="status" aria-live="polite">Open Health to load your private analytics.</p>
+        <div class="profile-health-summary" aria-label="Health tracking statistics">
+          <div><span>Latest morning weight</span><strong id="profile-health-weight">Not logged</strong><small id="profile-health-weight-date"></small></div>
+          <div><span>This week's calorie average</span><strong id="profile-health-week">Untracked</strong><small id="profile-health-week-days"></small></div>
+          <div><span>This month's calorie average</span><strong id="profile-health-month">Untracked</strong><small id="profile-health-month-days"></small></div>
+          <div><span>This week's average weight</span><strong id="profile-health-weight-week">Not logged</strong><small id="profile-health-weight-week-days"></small></div>
+          <div><span>This month's average weight</span><strong id="profile-health-weight-month">Not logged</strong><small id="profile-health-weight-month-days"></small></div>
+          <div><span>This week's workouts</span><strong id="profile-health-workout">0 min</strong><small id="profile-health-workout-count"></small></div>
+          <div><span>This month's workouts</span><strong id="profile-health-month-workout">0 min</strong><small id="profile-health-month-workout-count"></small></div>
+          <div><span>Total diary days saved</span><strong id="profile-health-days">0</strong><small id="profile-health-date-range"></small></div>
+        </div>
+
+        <section class="profile-health-section" aria-labelledby="profile-health-alert-title">
+          <div class="profile-health-section-title">
+            <h3 id="profile-health-alert-title">Health &amp; tracking alerts</h3>
+            <span class="profile-health-small">Based on recent entries only</span>
+          </div>
+          <p class="muted">These are general tracking notices, not diagnoses or medical clearance. Incomplete entries are not assumed to mean no food was eaten.</p>
+          <div id="profile-health-alerts" class="profile-health-alert-list" aria-live="polite">
+            <p class="muted">Alerts appear after your records load.</p>
+          </div>
+        </section>
+
+        <section class="profile-health-section" aria-labelledby="profile-health-charts-title">
+          <h3 id="profile-health-charts-title">Trends across recent weeks</h3>
+          <div class="profile-health-charts">
+            <div>
+              <h4>Average daily calories</h4>
+              <svg id="profile-health-calorie-chart" viewBox="0 0 610 230" role="img"
+                aria-label="Average logged calories by week over the most recent twelve weeks"></svg>
+            </div>
+            <div>
+              <h4>Average morning weight</h4>
+              <svg id="profile-health-weight-chart" viewBox="0 0 610 230" role="img"
+                aria-label="Average recorded weight by week over the most recent twelve weeks"></svg>
+            </div>
+          </div>
+        </section>
+
+        <section class="profile-health-section" aria-labelledby="profile-health-history-title">
+          <div class="profile-health-section-title">
+            <div>
+              <h3 id="profile-health-history-title">Complete history</h3>
+              <p class="muted">Browse every logged week and month. Expand a period to inspect its daily entries.</p>
+            </div>
+            <label class="profile-health-year-label" for="profile-health-year">Filter year
+              <select id="profile-health-year"><option value="all">All years</option></select>
+            </label>
+          </div>
+          <div class="profile-health-legend">
+            <span><strong>0 kcal</strong> means explicitly entered zero calories.</span>
+            <span><strong>Untracked</strong> means no food or an incomplete calorie log.</span>
+            <span>Average calories include only fully tracked days; weight averages include only recorded weigh-ins.</span>
+          </div>
+
+          <div class="profile-health-table-heading"><h4>Every week</h4><span id="profile-health-week-total">No weeks yet</span></div>
+          <div id="profile-health-weekly-breakdown" class="profile-health-history-list"></div>
+
+          <div class="profile-health-table-heading"><h4>Every month</h4><span id="profile-health-month-total">No months yet</span></div>
+          <div id="profile-health-monthly-breakdown" class="profile-health-history-list"></div>
+        </section>
+
+        <p class="profile-health-disclaimer">Private to your account with the site's health Firestore rules. Entries and alerts reflect only what you recorded. Ask a healthcare professional about concerns, persistent symptoms, or an appropriate nutrition plan.</p>
       </section>
 
       <!-- EMAIL MANAGEMENT -->

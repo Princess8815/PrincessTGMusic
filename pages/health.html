@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Plan meals, log food, workouts and weight, and review weekly and monthly progress.">
+  <title>Health Tracker & Meal Planner | PrincessTG Creations</title>
+  <link rel="stylesheet" href="../styles/auth.css">
+  <link rel="stylesheet" href="../styles/site-shell.css" data-ptg-shell-style="1">
+  <link rel="stylesheet" href="../styles/health-tracker.css">
+  <script type="module" src="../script/site-shell.js"></script>
+  <script type="module" src="../script/auth.js"></script>
+  <script type="module" src="../script/health-tracker.js"></script>
+</head>
+<body class="ptg-health-page">
+  <div id="auth-container"></div>
+  <main class="health-app" id="health-app">
+    <header class="health-hero">
+      <p class="health-eyebrow">Your personal wellbeing workspace</p>
+      <h1>Health Tracker &amp; Meal Planner</h1>
+      <p>Record meals, morning weight, and workouts. Plan ahead and watch your trends without losing yesterday's entries. Don't know a food's calories? Save it as Untracked.</p>
+      <p class="health-privacy"><span aria-hidden="true">🔒</span> Available to every visitor. Sign in to save your entries privately to your account.</p>
+    </header>
+
+    <section class="health-card health-guest" id="health-guest">
+      <h2>Start your health journal</h2>
+      <p>Browse the free food lookup and home workout guides below. Sign in or create a free account using the site's account menu to save your diary, plans, and progress across devices.</p>
+      <button type="button" id="health-guest-signin">Sign in / Create account to save</button>
+    </section>
+
+    <section class="health-card" id="health-guest-lookup">
+      <h2>Free calorie quick lookup</h2>
+      <p>Search common foods and select one for an approximate per-serving estimate. Labels and recipes can differ.</p>
+      <label for="health-public-food-search">Food name</label>
+      <input id="health-public-food-search" type="search" autocomplete="off"
+        placeholder="Search common foods...">
+      <div id="health-public-food-results" class="health-food-results" role="list"></div>
+      <p id="health-public-food-selected" class="health-hint" role="status">Select a food to see its reference serving and estimate.</p>
+      <a href="https://fdc.nal.usda.gov/" target="_blank" rel="noopener noreferrer">Open USDA FoodData Central</a>
+    </section>
+
+    <section id="health-loading" class="health-card" role="status" hidden>
+      <h2>Loading your private journal</h2>
+      <p id="health-load-message">Checking this account's health records...</p>
+      <button type="button" id="health-retry" class="health-secondary" hidden>Retry loading</button>
+    </section>
+
+    <div id="health-private" hidden>
+      <div class="health-toolbar health-card">
+        <div class="health-date-group">
+          <button type="button" id="health-prev-day" class="health-secondary" aria-label="Previous day">‹</button>
+          <label for="health-date">Journal date
+            <input type="date" id="health-date">
+          </label>
+          <button type="button" id="health-next-day" class="health-secondary" aria-label="Next day">›</button>
+          <button type="button" id="health-today-button" class="health-secondary">Today</button>
+          <button type="button" id="health-refresh" class="health-secondary">Refresh saved data</button>
+        </div>
+        <p id="health-sync-status" role="status" aria-live="polite">Loading your private journal...</p>
+      </div>
+      <nav class="health-tabs" role="tablist" aria-label="Health tracker sections">
+        <button type="button" role="tab" data-health-tab="dashboard" aria-selected="true" aria-controls="health-panel-dashboard">Dashboard</button>
+        <button type="button" role="tab" data-health-tab="diary" aria-selected="false" aria-controls="health-panel-diary">Food &amp; Weight</button>
+        <button type="button" role="tab" data-health-tab="planner" aria-selected="false" aria-controls="health-panel-planner">Meal Planner</button>
+        <button type="button" role="tab" data-health-tab="workouts" aria-selected="false" aria-controls="health-panel-workouts">Workouts</button>
+        <button type="button" role="tab" data-health-tab="progress" aria-selected="false" aria-controls="health-panel-progress">Goals &amp; Analytics</button>
+      </nav>
+
+      <section id="health-panel-dashboard" class="health-panel" data-health-panel="dashboard" role="tabpanel">
+        <div class="health-metrics">
+          <div class="health-metric"><span>Selected day calories</span><strong id="health-today-calories">Untracked</strong><small id="health-day-food-status">No food logged for this date</small></div>
+          <div class="health-metric"><span>Daily calorie target</span><strong id="health-target-display">Not set</strong><small>Personal setting</small></div>
+          <div class="health-metric"><span>Compared with target</span><strong id="health-remaining">Set a target</strong><small>Not exercise-adjusted</small></div>
+          <div class="health-metric"><span>Morning weight</span><strong id="health-current-weight">Not logged</strong><small>Selected date</small></div>
+          <div class="health-metric"><span>Weekly calorie average</span><strong id="health-week-average">Untracked</strong><small id="health-week-count">Days with food entries</small></div>
+          <div class="health-metric"><span>Monthly calorie average</span><strong id="health-month-average">Untracked</strong><small id="health-month-count">Days with food entries</small></div>
+          <div class="health-metric"><span>Weekly average weight</span><strong id="health-week-weight-average">Not logged</strong><small id="health-week-weight-count">Morning weigh-ins this week</small></div>
+          <div class="health-metric"><span>Monthly average weight</span><strong id="health-month-weight-average">Not logged</strong><small id="health-month-weight-count">Morning weigh-ins this month</small></div>
+        </div>
+        <div class="health-two-column">
+          <section class="health-card">
+            <h2>Calorie trend</h2>
+            <p>Last 14 days. Dates with no food entries or any food missing calories are <strong>Untracked</strong>, never counted as 0 kcal.</p>
+            <svg id="health-calorie-chart" viewBox="0 0 720 235" role="img" aria-label="Daily logged calories chart"></svg>
+            <p id="health-untracked-food-dates" class="health-hint" aria-live="polite"></p>
+          </section>
+          <section class="health-card">
+            <h2>Weight trend</h2>
+            <p>Morning weights over the last 30 days. Fluctuations are normal.</p>
+            <svg id="health-weight-chart" viewBox="0 0 720 235" role="img" aria-label="Morning weight trend chart"></svg>
+          </section>
+        </div>
+        <section class="health-card">
+          <h2>Today at a glance</h2>
+          <p id="health-day-summary">Your entries will appear here.</p>
+          <div class="health-shortcuts">
+            <button type="button" data-health-jump="diary">Log food or weight</button>
+            <button type="button" data-health-jump="planner" class="health-secondary">Plan a meal</button>
+            <button type="button" data-health-jump="workouts" class="health-secondary">Log a workout</button>
+            <button type="button" data-health-jump="progress" class="health-secondary">View analytics</button>
+          </div>
+        </section>
+      </section>
+
+      <section id="health-panel-diary" class="health-panel" data-health-panel="diary" role="tabpanel" hidden>
+        <div class="health-two-column">
+          <section class="health-card">
+            <h2>Morning weight</h2>
+            <form id="health-weight-form">
+              <div class="health-form-grid">
+                <label>Weight
+                  <input id="health-weight-input" type="number" min="1" max="1500" step="0.1" inputmode="decimal" placeholder="Example: 170.5" required>
+                </label>
+                <label>Unit
+                  <select id="health-weight-unit"><option value="lb">Pounds (lb)</option><option value="kg">Kilograms (kg)</option></select>
+                </label>
+              </div>
+              <div class="health-actions"><button type="submit">Save morning weight</button><button type="button" class="health-secondary" id="health-weight-remove">Clear selected date's weight</button></div>
+            </form>
+            <p class="health-hint">One weight per date. Save again to correct it.</p>
+          </section>
+          <section class="health-card">
+            <h2>Find calorie estimates</h2>
+            <label for="health-food-search">Search common foods</label>
+            <input id="health-food-search" type="search" placeholder="Try salmon, eggs, potatoes..." autocomplete="off">
+            <div id="health-food-results" class="health-food-results" role="list"></div>
+            <p class="health-hint">Quick-reference values are approximate per listed portion. Check your food packaging or a trusted nutrition source for accuracy. You can edit the calories before saving.</p>
+            <a href="https://fdc.nal.usda.gov/" target="_blank" rel="noopener noreferrer">USDA FoodData Central for detailed nutrition lookup</a>
+          </section>
+        </div>
+        <section class="health-card">
+          <h2>Add food to the selected date</h2>
+          <form id="health-food-form">
+            <div class="health-form-grid">
+              <label>Food name
+                <input id="health-food-name" maxlength="120" placeholder="Example: Baked salmon" required>
+              </label>
+              <label>Meal
+                <select id="health-food-meal"><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option><option>Other</option></select>
+              </label>
+              <label>Calories per serving (optional; enter 0 for zero-calorie food)
+                <input id="health-food-calories" type="number" min="0" max="20000" step="0.1" inputmode="decimal" placeholder="Blank = Untracked; 0 = zero calories">
+              </label>
+              <label>Number of servings
+                <input id="health-food-servings" type="number" min="0.05" max="100" step="0.05" value="1" inputmode="decimal" required>
+              </label>
+              <label>Serving description (optional)
+                <input id="health-food-portion" maxlength="80" placeholder="Example: 3 oz">
+              </label>
+              <label>Notes (optional)
+                <input id="health-food-notes" maxlength="240" placeholder="Homemade, food label, etc.">
+              </label>
+            </div>
+            <p id="health-food-preview" class="health-hint" aria-live="polite">Enter 0 to log a zero-calorie item. Leave calories blank only when unknown (Untracked).</p>
+            <button type="submit">Add food entry</button>
+          </form>
+        </section>
+        <section class="health-card">
+          <div class="health-heading-line"><h2>Food diary</h2><strong id="health-food-total">Untracked</strong></div>
+          <div id="health-food-list" class="health-entry-list"></div>
+        </section>
+      </section>
+
+      <section id="health-panel-planner" class="health-panel" data-health-panel="planner" role="tabpanel" hidden>
+        <section class="health-card">
+          <h2>Plan meals for any date</h2>
+          <p>Choose a date, including a future date. Planned meals don't count as eaten until you add them to your diary.</p>
+          <label for="health-plan-food-search">Quick-fill a meal using calorie lookup</label>
+          <input id="health-plan-food-search" type="search" autocomplete="off"
+            placeholder="Search foods, then click to fill the meal form">
+          <div id="health-plan-food-results" class="health-food-results" role="list"></div>
+          <form id="health-plan-form">
+            <div class="health-form-grid">
+              <label>Plan date
+                <input type="date" id="health-plan-date" required>
+              </label>
+              <label>Meal
+                <select id="health-plan-meal"><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option></select>
+              </label>
+              <label>Food or meal
+                <input id="health-plan-name" maxlength="120" required placeholder="Example: Salmon and peppers">
+              </label>
+              <label>Estimated calories
+                <input id="health-plan-calories" type="number" min="0" max="20000" step="1" required>
+              </label>
+              <label class="health-wide">Notes / preparation (optional)
+                <input id="health-plan-notes" maxlength="280" placeholder="Ingredients, prep steps, or reminder">
+              </label>
+            </div>
+            <button type="submit">Add to meal plan</button>
+          </form>
+        </section>
+        <section class="health-card">
+          <h2>Planned meals for <span id="health-plan-heading-date"></span></h2>
+          <div id="health-plan-list" class="health-entry-list"></div>
+        </section>
+        <section class="health-card">
+          <h2>Next seven days</h2>
+          <p>See your planned calories by day. These are estimates, not food consumed.</p>
+          <div id="health-planner-week" class="health-plan-week"></div>
+        </section>
+      </section>
+
+      <section id="health-panel-workouts" class="health-panel" data-health-panel="workouts" role="tabpanel" hidden>
+        <section class="health-card">
+          <h2>Log an at-home workout</h2>
+          <form id="health-workout-form">
+            <div class="health-form-grid">
+              <label>Activity
+                <select id="health-workout-type">
+                  <option>Walking</option><option>Exercise bike</option><option>Chair exercises</option>
+                  <option>Gentle stretching</option><option>Resistance bands</option><option>Bodyweight strength</option>
+                  <option>Yoga / mobility</option><option>Dance</option><option>Housework / movement</option><option>Other</option>
+                </select>
+              </label>
+              <label>Duration (minutes)
+                <input id="health-workout-minutes" type="number" min="1" max="1440" step="1" required placeholder="Example: 15">
+              </label>
+              <label>Effort
+                <select id="health-workout-effort"><option value="gentle">Gentle</option><option value="moderate">Moderate</option><option value="vigorous">Vigorous</option></select>
+              </label>
+              <label>Notes (optional)
+                <input id="health-workout-notes" maxlength="240" placeholder="How it felt or what you tried">
+              </label>
+            </div>
+            <button type="submit">Log workout</button>
+          </form>
+        </section>
+        <section class="health-card">
+          <h2>Workout diary</h2>
+          <p id="health-workout-total">0 minutes logged</p>
+          <div id="health-workout-list" class="health-entry-list"></div>
+        </section>
+      </section>
+
+      <section id="health-panel-progress" class="health-panel" data-health-panel="progress" role="tabpanel" hidden>
+        <section class="health-card">
+          <h2>Set personal goals</h2>
+          <p>These are personal tracking settings, not recommended calorie prescriptions. If you're unsure what target is appropriate, ask a qualified healthcare professional.</p>
+          <form id="health-goals-form">
+            <div class="health-form-grid">
+              <label>Daily calorie target (optional)
+                <input id="health-calorie-target" type="number" min="1" max="20000" step="1" placeholder="Set your own target">
+              </label>
+              <label>Weight goal (lb, optional)
+                <input id="health-goal-weight" type="number" min="1" max="1500" step="0.1" placeholder="Personal goal">
+              </label>
+              <label>Starting weight (lb, optional)
+                <input id="health-start-weight" type="number" min="1" max="1500" step="0.1" placeholder="Optional starting point">
+              </label>
+            </div>
+            <button type="submit">Save goals</button>
+          </form>
+        </section>
+        <div class="health-metrics">
+          <div class="health-metric"><span>Current week, logged-day mean</span><strong id="health-analytics-week">Not logged</strong><small id="health-analytics-week-days"></small></div>
+          <div class="health-metric"><span>Current month, logged-day mean</span><strong id="health-analytics-month">Not logged</strong><small id="health-analytics-month-days"></small></div>
+          <div class="health-metric"><span>Weekly workout time</span><strong id="health-analytics-workouts">0 min</strong><small id="health-analytics-sessions">0 sessions</small></div>
+          <div class="health-metric"><span>Weight goal</span><strong id="health-goal-summary">Not set</strong><small id="health-goal-distance"></small></div>
+          <div class="health-metric"><span>Change since starting weight</span><strong id="health-weight-change">Not set</strong><small>Based on your logged starting weight</small></div>
+          <div class="health-metric"><span>Progress toward weight goal</span><strong id="health-weight-progress">Not set</strong><small>Based on your personal starting and goal weights</small></div>
+        </div>
+        <section class="health-card">
+          <h2>Weekly calorie averages</h2>
+          <p>Only days with calorie amounts for every logged food item count toward the average. Blank and partially untracked days are excluded, not treated as zero.</p>
+          <div id="health-weekly-table" class="health-table-wrap"></div>
+        </section>
+        <section class="health-card">
+          <h2>Monthly calorie averages</h2>
+          <p>Compare calorie averages from fully tracked days and morning weight averages month by month. Untracked food entries do not count as zero.</p>
+          <div id="health-monthly-table" class="health-table-wrap"></div>
+        </section>
+        <section class="health-card">
+          <h2>Your data controls</h2>
+          <p>Your diary is stored under your account in Firestore. No public profile or shared leaderboard will show it. Only you can access it with the matching security rules.</p>
+          <button type="button" class="health-secondary" id="health-export">Export my health data (JSON)</button>
+          <button type="button" class="health-danger" id="health-delete-all">Delete my saved health tracker data</button>
+        </section>
+      </section>
+    </div>
+
+    <section class="health-card health-guides">
+      <h2>Easy at-home workout ideas</h2>
+      <p>Choose comfortable movement. Start gently, adapt for mobility, and stop if you feel dizzy, faint, or in pain. These suggestions aren't a substitute for medical advice.</p>
+      <div class="health-guide-grid">
+        <article class="health-guide"><h3>Chair mobility</h3><p>5–10 minutes</p><ol><li>Seated shoulder rolls, 30 seconds.</li><li>Slow seated arm reaches, 5 per side.</li><li>Gentle ankle circles if comfortable.</li><li>Pause and breathe between movements.</li></ol></article>
+        <article class="health-guide"><h3>Gentle strength</h3><p>8–15 minutes</p><ol><li>Supported wall push-ups, 5–8 repetitions.</li><li>Seated resistance-band pulls, 5–8 repetitions.</li><li>Rest, then repeat if comfortable.</li></ol></article>
+        <article class="health-guide"><h3>Indoor cardio</h3><p>5–20 minutes</p><ol><li>Easy-paced walking or stationary cycling.</li><li>Keep a pace where conversation is comfortable.</li><li>Gradually slow down for a cool-down.</li></ol></article>
+        <article class="health-guide"><h3>Calm stretch routine</h3><p>5–10 minutes</p><ol><li>Gentle shoulder stretches.</li><li>Slow neck range-of-motion, pain-free.</li><li>Comfortable upper-body stretches.</li><li>Finish with quiet breathing.</li></ol></article>
+      </div>
+    </section>
+    <p class="health-footer-note">Food estimates and graphs are planning aids, not medical diagnoses. Missing records are never counted as zero-calorie days.</p>
+  </main>
+</body>
+</html>
