@@ -419,6 +419,17 @@ function renderAnalytics(){
   $("health-goal-distance").textContent=goal>0&&latest?
     "Latest: "+pounds(latest.weightLb)+" · Difference: "+
     Math.abs(latest.weightLb-goal).toFixed(1)+" lb":"Log weight to track distance";
+  const start=Number(state.settings.startingWeightLb);
+  const change=start>0&&latest?latest.weightLb-start:null;
+  $("health-weight-change").textContent=change===null?"Not set":
+    (change>0?"+":"")+change.toFixed(1)+" lb";
+  const totalNeeded=Math.abs(start-goal);
+  const achieved=start>goal?start-Number(latest?.weightLb):
+    Number(latest?.weightLb)-start;
+  $("health-weight-progress").textContent=
+    start>0&&goal>0&&latest&&totalNeeded>0?
+      Math.max(0,Math.min(100,achieved/totalNeeded*100)).toFixed(0)+"%":
+      "Not set";
   renderTable("health-weekly-table",recentWeeks(days,today,8));
   renderTable("health-monthly-table",recentMonths(days,today,6));
   drawTrends();
