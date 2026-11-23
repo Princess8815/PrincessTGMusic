@@ -81,17 +81,25 @@ function mergeSong(jsonSong, databaseSong, id) {
     ...(databaseSong || {}),
     pageId: id
   };
-  // Firestore's releaseDate must remain a structured date or "tbd".
-  // Keep original creative JSON release dates as a separate DISPLAY value
-  // when a genre-only import writes "tbd" to Firestore. Do not overwrite
-  // a real date subsequently set by an administrator.
+  // JSON can retain a playful human-readable release label while Firestore
+  // requires a machine-readable releaseDate (YYYY-MM-DD or "tbd").
+  // The explicit displayReleaseDate takes priority over the legacy fallback.
   const original = typeof jsonSong?.releaseDate === "string"
     ? jsonSong.releaseDate.trim() : "";
-  const databaseDate = String(databaseSong?.releaseDate || "").trim();
-  const isCustom = original && original.toLowerCase() !== "tbd"
-    && !/^\d{4}-\d{2}-\d{2}$/.test(original);
-  if (isCustom && (!databaseSong || !databaseDate || databaseDate.toLowerCase() === "tbd")) {
-    merged.displayReleaseDate = original;
+  const explicitDisplay = typeof jsonSong?.displayReleaseDate === "string"
+    ? jsonSong.displayReleaseDate.trim() : "";
+  const legacyDisplay = original && original.toLowerCase() !== "tbd"
+    && !/^\d{4}-\d{2}-\d{2}$/.test(original) ? original : "";
+  const originalDisplay = explicitDisplay || legacyDisplay;
+  const databaseDate = typeof databaseSong?.releaseDate === "string"
+    ? databaseSong.releaseDate.trim() : "";
+  if (originalDisplay &&
+      (!databaseSong || !databaseDate || databaseDate.toLowerCase() === "tbd")) {
+    merged.displayReleaseDate = originalDisplay;
+  } else if (jsonSong && databaseDate &&
+             databaseDate.toLowerCase() !== "tbd") {
+    // A genuine scheduled date in Firestore overrides an old JSON joke.
+    delete merged.displayReleaseDate;
   }
   return merged;
 }
