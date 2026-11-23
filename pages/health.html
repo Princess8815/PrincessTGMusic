@@ -68,17 +68,19 @@
 
       <section id="health-panel-dashboard" class="health-panel" data-health-panel="dashboard" role="tabpanel">
         <div class="health-metrics">
-          <div class="health-metric"><span>Selected day calories</span><strong id="health-today-calories">0</strong><small>Logged food only</small></div>
+          <div class="health-metric"><span>Selected day calories</span><strong id="health-today-calories">Untracked</strong><small id="health-day-food-status">No food logged for this date</small></div>
           <div class="health-metric"><span>Daily calorie target</span><strong id="health-target-display">Not set</strong><small>Personal setting</small></div>
           <div class="health-metric"><span>Compared with target</span><strong id="health-remaining">Set a target</strong><small>Not exercise-adjusted</small></div>
           <div class="health-metric"><span>Morning weight</span><strong id="health-current-weight">Not logged</strong><small>Selected date</small></div>
-          <div class="health-metric"><span>This week's average</span><strong id="health-week-average">Not logged</strong><small id="health-week-count">Days with food entries</small></div>
-          <div class="health-metric"><span>This month's average</span><strong id="health-month-average">Not logged</strong><small id="health-month-count">Days with food entries</small></div>
+          <div class="health-metric"><span>Weekly calorie average</span><strong id="health-week-average">Untracked</strong><small id="health-week-count">Days with food entries</small></div>
+          <div class="health-metric"><span>Monthly calorie average</span><strong id="health-month-average">Untracked</strong><small id="health-month-count">Days with food entries</small></div>
+          <div class="health-metric"><span>Weekly average weight</span><strong id="health-week-weight-average">Not logged</strong><small id="health-week-weight-count">Morning weigh-ins this week</small></div>
+          <div class="health-metric"><span>Monthly average weight</span><strong id="health-month-weight-average">Not logged</strong><small id="health-month-weight-count">Morning weigh-ins this month</small></div>
         </div>
         <div class="health-two-column">
           <section class="health-card">
             <h2>Calorie trend</h2>
-            <p>Last 14 days. Blank days mean no food logged, not zero calories.</p>
+            <p>Last 14 days. Dates without food entries are <strong>Untracked</strong>, never counted as 0 kcal.</p>
             <svg id="health-calorie-chart" viewBox="0 0 720 235" role="img" aria-label="Daily logged calories chart"></svg>
           </section>
           <section class="health-card">
@@ -153,7 +155,7 @@
           </form>
         </section>
         <section class="health-card">
-          <div class="health-heading-line"><h2>Food diary</h2><strong id="health-food-total">0 kcal</strong></div>
+          <div class="health-heading-line"><h2>Food diary</h2><strong id="health-food-total">Untracked</strong></div>
           <div id="health-food-list" class="health-entry-list"></div>
         </section>
       </section>
