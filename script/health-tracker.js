@@ -98,6 +98,19 @@ function chooseTab(name,hash=true){
     panel.hidden=panel.dataset.healthPanel!==state.tab;
   if(hash)history.replaceState(null,"","#"+state.tab);
 }
+async function refreshFromServer(){
+  if(!state.user||state.busy)return;
+  const uid=state.user.uid;
+  setStatus("Refreshing your saved data...");
+  try{
+    state.days.clear();
+    await Promise.all([loadSettings(),loadHistory()]);
+    if(state.user?.uid!==uid)return;
+    await Promise.all([fetchDay(state.day),fetchDay(state.planDate)]);
+    if(state.user?.uid!==uid)return;
+    render();void renderPlanWeek();setStatus("Synced with Firestore.");
+  }catch(error){setStatus("Refresh failed: "+(error?.message||"unknown error"),true);}
+}
 async function fetchDay(date,force=false){
   if(!state.user)return emptyDay(date);
   if(!parseDay(date))throw Error("Invalid date.");
@@ -486,6 +499,7 @@ function wireEvents(){
   $("health-plan-date").value=state.planDate;
   $("health-date").addEventListener("change",event=>void changeDay(event.target.value));
   $("health-today-button").addEventListener("click",()=>void changeDay(TODAY()));
+  $("health-refresh").addEventListener("click",()=>void refreshFromServer());
   $("health-prev-day").addEventListener("click",()=>void changeDay(shiftDay(state.day,-1)));
   $("health-next-day").addEventListener("click",()=>void changeDay(shiftDay(state.day,1)));
   $("health-plan-date").addEventListener("change",event=>void changePlanDate(event.target.value));
