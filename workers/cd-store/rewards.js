@@ -51,7 +51,8 @@ async function accessToken(env){
 }
 export async function awardPaidOrder(env,row){
  const project=rewardProject(env);
- if(!project||row.status!=="paid"||!row.reward_uid||row.reward_done)return [];
+ if(!project||row.status!=="paid"||!row.reward_uid)return [];
+ if(row.reward_done)return JSON.parse(row.reward_added||"[]");
  const uid=row.reward_uid,token=await accessToken(env),headers={Authorization:"Bearer "+token,"Content-Type":"application/json"};
  const root="https://firestore.googleapis.com/v1/projects/"+encodeURIComponent(project)+"/databases/(default)/documents/users/"+encodeURIComponent(uid);
  const account=await fetch(root,{headers});
@@ -61,10 +62,14 @@ export async function awardPaidOrder(env,row){
  const added=[];
  for(const id of rewardIds){
   // createDocument with a fixed ID is atomic and will not overwrite a previous reward.
-  const r=await fetch(root+"/axolotls?documentId="+id,{method:"POST",headers,body:JSON.stringify({fields:{foundAt:{timestampValue:new Date().toISOString()}}})});
+  const r=await fetch(root+"/axolotls?documentId="+id,{method:"POST",headers,body:JSON.stringify({fields:{foundAt:{timestampValue:new Date().toISOString()},sourceOrder:{stringValue:row.id}}})});
   if(r.ok)added.push(id);
-  else if(r.status!==409)reject("Purchase reward storage unavailable.",503);
+  else if(r.status===409){
+   const existing=await fetch(root+"/axolotls/"+id,{headers});
+   if(!existing.ok)reject("Purchase reward lookup unavailable.",503);
+   const saved=await existing.json();if(saved.fields?.sourceOrder?.stringValue===row.id)added.push(id);
+  }else reject("Purchase reward storage unavailable.",503);
  }
- await env.ORDERS.prepare("UPDATE orders SET reward_done=1 WHERE id=? AND status='paid' AND reward_uid=?").bind(row.id,uid).run();
+ await env.ORDERS.prepare("UPDATE orders SET reward_done=1,reward_added=? WHERE id=? AND status='paid' AND reward_uid=?").bind(JSON.stringify(added),row.id,uid).run();
  return added;
 }
