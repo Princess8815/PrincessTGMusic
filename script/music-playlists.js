@@ -246,7 +246,7 @@ export function addToPlaylistControl(getKeys, options = {}) {
   function refresh() {
     const current=select.value;
     const unavailable=playlistState();
-    select.disabled=add.disabled=input.disabled=create.disabled=!!unavailable;
+    select.disabled=add.disabled=input.disabled=create.disabled=!(current(owner)&&ready);
     message.textContent=unavailable;
     select.replaceChildren(new Option("Select a playlist", ""));
     for(const p of getPlaylists()) select.add(new Option(p.name,p.id));
