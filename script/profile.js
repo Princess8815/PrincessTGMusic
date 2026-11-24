@@ -3,6 +3,7 @@ import { auth, db, usingLocalFirebaseEmulators, checkLocalFirestoreEmulator } fr
 import {hasOwnerVerificationBypass} from "./verification-access.js";
 import { waitForUserRecord } from "./user-data.js";
 import "./ban-expiry.js";
+import {revokeShare} from "./docs-share.js";
 
 import {
   onAuthStateChanged,
@@ -532,6 +533,23 @@ async function deletePrivateHealthBeforeClosure(uid){
   }
 }
 
+// Delete only the closing member's own documents; Firestore does not
+// automatically remove nested chunks when a parent document is deleted.
+async function deletePrivateDocsBeforeClosure(uid){
+  const shares=await getDocsFromServer(collection(db,"users",uid,"documentShares"));
+  for(const share of shares.docs)await revokeShare(uid,share.id);
+  const library=await getDocsFromServer(collection(db,"users",uid,"documents"));
+  for(const record of library.docs){
+    const chunks=await getDocsFromServer(collection(record.ref,"chunks"));
+    const refs=[...chunks.docs.map(chunk=>chunk.ref),record.ref];
+    for(let start=0;start<refs.length;start+=400){
+      const batch=writeBatch(db);
+      for(const ref of refs.slice(start,start+400))batch.delete(ref);
+      await batch.commit();
+    }
+  }
+}
+
 // ==========================================
 // DELETE LOGIN AND ARCHIVE ACCOUNT
 // ==========================================
@@ -622,6 +640,8 @@ $("close-account-form").addEventListener(
       // before deleting the sign-in credentials. An error stops closure
       // rather than silently leaving private health records orphaned.
       await deletePrivateHealthBeforeClosure(account.uid);
+      // Remove the document chunks before their parent records and Auth login.
+      await deletePrivateDocsBeforeClosure(account.uid);
 
       // Delete the actual Firebase Auth login.
       await deleteUser(account);
