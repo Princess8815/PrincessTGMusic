@@ -1,7 +1,7 @@
 // Original PrincessTG reef collection. Discoveries are cosmetic, not entitlements.
 import {auth,db} from "./firebase.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-import {collection,doc,runTransaction,serverTimestamp,onSnapshot,getDocsFromServer,writeBatch} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+import {collection,doc,runTransaction,serverTimestamp,onSnapshot,getDocsFromServer,writeBatch,getDocFromServer} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
 const reef=[
  ["marina","Marina","#ffa9c3","#fa76a2","bow"],
@@ -20,9 +20,11 @@ const pendingKey=(id,uid=null)=>prefix+id+(uid?":"+uid:"");
 const current=uid=>auth.currentUser?.uid===uid;
 const volatile=new Set(),confirmed=new Set();
 let queue=Promise.resolve(),retryTimer,attempts=0;
+const claimErrors=new Map();
+const pendingFor=uid=>[...ids].filter(id=>hasPending(id,uid));
 function hasPending(id,uid=null){
  const key=pendingKey(id,uid);
- try{return localStorage.getItem(key)!==null;}catch{return volatile.has(key);}
+ try{return localStorage.getItem(key)!==null||volatile.has(key);}catch{return volatile.has(key);}
 }
 function writePending(id,uid=null){
  const key=pendingKey(id,uid);
@@ -44,7 +46,18 @@ function bindPending(uid){
 async function syncPending(uid){
  if(!current(uid))return;
  bindPending(uid);
+ if(!pendingFor(uid).length)return;
  let retry=false;
+ // Auth can finish before the user-data module creates the member document.
+ // The rules require that document before any new collection item can be saved.
+ try{
+  const account=await getDocFromServer(doc(db,"users",uid));
+  if(!current(uid))return;
+  if(!account.exists())throw Error("Your account record is still initializing.");
+ }catch(e){
+  if(current(uid)){claimErrors.set(uid,e.message);notify();scheduleRetry(uid);}
+  return;
+ }
  for(const id of ids){
   if(!current(uid))return;
   if(!hasPending(id,uid))continue;
@@ -59,15 +72,20 @@ async function syncPending(uid){
     tx.set(ref,{foundAt:serverTimestamp()});
     return true;
    });
-   confirmed.add(uid+":"+id);removePending(id,uid);notify();
+   confirmed.add(uid+":"+id);removePending(id,uid);claimErrors.delete(uid);notify();
    // The transaction result describes the committed attempt, not an optimistic write.
    if(newlyClaimed&&current(uid))announceDiscovery(uid,id);
-  }catch(e){retry=true;console.warn("Reef discovery kept for its account:",e.code||e.message);}
+  }catch(e){
+   retry=true;claimErrors.set(uid,e.code==="permission-denied"?"Firestore denied the discovery. Check that the updated collection rules are published.":e.message);
+   notify();console.warn("Reef discovery kept for its account:",e.code||e.message);
+  }
  }
- if(retry&&current(uid)&&attempts++<3){
-  clearTimeout(retryTimer);
-  retryTimer=setTimeout(()=>void flush(uid),5000);
- }
+ if(retry)scheduleRetry(uid);
+ else if(current(uid)){claimErrors.delete(uid);notify();}
+}
+function scheduleRetry(uid){
+ if(!current(uid)||attempts++>=5)return;
+ clearTimeout(retryTimer);retryTimer=setTimeout(()=>void flush(uid),5000);
 }
 function flush(uid){
  if(!uid||!current(uid))return Promise.resolve();
@@ -75,6 +93,16 @@ function flush(uid){
  bindPending(uid);
  queue=queue.catch(()=>{}).then(()=>syncPending(uid));return queue;
 }
+// Explicitly called after successful sign-in/register and once the account record is ready.
+export function claimPendingAxolotls(user=auth.currentUser){
+ const uid=user?.uid;
+ if(!uid||!current(uid))return Promise.resolve();
+ clearTimeout(retryTimer);attempts=0;
+ return flush(uid);
+}
+window.addEventListener("princesstg-user-ready",e=>{
+ if(e.detail?.uid===auth.currentUser?.uid)void claimPendingAxolotls();
+});
 export function discoverAxolotl(id){
  if(!ids.has(id))return;
  const uid=auth.currentUser?.uid||null;
@@ -156,12 +184,14 @@ export async function showGuestReef(){
   document.body.append(modal);
   modal.querySelector("[data-reef-close]").onclick=()=>modal.close();
   function open(mode){
+   // Persist the encounter again at the actual sign-in handoff, not just when shown.
+   writePending("nori");
    modal.close();
    const button=document.getElementById("auth-open");
    if(button&&!button.hidden){
     button.click();if(mode==="register")document.getElementById("auth-register-tab")?.click();
    }else{
-    const url=new URL("../pages/profile.html",import.meta.url);url.searchParams.set("reefSignIn",mode);url.hash="tab-collections";location.assign(url.href);
+    const url=new URL("../pages/profile.html",import.meta.url);url.searchParams.set("reefSignIn",mode);url.searchParams.set("reefEncounter","nori");url.hash="tab-collections";location.assign(url.href);
    }
   }
   modal.querySelector("[data-reef-login]").onclick=()=>open("login");
@@ -175,9 +205,20 @@ export function mountReefCollection(){
  const status=document.getElementById("reef-collection-status");
  if(!grid||!status)return;
  installStyles();
- let stop=null,token=0;
+ let stop=null,token=0,lastFound=new Set(),loadNotice="";
+ const retry=document.createElement("button");retry.type="button";retry.textContent="Retry saving discoveries";retry.hidden=true;status.after(retry);
+ retry.onclick=()=>void claimPendingAxolotls();
+ function refreshStatus(){
+  const uid=auth.currentUser?.uid;
+  const pending=uid?pendingFor(uid).length:0;
+  const error=uid?claimErrors.get(uid):"";
+  status.textContent=(loadNotice||lastFound.size+" / "+reef.length+" axolotls discovered")+
+   (pending?" · "+pending+" pending"+(error?" — "+error:"; saving…"):"");
+  retry.hidden=!uid||!pending;
+ }
+ window.addEventListener("princesstg:reef-change",refreshStatus);
  function render(found,notice){
-  status.textContent=notice||found.size+" / "+reef.length+" axolotls discovered";
+  lastFound=found;loadNotice=notice||"";refreshStatus();
   grid.replaceChildren();
   for(const [id,name] of reef){
    const card=document.createElement("article");card.className="reef-card";
@@ -194,8 +235,8 @@ export function mountReefCollection(){
   const epoch=++token;stop?.();stop=null;
   render(new Set(),user?"Loading your collection…":"Sign in to view your collection.");
   if(!user)return;
-  stop=onSnapshot(pathFor(user.uid),snap=>{
-   if(epoch!==token||!current(user.uid))return;
+  stop=onSnapshot(pathFor(user.uid),{includeMetadataChanges:true},snap=>{
+   if(epoch!==token||!current(user.uid)||snap.metadata.hasPendingWrites||snap.metadata.fromCache)return;
    const found=new Set(snap.docs.map(s=>s.id).filter(id=>ids.has(id)));
    for(const id of found)confirmed.add(user.uid+":"+id);
    render(found);
