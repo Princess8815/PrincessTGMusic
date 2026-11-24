@@ -22,7 +22,7 @@ export function zipStore(files){
  const end=record(22,v=>{v.setUint32(0,0x06054b50,true);v.setUint16(8,files.length,true);v.setUint16(10,files.length,true);v.setUint32(12,centralBytes,true);v.setUint32(16,offset,true);});
  return new Blob([...chunks,...central,end],{type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
 }
-const len=(v,base=0)=>{const m=String(v||"").trim().match(/^(-?\d+(?:\.\d+)?)(pt|px|in|cm|mm|%|em)?$/);if(!m)return null;const n=Number(m[1]);return Math.round(n*({pt:20,px:15,in:1440,cm:1440/2.54,mm:1440/25.4,"%":base/100,em:220,"":15}[m[2]||""]));};
+const len=(v,base=0)=>{const m=String(v||"").trim().match(/^(-?(?:\d+(?:\.\d+)?|\.\d+))(pt|px|in|cm|mm|%|em)?$/);if(!m)return null;const n=Number(m[1]);return Math.round(n*({pt:20,px:15,in:1440,cm:1440/2.54,mm:1440/25.4,"%":base/100,em:220,"":15}[m[2]||""]));};
 function color(v){if(!v)return null;let m=v.match(/^#([0-9a-f]{6})$/i);if(m)return m[1].toUpperCase();m=v.match(/^#([0-9a-f]{3})$/i);if(m)return [...m[1]].map(c=>c+c).join("").toUpperCase();m=v.match(/^rgb\(\s*(\d+),\s*(\d+),\s*(\d+)\s*\)$/);return m?m.slice(1).map(x=>bound(x,0,255,0).toString(16).padStart(2,"0")).join("").toUpperCase():null;}
 function runProps(f){
  let r="";
