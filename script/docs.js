@@ -144,6 +144,52 @@ function breakPage(){
  if(!ed.innerHTML.trim())ed.innerHTML="<p><br></p>";
  addPage(i+1,{html:holder.innerHTML||"<p><br></p>",ink:[]});
 }
+// Keep a sheet fixed at its chosen dimensions. Flow only real overflow,
+// and preserve the DOM fragments/formatting instead of rebuilding plain text.
+// A table or picture taller than the whole printable area needs resizing.
+function flowOverflow(){
+ let moved=0,blocked=0;
+ for(let i=0;i<pages().length&&pages().length<300;i++){
+  const ed=editors()[i];ed.scrollTop=0;
+  if(ed.scrollHeight<=ed.clientHeight+3)continue;
+  const bottom=ed.getBoundingClientRect().bottom-2;
+  let split=null,offset=0;
+  for(const child of [...ed.childNodes]){
+   const bounds=document.createRange();bounds.selectNode(child);
+   if(bounds.getBoundingClientRect().bottom<=bottom)continue;
+   if(child.nodeType===1&&["TABLE","IMG","UL","OL"].includes(child.tagName)){
+    if(child===ed.firstChild){blocked++;break;}
+    split=child;offset=-1;break;
+   }
+   const walker=document.createTreeWalker(child,NodeFilter.SHOW_TEXT);
+   const runs=child.nodeType===3?[child]:[];let run;
+   while(run=walker.nextNode())runs.push(run);
+   for(const text of runs){
+    if(!text.length)continue;
+    const all=document.createRange();all.selectNodeContents(text);
+    if(all.getBoundingClientRect().bottom<=bottom)continue;
+    let lo=0,hi=text.length;
+    while(lo<hi){const mid=Math.ceil((lo+hi)/2);const r=document.createRange();r.setStart(text,mid-1);r.setEnd(text,mid);if(r.getBoundingClientRect().bottom<=bottom)lo=mid;else hi=mid-1;}
+    split=text;offset=lo;break;
+   }
+   if(!split&&child!==ed.firstChild){split=child;offset=-1;}
+   if(!split)blocked++;
+   break;
+  }
+  if(!split)continue;
+  const r=document.createRange();
+  if(offset<0)r.setStartBefore(split);else r.setStart(split,offset);
+  r.setEnd(ed,ed.childNodes.length);
+  const clone=r.cloneContents(),holder=document.createElement("div");holder.append(clone);
+  // If every character would move, the object itself is too tall.
+  if(!holder.innerHTML||holder.innerHTML===ed.innerHTML){blocked++;continue;}
+  r.deleteContents();
+  const newPage=makePage({html:holder.innerHTML,ink:[]},i+1);
+  host.insertBefore(newPage,pages()[i+1]||null);moved++;
+ }
+ range=null;updateDecorations();mark();
+ say(moved+" new page(s) created."+(blocked?" Some oversized objects still need resizing.":""));
+}
 function removePage(){if(!confirm("Remove the current page and its content?"))return;if(pages().length===1){editor().innerHTML="<p><br></p>";pages()[0].querySelector(".doc-ink").replaceChildren();}else pages()[active].remove();range=null;setActive(Math.max(0,active-1));updateDecorations();mark();}
 function blockStyle(property,value){
  if(!restore())return;const r=getSelection().getRangeAt(0),ed=editor();let targets=[...ed.querySelectorAll("p,div,h1,h2,h3,h4,li,blockquote,pre")].filter(x=>!x.closest(".doc-toc")&&r.intersectsNode(x)&&!x.querySelector("p,div,h1,h2,h3,h4,li,blockquote,pre"));
@@ -151,9 +197,9 @@ function blockStyle(property,value){
  targets.forEach(x=>x.style.setProperty(property,value));mark();
 }
 function fontSize(pt){
- if(!restore())return;document.execCommand("fontSize",false,"7");
+ if(!restore())return;document.execCommand("styleWithCSS",false,false);document.execCommand("fontSize",false,"7");
  for(const f of editor().querySelectorAll('font[size="7"]')){f.removeAttribute("size");f.style.fontSize=pt+"pt";}
- capture();mark();
+ document.execCommand("styleWithCSS",false,true);capture();mark();
 }
 async function imageFile(file){
  if(!file||!["image/png","image/jpeg","image/webp","image/gif"].includes(file.type)||file.size>3_500_000){say("Choose a PNG, JPG, GIF or WebP image under 3.5 MB.");return;}
@@ -206,18 +252,23 @@ function htmlExport(){
  collect();const l=model.layout;const esc=v=>{const e=node("span",v);return e.innerHTML;};
  return '<!doctype html><html><head><meta charset="utf-8"><title>'+esc(model.title)+'</title><style>@page{size:'+l.width+'in '+l.height+'in;margin:0}body{margin:0}section{position:relative;box-sizing:border-box;width:'+l.width+'in;height:'+l.height+'in;padding:'+l.top+'in '+l.right+'in '+l.bottom+'in '+l.left+'in;break-after:page;page-break-after:always;font:11pt/1.15 Arial;overflow:hidden}section:last-child{break-after:auto;page-break-after:auto}img{max-width:100%;height:auto}table{border-collapse:collapse;width:100%;table-layout:fixed}td,th{border:1px solid #777;padding:5px}svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}header,footer{position:absolute;left:'+l.left+'in;right:'+l.right+'in;text-align:center;font:9pt Arial}header{top:'+l.top*.42+'in}footer{bottom:'+l.bottom*.38+'in}</style></head><body>'+model.pages.map((p,i)=>'<section><header>'+esc(l.header)+'</header>'+p.html+'<svg xmlns="'+ns+'" viewBox="0 0 '+l.width*96+' '+l.height*96+'">'+p.ink.map(v=>inkPath(v).outerHTML).join("")+'</svg><footer>'+esc([l.footer,l.numbers?i+1:""].filter(Boolean).join(" · "))+'</footer></section>').join("")+'</body></html>';
 }
-function printDoc(){updateInfo();if(pages().some(p=>p.dataset.overflow==="true")){say("Some text extends beyond the paper. Use Insert → Page break here to move it before printing.");alert("One or more pages overflow. Move text to another page before printing, so nothing is clipped.");return;}window.print();}
+function printDoc(){updateInfo();if(pages().some(p=>p.dataset.overflow==="true")){say("Some text extends beyond the paper. Use Insert → Flow overflowing text or Page break here before printing.");alert("One or more pages overflow. Use Insert → Flow overflowing text or move text to another page before printing, so nothing is clipped.");return;}window.print();}
 function setZoom(n){zoom=finite(n,40,130,90)/100;app.style.setProperty("--zoom",zoom);$("doc-zoom").value=zoom*100;$("doc-zoom-label").value=Math.round(zoom*100)+"%";}
 const on=(i,f)=>$(i).addEventListener("click",f);
 document.querySelectorAll("[data-ribbon]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-ribbon]").forEach(t=>t.setAttribute("aria-selected",String(t===b)));document.querySelectorAll("[data-ribbon-panel]").forEach(p=>p.hidden=p.dataset.ribbonPanel!==b.dataset.ribbon);});
 document.querySelectorAll("[data-cmd]").forEach(b=>{b.addEventListener("mousedown",e=>e.preventDefault());b.onclick=()=>cmd(b.dataset.cmd);});
 $("doc-font").onchange=e=>cmd("fontName",e.target.value);$("doc-size").onchange=e=>fontSize(e.target.value);$("doc-color").onchange=e=>cmd("foreColor",e.target.value);$("doc-highlight").onchange=e=>cmd("hiliteColor",e.target.value);$("doc-style").onchange=e=>cmd("formatBlock",e.target.value);$("doc-spacing").onchange=e=>blockStyle("line-height",e.target.value);
 on("doc-apply-indent",()=>blockStyle("text-indent",finite($("doc-indent").value,0,3,0)+"in"));
+$("doc-paragraph-after").onchange=e=>blockStyle("margin-bottom",e.target.value+"pt");
 on("doc-cut",()=>cmd("cut"));on("doc-copy",()=>cmd("copy"));on("doc-paste",async()=>{try{const text=await navigator.clipboard.readText();cmd("insertText",text);}catch{say("Use Ctrl+V / Command+V to paste rich text or images.");}});
-on("doc-add-page",()=>addPage(active+1));on("doc-side-add",()=>addPage());on("doc-break",breakPage);on("doc-delete-page",removePage);
+on("doc-add-page",()=>addPage(active+1));on("doc-side-add",()=>addPage());on("doc-break",breakPage);on("doc-flow",flowOverflow);on("doc-delete-page",removePage);
 on("doc-image",()=>$("doc-image-file").click());$("doc-image-file").onchange=e=>{void imageFile(e.target.files[0]);e.target.value="";};
 on("doc-image-size",()=>{if(!selectedImage?.isConnected){say("Click a picture first.");return;}const v=prompt("Picture width as percent of the text area (5–100)","75");if(v===null)return;selectedImage.style.width=finite(v,5,100,75)+"%";mark();});
-on("doc-table",insertTable);on("doc-link",()=>{const v=prompt("Enter an http(s) URL or mailto link");if(v&&safeHref(v))cmd("createLink",v);});on("doc-rule",()=>cmd("insertHorizontalRule"));on("doc-symbol",()=>{const v=prompt("Enter a symbol","♥");if(v)cmd("insertText",v);});
+on("doc-table",insertTable);
+function currentCell(){if(!restore())return null;const n=getSelection().anchorNode;return (n?.nodeType===1?n:n?.parentElement)?.closest("td,th")||null;}
+on("doc-table-row",()=>{const cell=currentCell();if(!cell){say("Click inside a table first.");return;}const table=cell.closest("table"),row=cell.parentElement;const fresh=table.insertRow(row.rowIndex+1);for(let i=0;i<row.cells.length;i++)fresh.insertCell().innerHTML="<br>";mark();});
+on("doc-table-column",()=>{const cell=currentCell();if(!cell){say("Click inside a table first.");return;}for(const row of cell.closest("table").rows)row.insertCell(Math.min(cell.cellIndex+1,row.cells.length)).innerHTML="<br>";mark();});
+on("doc-link",()=>{const v=prompt("Enter an http(s) URL or mailto link");if(v&&safeHref(v))cmd("createLink",v);});on("doc-rule",()=>cmd("insertHorizontalRule"));on("doc-symbol",()=>{const v=prompt("Enter a symbol","♥");if(v)cmd("insertText",v);});
 on("doc-header-footer",()=>{const h=prompt("Header text",model.layout.header);if(h===null)return;const f=prompt("Footer text",model.layout.footer);if(f===null)return;model.layout=safeLayout({...model.layout,header:h,footer:f});updateDecorations();mark();});
 on("doc-page-numbers",()=>{model.layout.numbers=!model.layout.numbers;updateDecorations();mark();});
 on("doc-draw-toggle",()=>toggleDraw(!drawing));on("doc-erase",()=>{if(!drawing)toggleDraw(true);eraser=!eraser;$("doc-erase").setAttribute("aria-pressed",String(eraser));say(eraser?"Eraser: tap an ink stroke to remove it.":"Pen active.");});
