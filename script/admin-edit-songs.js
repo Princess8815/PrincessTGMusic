@@ -1,3 +1,4 @@
+import {songAlbums,albumRecordMap,fillAlbumSelectors,validatedAlbums,membershipFields,releaseForAlbums} from "./song-albums.js";
 
 import { auth, db } from "./firebase.js";
 
@@ -99,6 +100,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const descriptionInput = $("edit-song-description");
   const albumSelect = $("edit-song-album");
   const originalAlbum = $("edit-original-album");
+  const albumSelects=[albumSelect,...[2,3].map(i=>$("edit-song-album-"+i))];
+  let albumRecords=new Map();
 
   const genreSelect = $("edit-song-genre");
 
@@ -507,9 +510,8 @@ let originalTitlesById = new Map();
   // ========================================
 
   async function loadAlbumNames() {
-    const snapshot = await getDocFromServer(
-      doc(db, "enums", "albums")
-    );
+    const [snapshot,rich]=await Promise.all([getDocFromServer(doc(db,"enums","albums")),getDocsFromServer(collection(db,"albums"))]);
+    albumRecords=albumRecordMap(rich);
 
     if (!snapshot.exists()) {
       throw new Error(
@@ -540,35 +542,21 @@ let originalTitlesById = new Map();
   // POPULATE ALBUM DROPDOWN
   // ========================================
 
-  function populateAlbumDropdown(currentAlbum) {
-    albumSelect.replaceChildren(
-      new Option("N/A - Select Album", "")
-    );
-
-    for (const album of albumNames) {
-      albumSelect.add(
-        new Option(album, album)
-      );
-    }
-
-    const existing = albumNames.find(
-      album =>
-        normalize(album) ===
-        normalize(currentAlbum)
-    );
-
-    if (existing) {
-      albumSelect.value = existing;
-      originalAlbum.textContent = "";
-    } else {
-      albumSelect.value = "";
-
-      originalAlbum.textContent =
-        currentAlbum
-          ? `Current album "${currentAlbum}" is not in the enum. Select a new album.`
-          : "No album assigned. Select an album.";
-    }
+  function previewRelease(){
+    $("edit-song-album-release-preview").textContent="Earliest song release: "+releaseForAlbums(albumSelects.map(s=>s.value).filter(Boolean),releaseInput.value,albumRecords);
   }
+  albumSelects.forEach(s=>s.addEventListener("change",previewRelease));
+  releaseInput.addEventListener("input",previewRelease);
+  function populateAlbumDropdown(song){
+    fillAlbumSelectors(albumSelects,albumNames,songAlbums(song));
+    originalAlbum.textContent="Choose a primary album or Single, and up to two additional albums.";
+  }
+  window.addEventListener("princesstg:albums-updated",async()=>{
+    if(!selectedSongId)return;
+    const selected=albumSelects.map(s=>s.value);
+    try{await loadAlbumNames();fillAlbumSelectors(albumSelects,albumNames,selected);previewRelease();}
+    catch(error){showSaveStatus(error.message,true);}
+  });
 
   // ========================================
   // POPULATE GENRE DROPDOWN
@@ -688,9 +676,7 @@ let originalTitlesById = new Map();
       descriptionInput.value =
         song.description || "";
 
-      populateAlbumDropdown(
-        song.album || ""
-      );
+      populateAlbumDropdown(song);
 
       const genre = getGenre(song);
 
@@ -745,9 +731,7 @@ translationCollapsedInput.checked =
       // RELEASE DATE
       // ====================================
 
-      const existingDate = String(
-        song.releaseDate || ""
-      ).trim();
+      const existingDate = String(song.originalReleaseDate ?? song.releaseDate ?? "").trim();
 
       const isISODate =
         /^\d{4}-\d{2}-\d{2}$/.test(existingDate);
@@ -766,7 +750,8 @@ translationCollapsedInput.checked =
       originalDate.textContent =
         invalidLegacyDate
           ? `Original date: "${invalidLegacyDate}". Select a valid date before saving.`
-          : "Blank saves as tbd.";
+          : "Original date is independent of later albums.";
+      previewRelease();
 
       // ====================================
       // DISPLAY AUTHOR AND AUDIO REFERENCE
@@ -847,11 +832,11 @@ translationCollapsedInput.checked =
       const description =
         descriptionInput.value.trim();
 
-      const album = albumSelect.value;
-      const genre = genreSelect.value;
-
-      const releaseDate =
-        releaseInput.value || "tbd";
+      const names=validatedAlbums(albumSelects.map(s=>s.value),albumNames);
+      const genre=genreSelect.value;
+      const originalReleaseDate=releaseInput.value||"tbd";
+      const freshRecords=albumRecordMap(await getDocsFromServer(collection(db,"albums")));
+      const releaseDate=releaseForAlbums(names,originalReleaseDate,freshRecords);
 
       const lyrics = cleanLyrics(
         lyricsInput.value
@@ -879,12 +864,6 @@ translationCollapsedInput.checked =
 
       if (!title) {
         throw new Error("Title is required.");
-      }
-
-      if (!albumNames.includes(album)) {
-        throw new Error(
-          "Select a valid album from the enum."
-        );
       }
 
       if (!genre) {
@@ -930,8 +909,9 @@ translationCollapsedInput.checked =
 const changes = {
   title,
   description,
-  album,
+  ...membershipFields(names),
   genre,
+  originalReleaseDate,
   releaseDate,
   lyrics,
   translation,
@@ -1017,8 +997,10 @@ const changes = {
         "Source: Firestore, with JSON fallback where available.";
 
       originalDate.textContent =
-        "Blank saves as tbd.";
+        "Original date is independent of later albums.";
 
+      albumRecords=freshRecords;
+      previewRelease();
       lyricsInput.value = lyrics;
 
       showSaveStatus(

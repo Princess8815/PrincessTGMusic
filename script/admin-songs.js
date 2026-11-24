@@ -1,8 +1,11 @@
+import {songAlbums,albumRecordMap,fillAlbumSelectors,validatedAlbums,membershipFields,releaseForAlbums} from "./song-albums.js";
 
 import { auth, db } from "./firebase.js";
 
 import {
   doc,
+  collection,
+  getDocsFromServer,
   getDocFromServer,
   runTransaction,
   serverTimestamp
@@ -70,6 +73,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const albumSelect = document.getElementById("song-album");
   const albumStatus = document.getElementById("album-status");
+  const albumSelects=[albumSelect,...[2,3].map(i=>document.getElementById("song-album-"+i))];
+  let albumRecords=new Map();
 
   const genreSelect = document.getElementById("song-genre");
   const releaseInput = document.getElementById("song-release");
@@ -186,19 +191,21 @@ form.addEventListener("reset", () => {
   // LOAD ALBUMS FROM FIRESTORE
   // ========================================
 
+  function previewRelease(){
+    document.getElementById("song-album-release-preview").textContent="Earliest song release: "+releaseForAlbums(albumSelects.map(s=>s.value).filter(Boolean),releaseInput.value,albumRecords);
+  }
+  albumSelects.forEach(s=>s.addEventListener("change",previewRelease));
+  releaseInput.addEventListener("input",previewRelease);
+  form.addEventListener("reset",()=>queueMicrotask(previewRelease));
   async function loadAlbums() {
-    albumSelect.disabled = true;
+    const selected=albumSelects.map(s=>s.value);
+    albumSelects.forEach(s=>s.disabled=true);
     saveButton.disabled = true;
 
     albumStatus.textContent = "Loading albums...";
 
-    const snapshot = await getDocFromServer(
-      doc(
-        db,
-        ALBUM_COLLECTION,
-        ALBUM_DOCUMENT
-      )
-    );
+    const [snapshot,rich]=await Promise.all([getDocFromServer(doc(db,ALBUM_COLLECTION,ALBUM_DOCUMENT)),getDocsFromServer(collection(db,"albums"))]);
+    albumRecords=albumRecordMap(rich);
 
     if (!snapshot.exists()) {
       throw new Error(
@@ -231,17 +238,8 @@ form.addEventListener("reset", () => {
       );
     }
 
-    albumSelect.replaceChildren(
-      new Option("Select album", "")
-    );
-
-    for (const album of allowedAlbums) {
-      albumSelect.add(
-        new Option(album, album)
-      );
-    }
-
-    albumSelect.disabled = false;
+    fillAlbumSelectors(albumSelects,allowedAlbums,selected);
+    previewRelease();
     saveButton.disabled = false;
 
     albumStatus.textContent =
@@ -264,10 +262,7 @@ form.addEventListener("reset", () => {
 
 // Keep the Add Song selector synchronized with album management.
 window.addEventListener("princesstg:albums-updated", () => {
-  const selected = albumSelect.value;
-  void loadAlbums().then(() => {
-    if (allowedAlbums.includes(selected)) albumSelect.value = selected;
-  }).catch(error => {
+  void loadAlbums().catch(error => {
     console.error("Album selector refresh failed:", error);
     albumStatus.textContent = error.message;
   });
@@ -352,11 +347,11 @@ window.addEventListener("princesstg:albums-updated", () => {
       const description =
         descriptionInput.value.trim();
 
-      const album = albumSelect.value;
-      const genre = genreSelect.value;
-
-      const releaseDate =
-        releaseInput.value || "tbd";
+      const names=validatedAlbums(albumSelects.map(s=>s.value),allowedAlbums);
+      const genre=genreSelect.value;
+      const originalReleaseDate=releaseInput.value||"tbd";
+      const freshRecords=albumRecordMap(await getDocsFromServer(collection(db,"albums")));
+      const releaseDate=releaseForAlbums(names,originalReleaseDate,freshRecords);
 
       const lyrics = cleanLyrics(
         lyricsInput.value
@@ -388,12 +383,6 @@ if (translation.length > 100000) {
 
       if (!lyrics) {
         throw new Error("Song lyrics are required.");
-      }
-
-      if (!allowedAlbums.includes(album)) {
-        throw new Error(
-          "Please select an album from the database."
-        );
       }
 
       const genres =
@@ -442,8 +431,9 @@ if (translation.length > 100000) {
         title,
         pageId,
         description,
-        album,
+        ...membershipFields(names),
         genre,
+        originalReleaseDate,
         releaseDate,
         lyrics,
         lyricsCollapsed: lyricsCollapsedInput.checked,

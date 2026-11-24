@@ -547,12 +547,16 @@
 
               <div class="form-field">
                 <label for="song-album">
-                  Album <span class="required">*</span>
+                  Primary album or single <span class="required">*</span>
                 </label>
                 <select id="song-album" required disabled>
                   <option value="">Loading albums...</option>
                 </select>
                 <p class="helper" id="album-status"></p>
+              </div>
+              <div class="form-field"><label for="song-album-2">Second album (optional)</label><select id="song-album-2" disabled><option value="">None</option></select></div>
+              <div class="form-field"><label for="song-album-3">Third album (optional)</label><select id="song-album-3" disabled><option value="">None</option></select></div>
+              <div class="form-field full-width"><p id="song-album-release-preview" class="helper" aria-live="polite"></p>
               </div>
 
               <div class="form-field">
@@ -567,9 +571,9 @@
               </div>
 
               <div class="form-field">
-                <label for="song-release">Release Date</label>
+                <label for="song-release">Standalone / original release date</label>
                 <input id="song-release" type="date">
-                <p class="helper">Leave blank to save "tbd".</p>
+                <p class="helper">Leave blank if there is no standalone release. The earliest date across this field and the selected albums is saved.</p>
               </div>
 
               <div class="form-field">
@@ -781,12 +785,16 @@
 
               <div class="form-field">
                 <label for="edit-song-album">
-                  Album <span class="required">*</span>
+                  Primary album or single <span class="required">*</span>
                 </label>
                 <select id="edit-song-album" required>
                   <option value="">N/A</option>
                 </select>
                 <p id="edit-original-album" class="helper"></p>
+              </div>
+              <div class="form-field"><label for="edit-song-album-2">Second album (optional)</label><select id="edit-song-album-2" disabled><option value="">None</option></select></div>
+              <div class="form-field"><label for="edit-song-album-3">Third album (optional)</label><select id="edit-song-album-3" disabled><option value="">None</option></select></div>
+              <div class="form-field full-width"><p id="edit-song-album-release-preview" class="helper" aria-live="polite"></p>
               </div>
 
               <div class="form-field">
@@ -800,11 +808,11 @@
 
               <div class="form-field">
                 <label for="edit-song-release">
-                  Release Date
+                  Standalone / original release date
                 </label>
                 <input id="edit-song-release" type="date">
                 <p id="edit-original-date" class="helper">
-                  Blank saves as tbd.
+                  The earliest known date across this field and selected albums is the song release date.
                 </p>
               </div>
 
