@@ -161,7 +161,12 @@ const GROUPS=[
   {title:"Account",links:[
     ["My Profile","pages/profile.html","profile","profile"],
     ["Admin Panel","pages/admin.html","admin","admin"],
-    ["Settings","pages/settings.html","settings"]]}
+    ["Settings","pages/settings.html","settings"]]},
+  {title:"Legal & Policies",links:[
+    ["Privacy Policy","pages/privacy-policy.html","docs"],
+    ["Terms of Service","pages/terms-of-service.html","docs"],
+    ["Refund & Return Policy","pages/refund-policy.html","docs"],
+    ["Shipping Policy","pages/shipping-policy.html","docs"]]}
 ];
 const SOCIALS=[
   ["Facebook","https://www.facebook.com/kirstin.transgirl/","https://cdn.simpleicons.org/facebook"],

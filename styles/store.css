@@ -106,3 +106,6 @@
 .store-cd-dialog ol{padding-left:22px}
 .store-detail-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px}
 @media(max-width:480px){.store-products{grid-template-columns:repeat(auto-fill,minmax(min(100px,100%),1fr));gap:4px}.store-main .store-card .store-icon-add{width:44px;min-width:44px;min-height:44px}.store-card{padding:4px}.store-icon-open img,.store-icon-open .store-cover{max-width:92px}}
+
+.store-policy-links{font-size:.9rem;line-height:1.6;overflow-wrap:anywhere}
+.store-policy-links a{text-decoration:underline;text-underline-offset:3px;color:var(--ptg-highlight,#c084fc)}
