@@ -6,12 +6,33 @@ const decode=s=>Uint8Array.from(atob(s.replace(/-/g,"+").replace(/_/g,"/")+"=".r
 const json=s=>JSON.parse(new TextDecoder().decode(decode(s)));
 const reject=(message,status=401)=>{throw Object.assign(new Error(message),{status});};
 let keysCache=null,oauthCache=null;
+// Explicit opt-in for staff testing against the production Firebase project.
+export function adminSandboxRewards(env){
+ return env.STORE_MODE==="test"&&env.ADMIN_TEST_TIDE==="yes"&&!!env.FIREBASE_PROJECT&&env.REWARD_FIREBASE_PROJECT===env.FIREBASE_PROJECT&&!!env.FIREBASE_REWARD_SERVICE_ACCOUNT;
+}
 export function rewardProject(env){
  const project=env.REWARD_FIREBASE_PROJECT||"";
- // Never award production collectibles for sandbox payments.
- if(!project||env.STORE_MODE==="test"&&project===env.FIREBASE_PROJECT)return "";
+ if(!project||!["test","live"].includes(env.STORE_MODE))return "";
+ if(env.STORE_MODE==="test"&&project===env.FIREBASE_PROJECT&&!adminSandboxRewards(env))return "";
  if(env.STORE_MODE==="live"&&project!==env.FIREBASE_PROJECT)return "";
  return project;
+}
+export function rewardAvailable(env,row){
+ return !!rewardProject(env)&&(!adminSandboxRewards(env)||!!row?.reward_uid);
+}
+export function eligibleStaffAccount(data){
+ return ["admin","owner"].includes(data?.fields?.role?.stringValue)&&
+  (data?.fields?.status?.stringValue||"active")==="active";
+}
+function accountRoot(project,uid){
+ return "https://firestore.googleapis.com/v1/projects/"+encodeURIComponent(project)+"/databases/(default)/documents/users/"+encodeURIComponent(uid);
+}
+async function verifiedStaffAccount(env,uid){
+ const token=await accessToken(env);
+ const response=await fetch(accountRoot(rewardProject(env),uid),{headers:{Authorization:"Bearer "+token}});
+ if(response.status===404)return false;
+ if(!response.ok)reject("Staff reward verification unavailable.",503);
+ return eligibleStaffAccount(await response.json());
 }
 export async function verifiedBuyer(env,token){
  const project=rewardProject(env);
@@ -31,6 +52,8 @@ export async function verifiedBuyer(env,token){
   if(!jwk)throw Error("Key");
   const key=await crypto.subtle.importKey("jwk",jwk,{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["verify"]);
   if(!await crypto.subtle.verify("RSASSA-PKCS1-v1_5",key,decode(parts[2]),enc.encode(parts[0]+"."+parts[1])))throw Error("Signature");
+  // No guest or non-staff binding for production sandbox rewards.
+  if(adminSandboxRewards(env)&&!await verifiedStaffAccount(env,p.sub))return null;
   return p.sub;
  }catch(e){if(e.status)throw e;reject("Sign in again before claiming purchase collectibles.");}
 }
@@ -52,17 +75,18 @@ async function accessToken(env){
 export async function awardPaidOrder(env,row){
  const project=rewardProject(env);
  if(!project||row.status!=="paid"||!row.reward_uid)return [];
- if(row.reward_done)return JSON.parse(row.reward_added||"[]").filter(id=>rewardIds.includes(id));
  const uid=row.reward_uid,token=await accessToken(env),headers={Authorization:"Bearer "+token,"Content-Type":"application/json"};
- const root="https://firestore.googleapis.com/v1/projects/"+encodeURIComponent(project)+"/databases/(default)/documents/users/"+encodeURIComponent(uid);
+ const root=accountRoot(project,uid);
  const account=await fetch(root,{headers});
  if(!account.ok)reject("Buyer account is unavailable for the purchase reward.",409);
  const accountData=await account.json();
  if(accountData.fields?.status?.stringValue==="archived")reject("Archived accounts cannot receive rewards.",409);
+ if(adminSandboxRewards(env)&&!eligibleStaffAccount(accountData))reject("Only active administrators or owners can receive production Tide from a sandbox payment.",403);
+ if(row.reward_done)return JSON.parse(row.reward_added||"[]").filter(id=>rewardIds.includes(id));
  const added=[];
  for(const id of rewardIds){
   // createDocument with a fixed ID is atomic and will not overwrite a previous reward.
-  const r=await fetch(root+"/axolotls?documentId="+id,{method:"POST",headers,body:JSON.stringify({fields:{foundAt:{timestampValue:new Date().toISOString()},sourceOrder:{stringValue:row.id}}})});
+  const r=await fetch(root+"/axolotls?documentId="+id,{method:"POST",headers,body:JSON.stringify({fields:{foundAt:{timestampValue:new Date().toISOString()},sourceOrder:{stringValue:row.id},...(adminSandboxRewards(env)?{sourceMode:{stringValue:"admin_sandbox"}}:{})}})});
   if(r.ok)added.push(id);
   else if(r.status===409){
    const existing=await fetch(root+"/axolotls/"+id,{headers});

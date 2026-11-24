@@ -1,6 +1,6 @@
 // Authoritative CD checkout. No Firebase Admin credentials, no Blaze functions.
 import {storeProducts} from "../../script/store-catalog.js";
-import {rewardProject,verifiedBuyer,awardPaidOrder} from "./rewards.js";
+import {rewardProject,rewardAvailable,adminSandboxRewards,verifiedBuyer,awardPaidOrder} from "./rewards.js";
 import {refundEvents,intentFromRefundEvent,syncRefunds,retryRefunds} from "./refunds.js";
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status});};
 const str=(v,max,required=true)=>{if(typeof v!=="string"||v.length>max||required&&!v.trim())fail("Please complete the shipping address.");return v.trim();};
@@ -152,12 +152,16 @@ async function claimReward(env,b){
  configured(env);
  if(!rewardProject(env))return {reward:"disabled"};
  const uid=await verifiedBuyer(env,b.idToken);
- if(!uid)fail("Sign in to claim your purchase collectibles.",401);
+ if(!uid)fail(adminSandboxRewards(env)?"Only an active administrator or owner signed in at checkout can claim Tide from a test payment.":"Sign in to claim your purchase collectibles.",401);
  let row=await ownedOrder(env,b.id,b.token);
+ if(row.status!=="paid"||!row.intent)fail("Payment has not been verified.",409);
+ const summary=await syncRefunds(env,stripe,row.intent);
+ if(summary?.status!=="paid")fail("This order is no longer eligible for a purchase claim.",409);
+ row=await getOrder(env,row.id);
  if(row.status!=="paid")fail("Payment has not been verified.",409);
- // A signed-in purchase is bound to that UID at checkout. Guest orders
- // may bind exactly once after payment using their private order token.
- await env.ORDERS.prepare("UPDATE orders SET reward_uid=? WHERE id=? AND status='paid' AND reward_uid IS NULL").bind(uid,row.id).run();
+ // Sandbox production rewards never allow guest or post-purchase binding.
+ if(adminSandboxRewards(env)&&row.reward_uid!==uid)fail("This test order is not bound to your staff account. Sign in before making a new test purchase.",403);
+ if(!adminSandboxRewards(env))await env.ORDERS.prepare("UPDATE orders SET reward_uid=? WHERE id=? AND status='paid' AND reward_uid IS NULL").bind(uid,row.id).run();
  row=await getOrder(env,row.id);
  if(row.reward_uid!==uid)fail("This purchase belongs to a different account.",403);
  const added=await awardPaidOrder(env,row);
@@ -207,13 +211,13 @@ async function status(env,b,ctx){
   const pi=await stripe(env,"payment_intents/"+row.intent);
   if(pi.status==="succeeded"){
    const summary=await syncRefunds(env,stripe,pi.id);
-   if(summary?.status==="paid"){ctx.waitUntil(Promise.all([fulfill(env,row.id),tryReward(env,row.id)]));return {status:"paid",reward:rewardProject(env)?"available":"disabled"};}
+   if(summary?.status==="paid"){ctx.waitUntil(Promise.all([fulfill(env,row.id),tryReward(env,row.id)]));return {status:"paid",reward:rewardAvailable(env,row)?"available":"disabled",adminTestReward:adminSandboxRewards(env)&&!!row.reward_uid};}
    return {status:summary?.status||"pending"};
   }
   if(pi.status==="canceled")await env.ORDERS.prepare("UPDATE orders SET status='canceled' WHERE id=? AND status='pending'").bind(row.id).run();
   return {status:pi.status};
  }
- return {status:row.status,reward:row.status==="paid"?(rewardProject(env)?"available":"disabled"):undefined};
+ return {status:row.status,reward:row.status==="paid"?(rewardAvailable(env,row)?"available":"disabled"):undefined,adminTestReward:row.status==="paid"&&adminSandboxRewards(env)&&!!row.reward_uid};
 }
 async function body(req){const raw=await req.text();if(raw.length>20000)fail("Request too large.",413);try{return JSON.parse(raw);}catch{fail("Invalid JSON.");}}
 export default {
