@@ -19,7 +19,7 @@ function renderCart(){
   const row=el("div");row.className="store-cart-row";row.append(el("strong",p?.name||sku));
   if(!p){row.append(el("p",catalogReady?"Unavailable CD; remove before checkout.":"Checking availability…"));row.append(btn("Remove",()=>change(sku,-q)));box.append(row);continue;}
   subtotal+=q*p.priceCents;count+=q;
-  row.append(el("p",money(p.priceCents)+" each · "+money(q*p.priceCents)));
+  const amount=el("p",money(p.priceCents)+" each · "+money(q*p.priceCents));amount.className="store-cart-price";row.append(amount);
   const controls=el("div");controls.className="cart-controls";controls.append(btn("−",()=>change(sku,-1)),el("span",String(q)),btn("+",()=>change(sku,1)),btn("Remove",()=>change(sku,-q)));row.append(controls);box.append(row);
  }
  if(!cart.size)box.append(el("p","Your cart is empty."));
@@ -40,8 +40,13 @@ function renderProducts(){
   const card=el("article");card.className="store-card";
   const fallback=el("div","CD");fallback.className="store-cover";
   if(/^https:\/\//i.test(p.coverUrl)){const img=el("img");img.src=p.coverUrl;img.alt=p.albumName+" cover";img.loading="lazy";img.onerror=()=>img.replaceWith(fallback);card.append(img);}else card.append(fallback);
-  card.append(el("h3",p.name),el("p",money(p.priceCents)),el("p",p.songIds.length+" tracks · Physical CD"));
-  const details=el("details"),summary=el("summary","Track list"),list=el("ol");for(const id of p.songIds)list.append(el("li",titles.get(id)||id));details.append(summary,list);card.append(details,btn("Add to cart",()=>change(p.sku,1)));root.append(card);
+  const info=el("div");info.className="store-card-info";
+  const price=el("p",money(p.priceCents));price.className="store-price";
+  const meta=el("p",p.songIds.length+" tracks · CD");meta.className="store-card-meta";
+  const add=btn("Add to cart",()=>change(p.sku,1));add.setAttribute("aria-label","Add "+p.name+" to cart");
+  info.append(el("h3",p.name),price,meta,add);
+  const details=el("details"),summary=el("summary","Track list ("+p.songIds.length+")"),list=el("ol");for(const id of p.songIds)list.append(el("li",titles.get(id)||id));details.append(summary,list);
+  card.append(info,details);root.append(card);
  }
  if(!products.size)root.append(el("p","No CDs are listed for sale yet."));
 }
