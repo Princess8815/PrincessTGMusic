@@ -1,99 +1,171 @@
-import {auth} from "./firebase.js";
+import {auth,db} from "./firebase.js";
+import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+import {collection,doc,onSnapshot,runTransaction,serverTimestamp,getDocsFromServer,writeBatch} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
-const OLD_KEY = "audio-player-custom-playlists-v1";
-const MIGRATION_FLAG = "princesstg-playlists-v2-migrated";
 const KEY_PREFIX = "princesstg-playlists-v2:";
 const CHANGE = "princesstg:playlists-change";
-const ownKey = () => KEY_PREFIX + (auth.currentUser?.uid || "guest");
 const normalize = x => String(x || "").trim();
-const unique = items => [...new Set((items || []).filter(x => typeof x === "string" && x))];
+const unique = items => [...new Set((Array.isArray(items)?items:[]).filter(x => typeof x === "string" && x))];
 export const DEFAULT_PLAYLIST_COLOR = "#8b5cf6";
 export const playlistColor = value => /^#[0-9a-f]{6}$/i.test(String(value || ""))
   ? String(value).toLowerCase() : DEFAULT_PLAYLIST_COLOR;
+const validId=id=>typeof id==="string"&&/^[A-Za-z0-9_-]{1,140}$/.test(id);
 const asPlaylist = p => ({
   id:p.id, name:p.name, tracks:unique(p.tracks),
   color:playlistColor(p.color),
-  updatedAt:Number.isFinite(p.updatedAt) ? p.updatedAt : 0
+  updatedAt:p.updatedAt?.toMillis?.() ?? (Number.isFinite(p.updatedAt)?p.updatedAt:0)
 });
-
-function read(key, fallback) {
-  try {
-    const data = JSON.parse(localStorage.getItem(key) || "null");
-    return data ?? fallback;
-  } catch {return fallback;}
+let owner=null, cache=[], ready=false, loading=null, unsubscribe=null, failure="", generation=0, wanted=false;
+const notify=()=>window.dispatchEvent(new CustomEvent(CHANGE));
+const current=uid=>!!uid&&auth.currentUser?.uid===uid;
+const assertOwner=uid=>{if(!current(uid))throw Error("Sign in to your account to use playlists.");};
+const pathFor=uid=>collection(db,"users",uid,"playlists");
+export function playlistState(){
+  if(!auth.currentUser)return "Sign in to create and use account playlists.";
+  if(owner!==auth.currentUser.uid||!ready)return failure||"Loading account playlists…";
+  return failure||"";
 }
-function persist(data) {
-  localStorage.setItem(ownKey(), JSON.stringify(data));
-  window.dispatchEvent(new CustomEvent(CHANGE));
+export function getPlaylists(){
+  return current(owner)&&ready?cache.map(p=>({...p,tracks:[...p.tracks]})):[];
 }
-export function getPlaylists() {
-  const key = ownKey();
-  if (auth.currentUser && !localStorage.getItem(key) && !localStorage.getItem(MIGRATION_FLAG)) {
-    const old = read(OLD_KEY, []);
-    if (Array.isArray(old) && old.length) {
-      localStorage.setItem(key, JSON.stringify(old));
-    }
-    localStorage.setItem(MIGRATION_FLAG, "yes");
+function clear(){
+  generation++;unsubscribe?.();unsubscribe=null;owner=null;cache=[];ready=false;loading=null;failure="";
+}
+function validate(name,tracks){
+  if(typeof name!=="string"||!name.trim()||name.length>90)throw Error("Playlist name must be between 1 and 90 characters.");
+  if(!Array.isArray(tracks)||tracks.length>1000||tracks.some(k=>typeof k!=="string"||!k||k.length>400))throw Error("A playlist supports up to 1,000 valid song references.");
+}
+function readLegacy(uid){
+  try{const x=JSON.parse(localStorage.getItem(KEY_PREFIX+uid)||"[]");return Array.isArray(x)?x:[];}catch{return [];}
+}
+// Only migrate data already scoped to this UID. Never claim guest or unscoped data.
+async function migrate(uid){
+  const list=readLegacy(uid);
+  if(!list.length)return;
+  for(const raw of list){
+    assertOwner(uid);
+    const p=asPlaylist(raw||{});
+    if(!validId(p.id))throw Error("A local playlist has an invalid ID. Its backup has been retained.");
+    validate(p.name,p.tracks);
+    const ref=doc(pathFor(uid),p.id);
+    await runTransaction(db,async tx=>{
+      assertOwner(uid);
+      const existing=await tx.get(ref);
+      assertOwner(uid);
+      if(!existing.exists()){
+        tx.set(ref,{name:p.name,color:p.color,tracks:p.tracks,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
+      }else{
+        const d=existing.data();
+        if(d.name!==p.name||d.color!==p.color||JSON.stringify(d.tracks)!==JSON.stringify(p.tracks)){
+          // Preserve a different local version rather than overwrite a cloud edit.
+          let hash=2166136261;
+          for(const c of JSON.stringify([p.name,p.color,p.tracks]))hash=Math.imul(hash^c.charCodeAt(0),16777619)>>>0;
+          const copy=doc(pathFor(uid),p.id.slice(0,115)+"-local-"+hash.toString(16));
+          const saved=await tx.get(copy);
+          assertOwner(uid);
+          if(!saved.exists())tx.set(copy,{name:p.name,color:p.color,tracks:p.tracks,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
+        }
+      }
+    });
   }
-  const saved = read(key, []);
-  return (Array.isArray(saved) ? saved : [])
-    .filter(p => p && typeof p.id === "string" && typeof p.name === "string")
-    .map(asPlaylist);
+  assertOwner(uid);
+  try{localStorage.removeItem(KEY_PREFIX+uid);}catch{}
 }
-export function savePlaylists(items) {
-  if (!Array.isArray(items)) throw Error("Invalid playlist data.");
-  persist(items.map(asPlaylist));
+export async function ensurePlaylists(expectedUid){
+  wanted=true;
+  await auth.authStateReady();
+  const uid=expectedUid??auth.currentUser?.uid;
+  assertOwner(uid);
+  if(owner===uid&&ready)return getPlaylists();
+  if(owner===uid&&loading)return loading;
+  clear();owner=uid;
+  const token=generation;
+  loading=(async()=>{
+    // A migration failure leaves the original local backup intact and surfaces an error.
+    let migrationError="";
+    try{await migrate(uid);}catch(e){migrationError="Local playlist migration incomplete: "+e.message;}
+    assertOwner(uid);
+    if(token!==generation)throw Error("Account changed.");
+    const first=await getDocsFromServer(pathFor(uid));
+    assertOwner(uid);
+    if(token!==generation)throw Error("Account changed.");
+    cache=first.docs.map(s=>asPlaylist({...s.data(),id:s.id}));ready=true;failure=migrationError;notify();
+    unsubscribe=onSnapshot(pathFor(uid),{includeMetadataChanges:true},snap=>{
+      if(token!==generation||!current(uid)||snap.metadata.hasPendingWrites||snap.metadata.fromCache)return;
+      cache=snap.docs.map(s=>asPlaylist({...s.data(),id:s.id}));ready=true;failure=migrationError;notify();
+    },e=>{if(token===generation&&current(uid)){failure="Playlist synchronization unavailable: "+e.message;ready=false;cache=[];notify();}});
+    return getPlaylists();
+  })().catch(e=>{if(token===generation){failure=e.message;ready=false;cache=[];notify();}throw e;}).finally(()=>{if(token===generation)loading=null;});
+  return loading;
 }
-export function createPlaylist(name, tracks = [], color = DEFAULT_PLAYLIST_COLOR) {
-  const cleaned = normalize(name).replace(/\s+/g, " ");
-  if (!cleaned || cleaned.length > 90) throw Error("Playlist name must be between 1 and 90 characters.");
-  const next = getPlaylists();
-  if (next.some(p => p.name.toLowerCase() === cleaned.toLowerCase())) throw Error("A playlist with that name already exists.");
-  const id = "playlist-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,8);
-  const playlist = {id,name:cleaned,tracks:unique(tracks),color:playlistColor(color),updatedAt:Date.now()};
-  next.push(playlist);
-  savePlaylists(next);
-  return playlist;
+onAuthStateChanged(auth,user=>{
+  if(owner&&owner!==user?.uid){clear();notify();}
+  if(wanted&&user&&!ready&&!loading)void ensurePlaylists(user.uid).catch(()=>{});
+  if(!user)notify();
+});
+async function member(){
+  const uid=auth.currentUser?.uid;assertOwner(uid);
+  await ensurePlaylists(uid);assertOwner(uid);return uid;
 }
-export function deletePlaylist(id) {
-  savePlaylists(getPlaylists().filter(p => p.id !== id));
+function cacheResult(uid,id,data){
+  if(current(uid)&&owner===uid&&ready){
+    cache=cache.filter(p=>p.id!==id);
+    if(data)cache.push(asPlaylist({...data,id,updatedAt:Date.now()}));
+    notify();
+  }
 }
-export function addToPlaylist(id, keys) {
-  const playlists = getPlaylists();
-  const playlist = playlists.find(p => p.id === id);
-  if (!playlist) throw Error("Choose a playlist.");
-  const before = playlist.tracks.length;
-  playlist.tracks = unique([...playlist.tracks, ...unique(keys)]);
-  if (playlist.tracks.length !== before) playlist.updatedAt = Date.now();
-  savePlaylists(playlists);
-  return playlist.tracks.length - before;
+export async function createPlaylist(name, tracks = [], color = DEFAULT_PLAYLIST_COLOR) {
+  const uid=await member();
+  const cleaned=normalize(name).replace(/\s+/g," "), keys=unique(tracks);
+  validate(cleaned,keys);
+  if(getPlaylists().some(p=>p.name.toLowerCase()===cleaned.toLowerCase()))throw Error("A playlist with that name already exists.");
+  const ref=doc(pathFor(uid)),data={name:cleaned,color:playlistColor(color),tracks:keys};
+  await runTransaction(db,async tx=>{assertOwner(uid);tx.set(ref,{...data,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});});
+  assertOwner(uid);cacheResult(uid,ref.id,data);return asPlaylist({...data,id:ref.id,updatedAt:Date.now()});
 }
-export function removeFromPlaylist(id, key) {
-  const playlists = getPlaylists();
-  const playlist = playlists.find(p => p.id === id);
-  if (!playlist) throw Error("Playlist not found.");
-  playlist.tracks = playlist.tracks.filter(value => value !== key);
-  playlist.updatedAt = Date.now();
-  savePlaylists(playlists);
+async function changePlaylist(id, transform){
+  const uid=await member();
+  if(!validId(id))throw Error("Invalid playlist.");
+  const ref=doc(pathFor(uid),id);
+  const result=await runTransaction(db,async tx=>{
+    assertOwner(uid);const snap=await tx.get(ref);assertOwner(uid);
+    if(!snap.exists())throw Error("Playlist not found.");
+    const old=snap.data(), next=transform({...old,tracks:unique(old.tracks)});
+    if(next===null){tx.delete(ref);return {data:null};}
+    validate(next.name,next.tracks);
+    if(JSON.stringify([old.name,old.color,old.tracks])!==JSON.stringify([next.name,next.color,next.tracks])){
+      tx.update(ref,{name:next.name,color:next.color,tracks:next.tracks,updatedAt:serverTimestamp()});
+    }
+    return {data:next,amount:next.tracks.length-unique(old.tracks).length};
+  });
+  assertOwner(uid);cacheResult(uid,id,result.data);return result;
 }
-export function movePlaylistSong(id, from, to) {
-  const playlists = getPlaylists();
-  const playlist = playlists.find(p => p.id === id);
-  if (!playlist || from < 0 || to < 0 || from >= playlist.tracks.length || to >= playlist.tracks.length) return;
-  const [song] = playlist.tracks.splice(from, 1);
-  playlist.tracks.splice(to, 0, song);
-  playlist.updatedAt = Date.now();
-  savePlaylists(playlists);
+export async function deletePlaylist(id){await changePlaylist(id,()=>null);}
+export async function addToPlaylist(id,keys){return (await changePlaylist(id,p=>({...p,tracks:unique([...p.tracks,...unique(keys)])}))).amount;}
+export async function removeFromPlaylist(id,key){await changePlaylist(id,p=>({...p,tracks:p.tracks.filter(k=>k!==key)}));}
+export async function movePlaylistSong(id,from,to){
+  const p=getPlaylists().find(p=>p.id===id);
+  if(!p||from<0||to<0||from>=p.tracks.length||to>=p.tracks.length||from===to)return;
+  const moving=p.tracks[from],target=p.tracks[to],after=from<to;
+  await changePlaylist(id,p=>{
+    const a=p.tracks.indexOf(moving),b=p.tracks.indexOf(target);
+    if(a<0||b<0)throw Error("Playlist changed on another device. Try again.");
+    p.tracks.splice(a,1);p.tracks.splice(p.tracks.indexOf(target)+(after?1:0),0,moving);return p;
+  });
 }
-export function setPlaylistColor(id, color) {
-  if (!/^#[0-9a-f]{6}$/i.test(String(color || ""))) throw Error("Choose a valid playlist color.");
-  const playlists = getPlaylists();
-  const playlist = playlists.find(p => p.id === id);
-  if (!playlist) throw Error("Playlist not found.");
-  playlist.color = playlistColor(color);
-  playlist.updatedAt = Date.now();
-  savePlaylists(playlists);
-  return playlist;
+export async function setPlaylistColor(id,color){
+  if(!/^#[0-9a-f]{6}$/i.test(String(color||"")))throw Error("Choose a valid playlist color.");
+  await changePlaylist(id,p=>({...p,color:playlistColor(color)}));
+}
+export async function deleteAccountPlaylists(uid){
+  assertOwner(uid);
+  const snap=await getDocsFromServer(pathFor(uid));assertOwner(uid);
+  for(let i=0;i<snap.docs.length;i+=400){
+    const batch=writeBatch(db);
+    for(const item of snap.docs.slice(i,i+400))batch.delete(item.ref);
+    assertOwner(uid);await batch.commit();
+  }
+  try{localStorage.removeItem(KEY_PREFIX+uid);}catch{}
 }
 
 const slug = text => normalize(text).normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
@@ -173,6 +245,9 @@ export function addToPlaylistControl(getKeys, options = {}) {
   message.setAttribute("role","status");
   function refresh() {
     const current=select.value;
+    const unavailable=playlistState();
+    select.disabled=add.disabled=input.disabled=create.disabled=!!unavailable;
+    message.textContent=unavailable;
     select.replaceChildren(new Option("Select a playlist", ""));
     for(const p of getPlaylists()) select.add(new Option(p.name,p.id));
     if([...select.options].some(o=>o.value===current)) select.value=current;
@@ -185,23 +260,26 @@ export function addToPlaylistControl(getKeys, options = {}) {
   }
   add.addEventListener("click",async()=>{
     add.disabled=true;
-    try{const amount=addToPlaylist(select.value,await keys());message.textContent=amount+" song(s) added.";root.open=false;}
+    try{const uid=auth.currentUser?.uid;const id=select.value;const list=await keys();assertOwner(uid);const amount=await addToPlaylist(id,list);message.textContent=amount+" song(s) added.";root.open=false;}
     catch(err){message.textContent=err.message;}finally{add.disabled=false;}
   });
   create.addEventListener("click",async()=>{
     create.disabled=true;
     try{
-      const playlist=createPlaylist(input.value,await keys());
+      const uid=auth.currentUser?.uid;const name=input.value;const list=await keys();assertOwner(uid);const playlist=await createPlaylist(name,list);
       input.value="";
       refresh();select.value=playlist.id;
       message.textContent="Created "+playlist.name+" with "+playlist.tracks.length+" song(s).";
       root.open=false;
     }catch(err){message.textContent=err.message;}finally{create.disabled=false;}
   });
-  root.addEventListener("toggle",()=>{if(root.open)refresh();});
+  root.addEventListener("toggle",()=>{if(root.open){refresh();void auth.authStateReady().then(()=>auth.currentUser?ensurePlaylists():null).then(refresh).catch(e=>{refresh();message.textContent=e.message;});}});
   // Rebuild choices when the picker opens; detached rows do not retain listeners.
-  inner.append(select,add,input,create,message);
+  const signIn=document.createElement("a");signIn.textContent="Sign in or register to save playlists";signIn.href=new URL("../pages/profile.html",import.meta.url).href;
+  function update(){refresh();signIn.hidden=!!auth.currentUser;}
+  window.addEventListener(CHANGE,()=>{if(root.isConnected)update();});
+  inner.append(signIn,select,add,input,create,message);
   root.append(inner);
-  refresh();
+  update();
   return root;
 }
