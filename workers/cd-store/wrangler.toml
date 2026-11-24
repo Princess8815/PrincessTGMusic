@@ -7,7 +7,8 @@ STORE_MODE = "test"
 ALLOWED_ORIGINS = "https://princess8815.github.io,http://localhost:5501,http://127.0.0.1:5501"
 SHIPPING_ZONES = '[{"country":"US","state":"WI","city":"*","firstCents":500,"extraCents":100}]'
 CD_TAX_CODE = "txcd_99999999"
-REWARD_FIREBASE_PROJECT = ""
+REWARD_FIREBASE_PROJECT = "music-and-poetry"
+ADMIN_TEST_TIDE = "yes"
 [[d1_databases]]
 binding = "ORDERS"
 database_name = "princesstg-cd-orders"
