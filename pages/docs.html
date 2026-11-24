@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PrincessTG Docs | PrincessTG Creations</title>
+<link rel="stylesheet" href="../styles/site-shell.css" data-ptg-shell-style="1">
+<link rel="stylesheet" href="../styles/auth.css">
+<link rel="stylesheet" href="../styles/docs.css">
+<script type="module" src="../script/site-shell.js"></script>
+<script type="module" src="../script/auth.js"></script>
+<script type="module" src="../script/docs.js"></script>
+</head>
+<body class="docs-body">
+<main class="docs-app" id="docs-app">
+<header class="docs-top">
+<div class="docs-brand"><span aria-hidden="true">✿</span><div><h1>PrincessTG Docs</h1><p>A little more personality on paper.</p></div></div>
+<label class="docs-title-label"><span>Document title</span><input id="doc-title" maxlength="120" value="Untitled document"></label>
+<div class="docs-top-actions"><button id="doc-library">My documents</button><button id="doc-new">New</button><button id="doc-save">Save</button><button id="doc-print">Print / PDF</button></div>
+</header>
+<p id="doc-status" role="status" aria-live="polite">Opening your document workspace…</p>
+<nav class="docs-tabs" role="tablist" aria-label="Document tools">
+<button data-ribbon="home" role="tab" aria-selected="true">Home</button><button data-ribbon="insert" role="tab" aria-selected="false">Insert</button><button data-ribbon="draw" role="tab" aria-selected="false">Draw</button><button data-ribbon="layout" role="tab" aria-selected="false">Layout</button><button data-ribbon="references" role="tab" aria-selected="false">References</button><button data-ribbon="file" role="tab" aria-selected="false">File</button>
+</nav>
+<div class="docs-ribbon" data-ribbon-panel="home">
+<div class="docs-tool-group"><span>History &amp; clipboard</span><div><button data-cmd="undo" title="Undo (Ctrl+Z)">↶</button><button data-cmd="redo" title="Redo (Ctrl+Y)">↷</button><button id="doc-cut">Cut</button><button id="doc-copy">Copy</button><button id="doc-paste">Paste</button></div></div>
+<div class="docs-tool-group"><span>Font &amp; style</span><div><select id="doc-font" aria-label="Font family"><option>Arial</option><option>Calibri</option><option>Times New Roman</option><option>Georgia</option><option>Verdana</option><option>Tahoma</option><option>Courier New</option><option>Trebuchet MS</option><option>Comic Sans MS</option><option>serif</option><option>sans-serif</option></select><select id="doc-size" aria-label="Font size in points"><option>8</option><option>9</option><option>10</option><option selected>11</option><option>12</option><option>14</option><option>16</option><option>18</option><option>20</option><option>24</option><option>28</option><option>32</option><option>36</option><option>48</option><option>72</option></select></div>
+<div><button data-cmd="bold" title="Bold"><b>B</b></button><button data-cmd="italic" title="Italic"><i>I</i></button><button data-cmd="underline" title="Underline"><u>U</u></button><button data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button><button data-cmd="subscript" title="Subscript">X₂</button><button data-cmd="superscript" title="Superscript">X²</button><label title="Text color">A<input type="color" id="doc-color" value="#222222" aria-label="Text color"></label><label title="Highlight">▧<input type="color" id="doc-highlight" value="#fff19a" aria-label="Highlight color"></label><button data-cmd="removeFormat">Clear</button></div></div>
+<div class="docs-tool-group"><span>Paragraph</span><div><select id="doc-style" aria-label="Paragraph style"><option value="p">Normal</option><option value="h1">Heading 1</option><option value="h2">Heading 2</option><option value="h3">Heading 3</option><option value="blockquote">Quote</option><option value="pre">Code</option></select><select id="doc-spacing" aria-label="Line spacing"><option>1</option><option selected>1.15</option><option>1.5</option><option>2</option><option>2.5</option></select></div><div><button data-cmd="justifyLeft" title="Align left">≡L</button><button data-cmd="justifyCenter" title="Center">≡C</button><button data-cmd="justifyRight" title="Align right">≡R</button><button data-cmd="justifyFull" title="Justify">≡J</button><button data-cmd="insertUnorderedList" title="Bullets">• List</button><button data-cmd="insertOrderedList" title="Numbering">1. List</button><button data-cmd="outdent" title="Decrease indent">⇤</button><button data-cmd="indent" title="Increase indent">⇥</button></div><div><label>First-line indent <input type="number" id="doc-indent" min="0" max="3" step=".05" value="0"> in</label><button id="doc-apply-indent">Apply</button></div></div>
+</div>
+<div class="docs-ribbon" data-ribbon-panel="insert" hidden>
+<div class="docs-tool-group"><span>Pages</span><div><button id="doc-add-page">Blank page</button><button id="doc-break">Page break here</button><button id="doc-delete-page">Remove page</button></div></div>
+<div class="docs-tool-group"><span>Objects</span><div><button id="doc-image">Picture</button><input id="doc-image-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden><button id="doc-image-size">Resize selected picture</button><button id="doc-table">Table</button><button id="doc-link">Link</button><button id="doc-rule">Horizontal line</button><button id="doc-symbol">Symbol</button></div></div>
+<div class="docs-tool-group"><span>Page decorations</span><div><button id="doc-header-footer">Header / footer</button><button id="doc-page-numbers">Toggle page numbers</button></div></div>
+</div>
+<div class="docs-ribbon" data-ribbon-panel="draw" hidden>
+<div class="docs-tool-group"><span>Draw on the selected paper</span><div><button id="doc-draw-toggle" aria-pressed="false">Start drawing</button><label>Ink <input type="color" id="doc-ink" value="#eb4a9c"></label><label>Width <input type="number" id="doc-ink-width" min="1" max="30" value="3"></label><button id="doc-erase" aria-pressed="false">Eraser</button><button id="doc-draw-clear">Clear page ink</button></div><small>Finish drawing to type again. Ink prints with your document.</small></div>
+</div>
+<div class="docs-ribbon" data-ribbon-panel="layout" hidden>
+<div class="docs-tool-group"><span>Paper size</span><div><select id="doc-paper"><option value="letter">US Letter (8.5 × 11)</option><option value="a4">A4 (8.27 × 11.69)</option><option value="legal">Legal (8.5 × 14)</option><option value="a5">A5 (5.83 × 8.27)</option><option value="half">Half letter (5.5 × 8.5)</option><option value="custom">Custom</option></select><select id="doc-orientation"><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></div><div><label>Width (in) <input id="doc-width" type="number" min="3" max="24" step=".01" value="8.5"></label><label>Height (in) <input id="doc-height" type="number" min="3" max="24" step=".01" value="11"></label></div></div>
+<div class="docs-tool-group"><span>Margins</span><div><label>Top <input id="doc-margin-top" type="number" min=".1" max="4" step=".05" value="1"></label><label>Bottom <input id="doc-margin-bottom" type="number" min=".1" max="4" step=".05" value="1"></label><label>Left <input id="doc-margin-left" type="number" min=".1" max="4" step=".05" value="1"></label><label>Right <input id="doc-margin-right" type="number" min=".1" max="4" step=".05" value="1"></label></div><button id="doc-layout-apply">Apply layout</button></div>
+<div class="docs-tool-group"><span>View</span><div><label>Zoom <input id="doc-zoom" type="range" min="40" max="130" value="90"></label><output id="doc-zoom-label">90%</output><button id="doc-fit">Fit width</button></div></div>
+</div>
+<div class="docs-ribbon" data-ribbon-panel="references" hidden>
+<div class="docs-tool-group"><span>Contents &amp; navigation</span><div><button id="doc-toc">Insert table of contents</button><button id="doc-toc-refresh">Refresh contents</button><button id="doc-find">Find text</button><button id="doc-replace">Find &amp; replace</button></div><small>Use Heading 1, 2 and 3 to build a table of contents.</small></div>
+</div>
+<div class="docs-ribbon" data-ribbon-panel="file" hidden>
+<div class="docs-tool-group"><span>Open &amp; export</span><div><button id="doc-import">Open file</button><input type="file" id="doc-import-file" accept=".ptgdoc,.json,.txt,.html,.htm" hidden><button id="doc-export">Download editable .ptgdoc</button><button id="doc-export-html">Download HTML</button><button id="doc-export-text">Download text</button><button id="doc-export-word">Download Word-compatible .doc</button></div><small>Native .ptgdoc preserves pages, images, and drawings. The .doc export is HTML-based, not a native .docx.</small></div>
+</div>
+<div class="docs-workspace">
+<aside class="docs-pages-nav"><h2>Pages &amp; outline</h2><div id="doc-page-list"></div><button id="doc-side-add">＋ Page</button><h3>Headings</h3><div id="doc-outline"></div></aside>
+<section class="docs-paper-scroll" id="doc-paper-scroll" aria-label="Document editor"><div id="doc-pages" class="docs-pages"></div></section>
+</div>
+<footer class="docs-footer"><span id="doc-page-status">Page 1</span><span id="doc-word-count">0 words</span><span id="doc-overflow" role="status"></span><span>Saved in this browser</span><button id="doc-bubbles-show">Bubbles ✿</button></footer>
+</main>
+<dialog id="doc-library-dialog"><div class="docs-dialog-head"><h2>My documents</h2><button id="doc-library-close" aria-label="Close library">×</button></div><p>Documents stay in this browser. Download an editable backup to move them to another device.</p><div id="doc-library-list"></div></dialog>
+<div id="bubbles" class="bubbles" aria-label="Bubbles, your axolotl assistant">
+<div id="bubbles-speech" class="bubbles-speech" role="status" aria-live="polite"><strong>Bubbles</strong><p id="bubbles-message">Hi! I'm Bubbles, your tiny paper-puddle buddy. Drag me anywhere!</p><div><button id="bubbles-tip">Tell me something</button><button id="bubbles-hide" aria-label="Hide Bubbles">×</button></div></div>
+<button id="bubbles-pet" class="bubbles-pet" aria-label="Pet or drag Bubbles"><svg viewBox="0 0 160 130" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="bubblesBody" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffe1ed"/><stop offset="1" stop-color="#f9a3ca"/></linearGradient></defs><path d="M109 86 Q156 75 149 44 Q175 88 137 105 L103 107" fill="#f9b3d3" stroke="#9d477b" stroke-width="3"/><ellipse cx="83" cy="96" rx="44" ry="24" fill="url(#bubblesBody)" stroke="#9d477b" stroke-width="3"/><path d="M49 100q-15 12-8 17h22m39-17q15 12 8 17H94" fill="#ffc9df" stroke="#9d477b" stroke-width="3" stroke-linecap="round"/><g fill="#ec6bb0" stroke="#9d477b" stroke-width="2.5" stroke-linejoin="round"><path d="M42 52Q12 47 7 25Q23 28 43 40Q15 11 25 6Q44 15 52 41Q46 13 58 12Q68 23 61 43Z"/><path d="M118 52Q148 47 153 25Q137 28 117 40Q145 11 135 6Q116 15 108 41Q114 13 102 12Q92 23 99 43Z"/></g><rect x="30" y="37" width="100" height="59" rx="30" fill="url(#bubblesBody)" stroke="#9d477b" stroke-width="3"/><ellipse cx="50" cy="76" rx="10" ry="6" fill="#f181b6"/><ellipse cx="110" cy="76" rx="10" ry="6" fill="#f181b6"/><g fill="#492b4d"><circle cx="57" cy="63" r="5.8"/><circle cx="103" cy="63" r="5.8"/></g><g fill="white"><circle cx="55" cy="61" r="1.9"/><circle cx="101" cy="61" r="1.9"/></g><path d="M73 73q7 9 14 0" fill="none" stroke="#87416a" stroke-width="3" stroke-linecap="round"/><path d="M76 30q4-10 8 0q-4 9-8 0" fill="#fff5aa" stroke="#d49638" stroke-width="1.5"/><circle cx="137" cy="10" r="4" fill="#fff1fa"/><circle cx="145" cy="17" r="2" fill="#fff1fa"/></svg></button>
+<span class="bubbles-name">Bubbles</span>
+</div>
+<style id="doc-print-size"></style>
+</body></html>
