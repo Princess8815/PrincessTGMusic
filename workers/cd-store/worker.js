@@ -1,5 +1,6 @@
 // Authoritative CD checkout. No Firebase Admin credentials, no Blaze functions.
 import {storeProducts} from "../../script/store-catalog.js";
+import {rewardProject,verifiedBuyer,awardPaidOrder} from "./rewards.js";
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status});};
 const str=(v,max,required=true)=>{if(typeof v!=="string"||v.length>max||required&&!v.trim())fail("Please complete the shipping address.");return v.trim();};
 const integer=(v,min,max)=>Number.isInteger(v)&&v>=min&&v<=max;
@@ -53,7 +54,7 @@ async function productLines(env,cart){
 function configured(env){
  const mode=env.STORE_MODE;
  if(!["test","live"].includes(mode)||!env.STRIPE_SECRET_KEY?.startsWith("sk_"+mode+"_")||!env.STRIPE_PUBLISHABLE_KEY?.startsWith("pk_"+mode+"_")||!env.STRIPE_WEBHOOK_SECRET?.startsWith("whsec_")||!/^txcd_\d+$/.test(env.CD_TAX_CODE||"")||!/^https:\/\/formspree\.io\/f\/[A-Za-z0-9]+$/.test(env.FORMSPREE_URL||"")||!zones(env).length||!env.ORDERS)fail("Checkout is not configured yet.",503);
- if(mode==="live"&&(env.LIVE_READY!=="yes"||(env.ALLOWED_ORIGINS||"").includes("github.io")))fail("Live checkout has not been enabled.",503);
+ if(mode==="live"&&(env.LIVE_READY!=="yes"||(env.ALLOWED_ORIGINS||"").includes("github.io")||!rewardProject(env)||!env.FIREBASE_REWARD_SERVICE_ACCOUNT))fail("Live checkout has not been enabled.",503);
 }
 async function stripe(env,path,params,key){
  const headers={Authorization:"Bearer "+env.STRIPE_SECRET_KEY,"Stripe-Version":"2026-11-18.endive"};
@@ -85,10 +86,11 @@ async function startOrder(env,body){
  let row=await getOrder(env,body.id);
  if(row){row=await ownedOrder(env,body.id,body.token);}
  else{
+  const buyer=await verifiedBuyer(env,body.idToken);
   const a=addressOf(body.address),{lines,count}=await productLines(env,body.cart);
   const totals=await calculate(env,lines,a,shipping(zones(env),a,count));
   const payload=JSON.stringify({address:a,lines,subtotal:totals.subtotal,shipping:totals.shipping,tax:totals.tax,total:totals.total});
-  await env.ORDERS.prepare("INSERT OR IGNORE INTO orders(id,token_hash,created,payload,total,calculation) VALUES(?,?,?,?,?,?)").bind(body.id,await hash(body.token),Date.now(),payload,totals.total,totals.calculation).run();
+  await env.ORDERS.prepare("INSERT OR IGNORE INTO orders(id,token_hash,created,payload,total,calculation,reward_uid) VALUES(?,?,?,?,?,?,?)").bind(body.id,await hash(body.token),Date.now(),payload,totals.total,totals.calculation,buyer).run();
   row=await ownedOrder(env,body.id,body.token);
  }
  if(row.status!=="pending"||Date.now()-row.created>30*60*1000)fail("This checkout is no longer editable. Check order status first.",409);
@@ -139,13 +141,32 @@ async function fulfill(env,id){
   await env.ORDERS.prepare("UPDATE orders SET notice_sent=1,notice_lock=0 WHERE id=?").bind(id).run();
  }catch(e){console.warn("Order fulfillment needs retry",id,e.message);await env.ORDERS.prepare("UPDATE orders SET notice_lock=0 WHERE id=? AND notice_lock=?").bind(id,lock).run();}
 }
+async function tryReward(env,id){
+ try{const row=await getOrder(env,id);if(row)await awardPaidOrder(env,row);}
+ catch(e){console.warn("Purchase reward needs retry",id,e.message);}
+}
+async function claimReward(env,b){
+ configured(env);
+ if(!rewardProject(env))return {reward:"disabled"};
+ const uid=await verifiedBuyer(env,b.idToken);
+ if(!uid)fail("Sign in to claim your purchase collectibles.",401);
+ let row=await ownedOrder(env,b.id,b.token);
+ if(row.status!=="paid")fail("Payment has not been verified.",409);
+ // A signed-in purchase is bound to that UID at checkout. Guest orders
+ // may bind exactly once after payment using their private order token.
+ await env.ORDERS.prepare("UPDATE orders SET reward_uid=? WHERE id=? AND status='paid' AND reward_uid IS NULL").bind(uid,row.id).run();
+ row=await getOrder(env,row.id);
+ if(row.reward_uid!==uid)fail("This purchase belongs to a different account.",403);
+ const added=await awardPaidOrder(env,row);
+ return {reward:"claimed",added};
+}
 async function webhook(req,env,ctx){
  const event=await verifyWebhook(req,env);
  if(event.livemode!==(env.STORE_MODE==="live"))fail("Wrong Stripe environment.");
  if(event.type==="payment_intent.succeeded"){
   const intent=await stripe(env,"payment_intents/"+event.data.object.id);
   await markPaid(env,intent);
-  if(uuid(intent.metadata?.store_order_id))ctx.waitUntil(fulfill(env,intent.metadata.store_order_id));
+  if(uuid(intent.metadata?.store_order_id))ctx.waitUntil(Promise.all([fulfill(env,intent.metadata.store_order_id),tryReward(env,intent.metadata.store_order_id)]));
  }
  return {received:true};
 }
@@ -166,10 +187,10 @@ async function status(env,b,ctx){
  const row=await ownedOrder(env,b.id,b.token);
  if(row.status==="pending"&&row.intent){
   const pi=await stripe(env,"payment_intents/"+row.intent);
-  if(pi.status==="succeeded"){await markPaid(env,pi);ctx.waitUntil(fulfill(env,row.id));return {status:"paid"};}
+  if(pi.status==="succeeded"){await markPaid(env,pi);ctx.waitUntil(Promise.all([fulfill(env,row.id),tryReward(env,row.id)]));return {status:"paid",reward:rewardProject(env)?"available":"disabled"};}
   return {status:pi.status==="canceled"?"canceled":pi.status};
  }
- return {status:row.status};
+ return {status:row.status,reward:row.status==="paid"?(rewardProject(env)?"available":"disabled"):undefined};
 }
 async function body(req){const raw=await req.text();if(raw.length>20000)fail("Request too large.",413);try{return JSON.parse(raw);}catch{fail("Invalid JSON.");}}
 export default {
@@ -188,12 +209,17 @@ export default {
    if(url.pathname==="/checkout")return json(await startOrder(env,b));
    if(url.pathname==="/status")return json(await status(env,b,ctx));
    if(url.pathname==="/cancel")return json(await cancel(env,b));
+   if(url.pathname==="/claim-reward")return json(await claimReward(env,b));
    fail("Not found.",404);
   }catch(e){if(!e.status)console.error("Store service error",e.message);return json({error:e.status?e.message:"Store service unavailable."},e.status||500);}
  },
  async scheduled(event,env,ctx){
   const rows=await env.ORDERS.prepare("SELECT id FROM orders WHERE status='paid' AND notice_sent=0 AND notice_lock<? LIMIT 5").bind(Date.now()-120000).all();
   for(const row of rows.results||[])await fulfill(env,row.id);
+  if(rewardProject(env)){
+   const rewards=await env.ORDERS.prepare("SELECT id FROM orders WHERE status='paid' AND reward_done=0 AND reward_uid IS NOT NULL LIMIT 5").all();
+   for(const row of rewards.results||[])await tryReward(env,row.id);
+  }
  }
 };
 export {shipping,addressOf,productLines,calculate,verifyWebhook};
