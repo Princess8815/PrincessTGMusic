@@ -4,6 +4,7 @@ import {hasOwnerVerificationBypass} from "./verification-access.js";
 import { waitForUserRecord } from "./user-data.js";
 import "./ban-expiry.js";
 import {revokeShare} from "./docs-share.js";
+import {deleteAccountPlaylists} from "./music-playlists.js";
 
 import {
   onAuthStateChanged,
@@ -642,6 +643,7 @@ $("close-account-form").addEventListener(
       await deletePrivateHealthBeforeClosure(account.uid);
       // Remove the document chunks before their parent records and Auth login.
       await deletePrivateDocsBeforeClosure(account.uid);
+      await deleteAccountPlaylists(account.uid);
 
       // Delete the actual Firebase Auth login.
       await deleteUser(account);
