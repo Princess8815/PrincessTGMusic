@@ -3,7 +3,7 @@ import {songAlbums} from "./song-albums.js";
 import {auth,db} from "./firebase.js";
 import {verifyStaff} from "./staff-auth.js";
 import {loadAllSongs} from "./song-data.js";
-import {MAX_VOLUMES,DEFAULT_PRICE} from "./store-catalog.js";
+import {MAX_VOLUMES,DEFAULT_PRICE,DEFAULT_CATEGORY,cdCategory,categoryOptions} from "./store-catalog.js";
 import {collection,doc,getDocs,getDoc,runTransaction,serverTimestamp} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 const $=id=>document.getElementById(id);
 const node=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
@@ -11,18 +11,41 @@ const norm=x=>String(x||"").trim().toLowerCase();
 const slug=x=>norm(x).normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"album";
 let records=new Map(),songs=[],current=null,volumes=[],assignment=new Map(),epoch=0;
 const status=message=>{$("cd-admin-status").textContent=message;};
-function defaults(count){return Array.from({length:count},(_,i)=>({name:"Volume "+(i+1),priceCents:DEFAULT_PRICE}));}
-function readVolumeInputs(){document.querySelectorAll("[data-cd-volume]").forEach(row=>{const i=Number(row.dataset.cdVolume);if(volumes[i]){volumes[i].name=row.querySelector("input[type=text]").value;volumes[i].priceCents=Math.round(Number(row.querySelector("input[type=number]").value)*100);}});}
+function defaults(count){return Array.from({length:count},(_,i)=>({name:count===1?"":"Volume "+(i+1),priceCents:DEFAULT_PRICE,category:DEFAULT_CATEGORY,featured:false}));}
+function readVolumeInputs(){document.querySelectorAll("[data-cd-volume]").forEach(row=>{
+ const i=Number(row.dataset.cdVolume);if(!volumes[i])return;
+ const name=row.querySelector("[data-cd-name]");
+ volumes[i].name=name?name.value:"";
+ volumes[i].priceCents=Math.round(Number(row.querySelector("input[type=number]").value)*100);
+ volumes[i].category=cdCategory(row.querySelector("[data-cd-category]").value);
+ volumes[i].featured=row.querySelector("[data-cd-featured]").checked;
+ });}
+function refreshCategorySuggestions(){
+ const items=[...records.values()].flatMap(data=>Array.isArray(data.store?.volumes)?data.store.volumes:[]);
+ const suggestions=categoryOptions([{category:DEFAULT_CATEGORY},...items,...volumes]);
+ $("cd-category-suggestions").replaceChildren(...suggestions.map(([,name])=>{const option=node("option");option.value=name;return option;}));
+}
 function render(){
- const list=$("cd-volume-editor");list.replaceChildren();
+ const list=$("cd-volume-editor");list.replaceChildren();refreshCategorySuggestions();
  volumes.forEach((v,i)=>{
   const row=node("div");row.className="cd-admin-volume";row.dataset.cdVolume=i;
-  const h=node("h4",volumes.length===1?"Album price":"Volume "+(i+1));const name=node("input");name.type="text";name.maxLength=100;name.value=v.name;name.required=true;name.setAttribute("aria-label","Volume "+(i+1)+" subname");
-  const price=node("input");price.type="number";price.min=".50";price.max="1000";price.step=".01";price.required=true;price.value=(v.priceCents/100).toFixed(2);price.setAttribute("aria-label","Volume "+(i+1)+" price in US dollars");
-  const nLabel=node("label","Subname");nLabel.append(name);const pLabel=node("label","Price (USD)");pLabel.append(price);row.append(h,nLabel,pLabel);list.append(row);
+  const single=volumes.length===1;
+  row.classList.toggle("cd-admin-single",single);
+  if(!single){
+   const h=node("h4","Volume "+(i+1));row.append(h);
+   const name=node("input");name.type="text";name.dataset.cdName="";name.maxLength=100;name.value=v.name||"Volume "+(i+1);name.required=true;name.setAttribute("aria-label","Volume "+(i+1)+" name");
+   const nLabel=node("label","Volume name");nLabel.append(name);row.append(nLabel);
+  }
+  const price=node("input");price.type="number";price.min=".50";price.max="1000";price.step=".01";price.required=true;price.value=(v.priceCents/100).toFixed(2);price.setAttribute("aria-label",single?"Album price in US dollars":"Volume "+(i+1)+" price in US dollars");
+  const pLabel=node("label",single?"Album price (USD)":"Price (USD)");pLabel.append(price);row.append(pLabel);
+  const category=node("input");category.type="text";category.maxLength=60;category.dataset.cdCategory="";category.setAttribute("list","cd-category-suggestions");category.value=cdCategory(v.category);category.setAttribute("aria-label",single?"CD category":"Volume "+(i+1)+" category");
+  const cLabel=node("label","Category");cLabel.append(category);row.append(cLabel);
+  const featured=node("input");featured.type="checkbox";featured.dataset.cdFeatured="";featured.checked=v.featured===true;
+  const fLabel=node("label");fLabel.className="cd-admin-featured";fLabel.append(featured,node("span","Feature this CD in the store"));row.append(fLabel);list.append(row);
  });
  const tracks=$("cd-track-assignments");tracks.replaceChildren();
- tracks.hidden=volumes.length===1;
+ $("cd-track-section").hidden=volumes.length===1;
+ if(volumes.length===1)return;
  for(const song of songs){
   const label=node("label");label.className="cd-admin-track";label.append(node("span",song.title));
   const select=node("select");select.setAttribute("aria-label","Volume for "+song.title);
@@ -48,7 +71,7 @@ async function choose(){
  songs=all.filter(s=>songAlbums(s).some(x=>norm(x)===norm(data.name))).map(s=>({id:String(s.pageId||slug(s.title)),title:String(s.title)}));
  const rank=new Map((data.trackOrder||[]).map((id,i)=>[id,i]));songs.sort((a,b)=>(rank.get(a.id)??99999)-(rank.get(b.id)??99999)||a.title.localeCompare(b.title));
  const stored=Array.isArray(data.store?.volumes)?data.store.volumes:[];
- volumes=stored.length&&stored.length<=MAX_VOLUMES?stored.map((v,i)=>({name:v.name||"Volume "+(i+1),priceCents:Number.isInteger(v.priceCents)?v.priceCents:DEFAULT_PRICE})):defaults(1);
+ volumes=stored.length&&stored.length<=MAX_VOLUMES?stored.map((v,i)=>({name:stored.length===1?"":v.name||"Volume "+(i+1),priceCents:Number.isInteger(v.priceCents)?v.priceCents:DEFAULT_PRICE,category:cdCategory(v.category),featured:v.featured===true})):defaults(1);
  assignment=new Map();stored.forEach((v,i)=>(v.songIds||[]).forEach(id=>assignment.set(id,i)));
  current=id;$("cd-sellable").checked=data.store?.sellable===true;$("cd-volume-count").value=volumes.length;
  $("cd-admin-fields").hidden=false;render();status(songs.length+" album tracks loaded.");
@@ -56,18 +79,18 @@ async function choose(){
 async function save(){
  if(!current||!await verifyStaff()||!auth.currentUser)throw Error("Choose an album while signed in as staff.");
  readVolumeInputs();const enabled=$("cd-sellable").checked;
- const result=volumes.map((v,i)=>({name:String(v.name).trim()||"Volume "+(i+1),priceCents:v.priceCents,songIds:songs.filter(s=>Math.min(assignment.get(s.id)??0,volumes.length-1)===i).map(s=>s.id)}));
+ const result=volumes.map((v,i)=>({name:volumes.length===1?"":String(v.name).trim()||"Volume "+(i+1),priceCents:v.priceCents,category:cdCategory(v.category),featured:v.featured===true,songIds:songs.filter(s=>Math.min(assignment.get(s.id)??0,volumes.length-1)===i).map(s=>s.id)}));
  if(result.some(v=>!Number.isInteger(v.priceCents)||v.priceCents<50||v.priceCents>100000||v.name.length>100||v.songIds.length>380))throw Error("Each CD price must be $0.50–$1,000.00; max 380 tracks per volume.");
  if(enabled&&result.some(v=>!v.songIds.length))throw Error("Assign at least one song to each sellable volume.");
  const id=current,data=records.get(id),ref=doc(db,"albums",id);
  await runTransaction(db,async tx=>{const existing=await tx.get(ref);if(!existing.exists())tx.set(ref,{name:data.name,releaseDate:"tbd",description:"",coverUrl:"",trackOrder:songs.map(s=>s.id),createdAt:serverTimestamp(),updatedAt:serverTimestamp(),store:{sellable:enabled,volumes:result}});else tx.update(ref,{store:{sellable:enabled,volumes:result},updatedAt:serverTimestamp()});});
- records.set(id,{...data,store:{sellable:enabled,volumes:result}});status(enabled?"CD listing saved to the public store.":"CD listing disabled.");
+ records.set(id,{...data,store:{sellable:enabled,volumes:result}});refreshCategorySuggestions();status(enabled?"CD listing saved to the public store.":"CD listing disabled.");
 }
 function mount(){
  if(!$("cd-admin-form"))return;
  $("cd-admin-load").onclick=()=>loadAlbums().then(choose).catch(e=>status(e.message));
  $("cd-admin-album").onchange=()=>choose().catch(e=>status(e.message));
- $("cd-volume-count").onchange=()=>{readVolumeInputs();const n=Number($("cd-volume-count").value);if(!Number.isInteger(n)||n<1||n>MAX_VOLUMES)return;volumes=defaults(n).map((v,i)=>volumes[i]||v);for(const [id,i] of assignment)if(i>=n)assignment.set(id,n-1);render();};
+ $("cd-volume-count").onchange=()=>{readVolumeInputs();const n=Number($("cd-volume-count").value);if(!Number.isInteger(n)||n<1||n>MAX_VOLUMES)return;volumes=defaults(n).map((v,i)=>({...v,...(volumes[i]||{}),name:n===1?"":(volumes[i]?.name||v.name)}));for(const [id,i] of assignment)if(i>=n)assignment.set(id,n-1);render();};
  $("cd-admin-form").onsubmit=async e=>{e.preventDefault();const button=$("cd-admin-save");button.disabled=true;try{await save();}catch(err){status(err.message);}finally{button.disabled=false;}};
 }
 mount();
