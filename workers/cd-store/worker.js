@@ -57,7 +57,7 @@ function configured(env){
  if(mode==="live"&&(env.LIVE_READY!=="yes"||(env.ALLOWED_ORIGINS||"").includes("github.io")||!rewardProject(env)||!env.FIREBASE_REWARD_SERVICE_ACCOUNT))fail("Live checkout has not been enabled.",503);
 }
 async function stripe(env,path,params,key){
- const headers={Authorization:"Bearer "+env.STRIPE_SECRET_KEY,"Stripe-Version":"2026-11-18.endive"};
+ const headers={Authorization:"Bearer "+env.STRIPE_SECRET_KEY,"Stripe-Version":"2025-03-31.basil"};
  if(params)headers["Content-Type"]="application/x-www-form-urlencoded";
  if(key)headers["Idempotency-Key"]=key;
  const res=await fetch("https://api.stripe.com/v1/"+path,{method:params?"POST":"GET",headers,body:params?new URLSearchParams(params):undefined});
