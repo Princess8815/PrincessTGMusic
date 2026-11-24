@@ -1,3 +1,4 @@
+import {showGuestReef} from "./reef-collection.js";
 import {auth,db} from "./firebase.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {
@@ -553,9 +554,7 @@ function wireEvents(){
   for(const button of document.querySelectorAll("[data-health-jump]"))
     button.addEventListener("click",()=>chooseTab(button.dataset.healthJump));
   $("health-guest-signin").addEventListener("click",()=>{
-    const authButton=$("auth-open");
-    if(authButton&&!authButton.hidden)authButton.click();
-    else alert("Use the site's Login / Register button in the account menu.");
+    void showGuestReef().catch(()=>{$("auth-open")?.click();});
   });
   $("health-date").value=state.day;
   $("health-plan-date").value=state.planDate;
