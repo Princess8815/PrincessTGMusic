@@ -150,6 +150,8 @@
       <a class="primary" id="redirect-now" href="/PrincessTGMusic/">Redirect now</a>
       <a class="secondary" id="browse-songs" href="/PrincessTGMusic/audioPlayer/index.html">Browse songs</a>
     </nav>
+    <p id="reef-discovery-note" class="caption">You found an axolotl! Log in or register to add this discovery to your collection.</p>
+    <nav class="actions" aria-label="Save your discovery"><a class="secondary" id="reef-login" href="/PrincessTGMusic/pages/profile.html?reefSignIn=login#tab-collections">Log in</a><a class="secondary" id="reef-register" href="/PrincessTGMusic/pages/profile.html?reefSignIn=register#tab-collections">Register</a></nav>
     <footer>PrincessTG Creations · Even the best swimmers take a wrong turn.</footer>
   </main>
   <script>
@@ -191,6 +193,22 @@
         ?"/PrincessTGMusic/":"/";
       document.getElementById("redirect-now").href=base;
       document.getElementById("browse-songs").href=base+"audioPlayer/index.html";
+      for(const mode of ["login","register"])document.getElementById("reef-"+mode).href=base+"pages/profile.html?reefSignIn="+mode+"#tab-collections";
+      const id=picked.name.toLowerCase();
+      // Save immediately, even if the network/module is unavailable on a 404.
+      try{localStorage.setItem("ptg-reef-pending-v1:"+id,"1");}catch{}
+      import(base+"script/reef-collection.js").then(async reef=>{
+        reef.discoverAxolotl(id);
+        const {auth}=await import(base+"script/firebase.js");
+        await auth.authStateReady();
+        if(auth.currentUser){
+          document.getElementById("reef-discovery-note").textContent="You found "+picked.name+"! Check your collection in your profile.";
+          document.getElementById("reef-login").textContent="My collection";
+          document.getElementById("reef-login").href=base+"pages/profile.html#tab-collections";
+          document.getElementById("reef-register").hidden=true;
+          document.getElementById("reef-register").style.display="none";
+        }
+      }).catch(()=>{});
     })();
   </script>
 </body>
