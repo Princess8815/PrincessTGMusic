@@ -3,7 +3,7 @@ import {storeProducts,money} from "./store-catalog.js";
 const $=id=>document.getElementById(id),el=(tag,text)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;return e;};
 const btn=(text,action)=>{const e=el("button",text);e.type="button";e.onclick=action;return e;};
 const message=text=>{$("checkout-status").textContent=text;};
-const cartKey="ptg-cd-cart-v1",orderKey="ptg-cd-checkout-v1";
+const cartKey="ptg-cd-cart-v1",orderKey="ptg-cd-checkout-v1",rewardKey="ptg-cd-reward-v1";
 const read=(storage,key,fallback)=>{try{return JSON.parse(storage.getItem(key)||"null")??fallback;}catch{return fallback;}};
 const write=(storage,key,value)=>{try{storage.setItem(key,JSON.stringify(value));return true;}catch{return false;}};
 const remove=(storage,key)=>{try{storage.removeItem(key);}catch{}};
@@ -81,10 +81,31 @@ function cityChanged(){const other=field("cityChoice").value==="__other";$("city
 async function meetFriends(payment=false){
  try{const reef=await import("./reef-collection.js");
  const root=$(payment?"payment-reef-friend":"store-reef-friends");root.replaceChildren();
- for(const [id,name,description] of (payment?[["tide","Tide","I'll keep watch while Stripe handles your payment."]]:[["shelly","Shelly","I pack your CDs with a little reef magic."]])){
-  const card=el("div");card.className="store-friend";const art=el("div");art.innerHTML=reef.axolotlPortrait(id);const words=el("div");words.append(el("strong",name),el("span",description));card.append(art,words);root.append(card);reef.discoverAxolotl(id);
+ for(const [id,name,description] of (payment?[["tide","Tide","I'll keep watch while Stripe handles your payment. Only a verified purchase unlocks me!"]]:[["shelly","Shelly","I pack your CDs with a little reef magic. Complete your purchase to unlock me!"]])){
+  const card=el("div");card.className="store-friend";const art=el("div");art.innerHTML=reef.axolotlPortrait(id);const words=el("div");words.append(el("strong",name),el("span",description));card.append(art,words);root.append(card);
  }
  }catch(e){console.warn("Checkout mascots unavailable",e);}
+}
+async function buyerToken(){
+ try{const {auth}=await import("./firebase.js");await auth.authStateReady();return auth.currentUser?await auth.currentUser.getIdToken():null;}catch{return null;}
+}
+async function claimReward(){
+ const ref=read(sessionStorage,rewardKey,null);
+ if(!ref)return;
+ const status=$("reward-status");
+ try{
+  const idToken=await buyerToken();
+  if(!idToken){status.textContent="Log in to claim your verified purchase collectibles, then press Claim.";const button=$("auth-open");if(button&&!button.hidden)button.click();return;}
+  const r=await api("/claim-reward",{...ref,idToken});
+  if(r.reward==="disabled"){status.textContent="Sandbox purchase verified. Production collectibles are not awarded for test payments.";remove(sessionStorage,rewardKey);}
+  else{
+   status.textContent="Shelly and Tide are in your collection!";
+   remove(sessionStorage,rewardKey);
+   const reef=await import("./reef-collection.js");
+   for(const id of r.added||[])reef.announcePurchaseDiscovery(id);
+  }
+  $("claim-purchase-reward").hidden=true;
+ }catch(e){status.textContent=e.message+" Your paid order remains recorded. Retry after signing in.";}
 }
 async function openCheckout(){
  if(order)return;
@@ -119,7 +140,7 @@ form.onsubmit=async e=>{
    const address={name:values.name,email:values.email,country:values.country,state:values.stateChoice==="__other"?values.stateOther||"":values.stateChoice,city:values.cityChoice==="__other"?values.cityOther:values.cityChoice,line1:values.line1,line2:values.line2,postal_code:values.postal_code};
    const lines=[...cart].map(([sku,quantity])=>{const p=products.get(sku);if(!p)throw Error("Remove unavailable CDs.");return {albumId:p.albumId,volume:p.volume,quantity};});
    order={id:crypto.randomUUID(),token:crypto.randomUUID()};saveOrder();renderCart();
-   const q=await api("/checkout",{...order,address,cart:lines});await mountPayment(q);
+   const q=await api("/checkout",{...order,address,cart:lines,idToken:await buyerToken()});await mountPayment(q);
   }else throw Error("Check or cancel the existing checkout before starting another.");
  }catch(err){message(err.message);$("check-order").hidden=!order;$("edit-checkout").hidden=false;if(order){$("payment-panel").hidden=false;$("pay-button").disabled=true;}}
  finally{busy=false;$("quote-button").disabled=false;}
@@ -139,6 +160,11 @@ async function checkOrder(){
   const r=await api("/status",order);
   if(r.status==="paid"){
    $("receipt-panel").hidden=false;$("receipt-message").textContent="Payment confirmed. Order reference: "+order.id+". Your order will be processed using your shipping details.";
+   if(r.reward==="available"){
+    write(sessionStorage,rewardKey,order);$("claim-purchase-reward").hidden=false;
+    $("reward-status").textContent="Purchase verified! Claim your new axolotls using your PrincessTG account.";
+    void claimReward();
+   }else $("reward-status").textContent="Test purchases do not unlock production collectibles.";
    cart.clear();persist();remove(sessionStorage,orderKey);order=null;$("checkout-panel").hidden=true;renderCart();$("receipt-panel").scrollIntoView();
   }else if(r.status==="canceled"){resetCheckout();message("Checkout canceled. Your cart is still here.");}
   else{message("Payment status: "+r.status.replaceAll("_"," ")+". Do not pay again if your bank shows a pending charge.");$("check-order").hidden=false;}
@@ -153,6 +179,8 @@ $("edit-checkout").onclick=async()=>{
  finally{busy=false;}
 };
 $("shop-again").onclick=()=>{$("receipt-panel").hidden=true;window.scrollTo(0,0);};
+$("claim-purchase-reward").onclick=()=>void claimReward();
+if(read(sessionStorage,rewardKey,null)){$("receipt-panel").hidden=false;$("receipt-message").textContent="Your verified order has a collectible claim."; $("claim-purchase-reward").hidden=false;}
 const previous=read(sessionStorage,orderKey,null);
 if(previous?.id&&previous?.token){order=previous;$("checkout-panel").hidden=false;$("shipping-form").hidden=true;$("payment-panel").hidden=false;$("check-order").hidden=false;message("Checking your previous checkout…");void checkOrder();}
 renderCart();void loadCatalog();
