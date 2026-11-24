@@ -78,10 +78,10 @@ function stateChanged(){
  options(field("cityChoice"),[...cities].sort().map(x=>[x,x==="__other"?"Other city (enter name)":x]),"Select city");cityChanged();
 }
 function cityChanged(){const other=field("cityChoice").value==="__other";$("city-other").hidden=!other;field("cityOther").required=other;}
-async function meetFriends(){
+async function meetFriends(payment=false){
  try{const reef=await import("./reef-collection.js");
- const root=$("store-reef-friends");root.replaceChildren();
- for(const [id,name,description] of [["shelly","Shelly","I pack your CDs with a little reef magic."],["tide","Tide","I'll keep watch while Stripe handles your payment."]]){
+ const root=$(payment?"payment-reef-friend":"store-reef-friends");root.replaceChildren();
+ for(const [id,name,description] of (payment?[["tide","Tide","I'll keep watch while Stripe handles your payment."]]:[["shelly","Shelly","I pack your CDs with a little reef magic."]])){
   const card=el("div");card.className="store-friend";const art=el("div");art.innerHTML=reef.axolotlPortrait(id);const words=el("div");words.append(el("strong",name),el("span",description));card.append(art,words);root.append(card);reef.discoverAxolotl(id);
  }
  }catch(e){console.warn("Checkout mascots unavailable",e);}
@@ -105,6 +105,7 @@ async function mountPayment(q){
  paymentElement?.destroy();stripe=window.Stripe(q.publishableKey);
  elements=stripe.elements({clientSecret:q.clientSecret,appearance:{theme:"night"}});
  paymentElement=elements.create("payment");paymentElement.mount("#payment-element");
+ void meetFriends(true);
  $("payment-panel").hidden=false;$("shipping-form").hidden=true;$("check-order").hidden=false;
  const list=$("order-lines");list.replaceChildren(...q.lines.map(l=>el("p",l.quantity+" × "+l.name+" · "+money(l.quantity*l.priceCents))));
  for(const k of ["subtotal","shipping","tax","total"])$("quote-"+k).textContent=money(q[k]);
