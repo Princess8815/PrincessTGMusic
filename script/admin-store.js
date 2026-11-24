@@ -1,3 +1,4 @@
+import {songAlbums} from "./song-albums.js";
 // Admin CD listing editor, mounted inside existing album administration.
 import {auth,db} from "./firebase.js";
 import {verifyStaff} from "./staff-auth.js";
@@ -44,7 +45,7 @@ async function choose(){
  status("Loading album tracks…");
  const data=records.get(id),all=await loadAllSongs("../audioPlayer/audio/song-details.json");
  if(token!==epoch)return;
- songs=all.filter(s=>(Array.isArray(s.albums)?s.albums:[s.album]).some(x=>norm(x)===norm(data.name))).map(s=>({id:String(s.pageId||slug(s.title)),title:String(s.title)}));
+ songs=all.filter(s=>songAlbums(s).some(x=>norm(x)===norm(data.name))).map(s=>({id:String(s.pageId||slug(s.title)),title:String(s.title)}));
  const rank=new Map((data.trackOrder||[]).map((id,i)=>[id,i]));songs.sort((a,b)=>(rank.get(a.id)??99999)-(rank.get(b.id)??99999)||a.title.localeCompare(b.title));
  const stored=Array.isArray(data.store?.volumes)?data.store.volumes:[];
  volumes=stored.length&&stored.length<=MAX_VOLUMES?stored.map((v,i)=>({name:v.name||"Volume "+(i+1),priceCents:Number.isInteger(v.priceCents)?v.priceCents:DEFAULT_PRICE})):defaults(1);

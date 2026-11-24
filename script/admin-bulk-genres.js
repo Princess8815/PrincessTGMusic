@@ -1,3 +1,4 @@
+import {songAlbums, membershipFields, originalRelease} from "./song-albums.js";
 import {auth,db} from "./firebase.js";
 import {verifyStaff} from "./staff-auth.js";
 import {
@@ -76,7 +77,9 @@ function createIssues(song,approvedAlbums){
   const data=song.display||{};
   const issues=[];
   const title=clean(song.title);
-  const album=String(data.album||"");
+  const names=songAlbums(data);
+  const album=names[0]||"";
+  if(names.length>3||names.some(name=>!approvedAlbums.has(name)))issues.push("album memberships must be approved and limited to three");
   const date=normalizeReleaseDate(data.releaseDate);
   const lyrics=String(data.lyrics||"");
   const description=String(data.description||"");
@@ -143,7 +146,8 @@ function newSongDocument(song,genre,user){
     pageId:song.id,
     title:song.title,
     description:String(source.description||""),
-    album:String(source.album||""),
+    ...membershipFields(songAlbums(source)),
+    originalReleaseDate:originalRelease(source),
     genre,
     releaseDate:normalizeReleaseDate(source.releaseDate),
     lyrics:String(source.lyrics||""),

@@ -5,7 +5,8 @@ import {
   collection,
   doc,
   getDoc,
-  getDocs
+  getDocs,
+  getDocsFromServer
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
 // ==========================================
@@ -116,14 +117,17 @@ function mergeSong(jsonSong, databaseSong, id) {
 // Firestore takes priority.
 // ==========================================
 
-export async function loadAllSongs(jsonURL) {
+export async function loadAllSongs(jsonURL, {strict=false}={}) {
 
   const [jsonResult, databaseResult] =
     await Promise.allSettled([
       loadJSON(jsonURL),
-      getDocs(collection(db, SONG_COLLECTION))
+      (strict ? getDocsFromServer : getDocs)(collection(db, SONG_COLLECTION))
     ]);
 
+  if(strict && (jsonResult.status==="rejected" || databaseResult.status==="rejected")) {
+    throw Error("Both song sources must be available before editing albums. Retry.");
+  }
   // Neither source worked.
   if (
     jsonResult.status === "rejected" &&

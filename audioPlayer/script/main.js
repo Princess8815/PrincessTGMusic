@@ -1,3 +1,4 @@
+import {songAlbums} from "../../script/song-albums.js";
 import {wireDragReorder} from "../../script/drag-reorder.js";
 
 const AUDIO_INDEX="audio/index.json";
@@ -211,7 +212,7 @@ function catalogTracks(paths,details){
     const detail=byPath.get(path)||byTitle.get(fallback.toLowerCase())||{};
     const title=String(detail.title||fallback);
     return {path,title,pageId:String(detail.pageId||slugify(title)),
-      albums:normalizeAlbums(detail.album),
+      albums:songAlbums(detail).length?songAlbums(detail):[UNCATEGORIZED_ALBUM],
       releaseDate:String(detail.releaseDate||""),
       displayReleaseDate:String(detail.displayReleaseDate||detail.releaseDate||"")};
   });

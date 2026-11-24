@@ -1,3 +1,4 @@
+import {songAlbums} from "../../script/song-albums.js";
 import {db} from "../../script/firebase.js";
 import {loadAllSongs} from "../../script/song-data.js";
 import {collection,doc,getDoc,getDocs} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
@@ -52,7 +53,7 @@ async function loadAlbums(){
     const songs=await loadAllSongs("../audioPlayer/audio/song-details.json");
     const albums=new Map();
     for(const song of songs){
-      const names=Array.isArray(song.albums)?song.albums:[song.album];
+      const names=songAlbums(song);
       for(const name of names){
         if(typeof name!=="string"||!name.trim())continue;
         const id=key(name);

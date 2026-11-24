@@ -1,3 +1,4 @@
+import {songAlbums} from "./song-albums.js";
 import {addToPlaylistControl} from "./music-playlists.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -114,7 +115,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function getAlbums(song) {
-    return valuesFrom(song, ["albums", "album"]);
+    return songAlbums(song);
   }
 
   // ==========================================
