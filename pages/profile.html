@@ -16,6 +16,7 @@
   <script type="module" src="../script/profile.js"></script>
   <script type="module" src="../script/profile-health.js"></script>
   <script type="module" src="../script/profile-playlists.js"></script>
+  <script type="module">import {mountReefCollection} from "../script/reef-collection.js";mountReefCollection();</script>
   <script type="module" src="../script/site-mail.js"></script>
   <link rel="stylesheet" href="../styles/site-mail.css">
 
@@ -176,6 +177,7 @@
         <button type="button" id="profile-tab-account" role="tab" aria-controls="profile-panel-account" aria-selected="true" tabindex="0" data-profile-tab="account">Overview</button>
         <button type="button" id="profile-tab-email" role="tab" aria-controls="profile-panel-email" aria-selected="false" tabindex="-1" data-profile-tab="email">Email & Security</button>
         <button type="button" id="profile-tab-playlists" role="tab" aria-controls="profile-panel-playlists" aria-selected="false" tabindex="-1" data-profile-tab="playlists">Playlists</button>
+        <button type="button" id="profile-tab-collections" role="tab" aria-controls="profile-panel-collections" aria-selected="false" tabindex="-1" data-profile-tab="collections">Collections</button>
         <button type="button" id="profile-tab-health" role="tab" aria-controls="profile-panel-health" aria-selected="false" tabindex="-1" data-profile-tab="health">Health</button>
         <button type="button" id="profile-tab-mail" role="tab" aria-controls="profile-panel-mail" aria-selected="false" tabindex="-1" data-profile-tab="mail">Mail <span id="profile-mail-unread" class="mail-tab-count" hidden></span></button>
         <button type="button" id="profile-tab-submissions" role="tab" aria-controls="profile-panel-submissions" aria-selected="false" tabindex="-1" data-profile-tab="submissions">My Songs</button>
@@ -321,6 +323,11 @@
 
       <!-- EMAIL MANAGEMENT -->
 
+      <section class="profile-card profile-panel" id="profile-panel-collections" role="tabpanel" aria-labelledby="profile-tab-collections" data-profile-panel="collections" hidden>
+        <h2>Axolotl collection</h2><p>Explore PrincessTG and meet the little reef residents. Every new friend reveals a mystery slot in your collection.</p>
+        <p id="reef-collection-status" role="status" aria-live="polite">Loading your collection…</p>
+        <div id="reef-collection-grid" class="reef-collection-grid"></div>
+      </section>
       <section class="profile-card profile-panel" id="profile-panel-email" role="tabpanel" aria-labelledby="profile-tab-email" data-profile-panel="email" hidden>
         <h2>Email Address</h2>
 
