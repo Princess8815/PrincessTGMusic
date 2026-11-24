@@ -56,7 +56,7 @@ function configured(env){
  if(mode==="live"&&(env.LIVE_READY!=="yes"||(env.ALLOWED_ORIGINS||"").includes("github.io")))fail("Live checkout has not been enabled.",503);
 }
 async function stripe(env,path,params,key){
- const headers={Authorization:"Bearer "+env.STRIPE_SECRET_KEY};
+ const headers={Authorization:"Bearer "+env.STRIPE_SECRET_KEY,"Stripe-Version":"2026-11-18.endive"};
  if(params)headers["Content-Type"]="application/x-www-form-urlencoded";
  if(key)headers["Idempotency-Key"]=key;
  const res=await fetch("https://api.stripe.com/v1/"+path,{method:params?"POST":"GET",headers,body:params?new URLSearchParams(params):undefined});
@@ -150,7 +150,11 @@ async function webhook(req,env,ctx){
  return {received:true};
 }
 async function cancel(env,b){
- configured(env);const row=await ownedOrder(env,b.id,b.token);
+ configured(env);
+ if(!uuid(b.id)||!uuid(b.token))fail("Invalid order reference.");
+ await env.ORDERS.prepare("INSERT OR IGNORE INTO orders(id,token_hash,created,payload,total,calculation,status) VALUES(?,?,?,?,?,?,?)").bind(b.id,await hash(b.token),Date.now(),"{}",0,"","canceled").run();
+ const row=await ownedOrder(env,b.id,b.token);
+ if(row.status==="canceled")return {canceled:true};
  if(row.status!=="pending")fail("Order is already paid or closed.",409);
  if(!row.intent)fail("Checkout is still initializing. Retry shortly.",409);
  const intent=await stripe(env,"payment_intents/"+row.intent);
