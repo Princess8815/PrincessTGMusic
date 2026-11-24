@@ -58,3 +58,23 @@
 .store-main [role=status]{overflow-wrap:anywhere}
 @media(max-width:850px){.store-layout{grid-template-columns:1fr}.store-cart{width:100%}}
 @media(max-width:480px){.shipping-grid{grid-template-columns:1fr}.store-card{grid-template-columns:68px minmax(0,1fr)}.store-main button,.store-card button,.cart-controls button{min-height:44px}.cd-admin-volume{grid-template-columns:1fr}}
+
+/* Compact category navigation and curated CDs. */
+.store-catalog{min-width:0}
+.store-filter-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:5px}
+.store-category-tabs{display:flex;flex-wrap:wrap;gap:5px;flex:1 1 240px;min-width:0}
+.store-category-tabs button{background:transparent;color:inherit;border-color:#8888;padding:5px 10px;min-height:34px;border-radius:7px;overflow-wrap:anywhere;font-weight:600}
+.store-category-tabs button[aria-pressed=true]{background:#a88ddb;color:#19152c;border-color:#a88ddb}
+.store-category-mobile{display:none}
+.store-album-filter,.store-category-mobile{align-items:center;gap:6px;font-size:.82rem;min-width:0}
+.store-album-filter{display:flex;flex:0 1 210px}
+.store-filter-bar select{min-width:0;max-width:100%;width:100%;min-height:36px;border:1px solid #8990a2;border-radius:7px;background:var(--ptg-panel,#222c40);color:inherit;padding:6px 8px;font:inherit}
+.store-filter-count{font-size:.76rem;margin:4px 0 9px;opacity:.85}
+.store-featured-section{border:1px solid #9c83c77a;border-radius:10px;padding:10px;background:#a88ddb0c;margin-bottom:12px}
+.store-featured-section h3#store-featured-title,.store-regular-title{font-size:1rem;margin:0 0 8px}
+.store-featured-section .store-card{border-color:#a88ddb90}
+.cd-admin-volume .cd-admin-featured{display:flex;align-items:center;gap:7px;grid-column:1/-1}
+.cd-admin-featured input[type=checkbox]{width:auto;min-width:16px;height:16px;margin:0}
+.cd-admin-single{grid-template-columns:minmax(100px,160px) minmax(0,1fr)}
+@media(max-width:650px){.store-category-tabs{display:none}.store-category-mobile{display:flex;flex:1 1 135px}.store-album-filter{flex:1 1 135px}.store-filter-bar select{min-height:44px}}
+@media(max-width:480px){.cd-admin-single{grid-template-columns:1fr}}
