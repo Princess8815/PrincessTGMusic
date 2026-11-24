@@ -602,7 +602,7 @@ on("doc-export-word",async()=>{
  const button=$("doc-export-word");if(button.disabled)return;
  updateInfo();
  if(pages().some(p=>p.dataset.overflow==="true")&&!confirm("Some sheets overflow. Word may add extra pages. Export anyway?"))return;
- if(model.pages.some(p=>p.ink?.length)&&!confirm("Editable Word export does not yet preserve freehand ink. HTML, project backup and Print/PDF do. Continue?"))return;
+ if(collect().pages.some(p=>p.ink?.length)&&!confirm("Editable Word export does not yet preserve freehand ink. HTML, project backup and Print/PDF do. Continue?"))return;
  button.disabled=true;say("Building editable Word document…");
  try{const value=structuredClone(collect());const result=await makeDocx(value);download(filename()+".docx",result.blob,result.blob.type);say("Word document exported with page breaks."+(result.warnings.length?" "+result.warnings.join(" "):""));}
  catch(e){say("Word export failed: "+e.message);}
@@ -675,6 +675,7 @@ function swim(now){
 on("doc-bubbles-animation",()=>setSwimming(!swimming));on("bubbles-swim",()=>setSwimming(!swimming));
 on("bubbles-tip",()=>talk());on("bubbles-hide",()=>{setSwimming(false);mascot.hidden=true;});on("doc-bubbles-show",()=>{setSwimming(false);mascot.hidden=false;talk();});
 speech.textContent="Hi! I'm Bubbles. Pet me for a tip or turn on Swim!";
+setTimeout(()=>{if(!mascot.hidden&&!drag&&$("bubbles-speech").hidden)talk(true);},2500);
 setInterval(()=>{if(!document.hidden&&!mascot.hidden&&!drag&&$("bubbles-speech").hidden)talk(true);},30000);
 window.addEventListener("resize",placeSpeech);
 
