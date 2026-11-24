@@ -33,7 +33,7 @@ const styles=new Set("font-family font-size font-weight font-style text-decorati
 function safeHref(v){try{const u=new URL(v,location.href);return ["http:","https:","mailto:"].includes(u.protocol)||v.startsWith("#")?v:"";}catch{return "";}}
 function safeImage(v){return /^data:image\/(?:png|jpeg|webp|gif);base64,[a-z0-9+/=\s]+$/i.test(v)&&v.length<=5_000_000;}
 function sanitize(html){
- const doc=new DOMParser().parseFromString(String(html),"text/html"),out=document.createElement("div");
+ const doc=document.createElement("template"),out=document.createElement("div");doc.innerHTML=String(html);
  function visit(n,parent){
   if(n.nodeType===3){parent.append(document.createTextNode(n.data));return;}
   if(n.nodeType!==1)return;
@@ -52,7 +52,7 @@ function sanitize(html){
   for(const key of styles){const value=n.style.getPropertyValue(key);if(value&&value.length<180&&!/url\s*\(|expression|@import|javascript/i.test(value))e.style.setProperty(key,value);}
   for(const child of n.childNodes)visit(child,e);parent.append(e);
  }
- for(const child of doc.body.childNodes)visit(child,out);
+ for(const child of doc.content.childNodes)visit(child,out);
  return out.innerHTML;
 }
 function validInk(list){
@@ -135,8 +135,8 @@ function updateRibbonState(){
 }
 document.addEventListener("selectionchange",()=>{capture();updateRibbonState();});
 function restore(){
- const ed=editor();if(!ed)return false;ed.focus();const sel=getSelection();sel.removeAllRanges();
- if(range&&ed.contains(range.commonAncestorContainer))sel.addRange(range);
+ const ed=editor();if(!ed)return false;const savedRange=range?.cloneRange();ed.focus();const sel=getSelection();sel.removeAllRanges();
+ if(savedRange&&ed.contains(savedRange.commonAncestorContainer))sel.addRange(savedRange);
  else {const r=document.createRange();r.selectNodeContents(ed);r.collapse(false);sel.addRange(r);}
  return true;
 }
