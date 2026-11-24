@@ -1,4 +1,3 @@
-import {addToPlaylistControl} from "../../script/music-playlists.js";
 import {wireDragReorder} from "../../script/drag-reorder.js";
 
 const AUDIO_INDEX="audio/index.json";
@@ -14,10 +13,10 @@ let tracks=[],visibleTracks=[],currentPath="",isStopped=true;
 let disabledTracks=new Set(),currentAlbumFilter="all",currentSort="custom";
 
 function readJson(key,fallback){
-  try{return JSON.parse(localStorage.getItem(key)??JSON.stringify(fallback));}
+  try{const value=JSON.parse(localStorage.getItem(key)??"null");return Array.isArray(value)?value:fallback;}
   catch{return fallback;}
 }
-function saveJson(key,data){localStorage.setItem(key,JSON.stringify(data));}
+function saveJson(key,data){try{localStorage.setItem(key,JSON.stringify(data));}catch(error){console.warn("Unable to save player preference:",error);}}
 function slugify(title){
   return String(title||"").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g,"")
     .replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"song";
@@ -109,6 +108,29 @@ function reorderTracks(fromPath,toPath){
   currentSort="custom";sortSelect.value="custom";
   saveOrder();renderPlaylist();
 }
+function lazyPlaylistControl(getKeys,options={}){
+  const slot=document.createElement("span");
+  slot.className="ptg-playlist-slot";
+  const button=document.createElement("button");
+  button.type="button";button.className="ptg-playlist-launch";
+  button.textContent=options.label||"+ Playlist";
+  button.addEventListener("click",async()=>{
+    if(button.disabled)return;
+    button.disabled=true;
+    try{
+      const {addToPlaylistControl}=await import("../../script/music-playlists.js");
+      const control=addToPlaylistControl(getKeys,options);
+      if(!slot.isConnected)return;
+      slot.replaceChildren(control);
+      control.querySelector("summary")?.click();
+    }catch(error){
+      console.warn("Playlist controls unavailable:",error);
+      setStatus("Saved playlists are temporarily unavailable. Music playback is still available.");
+      button.disabled=false;
+    }
+  });
+  slot.append(button);return slot;
+}
 function createTrackRow(track,index){
   const item=document.createElement("li");
   const row=document.createElement("div");row.className="track";
@@ -166,7 +188,7 @@ function createTrackRow(track,index){
   // Keep the main playback action beside the title; secondary actions
   // share one tidy row on phones and remain grouped on desktop.
   actions.append(arrow("↑",-1),arrow("↓",1),enabled,details,
-    addToPlaylistControl(()=>[track.path]));
+    lazyPlaylistControl(()=>[track.path]));
   wireDragReorder(row,handle,track.path,"all-songs",reorderTracks);
   row.append(handle,titleBlock,play,actions);item.append(row);
   return item;
@@ -178,39 +200,78 @@ function renderPlaylist(){
   const enabled=playable().length;
   setStatus("Showing "+visibleTracks.length+" tracks; "+enabled+" enabled for playback.");
 }
+let loadGeneration=0;
+function catalogTracks(paths,details){
+  const valid=Array.isArray(details)?details.filter(song=>song&&typeof song==="object"):[];
+  const byTitle=new Map(valid.map(song=>[String(song.title||"").toLowerCase(),song]));
+  const byPath=new Map(valid.filter(song=>song.file)
+    .map(song=>[String(song.file).replace(/^\.\.\//,""),song]));
+  return paths.map(path=>{
+    const fallback=prettyName(path);
+    const detail=byPath.get(path)||byTitle.get(fallback.toLowerCase())||{};
+    const title=String(detail.title||fallback);
+    return {path,title,pageId:String(detail.pageId||slugify(title)),
+      albums:normalizeAlbums(detail.album),
+      releaseDate:String(detail.releaseDate||""),
+      displayReleaseDate:String(detail.displayReleaseDate||detail.releaseDate||"")};
+  });
+}
+function applyMetadata(details,paths,generation){
+  if(generation!==loadGeneration)return;
+  const updated=new Map(catalogTracks(paths,details).map(track=>[track.path,track]));
+  // Preserve any drag ordering performed while metadata was loading.
+  tracks=tracks.map(track=>updated.get(track.path)||track);
+  renderAlbumOptions();syncAlbumAction();renderPlaylist();
+  if(currentPath&&!isStopped){
+    const track=tracks.find(item=>item.path===currentPath);
+    if(track)nowPlaying.textContent=track.title+" — "+formatAlbums(track.albums);
+  }
+}
 async function loadTracks(){
+  const generation=++loadGeneration;
   setStatus("Loading audio index...");
+  // Start public JSON requests immediately. Firebase is optional enrichment,
+  // not a condition for seeing or playing any of the indexed songs.
+  const localDetails=fetch(SONG_DETAILS,{cache:"no-store"})
+    .then(response=>{if(!response.ok)throw Error("Song details: "+response.status);return response.json();})
+    .then(data=>Array.isArray(data)?data:[])
+    .catch(error=>{console.warn("Local song details unavailable:",error);return [];});
   try{
-    const {loadAllSongs}=await import("../../script/song-data.js");
-    const [response,details]=await Promise.all([
-      fetch(AUDIO_INDEX,{cache:"no-store"}),loadAllSongs(SONG_DETAILS)
-    ]);
+    const response=await fetch(AUDIO_INDEX,{cache:"no-store"});
     if(!response.ok)throw Error("Audio index error: "+response.status);
-    const paths=await response.json();
-    if(!Array.isArray(paths)||!paths.length)throw Error("No audio files found in audio/index.json");
-    const byTitle=new Map(details.map(song=>[String(song.title).toLowerCase(),song]));
-    const byPath=new Map(details.filter(song=>song.file)
-      .map(song=>[String(song.file).replace(/^\.\.\//,""),song]));
-    tracks=applyOrder(paths.map(path=>{
-      const fallback=prettyName(path);
-      const detail=byPath.get(path)||byTitle.get(fallback.toLowerCase())||{};
-      return {
-        path,title:detail.title||fallback,
-        pageId:detail.pageId||slugify(detail.title||fallback),
-        albums:normalizeAlbums(detail.album),
-        releaseDate:detail.releaseDate||"",
-        displayReleaseDate:detail.displayReleaseDate||detail.releaseDate||""
-      };
-    }));
+    const raw=await response.json();
+    const paths=Array.isArray(raw)?[...new Set(raw.map(entry=>typeof entry==="string"?entry:entry?.path||entry?.file||entry?.src).filter(path=>typeof path==="string"&&path.startsWith("audio/")))]:[];
+    if(!paths.length)throw Error("No audio files found in audio/index.json");
+    if(generation!==loadGeneration)return;
+    tracks=applyOrder(catalogTracks(paths,[]));
     disabledTracks=new Set(readJson(DISABLED_STORAGE_KEY,[]).filter(path=>paths.includes(path)));
+    // If refreshing while an album filter was selected, wait for metadata
+    // before deciding whether that album still exists.
+    const previousFilter=currentAlbumFilter;
+    if(previousFilter!=="all")currentAlbumFilter="all";
     renderAlbumOptions();syncAlbumAction();renderPlaylist();
+    // Local metadata is useful even when the Firebase SDK never loads.
+    let localApplied=false;
+    void localDetails.then(details=>{
+      if(generation!==loadGeneration||localApplied||!details.length)return;
+      localApplied=true;
+      if(previousFilter!=="all"&&currentAlbumFilter==="all")currentAlbumFilter=previousFilter;
+      applyMetadata(details,paths,generation);
+    });
+    void import("../../script/song-data.js").then(({loadAllSongs})=>loadAllSongs(SONG_DETAILS)).then(details=>{
+      if(generation!==loadGeneration||!Array.isArray(details)||!details.length)return;
+      localApplied=true;
+      if(previousFilter!=="all"&&currentAlbumFilter==="all")currentAlbumFilter=previousFilter;
+      applyMetadata(details,paths,generation);
+    }).catch(error=>console.warn("Live song details unavailable; public audio remains playable:",error));
   }catch(error){
-    tracks=[];visibleTracks=[];renderPlaylist();
-    setStatus("Error: "+error.message);
+    if(generation!==loadGeneration)return;
+    console.error("Audio catalog loading failed:",error);
+    setStatus("Could not load songs: "+error.message+". Tap Refresh to try again.");
   }
 }
 // Save a filtered full album into an existing or new profile playlist.
-const albumAction=addToPlaylistControl(
+const albumAction=lazyPlaylistControl(
   ()=>currentAlbumFilter==="all"?[]:
     tracks.filter(track=>track.albums.includes(currentAlbumFilter)).map(track=>track.path),
   {label:"+ Save album"}
@@ -225,7 +286,7 @@ $("playBtn").addEventListener("click",playCurrentOrTop);
 $("stopBtn").addEventListener("click",stopPlayback);
 $("refreshBtn").addEventListener("click",()=>void loadTracks());
 $("orderResetBtn").addEventListener("click",()=>{
-  localStorage.setItem(ORDER_STORAGE_KEY,"[]");void loadTracks();
+  saveJson(ORDER_STORAGE_KEY,[]);void loadTracks();
 });
 player.addEventListener("ended",goNext);
 albumFilter.addEventListener("change",()=>{
