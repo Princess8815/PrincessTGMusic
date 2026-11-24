@@ -254,6 +254,7 @@ async function applyAlbumChanges(originalName, updated, remove = false) {
     const nextId = slug(updated.name);
     if (nextId !== oldId) batch.delete(doc(db, "albums", oldId));
     batch.set(doc(db, "albums", nextId), {
+      ...(originalRecord?.store ? {store:originalRecord.store} : {}),
       ...updated, updatedAt: serverTimestamp()
     }, { merge: true });
   }
