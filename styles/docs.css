@@ -87,3 +87,9 @@ body.docs-body .bubbles[data-view="right"] .bubbles-side{transform:scaleX(-1)}
 #doc-share-dialog button{padding:9px;border-radius:8px;background:#59354f;color:#fff;border:1px solid #ba81ae;cursor:pointer}
 #doc-share-dialog button:disabled{opacity:.5;cursor:not-allowed}#doc-share-status{color:#f7bce1;font-weight:650;overflow-wrap:anywhere}
 @media print{#doc-share-dialog{display:none!important}}
+
+.docs-board #board-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,245px),1fr));gap:13px;margin:15px 0}
+.docs-board-card{border:1px solid #8a628c;background:#2e2339;border-radius:13px;padding:17px}
+.docs-board-card a{color:#ffb9df!important;font-size:1.1rem;font-weight:800;overflow-wrap:anywhere}
+.docs-board-card p{color:#dfc4d9;margin:8px 0 0}
+#board-preview{width:100%;height:82vh;display:block;border:1px solid #8a628c;border-radius:10px;background:#ded6e1}
