@@ -1,0 +1,15 @@
+name = "princesstg-cd-store"
+main = "worker.js"
+compatibility_date = "2026-11-24"
+[vars]
+FIREBASE_PROJECT = "music-and-poetry"
+STORE_MODE = "test"
+ALLOWED_ORIGINS = "https://princess8815.github.io,http://localhost:5502,http://127.0.0.1:5502"
+SHIPPING_ZONES = "[]"
+CD_TAX_CODE = ""
+[[d1_databases]]
+binding = "ORDERS"
+database_name = "princesstg-cd-orders"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+[triggers]
+crons = ["*/15 * * * *"]
