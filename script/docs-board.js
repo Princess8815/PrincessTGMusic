@@ -1,3 +1,4 @@
+import {discoverAxolotl} from "./reef-collection.js";
 import {boardPage,readShared,validToken,shareUrl} from "./docs-share.js";
 import {normalizeDocLink,isSiteLink,headingId,appendDocText} from "./docs-links.js";
 const siteRoot=new URL("../",import.meta.url);
@@ -53,6 +54,7 @@ function preview(value){
 let pendingExternal=null;
 const leaveDialog=$("board-leave-dialog");
 function openExternal(url){
+ discoverAxolotl("pebble");
  pendingExternal=url.href;
  $("board-leave-url").textContent=url.href;
  $("board-leave-host").textContent=url.hostname;
