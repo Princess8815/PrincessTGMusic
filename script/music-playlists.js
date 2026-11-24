@@ -1,4 +1,5 @@
 import {auth,db} from "./firebase.js";
+import {showGuestReef} from "./reef-collection.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {collection,doc,onSnapshot,runTransaction,serverTimestamp,getDocsFromServer,writeBatch} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
@@ -230,6 +231,11 @@ export function addToPlaylistControl(getKeys, options = {}) {
   const summary=document.createElement("summary");
   summary.textContent=options.label || "+ Playlist";
   root.append(summary);
+  summary.addEventListener("click",event=>{
+    if(auth.currentUser)return;
+    event.preventDefault();
+    void showGuestReef().then(shown=>{if(!shown)root.open=true;}).catch(e=>{console.warn(e);root.open=true;});
+  });
   const inner=document.createElement("div");
   inner.className="ptg-add-playlist__content";
   const select=document.createElement("select");
