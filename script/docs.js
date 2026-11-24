@@ -4,6 +4,7 @@ import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/fire
 import {listCloud,loadCloud,saveCloud,deleteCloud} from "./docs-cloud.js";
 import {shareStatus,shareSnapshot,revokeShare,shareUrl} from "./docs-share.js";
 import {makeDocx} from "./docs-word-export.js";
+import {normalizeDocLink} from "./docs-links.js";
 const $=id=>document.getElementById(id);
 const app=$("docs-app"),host=$("doc-pages");
 const ns="http://www.w3.org/2000/svg";
@@ -31,7 +32,13 @@ function safeLayout(value={}){
 // Do not retain scripts, event handlers, embedded frames, network images or unsafe URLs.
 const tags=new Set("P DIV SPAN BR B STRONG I EM U S STRIKE DEL SUB SUP H1 H2 H3 H4 H5 H6 BLOCKQUOTE PRE CODE UL OL LI TABLE THEAD TBODY TFOOT TR TD TH HR A IMG FONT".split(" "));
 const styles=new Set("font-family font-size font-weight font-style text-decoration text-decoration-line color background-color text-align text-indent line-height margin-left margin-right margin-top margin-bottom padding-left width height max-width vertical-align list-style-type border border-collapse".split(" "));
-function safeHref(v){try{const u=new URL(v,location.href);return ["http:","https:","mailto:"].includes(u.protocol)||v.startsWith("#")?v:"";}catch{return "";}}
+function safeHref(v){
+ const raw=String(v??"").trim();
+ if(/^mailto:[^\s\u0000-\u001f]+$/i.test(raw)&&raw.length<=4096)return raw;
+ const target=normalizeDocLink(raw,location.href);
+ if(!target)return "";
+ return target.kind==="heading"?"#"+target.id:target.url.href;
+}
 function safeImage(v){return /^data:image\/(?:png|jpeg|webp|gif);base64,[a-z0-9+/=\s]+$/i.test(v)&&v.length<=5_000_000;}
 function sanitize(html){
  const doc=document.createElement("template"),out=document.createElement("div");doc.innerHTML=String(html);
@@ -525,7 +532,7 @@ on("doc-table",insertTable);
 function currentCell(){if(!restore())return null;const n=getSelection().anchorNode;return (n?.nodeType===1?n:n?.parentElement)?.closest("td,th")||null;}
 on("doc-table-row",()=>{const cell=currentCell();if(!cell){say("Click inside a table first.");return;}const table=cell.closest("table"),row=cell.parentElement;const fresh=table.insertRow(row.rowIndex+1);for(let i=0;i<row.cells.length;i++)fresh.insertCell().innerHTML="<br>";mark();});
 on("doc-table-column",()=>{const cell=currentCell();if(!cell){say("Click inside a table first.");return;}for(const row of cell.closest("table").rows)row.insertCell(Math.min(cell.cellIndex+1,row.cells.length)).innerHTML="<br>";mark();});
-on("doc-link",()=>{const v=prompt("Enter an http(s) URL or mailto link");if(v&&safeHref(v))cmd("createLink",v);});on("doc-rule",()=>cmd("insertHorizontalRule"));on("doc-symbol",()=>{const v=prompt("Enter a symbol","♥");if(v)cmd("insertText",v);});
+on("doc-link",()=>{const v=prompt("Enter an http(s) URL or mailto link");const href=v&&safeHref(v);if(href)cmd("createLink",href);else if(v)say("Enter a valid website or mailto link.");});on("doc-rule",()=>cmd("insertHorizontalRule"));on("doc-symbol",()=>{const v=prompt("Enter a symbol","♥");if(v)cmd("insertText",v);});
 on("doc-header-footer",()=>{const h=prompt("Header text",model.layout.header);if(h===null)return;const f=prompt("Footer text",model.layout.footer);if(f===null)return;model.layout=safeLayout({...model.layout,header:h,footer:f});updateDecorations();mark();});
 on("doc-page-numbers",()=>{model.layout.numbers=!model.layout.numbers;updateDecorations();mark();});
 on("doc-draw-toggle",()=>toggleDraw(!drawing));on("doc-erase",()=>{if(!drawing)toggleDraw(true);eraser=!eraser;$("doc-erase").setAttribute("aria-pressed",String(eraser));say(eraser?"Eraser: tap an ink stroke to remove it.":"Pen active.");});
