@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS orders (
  intent TEXT UNIQUE, status TEXT NOT NULL DEFAULT 'pending',
  tax_transaction TEXT, notice_sent INTEGER NOT NULL DEFAULT 0,
  notice_lock INTEGER NOT NULL DEFAULT 0,
- reward_uid TEXT, reward_done INTEGER NOT NULL DEFAULT 0
+ reward_uid TEXT, reward_done INTEGER NOT NULL DEFAULT 0, reward_added TEXT NOT NULL DEFAULT '[]'
 );
 CREATE INDEX IF NOT EXISTS orders_fulfillment ON orders(status,notice_sent,notice_lock);
 CREATE INDEX IF NOT EXISTS orders_reward ON orders(status,reward_done,reward_uid);
