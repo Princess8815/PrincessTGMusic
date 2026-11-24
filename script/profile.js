@@ -3,6 +3,7 @@ import { auth, db, usingLocalFirebaseEmulators, checkLocalFirestoreEmulator } fr
 import {hasOwnerVerificationBypass} from "./verification-access.js";
 import { waitForUserRecord } from "./user-data.js";
 import "./ban-expiry.js";
+import {revokeShare} from "./docs-share.js";
 
 import {
   onAuthStateChanged,
@@ -535,6 +536,8 @@ async function deletePrivateHealthBeforeClosure(uid){
 // Delete only the closing member's own documents; Firestore does not
 // automatically remove nested chunks when a parent document is deleted.
 async function deletePrivateDocsBeforeClosure(uid){
+  const shares=await getDocsFromServer(collection(db,"users",uid,"documentShares"));
+  for(const share of shares.docs)await revokeShare(uid,share.id);
   const library=await getDocsFromServer(collection(db,"users",uid,"documents"));
   for(const record of library.docs){
     const chunks=await getDocsFromServer(collection(record.ref,"chunks"));
