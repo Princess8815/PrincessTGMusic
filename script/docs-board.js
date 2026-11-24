@@ -1,5 +1,5 @@
 import {boardPage,readShared,validToken,shareUrl} from "./docs-share.js";
-import {normalizeDocLink,isSiteLink,headingId} from "./docs-links.js";
+import {normalizeDocLink,isSiteLink,headingId,appendDocText} from "./docs-links.js";
 const siteRoot=new URL("../",import.meta.url);
 const frame=()=>$("board-preview");
 const $=id=>document.getElementById(id);
@@ -30,7 +30,7 @@ function preview(value){
   const styles=new Set("font-family font-size font-weight font-style text-decoration text-decoration-line color background-color text-align text-indent line-height margin-left margin-right margin-top margin-bottom padding-left width height max-width vertical-align list-style-type border border-collapse".split(" "));
   const out=document.createElement("div");
   function visit(n,parent){
-   if(n.nodeType===3){parent.append(document.createTextNode(n.data));return;}
+   if(n.nodeType===3){appendDocText(parent,n.data,bindLink);return;}
    if(n.nodeType!==1)return;
    if(!tags.has(n.tagName)){if(!["SCRIPT","STYLE","IFRAME","OBJECT","EMBED","SVG","MATH","FORM","META","LINK","BASE"].includes(n.tagName))for(const c of n.childNodes)visit(c,parent);return;}
    const e=document.createElement(n.tagName.toLowerCase());
@@ -40,7 +40,7 @@ function preview(value){
    for(const k of styles){const v=n.style.getPropertyValue(k);if(v&&v.length<180&&!/url\s*\(|expression|@import|javascript/i.test(v))e.style.setProperty(k,v);}
    if(n.tagName==="FONT")for(const k of ["face","size","color"]){const v=n.getAttribute(k);if(v&&v.length<100&&!/[<>{}]/.test(v))e.setAttribute(k,v);}
    if(["TD","TH"].includes(n.tagName))for(const k of ["colspan","rowspan"]){const v=Number(n.getAttribute(k));if(Number.isInteger(v)&&v>=1&&v<=30)e.setAttribute(k,v);}
-   for(const c of n.childNodes)visit(c,e);parent.append(e);
+   parent.append(e);for(const c of n.childNodes)visit(c,e);
   }
   for(const n of d.content.childNodes)visit(n,out);return out.innerHTML;
  }
