@@ -16,6 +16,8 @@ const reef=[
  ["tide","Tide","#417f9b","#b0e2ee","star"]
 ];
 const ids=new Set(reef.map(f=>f[0]));
+const purchaseOnly=new Set(["shelly","tide"]);
+const encounterIds=[...ids].filter(id=>!purchaseOnly.has(id));
 const prefix="ptg-reef-pending-v1:";
 const pathFor=uid=>collection(db,"users",uid,"axolotls");
 const pendingKey=(id,uid=null)=>prefix+id+(uid?":"+uid:"");
@@ -23,7 +25,7 @@ const current=uid=>auth.currentUser?.uid===uid;
 const volatile=new Set(),confirmed=new Set();
 let queue=Promise.resolve(),retryTimer,attempts=0;
 const claimErrors=new Map();
-const pendingFor=uid=>[...ids].filter(id=>hasPending(id,uid));
+const pendingFor=uid=>encounterIds.filter(id=>hasPending(id,uid));
 function hasPending(id,uid=null){
  const key=pendingKey(id,uid);
  try{return localStorage.getItem(key)!==null||volatile.has(key);}catch{return volatile.has(key);}
@@ -39,7 +41,7 @@ function removePending(id,uid=null){
 function notify(){window.dispatchEvent(new Event("princesstg:reef-change"));}
 function bindPending(uid){
  if(!current(uid))return;
- for(const id of ids){
+ for(const id of encounterIds){
   if(hasPending(id)){
    writePending(id,uid);removePending(id);
   }
@@ -60,7 +62,7 @@ async function syncPending(uid){
   if(current(uid)){claimErrors.set(uid,e.message);notify();scheduleRetry(uid);}
   return;
  }
- for(const id of ids){
+ for(const id of encounterIds){
   if(!current(uid))return;
   if(!hasPending(id,uid))continue;
   if(confirmed.has(uid+":"+id)){removePending(id,uid);continue;}
@@ -106,7 +108,7 @@ window.addEventListener("princesstg-user-ready",e=>{
  if(e.detail?.uid===auth.currentUser?.uid)void claimPendingAxolotls();
 });
 export function discoverAxolotl(id){
- if(!ids.has(id))return;
+ if(!ids.has(id)||purchaseOnly.has(id))return;
  const uid=auth.currentUser?.uid||null;
  if(uid&&confirmed.has(uid+":"+id))return;
  writePending(id,uid);
@@ -166,6 +168,12 @@ function installStyles(){
  const link=document.createElement("link");link.rel="stylesheet";link.href=new URL("../styles/reef-collection.css",import.meta.url).href;link.dataset.reefStyle="1";document.head.append(link);
 }
 
+export function announcePurchaseDiscovery(id){
+ if(!purchaseOnly.has(id)||!auth.currentUser)return;
+ const uid=auth.currentUser.uid;
+ // Verify the server-created record before showing a discovery notice.
+ void getDocFromServer(doc(pathFor(uid),id)).then(snap=>{if(current(uid)&&snap.exists())announceDiscovery(uid,id);}).catch(()=>{});
+}
 export function axolotlPortrait(id){return portrait(id);}
 function portrait(id){
  const f=reef.find(x=>x[0]===id);
