@@ -1,4 +1,7 @@
-// PrincessTG Docs: browser-native rich-text editor and IndexedDB document library.
+// PrincessTG Docs: Firebase-backed document library and account-scoped local backups.
+import {auth,db as firestore} from "./firebase.js";
+import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+import {listCloud,loadCloud,saveCloud,deleteCloud} from "./docs-cloud.js";
 const $=id=>document.getElementById(id);
 const app=$("docs-app"),host=$("doc-pages");
 const ns="http://www.w3.org/2000/svg";
@@ -6,7 +9,9 @@ const presets={letter:[8.5,11],a4:[8.27,11.69],legal:[8.5,14],a5:[5.83,8.27],hal
 const defaults={paper:"letter",orientation:"portrait",width:8.5,height:11,top:1,bottom:1,left:1,right:1,header:"",footer:"",numbers:false};
 const id=()=>crypto.randomUUID?.()||Date.now()+"-"+Math.random().toString(36).slice(2);
 const blank=()=>({id:id(),title:"Untitled document",layout:{...defaults},pages:[{html:"<p><br></p>",ink:[]}],updated:Date.now()});
-let model=blank(),active=0,range=null,selectedImage=null,drawing=false,eraser=false,saveTimer,dirty=false,zoom=.9;
+let model=blank(),active=0,range=null,selectedImage=null,drawing=false,eraser=false,saveTimer,backupTimer,dirty=false,zoom=.9;
+let uid=null,scope=null,generation=0,revision=0,editVersion=0,ready=false;
+let pendingCloud=false,saveQueue=Promise.resolve();
 const pages=()=>[...host.querySelectorAll(".doc-page-wrap")];
 const editors=()=>[...host.querySelectorAll(".doc-content")];
 const editor=()=>editors()[active];
@@ -132,7 +137,14 @@ function collect(){
   ink:[...w.querySelectorAll(".doc-ink path")].map(p=>({d:p.getAttribute("d"),color:p.getAttribute("stroke"),width:Number(p.getAttribute("stroke-width"))}))}));
  model.updated=Date.now();return model;
 }
-function mark(){dirty=true;updateInfo();say("Editing · autosaves locally");clearTimeout(saveTimer);saveTimer=setTimeout(()=>void save(),650);}
+function mark(){
+ if(!ready)return;
+ dirty=true;pendingCloud=!!uid;editVersion++;updateInfo();
+ say(uid?"Editing · local backup and cloud autosave pending":"Editing · guest local autosave pending");
+ clearTimeout(backupTimer);clearTimeout(saveTimer);
+ backupTimer=setTimeout(()=>void backupOnly(),650);
+ saveTimer=setTimeout(()=>void save(),uid?12000:1200);
+}
 function addPage(at=pages().length,data={html:"<p><br></p>",ink:[]}){
  if(pages().length>=300){say("Maximum of 300 pages per document.");return;}
  const p=makePage(data,at);host.insertBefore(p,pages()[at]||null);updateDecorations();go(at,true);mark();
@@ -235,16 +247,186 @@ function wireInk(svg,wrap){
  const stop=()=>{if(path){path=null;mark();}};svg.addEventListener("pointerup",stop);svg.addEventListener("pointercancel",stop);
 }
 function toggleDraw(on){drawing=on;app.dataset.drawing=String(on);$("doc-draw-toggle").textContent=on?"Finish drawing":"Start drawing";$("doc-draw-toggle").setAttribute("aria-pressed",String(on));if(!on){eraser=false;$("doc-erase").setAttribute("aria-pressed","false");}}
-const dbReady=new Promise((resolve,reject)=>{const request=indexedDB.open("PrincessTGDocs",1);request.onupgradeneeded=()=>request.result.createObjectStore("documents",{keyPath:"id"});request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);});
-async function dbOp(mode,operation){const db=await dbReady;return new Promise((resolve,reject)=>{const tx=db.transaction("documents",mode),req=operation(tx.objectStore("documents"));let value;req.onsuccess=()=>value=req.result;tx.oncomplete=()=>resolve(value);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});}
-async function save(){clearTimeout(saveTimer);try{const value=structuredClone(collect());await dbOp("readwrite",s=>s.put(value));localStorage.setItem("ptg-doc-last",value.id);dirty=false;say("Saved in this browser · "+new Date().toLocaleTimeString());return true;}catch(e){say("Could not save locally. Download an editable backup. "+e.message);return false;}}
-async function switchDoc(value){if(dirty&&!(await save())&&!confirm("Local save failed. Switch documents anyway?"))return;model=normalize(value);render();await save();}
+// Local backups use a separate account/project scoped store. The old
+// unscoped guest library is not uploaded or exposed to signed-in accounts.
+const dbReady=new Promise((resolve,reject)=>{
+ const request=indexedDB.open("PrincessTGDocs",2);
+ request.onupgradeneeded=()=>{
+  if(!request.result.objectStoreNames.contains("documents"))request.result.createObjectStore("documents",{keyPath:"id"});
+  if(!request.result.objectStoreNames.contains("scopedDocuments")){
+   const store=request.result.createObjectStore("scopedDocuments",{keyPath:"key"});store.createIndex("scope","scope");
+  }
+ };
+ request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);
+});
+dbReady.catch(()=>{});
+async function dbOp(mode,operation,storeName="scopedDocuments"){
+ const db=await dbReady;return new Promise((resolve,reject)=>{
+  const tx=db.transaction(storeName,mode),req=operation(tx.objectStore(storeName));let value;
+  req.onsuccess=()=>value=req.result;tx.oncomplete=()=>resolve(value);
+  tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
+ });
+}
+const scopeFor=user=>firestore.app.options.projectId+"|"+(user?.uid||"guest");
+const localKey=(scope,id)=>scope+"|"+id;
+const lastKey=scope=>"ptg-doc-last|"+scope;
+function remember(scope,id){try{localStorage.setItem(lastKey(scope),id);}catch{}}
+function lastId(scope){try{return localStorage.getItem(lastKey(scope));}catch{return null;}}
+async function cache(value,owner,rev,pending){
+ await dbOp("readwrite",store=>store.put({key:localKey(owner,value.id),scope:owner,id:value.id,value,revision:rev,pending}));
+ remember(owner,value.id);
+}
+const ownBackup=(owner,id)=>dbOp("readonly",store=>store.get(localKey(owner,id)));
+const ownBackups=owner=>dbOp("readonly",store=>store.index("scope").getAll(owner));
+function snapshot(){
+ return {value:structuredClone(collect()),scope,uid,revision,version:editVersion,generation,pending:pendingCloud};
+}
+function stillCurrent(s){return s.generation===generation&&s.scope===scope&&s.value.id===model.id;}
+async function backupOnly(){
+ if(!ready||!scope)return false;
+ const s=snapshot();
+ try{await cache(s.value,s.scope,s.revision,s.pending);if(stillCurrent(s)&&s.version===editVersion&&!uid){dirty=false;say("Saved locally · sign in for cloud documents");}return true;}
+ catch(e){if(stillCurrent(s))say("Local backup failed: "+e.message);return false;}
+}
+async function save(){
+ clearTimeout(saveTimer);clearTimeout(backupTimer);
+ if(!ready||!scope)return false;
+ // Queue saves, and capture the latest revision after any preceding save.
+ const token=generation,docId=model.id;
+ const task=async()=>{
+  if(!ready||token!==generation||model.id!==docId)return false;
+  const s=snapshot();
+  let localOK=false;
+  try{await cache(s.value,s.scope,s.revision,s.pending);localOK=true;}catch{}
+  if(!stillCurrent(s))return localOK;
+  if(!s.uid){
+   if(s.version===editVersion){dirty=!localOK;say(localOK?"Saved locally · sign in for cloud documents":"Local save failed. Download an editable backup.");}
+   return localOK;
+  }
+  if(auth.currentUser?.uid!==s.uid)return localOK;
+  if(!s.pending&&s.revision>0){
+   if(s.version===editVersion){dirty=false;say("Saved to Firebase · cloud document up to date");}
+   return true;
+  }
+  say("Saving document to Firebase…");
+  try{
+   const rev=await saveCloud(s.uid,s.value,s.revision);
+   if(!stillCurrent(s))return true;
+   revision=rev;
+   const newer=s.version!==editVersion;
+   // Preserve edits made while the network request was running.
+   const value=newer?structuredClone(collect()):s.value;
+   pendingCloud=newer;dirty=newer;
+   try{await cache(value,s.scope,rev,newer);}catch{}
+   if(stillCurrent(s)&&!newer)say("Saved to Firebase · "+new Date().toLocaleTimeString());
+   else if(stillCurrent(s))say("New edits pending cloud autosave");
+   return true;
+  }catch(e){
+   if(stillCurrent(s)){
+    pendingCloud=true;dirty=!localOK;
+    say((localOK?"Local backup saved; Firebase not saved. ":"Save failed. Download an editable backup. ")+e.message);
+   }
+   return false;
+  }
+ };
+ const result=saveQueue.then(task,task);saveQueue=result.catch(()=>{});return result;
+}
+function openValue(value,rev=0,pending=false){
+ model=normalize(value);revision=rev;pendingCloud=pending;dirty=false;editVersion++;
+ toggleDraw(false);render();remember(scope,model.id);
+}
+async function switchDoc(value,rev=0,pending=false){
+ const token=generation;
+ if((dirty||pendingCloud)&&!(await save())&&!confirm("Firebase save did not finish. Your local backup may contain unsynced edits. Switch anyway?"))return;
+ if(token!==generation)return;
+ clearTimeout(saveTimer);clearTimeout(backupTimer);openValue(value,rev,pending);
+ if(rev===0||pending){pendingCloud=!!uid;dirty=true;await save();}
+ else say("Opened "+model.title+" from Firebase");
+}
 async function library(){
- const list=$("doc-library-list");list.replaceChildren();$("doc-library-dialog").showModal();
- try{const records=await dbOp("readonly",s=>s.getAll());records.sort((a,b)=>b.updated-a.updated);
- for(const r of records){const row=document.createElement("div");row.className="docs-library-row";const info=document.createElement("div");info.append(node("strong",r.title),node("small",r.pages.length+" page(s) · "+new Date(r.updated).toLocaleString()));const open=node("button","Open");open.onclick=async()=>{$("doc-library-dialog").close();await switchDoc(r);};const del=node("button","Delete");del.onclick=async()=>{if(r.id===model.id){say("Open another document before deleting this one.");return;}if(confirm("Delete "+r.title+"?")){await dbOp("readwrite",s=>s.delete(r.id));row.remove();}};row.append(info,open,del);list.append(row);}
- if(!records.length)list.append(node("p","No saved documents yet."));
- }catch(e){list.append(node("p","Local document library unavailable: "+e.message));}
+ if(!ready)return;
+ const token=generation,owner=scope,ownerUid=uid;
+ const list=$("doc-library-list");list.replaceChildren(node("p","Loading documents…"));$("doc-library-dialog").showModal();
+ let cloud=[],local=[],errors=[];
+ try{local=await ownBackups(owner);}catch(e){errors.push("Local backups unavailable: "+e.message);}
+ if(ownerUid){try{cloud=await listCloud(ownerUid);}catch(e){errors.push("Firebase library unavailable: "+e.message);}}
+ else {
+  // Existing pre-Firebase guest documents remain available only in guest mode.
+  try{const old=await dbOp("readonly",s=>s.getAll(),"documents");for(const value of old)if(!local.some(x=>x.id===value.id))local.push({id:value.id,value,revision:0,pending:false,legacy:true});}catch{}
+ }
+ if(token!==generation)return;
+ list.replaceChildren();
+ for(const error of errors)list.append(node("p",error));
+ function row(title,subtitle,openAction,deleteAction,copyAction){
+  const row=document.createElement("div");row.className="docs-library-row";
+  const info=document.createElement("div");info.append(node("strong",title),node("small",subtitle));
+  const open=node("button","Open");open.onclick=async()=>{try{if(token!==generation)return;await openAction();}catch(e){say("Cannot open: "+e.message);alert(e.message);}};
+  row.append(info,open);
+  if(copyAction){const copy=node("button","Recover copy");copy.onclick=async()=>{try{await copyAction();}catch(e){alert(e.message);}};row.append(copy);}
+  if(deleteAction){const del=node("button","Delete");del.onclick=async()=>{try{if(token!==generation)return;await deleteAction();row.remove();}catch(e){alert(e.message);}};row.append(del);}
+  list.append(row);
+ }
+ const byId=new Map(local.map(r=>[r.id,r]));
+ const cloudIds=new Set(cloud.map(r=>r.id));
+ cloud.sort((a,b)=>(b.updatedAt?.toMillis?.()||0)-(a.updatedAt?.toMillis?.()||0));
+ for(const item of cloud){
+  const backup=byId.get(item.id);
+  row(item.title||"Untitled document",(item.pageCount||0)+" page(s) · Firebase"+(backup?.pending?" · unsynced local edits":""),async()=>{
+   const result=await loadCloud(ownerUid,item.id);if(token!==generation)return;
+   if(!result)throw Error("Cloud document no longer exists.");
+   if(backup?.pending&&!confirm("Open the cloud version? Unsynced local edits are available through Recover copy."))return;
+   if(item.id===model.id&&(dirty||pendingCloud)){if(!confirm("Replace the current view with the saved cloud version? Export a backup first if needed."))return;clearTimeout(saveTimer);clearTimeout(backupTimer);await backupOnly();pendingCloud=false;dirty=false;}
+   $("doc-library-dialog").close();await switchDoc(result.value,result.revision,false);
+  },async()=>{
+   if(item.id===model.id)throw Error("Open another document before deleting this one.");
+   if(!confirm("Permanently delete "+item.title+" from Firebase and this device's backup?"))throw Error("Deletion canceled.");
+   await deleteCloud(ownerUid,item.id,item.revision);
+   await dbOp("readwrite",s=>s.delete(localKey(owner,item.id))).catch(()=>{});
+  },backup?.pending?async()=>{
+   if(token!==generation)return;const value=structuredClone(backup.value);value.id=id();value.title=(value.title+" (recovered copy)").slice(0,120);
+   $("doc-library-dialog").close();await switchDoc(value,0,true);
+  }:null);
+ }
+ for(const r of local.filter(x=>!cloudIds.has(x.id)).sort((a,b)=>b.value.updated-a.value.updated)){
+  row(r.value.title,r.value.pages.length+" page(s) · "+(ownerUid?"Local backup / not listed in Firebase":"Guest local document"),async()=>{
+   $("doc-library-dialog").close();await switchDoc(r.value,r.revision,!!ownerUid);
+  },async()=>{
+   if(r.id===model.id)throw Error("Open another document before deleting this one.");
+   if(!confirm("Delete this local backup?"))throw Error("Deletion canceled.");
+   if(r.legacy)await dbOp("readwrite",s=>s.delete(r.id),"documents");
+   else await dbOp("readwrite",s=>s.delete(localKey(owner,r.id)));
+  });
+ }
+ if(!cloud.length&&!local.length&&!errors.length)list.append(node("p","No saved documents yet."));
+}
+async function initializeAccount(user){
+ const nextScope=scopeFor(user);
+ if(ready&&scope===nextScope)return;
+ // Capture outgoing edits before hiding the workspace. Never upload a
+ // document to another user's account during authentication changes.
+ if(ready&&scope&&(dirty||pendingCloud)){
+  const old=snapshot();void cache(old.value,old.scope,old.revision,old.pending).catch(()=>{});
+ }
+ const token=++generation;clearTimeout(saveTimer);clearTimeout(backupTimer);
+ ready=false;scope=nextScope;uid=user?.uid||null;dirty=false;pendingCloud=false;revision=0;
+ if($("doc-library-dialog").open)$("doc-library-dialog").close();
+ host.replaceChildren();$("doc-title").value="";app.inert=true;
+ say("Loading your "+(uid?"Firebase":"guest")+" workspace…");
+ let backup=null;
+ try{const last=lastId(scope);if(last)backup=await ownBackup(scope,last);}catch{}
+ if(token!==generation)return;
+ let value=blank(),rev=0,pending=false,notice=uid?"Ready · sign-in cloud saves enabled":"Guest mode · local saves only";
+ if(backup){
+  value=backup.value;rev=backup.revision||0;pending=!!backup.pending;
+  if(uid&&!pending){
+   try{const result=await loadCloud(uid,backup.id);if(result){value=result.value;rev=result.revision;}else{value=blank();rev=0;}}
+   catch(e){notice="Firebase unavailable. Showing your account's local backup: "+e.message;}
+  }else if(uid&&pending)notice="Recovered unsynced local edits. Click Save to sync to Firebase.";
+ }
+ if(token!==generation)return;
+ ready=true;app.inert=false;openValue(value,rev,pending);
+ $("doc-storage-mode").textContent=uid?"Firebase account storage":"Guest · local storage";
+ say(notice);
 }
 function download(name,body,type){const a=document.createElement("a");const url=URL.createObjectURL(new Blob([body],{type}));a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);}
 const filename=()=>($("doc-title").value.trim()||"document").replace(/[\\/:*?"<>|]/g,"_").slice(0,100);
@@ -279,18 +461,18 @@ on("doc-layout-apply",()=>{model.layout=safeLayout({...model.layout,paper:$("doc
 $("doc-zoom").oninput=e=>setZoom(Number(e.target.value));on("doc-fit",()=>setZoom(Math.floor(($("doc-paper-scroll").clientWidth-50)/(model.layout.width*96)*100)));
 on("doc-toc",()=>toc());on("doc-toc-refresh",()=>toc(true));on("doc-find",()=>{const v=prompt("Find text");if(!v)return;const q=v.toLowerCase();const i=editors().findIndex(e=>e.innerText.toLowerCase().includes(q));if(i<0){say("Text not found.");return;}go(i,true);say("Text found on page "+(i+1)+".");});
 on("doc-replace",()=>{const a=prompt("Find exact text");if(!a)return;const b=prompt("Replace with","");if(b===null)return;let count=0;for(const ed of editors()){const walker=document.createTreeWalker(ed,NodeFilter.SHOW_TEXT);let n;while(n=walker.nextNode()){const parts=n.data.split(a);if(parts.length>1){count+=parts.length-1;n.data=parts.join(b);}}}mark();say("Replaced "+count+" occurrence(s) within text runs.");});
-on("doc-save",()=>void save());on("doc-print",printDoc);on("doc-new",()=>void switchDoc(blank()));on("doc-library",()=>void save().then(library));on("doc-library-close",()=>$("doc-library-dialog").close());
+on("doc-save",()=>void save());on("doc-print",printDoc);on("doc-new",()=>void switchDoc(blank()));on("doc-library",()=>void library());on("doc-library-close",()=>$("doc-library-dialog").close());
 on("doc-import",()=>$("doc-import-file").click());$("doc-import-file").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;try{if(f.size>25_000_000)throw Error("File exceeds 25 MB.");const text=await f.text();let value=blank();value.title=f.name.replace(/\.[^.]+$/,"");if(/\.(ptgdoc|json)$/i.test(f.name)){value=normalize(JSON.parse(text));value.id=id();}else if(/\.html?$/i.test(f.name)){value.pages=[{html:sanitize(text),ink:[]}];}else{const p=node("p",text);p.style.whiteSpace="pre-wrap";value.pages=[{html:text.split(/\r?\n/).map(x=>node("p",x).outerHTML).join(""),ink:[]}];}await switchDoc(value);}catch(error){say("Could not open file: "+error.message);}};
 on("doc-export",()=>download(filename()+".ptgdoc",JSON.stringify(collect()),"application/json"));
 on("doc-export-html",()=>download(filename()+".html",htmlExport(),"text/html;charset=utf-8"));
 on("doc-export-text",()=>download(filename()+".txt",editors().map(e=>e.innerText).join("\n\f\n"),"text/plain;charset=utf-8"));
 on("doc-export-word",()=>download(filename()+".doc",htmlExport(),"application/msword"));
 $("doc-title").oninput=mark;
-window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue="";}});
+window.addEventListener("beforeunload",e=>{if(dirty||pendingCloud){e.preventDefault();e.returnValue="";}});
 document.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="s"){e.preventDefault();void save();}if((e.ctrlKey||e.metaKey)&&e.key==="Enter"&&editor()?.contains(document.activeElement)){e.preventDefault();breakPage();}});
 window.addEventListener("resize",updateInfo);
-render();setZoom(90);
-(async()=>{try{const last=localStorage.getItem("ptg-doc-last");if(last){const value=await dbOp("readonly",s=>s.get(last));if(value&&!dirty){model=normalize(value);render();say("Opened "+model.title);return;}}say("Ready · your documents are saved locally in this browser.");}catch(e){say("Local storage unavailable. You can still download a document backup.");}})();
+render();setZoom(90);app.inert=true;
+onAuthStateChanged(auth,user=>void initializeAccount(user),error=>say("Account access unavailable: "+error.message));
 
 // Bubbles is an original pink axolotl. No third-party character or artwork.
 const mascot=$("bubbles"),pet=$("bubbles-pet"),speech=$("bubbles-message");
@@ -298,7 +480,7 @@ const tips=[
  "A blank page is just a very quiet pond. Start with one sentence.",
  "Use headings and I can help make a table of contents!",
  "My official job is morale. My unofficial job is inspecting imaginary snacks.",
- "Ctrl+S saves your document in this browser. Download a backup too!",
+ "Ctrl+S saves your document to Firebase when signed in. Download a backup too!",
  "An axolotl can regenerate limbs. Unfortunately, I cannot regenerate unsaved paragraphs.",
  "I counted all the bubbles in my pond. There were at least several.",
  "Choose Layout to change the paper size before printing.",
