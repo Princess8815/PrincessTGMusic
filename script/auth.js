@@ -1,3 +1,4 @@
+import "./reef-collection.js";
 
 import { auth } from "./firebase.js";
 import { saveUserIfChanged } from "./user-data.js";
@@ -366,6 +367,11 @@ adminButton.addEventListener("click", async () => {
   }
 
   $("auth-open").addEventListener("click", openModal);
+  const reefMode=new URLSearchParams(location.search).get("reefSignIn");
+  if(reefMode==="login"||reefMode==="register")void auth.authStateReady().then(()=>{
+    if(!auth.currentUser){openModal();if(reefMode==="register")setMode("register");}
+    const clean=new URL(location.href);clean.searchParams.delete("reefSignIn");history.replaceState(null,"",clean.href);
+  });
   $("auth-close").addEventListener("click", closeModal);
   modal.addEventListener("click", event=>{
     if(event.target===modal)closeModal();
