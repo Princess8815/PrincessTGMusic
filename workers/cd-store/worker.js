@@ -87,6 +87,7 @@ async function startOrder(env,body){
  let row=await getOrder(env,body.id);
  if(row){row=await ownedOrder(env,body.id,body.token);}
  else{
+  if(!body.address||!body.cart)fail("Checkout was not initialized. Cancel this reference and try again.",404);
   const buyer=await verifiedBuyer(env,body.idToken);
   const a=addressOf(body.address),{lines,count}=await productLines(env,body.cart);
   const totals=await calculate(env,lines,a,shipping(zones(env),a,count));
@@ -102,7 +103,12 @@ async function startOrder(env,body){
   const params={amount:String(row.total),currency:"usd","payment_method_types[0]":"card","metadata[store_order_id]":row.id,"shipping[name]":a.name,receipt_email:a.email};
   for(const [k,v] of Object.entries(addressFields(a)))if(v)params["shipping[address]["+k+"]"]=v;
   intent=await stripe(env,"payment_intents",params,"cd-intent-"+row.id);
-  await env.ORDERS.prepare("UPDATE orders SET intent=? WHERE id=? AND (intent IS NULL OR intent=?)").bind(intent.id,row.id,intent.id).run();
+  await env.ORDERS.prepare("UPDATE orders SET intent=? WHERE id=? AND status='pending' AND (intent IS NULL OR intent=?)").bind(intent.id,row.id,intent.id).run();
+  const fresh=await ownedOrder(env,body.id,body.token);
+  if(fresh.status!=="pending"||fresh.intent!==intent.id){
+   if(fresh.status==="canceled"&&fresh.intent!==intent.id)try{await stripe(env,"payment_intents/"+intent.id+"/cancel",{},"cd-cancel-"+row.id);}catch(e){console.warn("Unexposed payment intent cleanup needed",row.id);}
+   fail("Checkout was closed. Check order status.",409);
+  }
  }
  if(!["requires_payment_method","requires_confirmation","requires_action"].includes(intent.status))fail("This payment is already processing or complete. Check order status.",409);
  return {id:row.id,clientSecret:intent.client_secret,publishableKey:env.STRIPE_PUBLISHABLE_KEY,mode:env.STORE_MODE,lines:p.lines,subtotal:p.subtotal,shipping:p.shipping,tax:p.tax,total:p.total};
@@ -169,7 +175,6 @@ async function webhook(req,env,ctx){
  if(event.livemode!==(env.STORE_MODE==="live"))fail("Wrong Stripe environment.");
  if(event.type==="payment_intent.succeeded"){
   const intent=await stripe(env,"payment_intents/"+event.data.object.id);
-  await markPaid(env,intent);
   if(uuid(intent.metadata?.store_order_id)){
    const summary=await syncRefunds(env,stripe,intent.id);
    if(summary?.status==="paid")ctx.waitUntil(Promise.all([fulfill(env,intent.metadata.store_order_id),tryReward(env,intent.metadata.store_order_id)]));
@@ -193,9 +198,13 @@ async function cancel(env,b){
  const row=await ownedOrder(env,b.id,b.token);
  if(row.status==="canceled")return {canceled:true};
  if(row.status!=="pending")fail("Order is already paid or closed.",409);
- if(!row.intent)fail("Checkout is still initializing. Retry shortly.",409);
+ if(!row.intent){
+  const changed=await env.ORDERS.prepare("UPDATE orders SET status='canceled' WHERE id=? AND status='pending' AND intent IS NULL").bind(row.id).run();
+  if(changed.meta.changes)return {canceled:true};
+  fail("Checkout changed while canceling. Check order status and retry.",409);
+ }
  const intent=await stripe(env,"payment_intents/"+row.intent);
- if(intent.status==="succeeded"){await markPaid(env,intent);fail("This order has already been paid.",409);}
+ if(intent.status==="succeeded"){await syncRefunds(env,stripe,intent.id);fail("This order has already been paid. Check order status.",409);}
  if(intent.status!=="canceled")await stripe(env,"payment_intents/"+row.intent+"/cancel",{},"cd-cancel-"+row.id);
  await env.ORDERS.prepare("UPDATE orders SET status='canceled' WHERE id=? AND status='pending'").bind(row.id).run();return {canceled:true};
 }
@@ -208,7 +217,8 @@ async function status(env,b,ctx){
    if(summary?.status==="paid"){ctx.waitUntil(Promise.all([fulfill(env,row.id),tryReward(env,row.id)]));return {status:"paid",reward:rewardProject(env)?"available":"disabled"};}
    return {status:summary?.status||"pending"};
   }
-  return {status:pi.status==="canceled"?"canceled":pi.status};
+  if(pi.status==="canceled")await env.ORDERS.prepare("UPDATE orders SET status='canceled' WHERE id=? AND status='pending'").bind(row.id).run();
+  return {status:pi.status};
  }
  return {status:row.status,reward:row.status==="paid"?(rewardProject(env)?"available":"disabled"):undefined};
 }

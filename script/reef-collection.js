@@ -110,12 +110,22 @@ export function claimPendingAxolotls(user=auth.currentUser){
 window.addEventListener("princesstg-user-ready",e=>{
  if(e.detail?.uid===auth.currentUser?.uid)void claimPendingAxolotls();
 });
+export function isAxolotlConfirmed(id){
+ const uid=auth.currentUser?.uid;return !!uid&&confirmed.has(uid+":"+id);
+}
 export function discoverAxolotl(id){
- if(!ids.has(id)||purchaseOnly.has(id))return;
+ if(!ids.has(id)||purchaseOnly.has(id))return Promise.resolve("blocked");
  const uid=auth.currentUser?.uid||null;
- if(uid&&confirmed.has(uid+":"+id))return;
+ if(uid&&confirmed.has(uid+":"+id))return Promise.resolve("saved");
+ // Persist immediately, before waiting for account initialization or any other discovery.
  writePending(id,uid);
- void auth.authStateReady().then(()=>flush(auth.currentUser?.uid));
+ return auth.authStateReady().then(async()=>{
+  const active=auth.currentUser?.uid;
+  if(!active)return "guest";
+  if(uid&&uid!==active)return "pending";
+  await flush(active);
+  return current(active)&&confirmed.has(active+":"+id)?"saved":"pending";
+ }).catch(()=> "pending");
 }
 onAuthStateChanged(auth,user=>{
  clearTimeout(retryTimer);attempts=0;
@@ -175,7 +185,7 @@ export function announcePurchaseDiscovery(id){
  if(!purchaseOnly.has(id)||!auth.currentUser)return;
  const uid=auth.currentUser.uid;
  // Verify the server-created record before showing a discovery notice.
- void getDocFromServer(doc(pathFor(uid),id)).then(snap=>{if(current(uid)&&snap.exists())announceDiscovery(uid,id);}).catch(()=>{});
+ void getDocFromServer(doc(pathFor(uid),id)).then(snap=>{if(current(uid)&&snap.exists()&&!confirmed.has(uid+":"+id)){confirmed.add(uid+":"+id);notify();announceDiscovery(uid,id);}}).catch(()=>{});
 }
 export function axolotlPortrait(id){return portrait(id);}
 let tidePortraitSerial=0;
@@ -242,7 +252,7 @@ export function mountReefCollection(){
   lastFound=found;loadNotice=notice||"";refreshStatus();
   grid.replaceChildren();
   for(const [id,name] of reef){
-   const card=document.createElement("article");card.className="reef-card";
+   const card=document.createElement("article");card.className="reef-card";card.dataset.axolotlId=id;
    const art=document.createElement("div");art.className="reef-card-art";
    if(found.has(id))art.innerHTML=portrait(id);
    else{art.classList.add("reef-mystery");art.textContent="?";}
