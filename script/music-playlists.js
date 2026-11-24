@@ -250,13 +250,13 @@ export function addToPlaylistControl(getKeys, options = {}) {
   const message=document.createElement("p");message.className="ptg-playlist-message";
   message.setAttribute("role","status");
   function refresh() {
-    const current=select.value;
+    const selectedValue=select.value;
     const unavailable=playlistState();
     select.disabled=add.disabled=input.disabled=create.disabled=!(current(owner)&&ready);
     message.textContent=unavailable;
     select.replaceChildren(new Option("Select a playlist", ""));
     for(const p of getPlaylists()) select.add(new Option(p.name,p.id));
-    if([...select.options].some(o=>o.value===current)) select.value=current;
+    if([...select.options].some(o=>o.value===selectedValue)) select.value=selectedValue;
   }
   async function keys() {
     const values=await getKeys();
