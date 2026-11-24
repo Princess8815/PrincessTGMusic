@@ -152,7 +152,8 @@ const GROUPS=[
     ["Poetry","pages/poems-home.html","poetry"],
     ["Stories","arts/artsLanding.html","stories"]]},
   {title:"Productivity",links:[
-    ["PrincessTG Docs","pages/docs.html","docs"]]},
+    ["PrincessTG Docs","pages/docs.html","docs"],
+    ["Public Doc Board","pages/docs-board.html","docs"]]},
   {title:"Wellness",links:[
     ["Health Tracker","pages/health.html","health"]]},
   {title:"Account",links:[
