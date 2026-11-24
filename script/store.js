@@ -1,5 +1,5 @@
 import {STORE_WORKER_URL} from "./store-config.js";
-import {storeProducts,money,categoryOptions,categoryKey,filterCDs} from "./store-catalog.js";
+import {storeProducts,money,categoryOptions,filterCDs} from "./store-catalog.js";
 const $=id=>document.getElementById(id),el=(tag,text)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;return e;};
 const btn=(text,action)=>{const e=el("button",text);e.type="button";e.onclick=action;return e;};
 const message=text=>{$("checkout-status").textContent=text;};
@@ -34,18 +34,37 @@ function change(sku,delta){
  if(q>10||q>0&&cart.size>=8&&!cart.has(sku)||[...cart.values()].reduce((a,b)=>a+b,0)+delta>20){$("store-status").textContent="Up to 10 copies per CD, 8 different CDs and 20 CDs per order.";return;}
  if(q<=0)cart.delete(sku);else cart.set(sku,q);
  persist();renderCart();
+ if(delta>0){const product=products.get(sku);$("store-cart-feedback").textContent=product?"Added "+product.name+" to your cart.":"Cart updated."; }
 }
+let detailSKU=null;
+function updateCDDetails(){
+ const p=products.get(detailSKU);if(!p)return;
+ $("cd-detail-title").textContent=p.name;
+ $("cd-detail-price").textContent=money(p.priceCents);
+ $("cd-detail-meta").textContent=p.songIds.length+" tracks · "+p.category;
+ $("cd-detail-description").textContent=p.description;
+ $("cd-detail-description").hidden=!p.description;
+ $("cd-detail-tracks").replaceChildren(...p.songIds.map(id=>el("li",titles.get(id)||id)));
+}
+function openCDDetails(p){
+ detailSKU=p.sku;updateCDDetails();
+ const dialog=$("cd-detail-dialog");if(!dialog.open)dialog.showModal();
+}
+$("cd-detail-dialog").addEventListener("close",()=>{detailSKU=null;});
+$("cd-detail-add").onclick=()=>{if(detailSKU)change(detailSKU,1);};
 function makeProduct(p){
  const card=el("article");card.className="store-card";
- const fallback=el("div","CD");fallback.className="store-cover";
- if(/^https:\/\//i.test(p.coverUrl)){const img=el("img");img.src=p.coverUrl;img.alt=p.albumName+" cover";img.loading="lazy";img.onerror=()=>img.replaceWith(fallback);card.append(img);}else card.append(fallback);
- const info=el("div");info.className="store-card-info";
- const price=el("p",money(p.priceCents));price.className="store-price";
- const meta=el("p",p.songIds.length+" tracks · CD");meta.className="store-card-meta";
- const add=btn("Add to cart",()=>change(p.sku,1));add.setAttribute("aria-label","Add "+p.name+" to cart");
- info.append(el("h3",p.name),price,meta,add);
- const details=el("details"),summary=el("summary","Track list ("+p.songIds.length+")"),list=el("ol");for(const id of p.songIds)list.append(el("li",titles.get(id)||id));details.append(summary,list);
- card.append(info,details);return card;
+ const open=btn("",()=>openCDDetails(p));open.className="store-icon-open";
+ open.setAttribute("aria-label","View details and tracks for "+p.name);open.title=p.name;
+ const fallback=el("div","CD");fallback.className="store-cover";fallback.setAttribute("aria-hidden","true");
+ if(/^https:\/\//i.test(p.coverUrl)){
+  const img=el("img");img.src=p.coverUrl;img.alt="";img.loading="lazy";img.onerror=()=>img.replaceWith(fallback);open.append(img);
+ }else open.append(fallback);
+ const name=el("span",p.name);name.className="store-icon-title";open.append(name);card.append(open);
+ const info=el("div");info.className="store-icon-info";
+ const price=el("span",money(p.priceCents));price.className="store-price";
+ const add=btn("+",()=>change(p.sku,1));add.className="store-icon-add";add.setAttribute("aria-label","Add "+p.name+" to cart");add.title="Add to cart";
+ info.append(price,add);card.append(info);return card;
 }
 function refreshAlbumOptions(){
  const choices=new Map(filterCDs([...products.values()],selectedCategory).map(p=>[p.albumId,p.albumName]));
@@ -82,7 +101,7 @@ function renderProducts(){
  $("store-filter-count").textContent=visible.length+" "+(visible.length===1?"CD":"CDs");
  for(const p of featured)featuredRoot.append(makeProduct(p));
  for(const p of regular)root.append(makeProduct(p));
- if(!visible.length)root.append(el("p",products.size?"No CDs match this selection.":"No CDs are listed for sale yet."));
+ if(!visible.length){const empty=el("p",products.size?"No CDs match this selection.":"No CDs are listed for sale yet.");empty.className="store-grid-empty";root.append(empty);}
 }
 async function loadCatalog(){
  try{
@@ -90,7 +109,7 @@ async function loadCatalog(){
   const snap=await getDocs(collection(db,"albums"));
   products=new Map(snap.docs.flatMap(s=>storeProducts(s.id,s.data())).map(p=>[p.sku,p]));
   catalogReady=true;mountCatalogFilters();renderProducts();renderCart();$("store-status").textContent=products.size+" CD listings"+(!STORE_WORKER_URL?" · Checkout is not configured yet.":".");
-  void import("./song-data.js").then(({loadAllSongs})=>loadAllSongs("../audioPlayer/audio/song-details.json")).then(songs=>{titles=new Map(songs.map(s=>[s.pageId,s.title]));renderProducts();}).catch(()=>{});
+  void import("./song-data.js").then(({loadAllSongs})=>loadAllSongs("../audioPlayer/audio/song-details.json")).then(songs=>{titles=new Map(songs.map(s=>[s.pageId,s.title]));if(detailSKU)updateCDDetails();}).catch(()=>{});
  }catch(e){$("store-status").textContent="Could not load the CD catalog: "+e.message;}
 }
 async function api(path,data){
