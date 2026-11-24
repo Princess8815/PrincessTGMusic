@@ -224,7 +224,7 @@ async function claimReward(){
   if(!idToken){status.textContent="Log in to claim Tide, then press Claim Tide.";const button=$("auth-open");if(button&&!button.hidden)button.click();return;}
   const r=await api("/claim-reward",{...ref,idToken});
   if(read(sessionStorage,rewardKey,null)?.id!==ref.id)return;
-  if(r.reward==="disabled"){status.textContent="Tide says hello! Sandbox purchases do not unlock production collectibles.";remove(sessionStorage,rewardKey);}
+  if(r.reward==="disabled"){status.textContent="Tide says hello! This test purchase is not eligible for a production collectible.";remove(sessionStorage,rewardKey);}
   else if(r.reward==="claimed"){
    status.textContent="Tide is in your collection!";
    remove(sessionStorage,rewardKey);
@@ -328,7 +328,7 @@ async function checkOrder(prefix=""){
   if(r.status==="paid"){
    const available=r.reward==="available";
    $("claim-purchase-reward").hidden=!available;
-   $("reward-status").textContent=available?"Purchase verified! Sign in to claim Tide.":"Test purchase verified. Enjoy meeting Tide! Production collectibles are not awarded in sandbox mode.";
+   $("reward-status").textContent=available?(r.adminTestReward?"Administrator test purchase verified! You can adopt Tide.":"Purchase verified! Sign in to claim Tide."):"Test purchase verified. Enjoy meeting Tide! Ordinary sandbox purchases do not unlock production collectibles.";
    if(available&&!write(sessionStorage,rewardKey,reference))$("reward-status").textContent="Purchase verified. Browser storage is unavailable; contact support with your order reference to recover your Tide claim.";
    resetCheckout();cart.clear();persist();renderCart();
    showReceipt("paid","Payment confirmed. Order reference: "+reference.id+". Your order will be processed using your shipping details.");
