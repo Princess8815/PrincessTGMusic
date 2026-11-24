@@ -22,13 +22,11 @@ const volatile=new Set(),confirmed=new Set();
 let queue=Promise.resolve(),retryTimer,attempts=0;
 function hasPending(id,uid=null){
  const key=pendingKey(id,uid);
- try{if(localStorage.getItem(key)!==null)return true;}catch{}
- return volatile.has(key);
+ try{return localStorage.getItem(key)!==null;}catch{return volatile.has(key);}
 }
 function writePending(id,uid=null){
  const key=pendingKey(id,uid);
- volatile.add(key);
- try{localStorage.setItem(key,"1");}catch{}
+ try{localStorage.setItem(key,"1");volatile.delete(key);}catch{volatile.add(key);}
 }
 function removePending(id,uid=null){
  const key=pendingKey(id,uid);
