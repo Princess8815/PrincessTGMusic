@@ -17,6 +17,8 @@
   <script src="../script/genres.js" defer></script>
   <script type="module" src="../script/admin-songs.js"></script>
   <script type="module" src="../script/admin-albums.js"></script>
+  <script type="module" src="../script/admin-store.js"></script>
+  <link rel="stylesheet" href="../styles/store.css">
   <script type="module" src="../script/admin-genres.js"></script>
   <script type="module" src="../script/admin-bulk-genres.js"></script>
   <script type="module" src="../script/admin-edit-songs.js"></script>
@@ -1002,7 +1004,16 @@
           <button type="button" data-admin-subtab="albums:add" aria-selected="true">Add</button>
           <button type="button" data-admin-subtab="albums:edit" aria-selected="false">Edit</button>
           <button type="button" data-admin-subtab="albums:delete" aria-selected="false">Delete</button>
+          <button type="button" data-admin-subtab="albums:store" aria-selected="false">CD Store</button>
         </nav>
+        <section class="admin-subpanel" data-admin-subpanel="albums:store" hidden><section class="admin-card">
+ <h2>CD store listings</h2><p class="helper">Choose an album, enable it for sale, set the number of CDs and assign its songs. Each CD defaults to $10.00 USD.</p>
+ <button type="button" id="cd-admin-load">Load / refresh albums</button>
+ <form id="cd-admin-form"><div class="form-field"><label for="cd-admin-album">Album</label><select id="cd-admin-album" required><option value="">Load albums first</option></select></div>
+ <div id="cd-admin-fields" hidden><label class="admin-inline-check"><input id="cd-sellable" type="checkbox"> Sell this album in the CD store</label>
+ <div class="form-field"><label for="cd-volume-count">Number of volumes</label><input id="cd-volume-count" type="number" min="1" max="20" step="1" value="1" required></div>
+ <div id="cd-volume-editor"></div><h3>Track assignments</h3><p>Each track belongs to one volume. Single-disc albums include all their songs.</p><div id="cd-track-assignments"></div>
+ <button id="cd-admin-save" type="submit">Save CD listing</button></div></form><p id="cd-admin-status" role="status" aria-live="polite"></p></section></section>
         <section class="admin-subpanel" data-admin-subpanel="albums:add">
           <section class="admin-card">
             <h2>Add Album</h2>
