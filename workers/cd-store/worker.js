@@ -53,10 +53,10 @@ async function productLines(env,cart){
 function configured(env){
  const mode=env.STORE_MODE;
  if(!["test","live"].includes(mode)||!env.STRIPE_SECRET_KEY?.startsWith("sk_"+mode+"_")||!env.STRIPE_PUBLISHABLE_KEY?.startsWith("pk_"+mode+"_")||!env.STRIPE_WEBHOOK_SECRET?.startsWith("whsec_")||!/^txcd_\d+$/.test(env.CD_TAX_CODE||"")||!/^https:\/\/formspree\.io\/f\/[A-Za-z0-9]+$/.test(env.FORMSPREE_URL||"")||!zones(env).length||!env.ORDERS)fail("Checkout is not configured yet.",503);
- if(mode==="live"&&env.LIVE_READY!=="yes")fail("Live checkout has not been enabled.",503);
+ if(mode==="live"&&(env.LIVE_READY!=="yes"||(env.ALLOWED_ORIGINS||"").includes("github.io")))fail("Live checkout has not been enabled.",503);
 }
 async function stripe(env,path,params,key){
- const headers={Authorization:"Bearer "+env.STRIPE_SECRET_KEY,"Stripe-Version":"2026-11-18.endive"};
+ const headers={Authorization:"Bearer "+env.STRIPE_SECRET_KEY};
  if(params)headers["Content-Type"]="application/x-www-form-urlencoded";
  if(key)headers["Idempotency-Key"]=key;
  const res=await fetch("https://api.stripe.com/v1/"+path,{method:params?"POST":"GET",headers,body:params?new URLSearchParams(params):undefined});
