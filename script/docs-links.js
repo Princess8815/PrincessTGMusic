@@ -25,3 +25,25 @@ export function isSiteLink(url,siteRoot){
   return decoded===path.slice(0,-1)||decoded.startsWith(path);
  });
 }
+
+// Linkify text without parsing HTML. Callers retain control over navigation.
+export function appendDocText(parent,value,bind){
+ const doc=parent.ownerDocument;
+ if(parent.closest?.("a,pre,code")){parent.append(doc.createTextNode(value));return;}
+ const pattern=/(^|[\s([{<"“‘])((?:https?:\/\/[^\s<>"“”‘’]+|(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,63}(?::[0-9]+)?(?:[/?#][^\s<>"“”‘’]*)?))(?=$|[\s)\]}>.,!?;:'"“”‘’])/gi;
+ let offset=0;
+ for(const match of value.matchAll(pattern)){
+  const start=match.index+match[1].length;
+  let raw=match[2];
+  while(/[.,!?;:'\]}]$/.test(raw)||(/\)$/.test(raw)&&(raw.match(/\)/g)||[]).length>(raw.match(/\(/g)||[]).length))raw=raw.slice(0,-1);
+  if(!raw||raw.length>4096)continue;
+  if(!/^https?:\/\//i.test(raw)&&/\.(?:html?|php|aspx?|txt|json|pdf|docx?|xlsx?|png|jpe?g|gif|webp|css|js|zip|mp3|wav)(?:[/?#]|$)/i.test(raw))continue;
+  const absolute=/^https?:\/\//i.test(raw)?raw:"https://"+raw;
+  const target=normalizeDocLink(absolute,"https://invalid.example/");
+  if(target?.kind!=="website")continue;
+  parent.append(doc.createTextNode(value.slice(offset,start)));
+  const a=doc.createElement("a");a.textContent=raw;bind(a,target.url.href);parent.append(a);
+  offset=start+raw.length;
+ }
+ parent.append(doc.createTextNode(value.slice(offset)));
+}
