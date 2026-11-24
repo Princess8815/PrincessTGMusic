@@ -122,6 +122,7 @@ const SVG=(paths)=>'<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stro
 const ICONS={
   home:SVG('<path d="m3 10 9-7 9 7v10h-6v-6H9v6H3z"/>'),
   music:SVG('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>'),
+  store:SVG('<path d="M3 4h2l2 12h12l2-9H6"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/>'),
   albums:SVG('<rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor"/>'),
   releases:SVG('<path d="M4 5h16v14H4zM8 9h8M8 13h6M8 17h4"/>'),
   challenges:SVG('<path d="M9 3h6l2 4 4 2-4 4-1 8-4-3-4 3-1-8-4-4 4-2z"/>'),
@@ -145,6 +146,7 @@ const GROUPS=[
   {title:"Music",links:[
     ["All Songs","audioPlayer/index.html","music"],
     ["Albums","albums/index.html","albums"],
+    ["CD Store","pages/store.html","store"],
     ["Releases","pages/releases.html","releases"]]},
   {title:"Create & Discover",links:[
     ["Songwriter Challenges","pages/challenges.html","challenges"],
