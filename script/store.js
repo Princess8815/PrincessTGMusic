@@ -24,7 +24,7 @@ function updateControls(){
  $("shop-again").disabled=busy||claimBusy;
  $("restore-tide-claim").hidden=!read(sessionStorage,rewardKey,null);
  $("restore-tide-claim").disabled=busy||claimBusy||active;
- for(const button of document.querySelectorAll(".cart-controls button,.store-icon-add,#cd-detail-add"))button.disabled=busy||active;
+ for(const button of document.querySelectorAll(".cart-controls button,.store-icon-add,.store-icon-open,#cd-detail-add"))button.disabled=busy||active;
 }
 async function exclusive(action){
  if(busy)return false;
@@ -69,6 +69,7 @@ function updateCDDetails(){
  $("cd-detail-tracks").replaceChildren(...p.songIds.map(id=>el("li",titles.get(id)||id)));
 }
 function openCDDetails(p){
+ if(busy||order||receiptKind)return;
  detailSKU=p.sku;updateCDDetails();
  const dialog=$("cd-detail-dialog");if(!dialog.open)dialog.showModal();
 }
@@ -186,7 +187,7 @@ async function meetShelly(){
   }
   window.addEventListener("princesstg:reef-change",()=>{if(reef.isAxolotlConfirmed("shelly")){state.textContent="Shelly is in your collection!";retry.hidden=true;}});
   await saveShelly();
- }catch(e){console.warn("Store visit discovery unavailable",e);}
+ }catch(e){const root=$("store-reef-friends");root.replaceChildren(el("p","Could not load Shelly yet."),btn("Retry Shelly discovery",()=>void meetShelly()));console.warn("Store visit discovery unavailable",e);}
 }
 async function revealTide(){
  try{
@@ -311,12 +312,18 @@ $("payment-form").onsubmit=async e=>{
  });
  if(receiptKind==="paid"&&!$("claim-purchase-reward").hidden&&await buyerToken())void claimReward();
 };
+async function readOrderStatus(reference){
+ for(let attempt=0;;attempt++){
+  try{return await api("/status",reference);}
+  catch(e){if(e.status!==503||attempt>=2)throw e;await new Promise(resolve=>setTimeout(resolve,350*(attempt+1)));}
+ }
+}
 async function checkOrder(prefix=""){
  if(!order)return;
  const reference=order;
  const detail=prefix?prefix+" ":"";
  try{
-  const r=await api("/status",reference);
+  const r=await readOrderStatus(reference);
   if(order!==reference)return;
   if(r.status==="paid"){
    const available=r.reward==="available";
@@ -333,7 +340,7 @@ async function checkOrder(prefix=""){
   }else if(r.status==="canceled"){resetCheckout();message("Checkout canceled. Your cart is still here.");}
   else{
    const retryable=["requires_payment_method","requires_confirmation","requires_action","pending"].includes(r.status);
-   paymentMayProceed=retryable&&r.status!=="pending"&&!!paymentElement;
+   paymentMayProceed=retryable&&r.status!=="pending"&&paymentReady&&!!paymentElement;
    showRecovery(detail+"Payment status: "+r.status.replaceAll("_"," ")+(retryable?". Retry or cancel the existing order.":". Do not pay again; check order status."),retryable&&!paymentMayProceed);
   }
  }catch(e){paymentMayProceed=false;showRecovery(detail+e.message+" Check order status or cancel before starting another order.",e.status!==503);}
@@ -348,12 +355,12 @@ $("check-order").onclick=async()=>{
  await exclusive(()=>checkOrder());
  if(receiptKind==="paid"&&!$("claim-purchase-reward").hidden&&await buyerToken())void claimReward();
 };
-$("resume-payment").onclick=()=>void exclusive(async()=>{
+$("resume-payment").onclick=()=>exclusive(async()=>{
  if(!order)return;const reference=order;
  try{message("Recovering the existing payment…");const q=await api("/checkout",reference);await mountPayment(q,reference);}
  catch(e){destroyPayment();await checkOrder(e.message);}
 });
-$("edit-checkout").onclick=()=>void exclusive(async()=>{
+$("edit-checkout").onclick=()=>exclusive(async()=>{
  if(!order)return;
  try{await api("/cancel",order);resetCheckout();message("Edit your shipping information or cart.");}
  catch(e){await checkOrder(e.message);}
@@ -367,12 +374,12 @@ $("restore-tide-claim").onclick=()=>void exclusive(restoreRewardReceipt);
 async function restoreRewardReceipt(){
  const saved=read(sessionStorage,rewardKey,null);if(!saved||order)return;
  try{
-  const result=await api("/status",saved);if(order||read(sessionStorage,rewardKey,null)?.id!==saved.id)return;
+  const result=await readOrderStatus(saved);if(order||read(sessionStorage,rewardKey,null)?.id!==saved.id)return;
   if(result.status==="paid"&&result.reward==="available"){
    $("claim-purchase-reward").hidden=false;$("reward-status").textContent="Sign in to claim Tide from your verified purchase.";
    showReceipt("paid","Payment confirmed. Order reference: "+saved.id+".");
   }else if(["refunded","partially_refunded","canceled"].includes(result.status)||result.reward==="disabled")remove(sessionStorage,rewardKey);
- }catch(e){console.warn("Pending Tide claim could not be restored",e);}
+ }catch(e){$("store-status").textContent="Could not restore your Tide claim yet. Use Return to your Tide claim to retry.";console.warn("Pending Tide claim could not be restored",e);}
 }
 const previous=read(sessionStorage,orderKey,null);
 if(previous?.id&&previous?.token){order=previous;showRecovery("Checking your previous checkout…",false);void exclusive(checkOrder);}

@@ -73,3 +73,5 @@ Set REWARD_FIREBASE_PROJECT to the project that the credential and buyer token b
 - Browser API calls time out after 25 seconds; uncertain payments are not treated as declined. Check status first. No real payment is issued by the recovery action.
 - Shelly is queued immediately using the same encounter mechanism as all other free discoveries, including guest/sign-in retry and visible save status. Both collectibles use the same profile grid. Tide remains server-only and sandbox cannot grant production Tide.
 - Verify rules against current deployed version. The separately supplied PR26 cumulative rules lacked Shelly; add only Shelly to the free discovery allowlist, never Tide. No other schema or webhook changes for this audit.
+
+Run `node tests/store-recovery.test.mjs` from `workers/cd-store` for mocked rapid-click, network failure, interrupted checkout, retry and receipt tests. This does not contact Stripe or Firebase.

@@ -123,13 +123,6 @@ async function verifyWebhook(request,env){
  if(!pairs.some(([k,v])=>k==="v1"&&equals(v,expected)))fail("Webhook signature invalid.",400);
  try{return JSON.parse(raw);}catch{fail("Webhook JSON invalid.");}
 }
-async function markPaid(env,intent){
- const id=intent.metadata?.store_order_id;
- if(!uuid(id))return;
- const row=await getOrder(env,id);
- if(!row||row.intent!==intent.id||intent.status!=="succeeded"||intent.currency!=="usd"||intent.amount_received!==row.total||intent.livemode!==(env.STORE_MODE==="live"))fail("Paid intent does not match order.",409);
- await env.ORDERS.prepare("UPDATE orders SET status='paid' WHERE id=? AND status='pending'").bind(id).run();
-}
 async function fulfill(env,id){
  let row=await getOrder(env,id);
  if(!row||row.status!=="paid"||row.notice_sent)return;
