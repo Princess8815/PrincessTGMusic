@@ -16,28 +16,31 @@ const reef=[
 const ids=new Set(reef.map(f=>f[0]));
 const prefix="ptg-reef-pending-v1:";
 const pathFor=uid=>collection(db,"users",uid,"axolotls");
-const pendingKey=id=>prefix+id;
+const pendingKey=(id,uid=null)=>prefix+id+(uid?":"+uid:"");
 const current=uid=>auth.currentUser?.uid===uid;
-const volatile=new Map(),confirmed=new Set();
-let queue=Promise.resolve(),retryTimer;
-function readPending(id){
- try{const raw=localStorage.getItem(pendingKey(id));if(raw!==null)return JSON.parse(raw);}catch{}
- return volatile.get(id)||null;
+const volatile=new Set(),confirmed=new Set();
+let queue=Promise.resolve(),retryTimer,attempts=0;
+function hasPending(id,uid=null){
+ const key=pendingKey(id,uid);
+ try{if(localStorage.getItem(key)!==null)return true;}catch{}
+ return volatile.has(key);
 }
-function writePending(id,record){
- volatile.set(id,record);
- try{localStorage.setItem(pendingKey(id),JSON.stringify(record));}catch{}
+function writePending(id,uid=null){
+ const key=pendingKey(id,uid);
+ volatile.add(key);
+ try{localStorage.setItem(key,"1");}catch{}
 }
-function removePending(id,uid){
- if(readPending(id)?.uid!==uid)return;
- volatile.delete(id);try{localStorage.removeItem(pendingKey(id));}catch{}
+function removePending(id,uid=null){
+ const key=pendingKey(id,uid);
+ volatile.delete(key);try{localStorage.removeItem(key);}catch{}
 }
 function notify(){window.dispatchEvent(new Event("princesstg:reef-change"));}
 function bindPending(uid){
  if(!current(uid))return;
  for(const id of ids){
-  const p=readPending(id);
-  if(p&&p.uid===null)writePending(id,{uid});
+  if(hasPending(id)){
+   writePending(id,uid);removePending(id);
+  }
  }
 }
 async function syncPending(uid){
@@ -46,7 +49,7 @@ async function syncPending(uid){
  let retry=false;
  for(const id of ids){
   if(!current(uid))return;
-  if(readPending(id)?.uid!==uid)continue;
+  if(!hasPending(id,uid))continue;
   if(confirmed.has(uid+":"+id)){removePending(id,uid);continue;}
   try{
    const ref=doc(pathFor(uid),id);
@@ -59,14 +62,14 @@ async function syncPending(uid){
    confirmed.add(uid+":"+id);removePending(id,uid);notify();
   }catch(e){retry=true;console.warn("Reef discovery kept for its account:",e.code||e.message);}
  }
- if(retry&&current(uid)){
+ if(retry&&current(uid)&&attempts++<3){
   clearTimeout(retryTimer);
-  retryTimer=setTimeout(()=>void flush(uid),15000);
+  retryTimer=setTimeout(()=>void flush(uid),5000);
  }
 }
 function flush(uid){
  if(!uid||!current(uid))return Promise.resolve();
- // Bind the guest encounter before any network request, including failed writes.
+ // Claim guest discoveries before network access. Failed saves remain tied to this UID.
  bindPending(uid);
  queue=queue.catch(()=>{}).then(()=>syncPending(uid));return queue;
 }
@@ -74,26 +77,19 @@ export function discoverAxolotl(id){
  if(!ids.has(id))return;
  const uid=auth.currentUser?.uid||null;
  if(uid&&confirmed.has(uid+":"+id))return;
- const previous=readPending(id);
- // Never transfer a failed save already assigned to somebody else's account.
- if(!previous||previous.uid===null||previous.uid===uid)writePending(id,{uid});
- else if(uid){
-  const ref=doc(pathFor(uid),id);
-  void runTransaction(db,async tx=>{
-   if(!current(uid))throw Error("Account changed");
-   const snap=await tx.get(ref);
-   if(!current(uid))throw Error("Account changed");
-   if(!snap.exists())tx.set(ref,{foundAt:serverTimestamp()});
-  }).then(()=>{confirmed.add(uid+":"+id);notify();}).catch(console.warn);
- }
+ writePending(id,uid);
  void auth.authStateReady().then(()=>flush(auth.currentUser?.uid));
 }
 onAuthStateChanged(auth,user=>{
- clearTimeout(retryTimer);
+ clearTimeout(retryTimer);attempts=0;
  if(user)void flush(user.uid);
 });
-window.addEventListener("online",()=>void flush(auth.currentUser?.uid));
+window.addEventListener("online",()=>{attempts=0;void flush(auth.currentUser?.uid);});
 window.addEventListener("storage",e=>{if(e.key?.startsWith(prefix))void flush(auth.currentUser?.uid);});
+function installStyles(){
+ if(document.querySelector("link[data-reef-style]"))return;
+ const link=document.createElement("link");link.rel="stylesheet";link.href=new URL("../styles/reef-collection.css",import.meta.url).href;link.dataset.reefStyle="1";document.head.append(link);
+}
 
 function portrait(id){
  const f=reef.find(x=>x[0]===id);
@@ -106,6 +102,7 @@ function portrait(id){
 export async function showGuestReef(){
  await auth.authStateReady();
  if(auth.currentUser)return false;
+ installStyles();
  discoverAxolotl("nori");
  let modal=document.getElementById("reef-guest-dialog");
  if(!modal){
@@ -132,6 +129,7 @@ export function mountReefCollection(){
  const grid=document.getElementById("reef-collection-grid");
  const status=document.getElementById("reef-collection-status");
  if(!grid||!status)return;
+ installStyles();
  let stop=null,token=0;
  function render(found,notice){
   status.textContent=notice||found.size+" / "+reef.length+" axolotls discovered";
