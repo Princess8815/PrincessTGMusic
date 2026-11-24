@@ -3,7 +3,10 @@ import {auth,db} from "./firebase.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {collection,doc,runTransaction,serverTimestamp,onSnapshot,getDocsFromServer,writeBatch,getDocFromServer} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
+import {HOME_REEF,homeReefPortrait} from "./reef-home-art.js";
+
 const reef=[
+ ...HOME_REEF,
  ["marina","Marina","#ffa9c3","#fa76a2","bow"],
  ["luna","Luna","#c3b0ff","#9879e8","star"],
  ["sprout","Sprout","#89dfb7","#55bb9b","leaf"],
@@ -176,6 +179,7 @@ export function announcePurchaseDiscovery(id){
 }
 export function axolotlPortrait(id){return portrait(id);}
 function portrait(id){
+ const secret=homeReefPortrait(id);if(secret)return secret;
  const f=reef.find(x=>x[0]===id);
  if(!f)return "";
  const [,name,body,gill,decor]=f;

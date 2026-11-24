@@ -1,5 +1,5 @@
 // Public navigation renders independently of Firebase; account links attach later.
-import {isLocalPreview,getLocalFirebaseMode} from "./firebase-mode.js";
+import {isLocalPreview,getLocalFirebaseMode,setLocalFirebaseMode,LOCAL_FIREBASE_MODE_KEY} from "./firebase-mode.js";
 const root=new URL("../",import.meta.url);
 const siteUrl=path=>new URL(path,root).href;
 const SETTINGS_KEY="princesstg-site-preferences-v1";
@@ -263,35 +263,57 @@ function buildMobileBar(){
   bar.append(button,brand);document.body.prepend(bar);
   return button;
 }
-function buildLocalFirebaseBadge(){
-  if(!isLocalPreview()||document.getElementById("ptg-local-firebase-badge"))
-    return;
+function buildLocalFirebaseControl(sidebar){
+  if(!isLocalPreview()||document.getElementById("ptg-local-firebase-control"))return;
   const live=getLocalFirebaseMode()==="production";
-  const badge=document.createElement("aside");
-  badge.id="ptg-local-firebase-badge";
-  badge.className="ptg-local-firebase-badge";
-  badge.dataset.mode=live?"production":"emulator";
-  badge.setAttribute("aria-label","Local Firebase connection");
+  const control=document.createElement("div");
+  control.id="ptg-local-firebase-control";
+  control.className="ptg-local-firebase-control";
+  control.dataset.mode=live?"production":"emulator";
+  control.setAttribute("role","group");
+  control.setAttribute("aria-label","Local developer Firebase connection");
   const label=document.createElement("strong");
-  label.textContent=live
-    ? "LOCAL PREVIEW · LIVE FIREBASE"
-    : "LOCAL PREVIEW · TEST EMULATORS";
-  const help=document.createElement("span");
-  help.textContent=live
-    ? "Real accounts and data"
-    : "Isolated test accounts";
-  const change=document.createElement("a");
-  change.href=siteUrl("pages/settings.html");
-  change.textContent="Change mode";
-  badge.append(label,help,change);
-  document.body.append(badge);
+  label.className="ptg-local-firebase-label";
+  label.textContent=live?"Live Firebase":"Local emulators";
+  label.title=live?"Real accounts and data":"Isolated test accounts";
+  const button=document.createElement("button");
+  button.type="button";
+  button.textContent=live?"Switch to emulator":"Switch to live";
+  button.title=live?"Use isolated test accounts":"Use real Firebase accounts and data";
+  const status=document.createElement("span");
+  status.className="ptg-local-firebase-status";
+  status.setAttribute("role","status");
+  status.setAttribute("aria-live","polite");
+  button.addEventListener("click",()=>{
+    const next=live?"emulator":"production";
+    if(next==="production"&&!window.confirm(
+      "Switch this local preview to LIVE Firebase?\n\n"+
+      "You will use REAL accounts and database records. Tests may change or delete real data.\n\nContinue?"
+    ))return;
+    try{
+      setLocalFirebaseMode(next);
+      button.disabled=true;
+      status.textContent="Reloading…";
+      window.location.reload();
+    }catch(error){
+      button.disabled=false;
+      status.textContent="Could not switch: "+error.message;
+    }
+  });
+  control.append(label,button,status);
+  // In-flow navigation item, never an overlay on the page.
+  sidebar.querySelector("nav").before(control);
+  window.addEventListener("storage",event=>{
+    if(event.key===LOCAL_FIREBASE_MODE_KEY&&getLocalFirebaseMode()!==(live?"production":"emulator"))
+      window.location.reload();
+  });
 }
 function init(){
   if(document.getElementById("ptg-site-sidebar"))return;
   const {aside,special}=buildSidebar();
   const toggle=buildMobileBar();
   buildFooter();
-  buildLocalFirebaseBadge();
+  buildLocalFirebaseControl(aside);
   document.body.classList.add("ptg-shell-ready");
 
   const media=window.matchMedia("(max-width:850px)");
@@ -322,7 +344,7 @@ function init(){
     if(!isOpen||!media.matches)return;
     if(event.key==="Escape"){event.preventDefault();closeMenu(true);return;}
     if(event.key!=="Tab")return;
-    const focus=[...aside.querySelectorAll("a:not([hidden])")];
+    const focus=[...aside.querySelectorAll("a:not([hidden]), button:not([hidden]):not(:disabled)")];
     if(!focus.length)return;
     const first=focus[0],last=focus[focus.length-1];
     if(event.shiftKey && document.activeElement===first){

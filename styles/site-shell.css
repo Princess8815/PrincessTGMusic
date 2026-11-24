@@ -116,26 +116,14 @@ body.ptg-shell-ready > main:has(#profile-app) .profile-card {
 @media(prefers-reduced-motion:reduce){.ptg-sidebar,.ptg-footer-socials a{transition:none!important}}
 
 
-/* Local-only developer indicator. The public site never renders this badge. */
-.ptg-local-firebase-badge{
-  position:fixed;right:14px;bottom:14px;z-index:1100;
-  display:flex;flex-wrap:wrap;align-items:center;gap:7px 11px;
-  width:min(420px,calc(100vw - 28px));
-  padding:10px 13px;border-radius:12px;
-  background:#1d2d29;color:#dcfce7;border:1px solid #52a98d;
-  box-shadow:0 7px 23px #0009;font:600 .8rem/1.4 system-ui,Arial,sans-serif;
-}
-.ptg-local-firebase-badge strong{font-weight:850;letter-spacing:.015em}
-.ptg-local-firebase-badge span{font-size:.75rem;opacity:.9}
-.ptg-local-firebase-badge a{
-  margin-left:auto;color:inherit;text-decoration:underline;
-  text-underline-offset:3px;font-size:.8rem;font-weight:750
-}
-.ptg-local-firebase-badge a:focus-visible{outline:2px solid currentColor;outline-offset:3px}
-.ptg-local-firebase-badge[data-mode="production"]{
-  background:#42271d;border-color:#f59e0b;color:#fff3cc
-}
-@media(max-width:480px){
-  .ptg-local-firebase-badge{right:7px;bottom:7px;width:calc(100vw - 14px);padding:9px}
-  .ptg-local-firebase-badge span{display:none}
-}
+/* Local preview switch, inside the shared navigation only. */
+.ptg-sidebar .ptg-local-firebase-control{display:grid;grid-template-columns:1fr;gap:5px;margin:0 0 16px;padding:8px 10px;background:#1d2d29;color:#dcfce7;border:1px solid #52a98d;border-radius:8px;font:600 .76rem/1.3 system-ui,sans-serif}
+.ptg-sidebar .ptg-local-firebase-control[data-mode="production"]{background:#42271d;border-color:#f59e0b;color:#fff3cc}
+.ptg-local-firebase-label{display:flex;align-items:center;gap:6px;font-weight:750}
+.ptg-local-firebase-label::before{content:"";width:7px;height:7px;flex:0 0 7px;border-radius:50%;background:currentColor}
+.ptg-sidebar .ptg-local-firebase-control button{width:100%;min-height:30px;background:transparent;color:inherit;border:1px solid currentColor;border-radius:5px;padding:4px 8px;font:inherit;cursor:pointer}
+.ptg-sidebar .ptg-local-firebase-control button:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+.ptg-sidebar .ptg-local-firebase-control button:disabled{opacity:.6;cursor:wait}
+.ptg-local-firebase-status{font-size:.72rem;overflow-wrap:anywhere}
+.ptg-local-firebase-status:empty{display:none}
+@media(max-width:850px){.ptg-sidebar .ptg-local-firebase-control{grid-template-columns:minmax(0,1fr) auto;align-items:center}.ptg-sidebar .ptg-local-firebase-control button{min-height:44px}.ptg-local-firebase-status{grid-column:1/-1}}
