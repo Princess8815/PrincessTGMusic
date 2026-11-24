@@ -4,7 +4,7 @@ import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/fire
 import {listCloud,loadCloud,saveCloud,deleteCloud} from "./docs-cloud.js";
 import {shareStatus,shareSnapshot,revokeShare,shareUrl} from "./docs-share.js";
 import {makeDocx} from "./docs-word-export.js";
-import {normalizeDocLink} from "./docs-links.js";
+import {normalizeDocLink,appendDocText} from "./docs-links.js";
 const $=id=>document.getElementById(id);
 const app=$("docs-app"),host=$("doc-pages");
 const ns="http://www.w3.org/2000/svg";
@@ -43,7 +43,7 @@ function safeImage(v){return /^data:image\/(?:png|jpeg|webp|gif);base64,[a-z0-9+
 function sanitize(html){
  const doc=document.createElement("template"),out=document.createElement("div");doc.innerHTML=String(html);
  function visit(n,parent){
-  if(n.nodeType===3){parent.append(document.createTextNode(n.data));return;}
+  if(n.nodeType===3){appendDocText(parent,n.data,(a,href)=>a.setAttribute("href",href));return;}
   if(n.nodeType!==1)return;
   const tag=n.tagName;
   if(["SCRIPT","STYLE","IFRAME","OBJECT","EMBED","SVG","MATH","VIDEO","AUDIO","LINK","META","FORM","INPUT","BUTTON"].includes(tag))return;
@@ -58,7 +58,7 @@ function sanitize(html){
   if(tag==="TD"||tag==="TH")for(const key of ["colspan","rowspan"]){const v=Number(n.getAttribute(key));if(Number.isInteger(v)&&v>=1&&v<=30)e.setAttribute(key,v);}
   if(tag==="FONT")for(const key of ["face","size","color"]){const v=n.getAttribute(key);if(v&&v.length<100&&!/[<>{}]/.test(v))e.setAttribute(key,v);}
   for(const key of styles){const value=n.style.getPropertyValue(key);if(value&&value.length<180&&!/url\s*\(|expression|@import|javascript/i.test(value))e.style.setProperty(key,value);}
-  for(const child of n.childNodes)visit(child,e);parent.append(e);
+  parent.append(e);for(const child of n.childNodes)visit(child,e);
  }
  for(const child of doc.content.childNodes)visit(child,out);
  return out.innerHTML;
