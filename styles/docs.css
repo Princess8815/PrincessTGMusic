@@ -48,3 +48,17 @@
   .doc-ink{pointer-events:none!important}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+
+/* Keep document ink and typography independent of the site's RGB UI theme. */
+body.ptg-shell-ready.docs-body > main.docs-app{width:100%;max-width:none;margin:0}
+body.ptg-shell-ready.docs-body .doc-content a{color:#254e9e!important}
+body.ptg-shell-ready.docs-body .doc-content{color:#222}
+body.ptg-shell-ready.docs-body .bubbles-pet{background:transparent!important;border:0!important;padding:0!important}
+body.ptg-shell-ready.docs-body .bubbles-speech button{background:#ffcee6!important;color:#6c2c54!important}
+body.ptg-shell-ready.docs-body .docs-tabs button[aria-selected=true]{background:#f1a1cd!important;color:#351b36!important}
+@media print{
+  body.ptg-shell-ready.docs-body,html body.docs-body{padding:0!important;margin:0!important;background:#fff!important}
+  body.ptg-shell-ready.docs-body>main.docs-app{width:auto!important;max-width:none!important;margin:0!important}
+  .ptg-mobile-topbar,.ptg-global-footer,#ptg-local-mode-badge,.ptg-local-mode-badge,.auth-bar,.auth-overlay{display:none!important}
+  .doc-paper{background:white!important}
+}
