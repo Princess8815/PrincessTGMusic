@@ -94,13 +94,15 @@ async function mailSend(args,member){
     throw mailError("Subject must be 1–120 characters and text at most 6,000 characters.");
   const share=args.share||null,images=args.images||[];
   if(!body&&!share&&!images.length)
-    throw mailError("Write a message or attach a song, playlist or picture.");
+    throw mailError("Write a message or attach a song, playlist, document or picture.");
   if(!Array.isArray(images)||images.length>3||
      images.some(image=>!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(image?.dataUrl||"")||
        image.dataUrl.length>200000))
     throw mailError("Only up to three compressed JPEG images are allowed. Audio is blocked.");
-  if(share&&(!["song","playlist"].includes(share.kind)))
-    throw mailError("Only site songs and site playlists can be shared.");
+  if(share&&(!["song","playlist","document"].includes(share.kind)))
+    throw mailError("Only site songs, playlists and documents can be shared.");
+  if(share?.kind==="document"&&(!/^[a-f0-9]{64}$/.test(share.token||"")||typeof share.title!=="string"||share.title.length>120))
+    throw mailError("Invalid document attachment.");
   const rateRef=doc(db,THROTTLE,member.user.uid);
   const previous=await getDoc(rateRef);
   const now=Date.now();
@@ -265,7 +267,7 @@ function makeMailRow(mail){
   top.append(peer,stamp);
   const subject=element("span","mail-row-subject",mail.subject);
   const extras=element("small","mail-row-extras",
-    [mail.shareKind==="song"?"Song":mail.shareKind==="playlist"?"Playlist":"",
+    [mail.shareKind==="song"?"Song":mail.shareKind==="playlist"?"Playlist":mail.shareKind==="document"?"Document":"",
       mail.hasImage?mail.imageCount+" picture(s)":""].filter(Boolean).join(" · "));
   row.append(top,subject);
   if(extras.textContent)row.append(extras);
@@ -314,6 +316,14 @@ function makeSharedContent(saved){
     const anchor=element("a","","Open song");
     anchor.href=songLink(id);section.append(anchor);
     section.append(addToPlaylistControl(()=>[key],{label:"+ Add to my playlist"}));
+  }else if(saved.kind==="document"){
+    section.append(element("strong","","Shared document: "+(saved.title||"Untitled")));
+    if(/^[a-f0-9]{64}$/.test(saved.token||"")){
+      const anchor=element("a","","Open read-only document");
+      const url=new URL("docs-board.html",location.href);url.searchParams.set("share",saved.token);
+      anchor.href=url.href;anchor.target="_blank";anchor.rel="noopener noreferrer";
+      section.append(anchor);
+    }else section.append(element("p","","Invalid document link."));
   }else if(saved.kind==="playlist"){
     section.style.setProperty("--shared-color",saved.color||"#8b5cf6");
     section.append(element("strong","","≡ Playlist: "+saved.name));
@@ -449,7 +459,7 @@ async function findUsers(textValue){
 function showShare(){
   $("mail-share-preview").hidden=!share;
   $("mail-share-name").textContent=!share?"":share.kind==="song"?
-    "♫ "+share.title:"≡ "+share.name+" ("+share.tracks.length+" songs)";
+    "♫ "+share.title:share.kind==="document"?"Document: "+share.title:"≡ "+share.name+" ("+share.tracks.length+" songs)";
 }
 function addShare(item){
   share=item;showShare();
@@ -591,6 +601,12 @@ function beginCompose(recipient=null,subject=""){
 function applyShareIntent(){
   const params=new URLSearchParams(location.search);
   let intent=false;
+  const documentToken=params.get("mailDoc");
+  if(documentToken&&/^[a-f0-9]{64}$/.test(documentToken)){
+    share={kind:"document",token:documentToken,title:params.get("mailTitle")?.slice(0,120)||"Shared document"};
+    $("mail-subject").value||=share.title;
+    showShare();intent=true;
+  }
   const song=params.get("mailSong");
   if(song&&(/^song:[a-z0-9._-]{1,130}$/i.test(song))){
     share={kind:"song",key:song,title:params.get("mailTitle")?.slice(0,90)||song.slice(5)};
@@ -612,7 +628,7 @@ function applyShareIntent(){
   if(intent){
     tab.click();chooseView("compose",false);
     const url=new URL(location.href);
-    for(const key of ["mailSong","mailTitle","mailCompose"])url.searchParams.delete(key);
+    for(const key of ["mailSong","mailTitle","mailCompose","mailDoc"])url.searchParams.delete(key);
     history.replaceState(null,"",url.pathname+url.search+url.hash);
   }
 }
