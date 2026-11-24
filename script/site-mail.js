@@ -8,7 +8,7 @@ import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/fire
 import {
   sendSiteVerification,refreshSiteVerification,verificationError
 } from "./email-verification.js";
-import {getPlaylists,createPlaylist,addToPlaylistControl,songLink} from "./music-playlists.js";
+import {getPlaylists,ensurePlaylists,createPlaylist,addToPlaylistControl,songLink} from "./music-playlists.js";
 import {loadAllSongs} from "./song-data.js";
 
 // Firestore owns mailbox storage and enforces permissions through Security
@@ -329,17 +329,21 @@ function makeSharedContent(saved){
     section.append(element("strong","","≡ Playlist: "+saved.name));
     section.append(element("p","",saved.tracks?.length+" songs · shared from site"));
     const save=element("button","","Save to my playlists");save.type="button";
-    save.addEventListener("click",()=>{
+    save.addEventListener("click",async()=>{
+      save.disabled=true;
       try{
+        const uid=auth.currentUser?.uid;if(!uid)throw Error("Sign in to save playlists.");
+        await ensurePlaylists(uid);
+        if(auth.currentUser?.uid!==uid)throw Error("Account changed.");
         let candidate=saved.name,count=1;
         const existing=new Set(getPlaylists().map(p=>p.name.toLowerCase()));
         while(existing.has(candidate.toLowerCase())){
           candidate=saved.name+" (shared"+(count++>1?" "+(count-1):"")+")";
         }
-        createPlaylist(candidate,saved.tracks||[],saved.color);
+        await createPlaylist(candidate,saved.tracks||[],saved.color);
         save.disabled=true;save.textContent="Saved to your playlists";
-        setStatus("Playlist saved to your browser. Find it in the Playlists tab.");
-      }catch(error){setStatus(errorMessage(error),true);}
+        setStatus("Playlist saved to your account. Find it in the Playlists tab.");
+      }catch(error){save.disabled=false;setStatus(errorMessage(error),true);}
     });
     section.append(save);
   }
@@ -663,10 +667,10 @@ $("mail-add-song").addEventListener("click",()=>{
   if(!$("mail-song-chooser").hidden)void filterSongs();
 });
 $("mail-song-search").addEventListener("input",()=>void filterSongs());
-$("mail-add-playlist").addEventListener("click",()=>{
+$("mail-add-playlist").addEventListener("click",async()=>{
   $("mail-playlist-chooser").hidden=!$("mail-playlist-chooser").hidden;
   $("mail-song-chooser").hidden=true;
-  if(!$("mail-playlist-chooser").hidden)refreshPlaylistChoices();
+  if(!$("mail-playlist-chooser").hidden){try{await ensurePlaylists();refreshPlaylistChoices();}catch(e){setStatus(errorMessage(e),true);}}
 });
 $("mail-playlist-attach").addEventListener("click",()=>{
   const value=$("mail-playlist-select").value;
