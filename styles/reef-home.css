@@ -5,8 +5,11 @@
 #home-mystery-friend:hover{transform:translateY(-3px) rotate(-3deg)}
 #home-mystery-friend:focus-visible,#home-forbidden-button:focus-visible{outline:3px solid #ffd28b;outline-offset:4px}
 .home-secret-corner{display:flex;justify-content:flex-end;margin:30px 0 0}
-#home-forbidden-button{font:700 10px/1.2 system-ui,sans-serif;letter-spacing:.07em;background:#a51c34;color:#fff;border:1px solid #e25865;border-radius:5px;padding:6px 8px;min-height:24px;cursor:pointer}
-#home-forbidden-button:hover{background:#d22845}
+/* Hex's warning button intentionally ignores all custom palette colors. */
+#home-forbidden-button{font:700 10px/1.2 system-ui,sans-serif;letter-spacing:.07em;background:#b91c1c!important;color:#fff!important;border:1px solid #ef4444!important;border-radius:5px;padding:6px 8px;min-height:24px;cursor:pointer}
+#home-forbidden-button:hover{background:#dc2626!important}
+#home-forbidden-button:active{background:#991b1b!important}
+body.ptg-shell-ready #home-forbidden-button:focus-visible{outline:3px solid #fca5a5!important;outline-offset:4px}
 #home-reef-dialog{box-sizing:border-box;width:min(92vw,410px);max-height:88dvh;overflow:auto;padding:22px;border:1px solid #8d80ba;border-radius:20px;background:linear-gradient(150deg,#34264b,#173747);color:#fff;text-align:center;box-shadow:0 18px 60px #0009;font-family:system-ui,sans-serif}
 #home-reef-dialog::backdrop{background:#121022b8}
 #home-reef-dialog.home-reef-dark{background:linear-gradient(150deg,#2c132a,#160f20);border-color:#e94b60}
