@@ -279,7 +279,7 @@ async function cache(value,owner,rev,pending){
 const ownBackup=(owner,id)=>dbOp("readonly",store=>store.get(localKey(owner,id)));
 const ownBackups=owner=>dbOp("readonly",store=>store.index("scope").getAll(owner));
 function snapshot(){
- return {value:structuredClone(collect()),scope,uid,revision,version:editVersion,generation,pending:pendingCloud};
+ return {value:structuredClone(collect()),scope,uid,revision,version:editVersion,generation,pending:!!uid&&(pendingCloud||revision===0)};
 }
 function stillCurrent(s){return s.generation===generation&&s.scope===scope&&s.value.id===model.id;}
 async function backupOnly(){
@@ -375,7 +375,7 @@ async function library(){
    const result=await loadCloud(ownerUid,item.id);if(token!==generation)return;
    if(!result)throw Error("Cloud document no longer exists.");
    if(backup?.pending&&!confirm("Open the cloud version? Unsynced local edits are available through Recover copy."))return;
-   if(item.id===model.id&&(dirty||pendingCloud)){if(!confirm("Replace the current view with the saved cloud version? Export a backup first if needed."))return;clearTimeout(saveTimer);clearTimeout(backupTimer);await backupOnly();pendingCloud=false;dirty=false;}
+   if(item.id===model.id&&(dirty||pendingCloud)){if(!confirm("Replace the current view with the saved cloud version? Your unsynced local backup remains available for recovery."))return;clearTimeout(saveTimer);clearTimeout(backupTimer);await backupOnly();pendingCloud=false;dirty=false;}
    $("doc-library-dialog").close();await switchDoc(result.value,result.revision,false);
   },async()=>{
    if(item.id===model.id)throw Error("Open another document before deleting this one.");
@@ -415,7 +415,7 @@ async function initializeAccount(user){
  let backup=null;
  try{const last=lastId(scope);if(last)backup=await ownBackup(scope,last);}catch{}
  if(token!==generation)return;
- let value=blank(),rev=0,pending=false,notice=uid?"Ready · sign-in cloud saves enabled":"Guest mode · local saves only";
+ let value=blank(),rev=0,pending=false,notice=uid?"Ready · Firebase cloud saves enabled":"Guest mode · local saves only";
  if(backup){
   value=backup.value;rev=backup.revision||0;pending=!!backup.pending;
   if(uid&&!pending){
