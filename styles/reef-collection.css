@@ -1,0 +1,17 @@
+#reef-guest-dialog{box-sizing:border-box;width:min(92vw,440px);max-height:90dvh;overflow:auto;padding:24px;border:1px solid #756eaa;border-radius:23px;background:linear-gradient(160deg,#25234e,#132d43);color:#f4efff;text-align:center;box-shadow:0 18px 70px #0009}
+#reef-guest-dialog::backdrop{background:#0c1027b8;backdrop-filter:blur(4px)}
+#reef-guest-dialog h2{font-size:clamp(1.35rem,4vw,1.8rem);color:#fff;margin:8px 0}
+#reef-guest-dialog p{color:#e3e3f4;line-height:1.5;margin:8px 0 18px}
+#reef-guest-dialog .reef-guest-name{font-size:.85rem;letter-spacing:.08em;color:#ffd28b;font-weight:700}
+.reef-guest-art{max-width:220px;margin:0 auto;filter:drop-shadow(0 0 18px #eecb6f44)}
+.reef-guest-art svg,.reef-card-art svg{display:block;width:100%;height:auto}
+.reef-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+#reef-guest-dialog .reef-actions button{border-radius:12px;padding:10px 14px;border:1px solid #8f85be;cursor:pointer;background:#514d83;color:white;font-weight:700}
+#reef-guest-dialog .reef-actions button[data-reef-login]{background:#ffd28b;color:#292747}
+.reef-collection-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(138px,100%),1fr));gap:12px}
+.reef-card{border:1px solid #77749a66;border-radius:16px;background:var(--ptg-panel,#222e45);padding:12px;text-align:center;min-width:0;color:var(--ptg-text,#f4f2ff)}
+.reef-card h3{margin:6px 0 3px;font-size:1rem;color:inherit}
+.reef-card p{font-size:.78rem;margin:4px 0;color:inherit;opacity:.75}
+.reef-card-art{height:112px;display:grid;place-items:center}
+.reef-card-art svg{max-height:112px}
+.reef-mystery{font-weight:900;font-size:3rem;color:#b8b0df;background:radial-gradient(ellipse,#8279bd30,transparent 68%)}
