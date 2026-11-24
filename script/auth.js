@@ -1,4 +1,4 @@
-import "./reef-collection.js";
+import {claimPendingAxolotls,discoverAxolotl} from "./reef-collection.js";
 
 import { auth } from "./firebase.js";
 import { saveUserIfChanged } from "./user-data.js";
@@ -367,10 +367,12 @@ adminButton.addEventListener("click", async () => {
   }
 
   $("auth-open").addEventListener("click", openModal);
-  const reefMode=new URLSearchParams(location.search).get("reefSignIn");
+  const reefParams=new URLSearchParams(location.search);
+  const reefMode=reefParams.get("reefSignIn");
+  if((reefMode==="login"||reefMode==="register")&&reefParams.get("reefEncounter")==="nori")discoverAxolotl("nori");
   if(reefMode==="login"||reefMode==="register")void auth.authStateReady().then(()=>{
     if(!auth.currentUser){openModal();if(reefMode==="register")setMode("register");}
-    const clean=new URL(location.href);clean.searchParams.delete("reefSignIn");history.replaceState(null,"",clean.href);
+    const clean=new URL(location.href);clean.searchParams.delete("reefSignIn");clean.searchParams.delete("reefEncounter");history.replaceState(null,"",clean.href);
   });
   $("auth-close").addEventListener("click", closeModal);
   modal.addEventListener("click", event=>{
@@ -396,6 +398,7 @@ adminButton.addEventListener("click", async () => {
     try{
       if(mode==="register"){
         const credential=await createUserWithEmailAndPassword(auth,email,userPassword);
+        void claimPendingAxolotls(credential.user);
         // Request verification FIRST. A slow/denied Firestore profile write
         // or display-name update must never delay the new user's email.
         showVerification(credential.user,
@@ -414,6 +417,7 @@ adminButton.addEventListener("click", async () => {
         });
       }else{
         const credential=await signInWithEmailAndPassword(auth,email,userPassword);
+        void claimPendingAxolotls(credential.user);
         const verified=await refreshSiteVerificationAccess(credential.user)
           || await refreshSiteVerification(credential.user);
         if(verified)modal.hidden=true;
@@ -434,6 +438,7 @@ adminButton.addEventListener("click", async () => {
       // Popup is opened directly from the click handler. Redirect sign-in
       // is deliberately avoided on third-party GitHub Pages hosting.
       const credential=await signInWithPopup(auth,googleProvider);
+        void claimPendingAxolotls(credential.user);
       await credential.user.getIdToken(true);
       if(credential.user.emailVerified || await refreshSiteVerificationAccess(credential.user)){
         modal.hidden=true;
