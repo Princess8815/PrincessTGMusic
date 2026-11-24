@@ -224,6 +224,11 @@ async function checkOrder(){
     void claimReward();
    }else $("reward-status").textContent="Test purchases do not unlock production collectibles.";
    cart.clear();persist();remove(sessionStorage,orderKey);order=null;$("checkout-panel").hidden=true;renderCart();$("receipt-panel").scrollIntoView();
+  }else if(r.status==="refunded"||r.status==="partially_refunded"){
+   const reference=order.id;resetCheckout();cart.clear();persist();renderCart();
+   $("checkout-panel").hidden=true;$("receipt-panel").hidden=false;
+   $("receipt-message").textContent=(r.status==="refunded"?"This order was fully refunded.":"This order was partially refunded.")+" Order reference: "+reference+". Contact support for details.";
+   $("claim-purchase-reward").hidden=true;$("reward-status").textContent="";$("receipt-panel").scrollIntoView();
   }else if(r.status==="canceled"){resetCheckout();message("Checkout canceled. Your cart is still here.");}
   else{message("Payment status: "+r.status.replaceAll("_"," ")+". Do not pay again if your bank shows a pending charge.");$("check-order").hidden=false;}
  }catch(e){message(e.message);$("check-order").hidden=false;}

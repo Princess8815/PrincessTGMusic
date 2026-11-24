@@ -1,6 +1,7 @@
 // Authoritative CD checkout. No Firebase Admin credentials, no Blaze functions.
 import {storeProducts} from "../../script/store-catalog.js";
 import {rewardProject,verifiedBuyer,awardPaidOrder} from "./rewards.js";
+import {refundEvents,intentFromRefundEvent,syncRefunds,retryRefunds} from "./refunds.js";
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status});};
 const str=(v,max,required=true)=>{if(typeof v!=="string"||v.length>max||required&&!v.trim())fail("Please complete the shipping address.");return v.trim();};
 const integer=(v,min,max)=>Number.isInteger(v)&&v>=min&&v<=max;
@@ -135,6 +136,9 @@ async function fulfill(env,id){
    const tx=await stripe(env,"tax/transactions/create_from_calculation",{calculation:row.calculation,reference:"cd-"+id},"cd-tax-"+id);
    await env.ORDERS.prepare("UPDATE orders SET tax_transaction=? WHERE id=?").bind(tx.id,id).run();
   }
+  // Recheck status before dispatching a paid-order notification.
+  row=await getOrder(env,id);
+  if(row.status!=="paid"){await env.ORDERS.prepare("UPDATE orders SET notice_lock=0 WHERE id=? AND notice_lock=?").bind(id,lock).run();return;}
   const p=JSON.parse(row.payload);
   const res=await fetch(env.FORMSPREE_URL,{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({subject:(env.STORE_MODE==="test"?"TEST — ":"")+"Paid CD order "+id,order_id:id,stripe_payment_intent:row.intent,name:p.address.name,email:p.address.email,country:p.address.country,state:p.address.state,city:p.address.city,address_line_1:p.address.line1,address_line_2:p.address.line2,postal_code:p.address.postal_code,items:p.lines.map(l=>l.quantity+" × "+l.name+" ("+l.sku+")").join("\n"),subtotal_usd:(p.subtotal/100).toFixed(2),shipping_usd:(p.shipping/100).toFixed(2),tax_usd:(p.tax/100).toFixed(2),paid_usd:(p.total/100).toFixed(2)})});
   if(!res.ok)throw Error("Order email rejected: "+res.status);
@@ -166,7 +170,19 @@ async function webhook(req,env,ctx){
  if(event.type==="payment_intent.succeeded"){
   const intent=await stripe(env,"payment_intents/"+event.data.object.id);
   await markPaid(env,intent);
-  if(uuid(intent.metadata?.store_order_id))ctx.waitUntil(Promise.all([fulfill(env,intent.metadata.store_order_id),tryReward(env,intent.metadata.store_order_id)]));
+  if(uuid(intent.metadata?.store_order_id)){
+   const summary=await syncRefunds(env,stripe,intent.id);
+   if(summary?.status==="paid")ctx.waitUntil(Promise.all([fulfill(env,intent.metadata.store_order_id),tryReward(env,intent.metadata.store_order_id)]));
+  }
+ }else if(refundEvents.has(event.type)){
+  const intent=await intentFromRefundEvent(env,stripe,event);
+  if(intent){
+   const summary=await syncRefunds(env,stripe,intent);
+   if(summary?.status==="paid"){
+    const row=await env.ORDERS.prepare("SELECT id FROM orders WHERE intent=?").bind(intent).first();
+    if(row)ctx.waitUntil(Promise.all([fulfill(env,row.id),tryReward(env,row.id)]));
+   }
+  }
  }
  return {received:true};
 }
@@ -187,7 +203,11 @@ async function status(env,b,ctx){
  const row=await ownedOrder(env,b.id,b.token);
  if(row.status==="pending"&&row.intent){
   const pi=await stripe(env,"payment_intents/"+row.intent);
-  if(pi.status==="succeeded"){await markPaid(env,pi);ctx.waitUntil(Promise.all([fulfill(env,row.id),tryReward(env,row.id)]));return {status:"paid",reward:rewardProject(env)?"available":"disabled"};}
+  if(pi.status==="succeeded"){
+   const summary=await syncRefunds(env,stripe,pi.id);
+   if(summary?.status==="paid"){ctx.waitUntil(Promise.all([fulfill(env,row.id),tryReward(env,row.id)]));return {status:"paid",reward:rewardProject(env)?"available":"disabled"};}
+   return {status:summary?.status||"pending"};
+  }
   return {status:pi.status==="canceled"?"canceled":pi.status};
  }
  return {status:row.status,reward:row.status==="paid"?(rewardProject(env)?"available":"disabled"):undefined};
@@ -214,6 +234,7 @@ export default {
   }catch(e){if(!e.status)console.error("Store service error",e.message);return json({error:e.status?e.message:"Store service unavailable."},e.status||500);}
  },
  async scheduled(event,env,ctx){
+  await retryRefunds(env,stripe);
   const rows=await env.ORDERS.prepare("SELECT id FROM orders WHERE status='paid' AND notice_sent=0 AND notice_lock<? LIMIT 5").bind(Date.now()-120000).all();
   for(const row of rows.results||[])await fulfill(env,row.id);
   if(rewardProject(env)){
