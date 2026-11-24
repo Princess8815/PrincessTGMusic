@@ -1,5 +1,6 @@
 // PrincessTG Docs: Firebase-backed document library and account-scoped local backups.
 import {auth,db as firestore} from "./firebase.js";
+import {discoverAxolotl,showGuestReef} from "./reef-collection.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {listCloud,loadCloud,saveCloud,deleteCloud} from "./docs-cloud.js";
 import {shareStatus,shareSnapshot,revokeShare,shareUrl} from "./docs-share.js";
@@ -554,7 +555,8 @@ function shareState(state){
 }
 function shareCurrent(c){return c===shareContext&&c.generation===generation&&c.uid===uid&&c.id===model.id&&$("doc-share-dialog").open;}
 async function openSharing(publish=false){
- if(!uid||!ready){say("Sign in to share or publish documents.");return;}
+ if(!uid){await showGuestReef();return;}
+ if(!ready){say("Wait for your account workspace to finish loading.");return;}
  if(shareBusy)return;
  shareContext={uid,id:model.id,generation,state:null};
  const c=shareContext;$("doc-share-dialog").showModal();
@@ -624,6 +626,7 @@ onAuthStateChanged(auth,user=>void initializeAccount(user),error=>say("Account a
 
 // Bubbles is an original pink axolotl. No third-party character or artwork.
 const mascot=$("bubbles"),pet=$("bubbles-pet"),speech=$("bubbles-message");
+if(!mascot.hidden)discoverAxolotl("bubbles");
 const tips=[
  "A blank page is just a very quiet pond. Start with one sentence.",
  "Use headings and I can help make a table of contents!",
