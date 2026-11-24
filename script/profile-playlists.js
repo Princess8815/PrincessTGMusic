@@ -3,7 +3,7 @@ import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/fire
 import {loadAllSongs} from "./song-data.js";
 import {wireDragReorder} from "./drag-reorder.js";
 import {
-  getPlaylists, createPlaylist, deletePlaylist, setPlaylistColor,
+  getPlaylists, ensurePlaylists, playlistState, createPlaylist, deletePlaylist, setPlaylistColor,
   removeFromPlaylist, movePlaylistSong, getAudioIndex,
   keyForSong, songLink, audioLink
 } from "./music-playlists.js";
@@ -13,6 +13,7 @@ const audio=$("profile-playlist-audio");
 let selectedId="",catalog=new Map(),audioPaths=[],currentKey="",shuffling=false,shuffleRemaining=[];
 let searchTerm="",sortMode="recent",colorFilter="all";
 const status=message=>{$("profile-playlist-status").textContent=message;};
+const saveAction=async action=>{try{await action();}catch(e){status(e.message);}};
 const storageKey=()=> "princesstg-profile-playlist-selected-v1:"+(auth.currentUser?.uid||"guest");
 function selected(){return getPlaylists().find(p=>p.id===selectedId)||null;}
 function songEntry(key){
@@ -122,14 +123,14 @@ function refreshList(){
   empty.hidden=visible.length>0;
   empty.textContent=playlists.length
     ? "No playlists match your search or color filter."
-    : "No playlists yet. Create one below.";
+    : playlistState()||"No playlists yet. Create one below.";
 
   const playlist=selected();
   $("profile-playlist-empty-state").hidden=!!playlist;
   $("profile-playlist-selected-panel").hidden=!playlist;
   if(playlist){
     $("profile-playlist-selected-title").textContent=playlist.name;
-    $("profile-playlist-selected-meta").textContent=playlist.tracks.length+" song"+(playlist.tracks.length===1?"":"s")+" · saved on this device";
+    $("profile-playlist-selected-meta").textContent=playlist.tracks.length+" song"+(playlist.tracks.length===1?"":"s")+" · saved to your account";
     $("profile-playlist-color").value=playlist.color;
     $("profile-playlist-selected-swatch").style.setProperty("--playlist-color",playlist.color);
     $("profile-playlist-delete").disabled=false;
@@ -152,8 +153,8 @@ function renderTracks(){
       const b=document.createElement("button");b.type="button";
       b.textContent=label;b.disabled=disabled;b.addEventListener("click",handler);return b;
     }
-    const up=button("↑",()=>movePlaylistSong(playlist.id,index,index-1),index===0);
-    const down=button("↓",()=>movePlaylistSong(playlist.id,index,index+1),index===playlist.tracks.length-1);
+    const up=button("↑",()=>void saveAction(()=>movePlaylistSong(playlist.id,index,index-1)),index===0);
+    const down=button("↓",()=>void saveAction(()=>movePlaylistSong(playlist.id,index,index+1)),index===playlist.tracks.length-1);
     const play=button("▶ Play",()=>void playKey(key),!audioPaths.includes(key));
     const lyrics=button("Lyrics",()=>{
       showLyrics(key);
@@ -161,16 +162,16 @@ function renderTracks(){
     });
     const link=document.createElement("a");link.textContent="Details";
     link.href=songLink(entry.pageId||key.replace(/^song:/,""));
-    const remove=button("Remove",()=>{
-      removeFromPlaylist(playlist.id,key);
+    const remove=button("Remove",()=>void saveAction(async()=>{
+      await removeFromPlaylist(playlist.id,key);
       if(currentKey===key)stopAudio();
-    });
+    }));
     wireDragReorder(li,grip,key,"profile-playlist:"+playlist.id,(fromKey,toKey)=>{
       const latest=getPlaylists().find(p=>p.id===playlist.id);
       if(!latest)return;
       const from=latest.tracks.indexOf(fromKey);
       const to=latest.tracks.indexOf(toKey);
-      if(from>=0&&to>=0)movePlaylistSong(playlist.id,from,to);
+      if(from>=0&&to>=0)void saveAction(()=>movePlaylistSong(playlist.id,from,to));
     });
     li.append(grip,title,up,down,play,lyrics,link,remove);list.append(li);
   });
@@ -180,10 +181,11 @@ function renderTracks(){
     list.append(item);
   }
 }
-async function buildCatalog(){
+async function buildCatalog(uid){
   const [songResult,indexResult]=await Promise.allSettled([
     loadAllSongs("../audioPlayer/audio/song-details.json"),getAudioIndex()
   ]);
+  if(auth.currentUser?.uid!==uid)return;
   const songs=songResult.status==="fulfilled"?songResult.value:[];
   audioPaths=indexResult.status==="fulfilled"?indexResult.value:[];
   catalog=new Map();
@@ -198,10 +200,10 @@ async function buildCatalog(){
     status("Some song information is unavailable. Your saved playlists are still here.");
   }
 }
-$("profile-playlist-create-form").addEventListener("submit",event=>{
+$("profile-playlist-create-form").addEventListener("submit",async event=>{
   event.preventDefault();
   try{
-    const playlist=createPlaylist($("profile-playlist-name").value.trim(),[],
+    const playlist=await createPlaylist($("profile-playlist-name").value.trim(),[],
       $("profile-playlist-create-color").value);
     $("profile-playlist-name").value="";
     selectPlaylist(playlist.id);refreshList();
@@ -217,15 +219,14 @@ $("profile-playlist-send").addEventListener("click",()=>{
     detail:{kind:"playlist",name:playlist.name,color:playlist.color,tracks:[...playlist.tracks]}
   }));
 });
-$("profile-playlist-delete").addEventListener("click",()=>{
+$("profile-playlist-delete").addEventListener("click",async()=>{
   const playlist=selected();if(!playlist)return;
-  if(!window.confirm("Delete playlist '"+playlist.name+"' from this browser?"))return;
-  deletePlaylist(playlist.id);stopAudio();selectedId="";
-  refreshList();status("Playlist deleted.");
+  if(!window.confirm("Delete playlist '"+playlist.name+"' from your account and all devices?"))return;
+  await saveAction(async()=>{await deletePlaylist(playlist.id);stopAudio();selectedId="";refreshList();status("Playlist deleted.");});
 });
-$("profile-playlist-color").addEventListener("input",event=>{
+$("profile-playlist-color").addEventListener("change",async event=>{
   const playlist=selected();if(!playlist)return;
-  try{setPlaylistColor(playlist.id,event.target.value);}catch(error){status(error.message);}
+  try{await setPlaylistColor(playlist.id,event.target.value);}catch(error){status(error.message);}
 });
 $("profile-playlist-search").addEventListener("input",event=>{
   searchTerm=event.target.value.trim().toLowerCase();refreshList();
@@ -252,13 +253,13 @@ audio.addEventListener("ended",next);
 audio.addEventListener("play",showCurrent);
 audio.addEventListener("pause",showCurrent);
 window.addEventListener("princesstg:playlists-change",refreshList);
-window.addEventListener("storage",event=>{
-  if(event.key?.startsWith("princesstg-playlists-v2:"))refreshList();
-});
 onAuthStateChanged(auth,user=>{
   stopAudio();
   selectedId=user?(localStorage.getItem(storageKey())||""):"";
   catalog=new Map();audioPaths=[];
   refreshList();
-  if(user)void buildCatalog();
+  if(user){
+    void buildCatalog(user.uid);
+    void ensurePlaylists(user.uid).then(()=>{if(auth.currentUser?.uid===user.uid){refreshList();status(playlistState()||"Playlists synchronized with your account.");}}).catch(e=>{if(auth.currentUser?.uid===user.uid)status(e.message);});
+  }else status("Sign in to use playlists.");
 });
