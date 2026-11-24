@@ -3,6 +3,7 @@ import {auth,db as firestore} from "./firebase.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {listCloud,loadCloud,saveCloud,deleteCloud} from "./docs-cloud.js";
 import {shareStatus,shareSnapshot,revokeShare,shareUrl} from "./docs-share.js";
+import {makeDocx} from "./docs-word-export.js";
 const $=id=>document.getElementById(id);
 const app=$("docs-app"),host=$("doc-pages");
 const ns="http://www.w3.org/2000/svg";
@@ -455,11 +456,57 @@ async function initializeAccount(user){
  $("doc-storage-mode").textContent=uid?"Firebase account storage":"Guest · local storage";
  say(notice);
 }
-function download(name,body,type){const a=document.createElement("a");const url=URL.createObjectURL(new Blob([body],{type}));a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);}
+function download(name,body,type){const a=document.createElement("a");const url=URL.createObjectURL((body instanceof Blob?body:new Blob([body],{type})));a.href=url;a.download=name;a.rel="noopener";document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
 const filename=()=>($("doc-title").value.trim()||"document").replace(/[\\/:*?"<>|]/g,"_").slice(0,100);
 function htmlExport(){
- collect();const l=model.layout;const esc=v=>{const e=node("span",v);return e.innerHTML;};
- return '<!doctype html><html><head><meta charset="utf-8"><title>'+esc(model.title)+'</title><style>@page{size:'+l.width+'in '+l.height+'in;margin:0}body{margin:0}section{position:relative;box-sizing:border-box;width:'+l.width+'in;height:'+l.height+'in;padding:'+l.top+'in '+l.right+'in '+l.bottom+'in '+l.left+'in;break-after:page;page-break-after:always;font:11pt/1.15 Arial;overflow:hidden}section:last-child{break-after:auto;page-break-after:auto}img{max-width:100%;height:auto}table{border-collapse:collapse;width:100%;table-layout:fixed}td,th{border:1px solid #777;padding:5px}svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}header,footer{position:absolute;left:'+l.left+'in;right:'+l.right+'in;text-align:center;font:9pt Arial}header{top:'+l.top*.42+'in}footer{bottom:'+l.bottom*.38+'in}</style></head><body>'+model.pages.map((p,i)=>'<section><header>'+esc(l.header)+'</header>'+p.html+'<svg xmlns="'+ns+'" viewBox="0 0 '+l.width*96+' '+l.height*96+'">'+p.ink.map(v=>inkPath(v).outerHTML).join("")+'</svg><footer>'+esc([l.footer,l.numbers?i+1:""].filter(Boolean).join(" · "))+'</footer></section>').join("")+'</body></html>';
+ collect();const l=model.layout;
+ const esc=v=>node("span",String(v??"")).innerHTML;
+ function content(html){
+  const t=document.createElement("template");t.innerHTML=html;
+  // A downloaded file must not depend on a development server.
+  // Preserve deliberate external links and document anchors; remove local-only URLs.
+  for(const a of t.content.querySelectorAll("a[href]")){
+   const href=a.getAttribute("href").trim();
+   if(!href.startsWith("#")&&!/^(https?:\/\/|mailto:)/i.test(href)){
+    a.removeAttribute("href");continue;
+   }
+   if(/^https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)(?::|\/|$)/i.test(href))a.removeAttribute("href");
+  }
+  // Break between top-level block elements only. Do not reformat text
+  // runs, preformatted content, or inline spaces.
+  const block=n=>n.nodeType===1&&/^(P|DIV|H[1-6]|BLOCKQUOTE|PRE|UL|OL|TABLE|HR)$/.test(n.tagName);
+  let output="",previous=null;
+  for(const n of t.content.childNodes){
+   if(previous&&block(previous)&&block(n))output+="\n";
+   const wrapper=document.createElement("div");wrapper.append(n.cloneNode(true));output+=wrapper.innerHTML;previous=n;
+  }
+  return output;
+ }
+ const css=[
+ '@page { size: '+l.width+'in '+l.height+'in; margin: 0; }',
+ '* { box-sizing: border-box; }',
+ 'html { background: #e9e5eb; color: #222; }',
+ 'body { margin: 0; padding: 20px; font: 11pt/1.15 Arial, sans-serif; }',
+ 'section.paper { position: relative; margin: 0 auto 20px; background: #fff; width: '+l.width+'in; height: '+l.height+'in; box-shadow: 0 4px 14px #0002; break-after: page; page-break-after: always; }',
+ 'section.paper:last-child { break-after: auto; page-break-after: auto; }',
+ '.content { position: absolute; top: '+l.top+'in; right: '+l.right+'in; bottom: '+l.bottom+'in; left: '+l.left+'in; overflow: auto; overflow-wrap: anywhere; }',
+ '.content p { margin: 0 0 .5em; }',
+ '.content h1 { font-size: 22pt; margin: .5em 0; }',
+ '.content h2 { font-size: 16pt; margin: .6em 0; }',
+ '.content h3 { font-size: 13pt; margin: .55em 0; }',
+ '.content blockquote { border-left: 3px solid #d79bbf; padding-left: 12px; margin: .6em 0; }',
+ 'img { max-width: 100%; height: auto; }',
+ 'table { border-collapse: collapse; width: 100%; table-layout: fixed; }',
+ 'td, th { border: 1px solid #777; padding: 5px; vertical-align: top; }',
+ 'svg.ink { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }',
+ 'header, footer { position: absolute; left: '+l.left+'in; right: '+l.right+'in; text-align: center; font: 9pt Arial; }',
+ 'header { top: '+l.top*.42+'in; }',
+ 'footer { bottom: '+l.bottom*.38+'in; }',
+ '@media print { html, body { background: white; margin: 0; padding: 0; } section.paper { margin: 0; box-shadow: none; } .content { overflow: hidden; } }'
+ ].join("\n");
+ return ['<!doctype html>','<html lang="en">','<head>','  <meta charset="utf-8">','  <meta name="viewport" content="width=device-width, initial-scale=1">','  <meta name="referrer" content="no-referrer">','  <meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src data:; style-src \'unsafe-inline\'; base-uri \'none\'; form-action \'none\'">','  <title>'+esc(model.title)+'</title>','  <style>',css,'  </style>','</head>','<body>',
+ ...model.pages.map((p,i)=>['<section class="paper" aria-label="Page '+(i+1)+'">','  <header>'+esc(l.header)+'</header>','  <div class="content">',content(p.html),'  </div>','  <svg class="ink" xmlns="'+ns+'" viewBox="0 0 '+l.width*96+' '+l.height*96+'">',p.ink.map(v=>inkPath(v).outerHTML).join("\n"),'  </svg>','  <footer>'+esc([l.footer,l.numbers?i+1:""].filter(Boolean).join(" · "))+'</footer>','</section>'].join("\n")),
+ '</body>','</html>',''].join("\n");
 }
 function printDoc(){updateInfo();if(pages().some(p=>p.dataset.overflow==="true")){say("Some text extends beyond the paper. Use Insert → Flow overflowing text or Page break here before printing.");alert("One or more pages overflow. Use Insert → Flow overflowing text or move text to another page before printing, so nothing is clipped.");return;}window.print();}
 function setZoom(n){zoom=finite(n,40,130,90)/100;app.style.setProperty("--zoom",zoom);$("doc-zoom").value=zoom*100;$("doc-zoom-label").value=Math.round(zoom*100)+"%";}
@@ -548,10 +595,19 @@ on("doc-share-mail",()=>{const c=shareContext;if(!shareCurrent(c)||!c.state)retu
 on("doc-share-email",()=>{const url=$("doc-share-url").value;if(url)location.href="mailto:?subject="+encodeURIComponent(model.title)+"&body="+encodeURIComponent("Read this PrincessTG document:\n"+url);});
 on("doc-save",()=>void save());on("doc-print",printDoc);on("doc-new",()=>void switchDoc(blank()));on("doc-library",()=>void library());on("doc-library-close",()=>$("doc-library-dialog").close());
 on("doc-import",()=>$("doc-import-file").click());$("doc-import-file").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;try{if(f.size>25_000_000)throw Error("File exceeds 25 MB.");const text=await f.text();let value=blank();value.title=f.name.replace(/\.[^.]+$/,"");if(/\.(ptgdoc|json)$/i.test(f.name)){value=normalize(JSON.parse(text));value.id=id();}else if(/\.html?$/i.test(f.name)){value.pages=[{html:sanitize(text),ink:[]}];}else{const p=node("p",text);p.style.whiteSpace="pre-wrap";value.pages=[{html:text.split(/\r?\n/).map(x=>node("p",x).outerHTML).join(""),ink:[]}];}await switchDoc(value);}catch(error){say("Could not open file: "+error.message);}};
-on("doc-export",()=>download(filename()+".ptgdoc",JSON.stringify(collect()),"application/json"));
+on("doc-export",()=>download(filename()+".ptgdoc",JSON.stringify({format:"PrincessTG Docs",version:1,...collect()},null,2),"application/json"));
 on("doc-export-html",()=>download(filename()+".html",htmlExport(),"text/html;charset=utf-8"));
 on("doc-export-text",()=>download(filename()+".txt",editors().map(e=>e.innerText).join("\n\f\n"),"text/plain;charset=utf-8"));
-on("doc-export-word",()=>download(filename()+".doc",htmlExport(),"application/msword"));
+on("doc-export-word",async()=>{
+ const button=$("doc-export-word");if(button.disabled)return;
+ updateInfo();
+ if(pages().some(p=>p.dataset.overflow==="true")&&!confirm("Some sheets overflow. Word may add extra pages. Export anyway?"))return;
+ if(model.pages.some(p=>p.ink?.length)&&!confirm("Editable Word export does not yet preserve freehand ink. HTML, project backup and Print/PDF do. Continue?"))return;
+ button.disabled=true;say("Building editable Word document…");
+ try{const value=structuredClone(collect());const result=await makeDocx(value);download(filename()+".docx",result.blob,result.blob.type);say("Word document exported with page breaks."+(result.warnings.length?" "+result.warnings.join(" "):""));}
+ catch(e){say("Word export failed: "+e.message);}
+ finally{button.disabled=false;}
+});
 $("doc-title").oninput=mark;
 window.addEventListener("beforeunload",e=>{if(dirty||pendingCloud){e.preventDefault();e.returnValue="";}});
 document.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="s"){e.preventDefault();void save();}if((e.ctrlKey||e.metaKey)&&e.key==="Enter"&&editor()?.contains(document.activeElement)){e.preventDefault();breakPage();}});
@@ -574,12 +630,27 @@ const tips=[
  "Once upon a time, an imaginary office assistant had a pet axolotl. That's my entirely unofficial origin story."
 ];
 let tipIndex=0,drag=null,dragged=false,swimming=false,swimFrame=0,lastSwim=0,swimTarget=null;
-function talk(){ $("bubbles-speech").hidden=false;speech.textContent=tips[tipIndex++%tips.length];mascot.classList.remove("petted");void mascot.offsetWidth;mascot.classList.add("petted");}
-function position(x,y){const w=mascot.offsetWidth,h=mascot.offsetHeight;mascot.style.left=Math.max(0,Math.min(innerWidth-w,x))+"px";mascot.style.top=Math.max(0,Math.min(innerHeight-h,y))+"px";mascot.style.right="auto";mascot.style.bottom="auto";}
+let speechTimer=0;
+function placeSpeech(){
+ const bubble=$("bubbles-speech");if(bubble.hidden||mascot.hidden)return;
+ const r=mascot.getBoundingClientRect(),w=bubble.offsetWidth,h=bubble.offsetHeight;
+ const left=Math.max(8,Math.min(innerWidth-w-8,r.left+(r.width-w)/2));
+ const top=r.top>h+18?r.top-h-10:Math.min(innerHeight-h-8,r.bottom+10);
+ bubble.style.left=(left-r.left)+"px";bubble.style.top=(Math.max(8,top)-r.top)+"px";
+ bubble.style.bottom="auto";bubble.style.transform="none";
+}
+function talk(auto=false){
+ if(mascot.hidden)return;
+ clearTimeout(speechTimer);
+ const bubble=$("bubbles-speech");bubble.hidden=false;speech.textContent=tips[tipIndex++%tips.length];placeSpeech();
+ mascot.classList.remove("petted");void mascot.offsetWidth;mascot.classList.add("petted");
+ if(auto)speechTimer=setTimeout(()=>{bubble.hidden=true;},7000);
+}
+function position(x,y){const w=mascot.offsetWidth,h=mascot.offsetHeight;mascot.style.left=Math.max(0,Math.min(innerWidth-w,x))+"px";mascot.style.top=Math.max(0,Math.min(innerHeight-h,y))+"px";mascot.style.right="auto";mascot.style.bottom="auto";placeSpeech();}
 pet.addEventListener("pointerdown",e=>{setSwimming(false);const b=mascot.getBoundingClientRect();drag={x:e.clientX,y:e.clientY,left:b.left,top:b.top};dragged=false;pet.setPointerCapture(e.pointerId);});
 pet.addEventListener("pointermove",e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>5)dragged=true;if(dragged)position(drag.left+dx,drag.top+dy);});
-pet.addEventListener("pointerup",()=>{drag=null;});pet.addEventListener("pointercancel",()=>{drag=null;});
-pet.addEventListener("click",()=>{if(!dragged)talk();dragged=false;});
+pet.addEventListener("pointerup",()=>{const tapped=!!drag&&!dragged;drag=null;if(tapped)talk();});pet.addEventListener("pointercancel",()=>{drag=null;dragged=false;});
+pet.addEventListener("click",e=>{if(e.detail===0)talk();dragged=false;});
 function setSwimming(on){
  swimming=on;cancelAnimationFrame(swimFrame);lastSwim=0;swimTarget=null;
  mascot.dataset.swim=String(on);mascot.dataset.view="front";
@@ -602,7 +673,9 @@ function swim(now){
  swimFrame=requestAnimationFrame(swim);
 }
 on("doc-bubbles-animation",()=>setSwimming(!swimming));on("bubbles-swim",()=>setSwimming(!swimming));
-on("bubbles-tip",talk);on("bubbles-hide",()=>{setSwimming(false);mascot.hidden=true;});on("doc-bubbles-show",()=>{setSwimming(false);mascot.hidden=false;talk();});
+on("bubbles-tip",()=>talk());on("bubbles-hide",()=>{setSwimming(false);mascot.hidden=true;});on("doc-bubbles-show",()=>{setSwimming(false);mascot.hidden=false;talk();});
 speech.textContent="Hi! I'm Bubbles. Pet me for a tip or turn on Swim!";
+setInterval(()=>{if(!document.hidden&&!mascot.hidden&&!drag&&$("bubbles-speech").hidden)talk(true);},30000);
+window.addEventListener("resize",placeSpeech);
 
 window.addEventListener("resize",()=>{if(mascot.style.left){const r=mascot.getBoundingClientRect();position(r.left,r.top);}});
