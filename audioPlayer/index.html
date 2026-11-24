@@ -6,7 +6,6 @@
   <title>Music Player | PrincessTG Creations</title>
   <link rel="stylesheet" href="styles/main.css">
   <link rel="stylesheet" href="../styles/auth.css">
-  <script type="module" src="../script/auth.js"></script>
   <!-- Navigation and site-wide RGB theme are independent of Firebase loading. -->
   <link rel="stylesheet" href="../styles/site-shell.css" data-ptg-shell-style="1">
   <script type="module" src="../script/site-shell.js"></script>
@@ -69,6 +68,8 @@
   </main>
 
   <script src="../script/global_util.js" defer></script>
-  <script type="module" src="script/main.js"></script>
+  <script type="module" src="script/main.js?v=20261124-2"></script>
+  <!-- Start authentication independently, after the account container exists. -->
+  <script type="module" async src="../script/auth.js"></script>
 </body>
 </html>
