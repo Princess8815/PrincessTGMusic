@@ -2,6 +2,7 @@
 import {auth,db as firestore} from "./firebase.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {listCloud,loadCloud,saveCloud,deleteCloud} from "./docs-cloud.js";
+import {shareStatus,shareSnapshot,revokeShare,shareUrl} from "./docs-share.js";
 const $=id=>document.getElementById(id);
 const app=$("docs-app"),host=$("doc-pages");
 const ns="http://www.w3.org/2000/svg";
@@ -83,7 +84,7 @@ function makePage(data,index){
  const ink=document.createElementNS(ns,"svg");ink.classList.add("doc-ink");ink.setAttribute("viewBox","0 0 "+model.layout.width*96+" "+model.layout.height*96);
  for(const p of validInk(data.ink))ink.append(inkPath(p));
  ed.addEventListener("focus",()=>setActive(pages().indexOf(wrap)));
- ed.addEventListener("input",()=>{capture();mark();});
+ ed.addEventListener("input",()=>{capture();updateRibbonState();mark();});
  ed.addEventListener("paste",pasteEvent);
  ed.addEventListener("click",e=>{
   selectedImage?.classList.remove("docs-selected");selectedImage=e.target.tagName==="IMG"?e.target:null;selectedImage?.classList.add("docs-selected");
@@ -108,14 +109,38 @@ function updateDecorations(){
 function setActive(i){active=Math.max(0,Math.min(pages().length-1,i));pages().forEach((p,n)=>p.dataset.active=String(n===active));updateInfo();}
 function go(i,focus=false){setActive(i);pages()[active]?.scrollIntoView({block:"start",behavior:"auto"});if(focus){editor().focus();const r=document.createRange();r.selectNodeContents(editor());r.collapse(true);const sel=getSelection();sel.removeAllRanges();sel.addRange(r);capture();}}
 function capture(){const sel=getSelection();if(!sel?.rangeCount)return;const r=sel.getRangeAt(0);const owner=(r.commonAncestorContainer.nodeType===1?r.commonAncestorContainer:r.commonAncestorContainer.parentElement)?.closest(".doc-content");if(owner){active=editors().indexOf(owner);range=r.cloneRange();}}
-document.addEventListener("selectionchange",capture);
+const toggleCommands=new Set(["bold","italic","underline","strikeThrough","subscript","superscript","justifyLeft","justifyCenter","justifyRight","justifyFull","insertUnorderedList","insertOrderedList"]);
+function updateRibbonState(){
+ const sel=getSelection(),anchor=sel?.anchorNode;
+ if(!anchor||!editor()?.contains(anchor))return;
+ for(const b of document.querySelectorAll("[data-cmd]")){
+  if(toggleCommands.has(b.dataset.cmd)){
+   let selected=false;try{selected=document.queryCommandState(b.dataset.cmd);}catch{}
+   b.setAttribute("aria-pressed",String(selected));
+  }
+ }
+ const element=anchor.nodeType===1?anchor:anchor.parentElement;
+ const block=element?.closest("h1,h2,h3,p,blockquote,pre,div,li");
+ const tag=block?.tagName.toLowerCase();
+ const style=["h1","h2","h3","blockquote","pre"].includes(tag)?tag:"p";
+ $("doc-style").value=style;
+ for(const b of document.querySelectorAll("[data-heading]"))b.setAttribute("aria-pressed",String(b.dataset.heading===style));
+ const computed=element&&getComputedStyle(element);
+ if(computed){
+  const font=computed.fontFamily.split(",")[0].replace(/["']/g,"").trim();
+  if([...$("doc-font").options].some(o=>o.value===font))$("doc-font").value=font;
+  const pt=String(Math.round(parseFloat(computed.fontSize)*.75));
+  if([...$("doc-size").options].some(o=>o.value===pt))$("doc-size").value=pt;
+ }
+}
+document.addEventListener("selectionchange",()=>{capture();updateRibbonState();});
 function restore(){
  const ed=editor();if(!ed)return false;ed.focus();const sel=getSelection();sel.removeAllRanges();
  if(range&&ed.contains(range.commonAncestorContainer))sel.addRange(range);
  else {const r=document.createRange();r.selectNodeContents(ed);r.collapse(false);sel.addRange(r);}
  return true;
 }
-function cmd(command,value=null){if(!restore())return;document.execCommand("styleWithCSS",false,true);document.execCommand(command,false,value);capture();mark();}
+function cmd(command,value=null){if(!restore())return;document.execCommand("styleWithCSS",false,true);document.execCommand(command,false,value);capture();updateRibbonState();mark();}
 function insert(html){cmd("insertHTML",sanitize(html));}
 function node(tag,text){const e=document.createElement(tag);e.textContent=text;return e;}
 function headings(){return editors().flatMap((ed,index)=>[...ed.querySelectorAll("h1,h2,h3")].map(h=>({h,index,level:Number(h.tagName[1])})));}
@@ -380,6 +405,7 @@ async function library(){
   },async()=>{
    if(item.id===model.id)throw Error("Open another document before deleting this one.");
    if(!confirm("Permanently delete "+item.title+" from Firebase and this device's backup?"))throw Error("Deletion canceled.");
+   await revokeShare(ownerUid,item.id);
    await deleteCloud(ownerUid,item.id,item.revision);
    await dbOp("readwrite",s=>s.delete(localKey(owner,item.id))).catch(()=>{});
   },backup?.pending?async()=>{
@@ -410,6 +436,7 @@ async function initializeAccount(user){
  const token=++generation;clearTimeout(saveTimer);clearTimeout(backupTimer);
  ready=false;scope=nextScope;uid=user?.uid||null;dirty=false;pendingCloud=false;revision=0;
  if($("doc-library-dialog").open)$("doc-library-dialog").close();
+ if($("doc-share-dialog").open)$("doc-share-dialog").close();
  host.replaceChildren();$("doc-title").value="";app.inert=true;
  say("Loading your "+(uid?"Firebase":"guest")+" workspace…");
  let backup=null;
@@ -438,7 +465,8 @@ function printDoc(){updateInfo();if(pages().some(p=>p.dataset.overflow==="true")
 function setZoom(n){zoom=finite(n,40,130,90)/100;app.style.setProperty("--zoom",zoom);$("doc-zoom").value=zoom*100;$("doc-zoom-label").value=Math.round(zoom*100)+"%";}
 const on=(i,f)=>$(i).addEventListener("click",f);
 document.querySelectorAll("[data-ribbon]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-ribbon]").forEach(t=>t.setAttribute("aria-selected",String(t===b)));document.querySelectorAll("[data-ribbon-panel]").forEach(p=>p.hidden=p.dataset.ribbonPanel!==b.dataset.ribbon);});
-document.querySelectorAll("[data-cmd]").forEach(b=>{b.addEventListener("mousedown",e=>e.preventDefault());b.onclick=()=>cmd(b.dataset.cmd);});
+document.querySelectorAll("[data-cmd]").forEach(b=>{if(toggleCommands.has(b.dataset.cmd))b.setAttribute("aria-pressed","false");b.addEventListener("mousedown",e=>e.preventDefault());b.onclick=()=>cmd(b.dataset.cmd);});
+document.querySelectorAll("[data-heading]").forEach(b=>{b.addEventListener("mousedown",e=>e.preventDefault());b.onclick=()=>cmd("formatBlock",b.dataset.heading);});
 $("doc-font").onchange=e=>cmd("fontName",e.target.value);$("doc-size").onchange=e=>fontSize(e.target.value);$("doc-color").onchange=e=>cmd("foreColor",e.target.value);$("doc-highlight").onchange=e=>cmd("hiliteColor",e.target.value);$("doc-style").onchange=e=>cmd("formatBlock",e.target.value);$("doc-spacing").onchange=e=>blockStyle("line-height",e.target.value);
 on("doc-apply-indent",()=>blockStyle("text-indent",finite($("doc-indent").value,0,3,0)+"in"));
 $("doc-paragraph-after").onchange=e=>blockStyle("margin-bottom",e.target.value+"pt");
@@ -461,6 +489,63 @@ on("doc-layout-apply",()=>{model.layout=safeLayout({...model.layout,paper:$("doc
 $("doc-zoom").oninput=e=>setZoom(Number(e.target.value));on("doc-fit",()=>setZoom(Math.floor(($("doc-paper-scroll").clientWidth-50)/(model.layout.width*96)*100)));
 on("doc-toc",()=>toc());on("doc-toc-refresh",()=>toc(true));on("doc-find",()=>{const v=prompt("Find text");if(!v)return;const q=v.toLowerCase();const i=editors().findIndex(e=>e.innerText.toLowerCase().includes(q));if(i<0){say("Text not found.");return;}go(i,true);say("Text found on page "+(i+1)+".");});
 on("doc-replace",()=>{const a=prompt("Find exact text");if(!a)return;const b=prompt("Replace with","");if(b===null)return;let count=0;for(const ed of editors()){const walker=document.createTreeWalker(ed,NodeFilter.SHOW_TEXT);let n;while(n=walker.nextNode()){const parts=n.data.split(a);if(parts.length>1){count+=parts.length-1;n.data=parts.join(b);}}}mark();say("Replaced "+count+" occurrence(s) within text runs.");});
+let shareContext=null,shareBusy=false;
+const shareMessage=t=>$("doc-share-status").textContent=t;
+function shareState(state){
+ if(!shareContext)return;
+ shareContext.state=state;
+ $("doc-share-url").value=state?shareUrl(state.token):"";
+ shareMessage(state?(state.visibility==="public"?"Published on the public board.":"Unlisted · anyone with this link can read."):"Private · no shared copy.");
+ for(const id of ["doc-share-copy","doc-share-mail","doc-share-email","doc-share-revoke"])$(id).disabled=!state||shareBusy;
+}
+function shareCurrent(c){return c===shareContext&&c.generation===generation&&c.uid===uid&&c.id===model.id&&$("doc-share-dialog").open;}
+async function openSharing(publish=false){
+ if(!uid||!ready){say("Sign in to share or publish documents.");return;}
+ if(shareBusy)return;
+ shareContext={uid,id:model.id,generation,state:null};
+ const c=shareContext;$("doc-share-dialog").showModal();
+ shareState(null);shareMessage("Checking sharing settings…");
+ for(const id of ["doc-share-link","doc-share-public"])$(id).disabled=true;
+ try{
+  const state=await shareStatus(c.uid,c.id);
+  if(!shareCurrent(c))return;
+  shareState(state);
+  if(publish)shareMessage("To list this document publicly, click Publish / update public copy below.");
+ }catch(e){if(shareCurrent(c))shareMessage("Could not check sharing: "+e.message);}
+ finally{if(shareCurrent(c))for(const id of ["doc-share-link","doc-share-public"])$(id).disabled=false;}
+}
+async function changeSharing(mode){
+ const c=shareContext;if(shareBusy||!shareCurrent(c))return;
+ if(mode==="public"&&!confirm("Publish a read-only copy to the public document board? Anyone can see it."))return;
+ if(mode==="link"&&!confirm("Create or update an unlisted copy? Anyone with the link can read it. This removes it from the public board if already published."))return;
+ if(mode==="revoke"&&!confirm("Revoke this link and remove the public copy?"))return;
+ shareBusy=true;
+ for(const id of ["doc-share-link","doc-share-public","doc-share-revoke","doc-share-copy","doc-share-mail","doc-share-email","doc-share-close"])$(id).disabled=true;
+ shareMessage(mode==="revoke"?"Removing shared copy…":"Saving shared snapshot…");
+ try{
+  if(mode==="revoke"){await revokeShare(c.uid,c.id);if(shareCurrent(c))shareState(null);}
+  else{
+   if(!await save())throw Error("Save your private document to Firebase first.");
+   if(!shareCurrent(c))return;
+   const state=await shareSnapshot(c.uid,structuredClone(collect()),mode);
+   if(shareCurrent(c))shareState(state);
+  }
+ }catch(e){if(shareCurrent(c))shareMessage(e.message);}
+ finally{
+  shareBusy=false;
+  for(const id of ["doc-share-link","doc-share-public","doc-share-close"])$(id).disabled=false;
+  if(shareCurrent(c))for(const id of ["doc-share-revoke","doc-share-copy","doc-share-mail","doc-share-email"])$(id).disabled=!c.state;
+ }
+}
+on("doc-share",()=>void openSharing());on("doc-publish",()=>void openSharing(true));
+on("doc-share-close",()=>$("doc-share-dialog").close());
+$("doc-share-dialog").addEventListener("cancel",e=>{if(shareBusy)e.preventDefault();});
+on("doc-share-link",()=>void changeSharing("link"));on("doc-share-public",()=>void changeSharing("public"));on("doc-share-revoke",()=>void changeSharing("revoke"));
+on("doc-share-copy",async()=>{const url=$("doc-share-url").value;if(!url)return;try{await navigator.clipboard.writeText(url);shareMessage("Read-only link copied.");}catch{$("doc-share-url").select();shareMessage("Select and copy the link manually.");}});
+on("doc-share-mail",()=>{const c=shareContext;if(!shareCurrent(c)||!c.state)return;
+ const url=new URL("profile.html",location.href);url.searchParams.set("mailDoc",c.state.token);url.searchParams.set("mailTitle",model.title);url.hash="tab-mail";location.href=url.href;
+});
+on("doc-share-email",()=>{const url=$("doc-share-url").value;if(url)location.href="mailto:?subject="+encodeURIComponent(model.title)+"&body="+encodeURIComponent("Read this PrincessTG document:\n"+url);});
 on("doc-save",()=>void save());on("doc-print",printDoc);on("doc-new",()=>void switchDoc(blank()));on("doc-library",()=>void library());on("doc-library-close",()=>$("doc-library-dialog").close());
 on("doc-import",()=>$("doc-import-file").click());$("doc-import-file").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;try{if(f.size>25_000_000)throw Error("File exceeds 25 MB.");const text=await f.text();let value=blank();value.title=f.name.replace(/\.[^.]+$/,"");if(/\.(ptgdoc|json)$/i.test(f.name)){value=normalize(JSON.parse(text));value.id=id();}else if(/\.html?$/i.test(f.name)){value.pages=[{html:sanitize(text),ink:[]}];}else{const p=node("p",text);p.style.whiteSpace="pre-wrap";value.pages=[{html:text.split(/\r?\n/).map(x=>node("p",x).outerHTML).join(""),ink:[]}];}await switchDoc(value);}catch(error){say("Could not open file: "+error.message);}};
 on("doc-export",()=>download(filename()+".ptgdoc",JSON.stringify(collect()),"application/json"));
@@ -488,12 +573,36 @@ const tips=[
  "Pet me! I provide zero useful tax advice and approximately unlimited enthusiasm.",
  "Once upon a time, an imaginary office assistant had a pet axolotl. That's my entirely unofficial origin story."
 ];
-let tipIndex=0,drag=null,dragged=false;
-function talk(){speech.textContent=tips[tipIndex++%tips.length];mascot.classList.remove("petted");void mascot.offsetWidth;mascot.classList.add("petted");}
+let tipIndex=0,drag=null,dragged=false,swimming=false,swimFrame=0,lastSwim=0,swimTarget=null;
+function talk(){ $("bubbles-speech").hidden=false;speech.textContent=tips[tipIndex++%tips.length];mascot.classList.remove("petted");void mascot.offsetWidth;mascot.classList.add("petted");}
 function position(x,y){const w=mascot.offsetWidth,h=mascot.offsetHeight;mascot.style.left=Math.max(0,Math.min(innerWidth-w,x))+"px";mascot.style.top=Math.max(0,Math.min(innerHeight-h,y))+"px";mascot.style.right="auto";mascot.style.bottom="auto";}
-pet.addEventListener("pointerdown",e=>{const b=mascot.getBoundingClientRect();drag={x:e.clientX,y:e.clientY,left:b.left,top:b.top};dragged=false;pet.setPointerCapture(e.pointerId);});
+pet.addEventListener("pointerdown",e=>{setSwimming(false);const b=mascot.getBoundingClientRect();drag={x:e.clientX,y:e.clientY,left:b.left,top:b.top};dragged=false;pet.setPointerCapture(e.pointerId);});
 pet.addEventListener("pointermove",e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>5)dragged=true;if(dragged)position(drag.left+dx,drag.top+dy);});
 pet.addEventListener("pointerup",()=>{drag=null;});pet.addEventListener("pointercancel",()=>{drag=null;});
 pet.addEventListener("click",()=>{if(!dragged)talk();dragged=false;});
-on("bubbles-tip",talk);on("bubbles-hide",()=>{mascot.hidden=true;});on("doc-bubbles-show",()=>{mascot.hidden=false;talk();});
+function setSwimming(on){
+ swimming=on;cancelAnimationFrame(swimFrame);lastSwim=0;swimTarget=null;
+ mascot.dataset.swim=String(on);mascot.dataset.view="front";
+ $("doc-bubbles-animation").setAttribute("aria-pressed",String(on));
+ $("doc-bubbles-animation").textContent="Swim: "+(on?"On":"Off");
+ $("bubbles-swim").setAttribute("aria-pressed",String(on));
+ $("bubbles-swim").textContent=on?"Stop":"Swim";
+ if(on){mascot.hidden=false;$("bubbles-speech").hidden=true;swimFrame=requestAnimationFrame(swim);}
+}
+function swim(now){
+ if(!swimming||mascot.hidden)return;
+ const r=mascot.getBoundingClientRect(),dt=lastSwim?Math.min(.05,(now-lastSwim)/1000):0;lastSwim=now;
+ const xMax=Math.max(0,innerWidth-r.width),yMax=Math.max(0,innerHeight-r.height);
+ if(!swimTarget||Math.hypot(swimTarget.x-r.left,swimTarget.y-r.top)<10){
+  swimTarget={x:xMax*(.08+Math.random()*.84),y:yMax*(.12+Math.random()*.76)};
+ }
+ const dx=swimTarget.x-r.left,dy=swimTarget.y-r.top,d=Math.hypot(dx,dy)||1;
+ mascot.dataset.view=Math.abs(dy)>Math.abs(dx)*1.2?(dy<0?"back":"front"):(dx>0?"right":"left");
+ const step=Math.min(d,dt*65);position(r.left+dx/d*step,r.top+dy/d*step);
+ swimFrame=requestAnimationFrame(swim);
+}
+on("doc-bubbles-animation",()=>setSwimming(!swimming));on("bubbles-swim",()=>setSwimming(!swimming));
+on("bubbles-tip",talk);on("bubbles-hide",()=>{setSwimming(false);mascot.hidden=true;});on("doc-bubbles-show",()=>{setSwimming(false);mascot.hidden=false;talk();});
+speech.textContent="Hi! I'm Bubbles. Pet me for a tip or turn on Swim!";
+
 window.addEventListener("resize",()=>{if(mascot.style.left){const r=mascot.getBoundingClientRect();position(r.left,r.top);}});
