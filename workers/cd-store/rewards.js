@@ -1,5 +1,5 @@
 // Purchase rewards are written by the trusted Worker, not the browser.
-const rewardIds=["shelly","tide"];
+const rewardIds=["tide"];
 const enc=new TextEncoder();
 const b64url=bytes=>btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 const decode=s=>Uint8Array.from(atob(s.replace(/-/g,"+").replace(/_/g,"/")+"=".repeat((4-s.length%4)%4)),c=>c.charCodeAt(0));
@@ -52,7 +52,7 @@ async function accessToken(env){
 export async function awardPaidOrder(env,row){
  const project=rewardProject(env);
  if(!project||row.status!=="paid"||!row.reward_uid)return [];
- if(row.reward_done)return JSON.parse(row.reward_added||"[]");
+ if(row.reward_done)return JSON.parse(row.reward_added||"[]").filter(id=>rewardIds.includes(id));
  const uid=row.reward_uid,token=await accessToken(env),headers={Authorization:"Bearer "+token,"Content-Type":"application/json"};
  const root="https://firestore.googleapis.com/v1/projects/"+encodeURIComponent(project)+"/databases/(default)/documents/users/"+encodeURIComponent(uid);
  const account=await fetch(root,{headers});

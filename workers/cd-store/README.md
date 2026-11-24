@@ -4,7 +4,7 @@
 This is a test-mode integration. No real credentials or destination rates are included. No Firebase Blaze functions are required. Use commercial-capable hosting, not GitHub Pages, before enabling live payments.
 
 ## 1. Firebase
-Publish the complete **firestore-pr24-purchase.rules** delivered with PR #24. It retains existing rules and explicitly excludes Shelly and Tide from browser-created collectible IDs. Do not use the earlier draft rules that allowed those two IDs. Existing album permissions support public catalog reads and staff-only listing writes.
+Publish the complete **firestore-pr24-purchase.rules** delivered with PR #24. Use the latest full rules, then apply the visit-discovery adjustment below: Shelly is allowed in the ordinary encounter ID allowlist, Tide is never browser-creatable. Existing album permissions support public catalog reads and staff-only listing writes.
 
 Admin → Albums → CD Store → Load albums → select an album → enable sales → set volume count, names, USD prices and track assignments → Save. Each volume is a separate CD SKU. The default is $10 per disc. Inventory, CD capacity, packaging and fulfillment are manual.
 
@@ -37,17 +37,17 @@ npx wrangler deploy
 Paste the Worker HTTPS URL into script/store-config.js, and set ALLOWED_ORIGINS to the exact storefront origin. Test checkout with Stripe test cards.
 
 ## 3. Purchase-only collectible security
-Shelly greets shoppers at shipping and Tide appears next to Stripe Elements. Both remain locked until a verified successful purchase. The Worker checks the Stripe PaymentIntent's amount, currency, environment and order ID. A signed-in buyer's verified Firebase ID token binds the order to their UID. A guest may claim a paid order using the private session order token and a verified Firebase sign-in; each order can bind to only one UID.
+Shelly is an ordinary store-visit discovery, saved using the existing client-side collection flow. Tide is the only purchase-exclusive collectible and is revealed in rainbow colors on the verified order confirmation screen. Test purchases show Tide but do not grant production rewards. The Worker checks the Stripe PaymentIntent's amount, currency, environment and order ID. A signed-in buyer's verified Firebase ID token binds the order to their UID. A guest may claim a paid order using the private session order token and a verified Firebase sign-in; each order can bind to only one UID.
 
 The Worker needs a dedicated Google service account to write the paid collectible documents via Firestore REST. Grant only the necessary IAM data access (document get and create permissions; scope to the appropriate database where supported). Do not use Owner or Editor. The Worker must be treated as trusted infrastructure because service-account access bypasses Firestore client rules. Store the JSON credentials only with:
 ```sh
 npx wrangler secret put FIREBASE_REWARD_SERVICE_ACCOUNT
 ```
-Set REWARD_FIREBASE_PROJECT to the project that the credential and buyer token belong to. Live mode requires this to match FIREBASE_PROJECT. Sandbox payments cannot award production collectibles: leave REWARD_FIREBASE_PROJECT empty for ordinary testing, or use a separate test Firebase project with its own account, rules, credentials and frontend configuration. A Stripe test payment on the production Firebase site never grants Shelly or Tide. Keep the sandbox D1 database separate from production. Existing documents from an earlier permissive draft must be audited/deleted if unearned.
+Set REWARD_FIREBASE_PROJECT to the project that the credential and buyer token belong to. Live mode requires this to match FIREBASE_PROJECT. Sandbox payments cannot award production collectibles: leave REWARD_FIREBASE_PROJECT empty for ordinary testing, or use a separate test Firebase project with its own account, rules, credentials and frontend configuration. A Stripe test payment on the production Firebase site never grants Tide. Shelly is independent of payment mode. Keep the sandbox D1 database separate from production. Existing documents from an earlier permissive draft must be audited/deleted if unearned.
 
 ## 4. Before live checkout
 - Verify the store with actual sandbox payments (success, decline, 3DS, cancellation, duplicate webhook, wrong order amount, retry after failed Formspree delivery, signed-in and guest claim).
-- Confirm client-side Firestore writes to both paid collectible IDs are denied.
+- Confirm ordinary Shelly discoveries can be saved and client-side Firestore writes to Tide are denied.
 - Review fulfillment, tax calculations, returns/refunds, privacy disclosures and retention of customer address data. D1 holds addresses for order processing; restrict access and implement a retention/deletion policy before launch.
 - Configure abuse/rate limits and monitor Worker/D1/Stripe/Formspree quotas. Stripe Tax, payment processing and other services may charge fees.
 - Use separate live credentials, webhook, D1 database and an appropriate storefront origin. Set STORE_MODE=live and LIVE_READY=yes only once all launch checks pass. Live checkout is blocked when the allowed origins include github.io.
@@ -62,3 +62,8 @@ Set REWARD_FIREBASE_PROJECT to the project that the credential and buyer token b
 6. Partial refunds require manual allocation and a Stripe Tax reversal for the affected items/shipping. Once manual_review is recorded, subsequent full refunds also require manual reconciliation to avoid a double tax reversal. Do not reverse tax manually for a full_pending order until the automated retry has been investigated. If Stripe created a reversal but D1 failed to save it, locate the unique reference cd-refund-full-ORDER_ID and reconcile manually rather than inventing another reference.
 7. Stripe dashboard remains the place to issue refunds. No customer-facing refund endpoint, automatic refund email, shipment cancellation, chargeback handling or reward revocation is added. Review order status and Stripe before shipping; prior shipping emails cannot be recalled. Existing orders are not bulk scanned; resend their refund events to reconcile. The cron retries full tax reversals; expired original tax calculations and partial tax adjustments need operator review. Never issue a second monetary refund simply because tax reversal needs attention.
 8. Stripe docs: https://docs.stripe.com/api/tax/transactions/create_reversal and https://docs.stripe.com/api/refunds/list .
+
+## Store reef update (PR #28)
+- In your existing complete Firestore rules, add 'shelly' to the ordinary create-only axolotl discovery ID allowlist under /users/{uid}/axolotls/{axolotlId}. Preserve all owner, active-account and field validation rules and all existing free IDs (including pip and hex). Keep 'tide' excluded from every client create/update allowlist. Do not deploy an old complete rules file over newer features. Verify the actual deployed rules; this repository does not contain them.
+- No additional D1 migration is required for this change. Redeploy the Worker so it grants only Tide, not Shelly. Existing collections are preserved; old discoveries are not automatically revoked. Test mode reveals Tide visually after confirmed payment but must never grant Tide in the production Firebase project.
+- Verify on desktop and mobile: store visit awards Shelly once, Tide is absent from checkout/decline/cancel views, successful payment hides catalog/cart/checkout and shows rainbow Tide, Continue shopping restores catalog and permits a second checkout without reload, full and partial refunds show refund status rather than Tide, guest claim remains bound to the verified order, and a duplicate payment event cannot create a second Tide record. Production Tide requires the separate service-account setup above.

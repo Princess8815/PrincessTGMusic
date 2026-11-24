@@ -136,13 +136,35 @@ function stateChanged(){
  options(field("cityChoice"),[...cities].sort().map(x=>[x,x==="__other"?"Other city (enter name)":x]),"Select city");cityChanged();
 }
 function cityChanged(){const other=field("cityChoice").value==="__other";$("city-other").hidden=!other;field("cityOther").required=other;}
-async function meetFriends(payment=false){
- try{const reef=await import("./reef-collection.js");
- const root=$(payment?"payment-reef-friend":"store-reef-friends");root.replaceChildren();
- for(const [id,name,description] of (payment?[["tide","Tide","I'll keep watch while Stripe handles your payment. Only a verified purchase unlocks me!"]]:[["shelly","Shelly","I pack your CDs with a little reef magic. Complete your purchase to unlock me!"]])){
-  const card=el("div");card.className="store-friend";const art=el("div");art.innerHTML=reef.axolotlPortrait(id);const words=el("div");words.append(el("strong",name),el("span",description));card.append(art,words);root.append(card);
- }
- }catch(e){console.warn("Checkout mascots unavailable",e);}
+async function meetShelly(){
+ try{
+  const reef=await import("./reef-collection.js");
+  const root=$("store-reef-friends"),card=el("div");card.className="store-friend";
+  const art=el("div");art.innerHTML=reef.axolotlPortrait("shelly");
+  const words=el("div");words.append(el("strong","Shelly"),el("span","Welcome to the CD store! Visiting my shop discovers me for your collection."));
+  card.append(art,words);root.replaceChildren(card);
+  await reef.claimPendingAxolotls(); // Wait for existing account initialization where possible.
+  reef.discoverAxolotl("shelly");
+ }catch(e){console.warn("Store visit discovery unavailable",e);}
+}
+async function revealTide(){
+ try{
+  const reef=await import("./reef-collection.js");
+  if($("receipt-panel").hidden||$("receipt-tide").hidden)return;
+  $("receipt-tide-art").innerHTML=reef.axolotlPortrait("tide");
+ }catch(e){console.warn("Receipt mascot unavailable",e);}
+}
+function showReceipt(kind,text){
+ $("storefront").hidden=true;
+ $("checkout-panel").hidden=true;
+ $("receipt-title").textContent=kind==="paid"?"Thank you for your order!":"Order refund";
+ $("receipt-message").textContent=text;
+ $("receipt-tide").hidden=kind!=="paid";
+ $("receipt-tide-art").replaceChildren();
+ $("receipt-panel").hidden=false;
+ $("receipt-title").focus();
+ $("receipt-panel").scrollIntoView({block:"start"});
+ if(kind==="paid")void revealTide();
 }
 async function buyerToken(){
  try{const {auth}=await import("./firebase.js");await auth.authStateReady();return auth.currentUser?await auth.currentUser.getIdToken():null;}catch{return null;}
@@ -153,21 +175,21 @@ async function claimReward(){
  const status=$("reward-status");
  try{
   const idToken=await buyerToken();
-  if(!idToken){status.textContent="Log in to claim your verified purchase collectibles, then press Claim.";const button=$("auth-open");if(button&&!button.hidden)button.click();return;}
+  if(!idToken){status.textContent="Log in to claim Tide, then press Claim Tide.";const button=$("auth-open");if(button&&!button.hidden)button.click();return;}
   const r=await api("/claim-reward",{...ref,idToken});
-  if(r.reward==="disabled"){status.textContent="Sandbox purchase verified. Production collectibles are not awarded for test payments.";remove(sessionStorage,rewardKey);}
+  if(r.reward==="disabled"){status.textContent="Tide says hello! Sandbox purchases do not unlock production collectibles.";remove(sessionStorage,rewardKey);}
   else{
-   status.textContent="Shelly and Tide are in your collection!";
+   status.textContent="Tide is in your collection!";
    remove(sessionStorage,rewardKey);
    const reef=await import("./reef-collection.js");
-   for(const id of r.added||[])reef.announcePurchaseDiscovery(id);
+   for(const id of r.added||[])if(id==="tide")reef.announcePurchaseDiscovery(id);
   }
   $("claim-purchase-reward").hidden=true;
  }catch(e){status.textContent=e.message+" Your paid order remains recorded. Retry after signing in.";}
 }
 async function openCheckout(){
  if(order)return;
- $("checkout-panel").hidden=false;$("checkout-panel").scrollIntoView({block:"start"});message("Loading available destinations…");void meetFriends();
+ $("checkout-panel").hidden=false;$("checkout-panel").scrollIntoView({block:"start"});message("Loading available destinations…");$("quote-button").disabled=false;
  try{config=await api("/config");$("checkout-mode").textContent=config.mode==="test"?"TEST MODE · No real payment or shipment.":"Secure checkout · USD";
  options(field("country"),[...new Set(config.zones.map(x=>x.country))].sort().map(x=>[x,regionName(x)]),"Select nation");countryChanged();message("");}
  catch(e){message(e.message);$("quote-button").disabled=true;}
@@ -184,7 +206,6 @@ async function mountPayment(q){
  paymentElement?.destroy();stripe=window.Stripe(q.publishableKey);
  elements=stripe.elements({clientSecret:q.clientSecret,appearance:{theme:"night"}});
  paymentElement=elements.create("payment");paymentElement.mount("#payment-element");
- void meetFriends(true);
  $("payment-panel").hidden=false;$("shipping-form").hidden=true;$("check-order").hidden=false;
  const list=$("order-lines");list.replaceChildren(...q.lines.map(l=>el("p",l.quantity+" × "+l.name+" · "+money(l.quantity*l.priceCents))));
  for(const k of ["subtotal","shipping","tax","total"])$("quote-"+k).textContent=money(q[k]);
@@ -213,27 +234,38 @@ $("payment-form").onsubmit=async e=>{
  }catch(err){message(err.message);$("pay-button").disabled=false;}
  finally{busy=false;$("edit-checkout").disabled=false;}
 };
+let checkingOrder=false;
 async function checkOrder(){
- if(!order)return;try{
-  const r=await api("/status",order);
+ if(!order||checkingOrder)return;checkingOrder=true;
+ const reference=order;
+ try{
+  const r=await api("/status",reference);
+  if(order!==reference)return;
   if(r.status==="paid"){
-   $("receipt-panel").hidden=false;$("receipt-message").textContent="Payment confirmed. Order reference: "+order.id+". Your order will be processed using your shipping details.";
-   if(r.reward==="available"){
-    write(sessionStorage,rewardKey,order);$("claim-purchase-reward").hidden=false;
-    $("reward-status").textContent="Purchase verified! Claim your new axolotls using your PrincessTG account.";
-    void claimReward();
-   }else $("reward-status").textContent="Test purchases do not unlock production collectibles.";
-   cart.clear();persist();remove(sessionStorage,orderKey);order=null;$("checkout-panel").hidden=true;renderCart();$("receipt-panel").scrollIntoView();
+   const available=r.reward==="available";
+   $("claim-purchase-reward").hidden=!available;
+   $("reward-status").textContent=available?"Purchase verified! Sign in to claim Tide.":"Test purchase verified. Enjoy meeting Tide! Production collectibles are not awarded in sandbox mode.";
+   if(available)write(sessionStorage,rewardKey,reference);
+   resetCheckout();cart.clear();persist();renderCart();
+   showReceipt("paid","Payment confirmed. Order reference: "+reference.id+". Your order will be processed using your shipping details.");
+   if(available&&await buyerToken())void claimReward();
   }else if(r.status==="refunded"||r.status==="partially_refunded"){
-   const reference=order.id;resetCheckout();cart.clear();persist();renderCart();
-   $("checkout-panel").hidden=true;$("receipt-panel").hidden=false;
-   $("receipt-message").textContent=(r.status==="refunded"?"This order was fully refunded.":"This order was partially refunded.")+" Order reference: "+reference+". Contact support for details.";
-   $("claim-purchase-reward").hidden=true;$("reward-status").textContent="";$("receipt-panel").scrollIntoView();
+   resetCheckout();cart.clear();persist();renderCart();
+   const pending=read(sessionStorage,rewardKey,null);if(pending?.id===reference.id)remove(sessionStorage,rewardKey);
+   $("claim-purchase-reward").hidden=true;$("reward-status").textContent="";
+   showReceipt("refund",(r.status==="refunded"?"This order was fully refunded.":"This order was partially refunded.")+" Order reference: "+reference.id+". Contact support for details.");
   }else if(r.status==="canceled"){resetCheckout();message("Checkout canceled. Your cart is still here.");}
   else{message("Payment status: "+r.status.replaceAll("_"," ")+". Do not pay again if your bank shows a pending charge.");$("check-order").hidden=false;}
  }catch(e){message(e.message);$("check-order").hidden=false;}
+ finally{checkingOrder=false;}
 }
-function resetCheckout(){remove(sessionStorage,orderKey);order=null;paymentElement?.destroy();paymentElement=null;elements=null;stripe=null;$("payment-panel").hidden=true;$("shipping-form").hidden=false;$("check-order").hidden=true;renderCart();}
+function resetCheckout(){
+ remove(sessionStorage,orderKey);order=null;paymentElement?.destroy();paymentElement=null;elements=null;stripe=null;
+ $("payment-panel").hidden=true;$("shipping-form").hidden=false;$("check-order").hidden=true;
+ $("pay-button").disabled=true;$("pay-button").textContent="Pay";$("quote-button").disabled=false;$("edit-checkout").disabled=false;
+ $("order-lines").replaceChildren();for(const key of ["subtotal","shipping","tax","total"])$("quote-"+key).textContent="";
+ message("");renderCart();
+}
 $("check-order").onclick=()=>void checkOrder();
 $("edit-checkout").onclick=async()=>{
  if(busy||!order)return;busy=true;
@@ -241,9 +273,18 @@ $("edit-checkout").onclick=async()=>{
  catch(e){message(e.message+" Check order status before trying again.");}
  finally{busy=false;}
 };
-$("shop-again").onclick=()=>{$("receipt-panel").hidden=true;window.scrollTo(0,0);};
+$("shop-again").onclick=()=>{$("receipt-panel").hidden=true;$("receipt-tide").hidden=true;$("storefront").hidden=false;$("checkout-panel").hidden=true;window.scrollTo(0,0);$("store-checkout").focus();};
 $("claim-purchase-reward").onclick=()=>void claimReward();
-if(read(sessionStorage,rewardKey,null)){$("receipt-panel").hidden=false;$("receipt-message").textContent="Your verified order has a collectible claim."; $("claim-purchase-reward").hidden=false;}
+async function restoreRewardReceipt(){
+ const saved=read(sessionStorage,rewardKey,null);if(!saved||order)return;
+ try{
+  const result=await api("/status",saved);if(order||read(sessionStorage,rewardKey,null)?.id!==saved.id)return;
+  if(result.status==="paid"&&result.reward==="available"){
+   $("claim-purchase-reward").hidden=false;$("reward-status").textContent="Sign in to claim Tide from your verified purchase.";
+   showReceipt("paid","Payment confirmed. Order reference: "+saved.id+".");
+  }else if(["refunded","partially_refunded","canceled"].includes(result.status)||result.reward==="disabled")remove(sessionStorage,rewardKey);
+ }catch(e){console.warn("Pending Tide claim could not be restored",e);}
+}
 const previous=read(sessionStorage,orderKey,null);
 if(previous?.id&&previous?.token){order=previous;$("checkout-panel").hidden=false;$("shipping-form").hidden=true;$("payment-panel").hidden=false;$("check-order").hidden=false;message("Checking your previous checkout…");void checkOrder();}
-renderCart();void loadCatalog();
+renderCart();void loadCatalog();void meetShelly();if(!previous)void restoreRewardReceipt();
