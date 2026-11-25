@@ -1,0 +1,12 @@
+import assert from "node:assert/strict";
+import {readFile} from "node:fs/promises";
+const source=await readFile(new URL("../shipping.js",import.meta.url),"utf8");const api=await import("data:text/javascript;base64,"+Buffer.from(source).toString("base64"));const eq=assert.deepEqual;
+const env={STORE_MODE:"test",SHIPPO_API_KEY:"shippo_test_fake"};const shipment={test:true,object_id:"ship_1",object_created:"2026-11-25T00:00:00Z",status:"SUCCESS",rates:[],messages:[{source:"USPS",code:"test",text:"Carrier message"}],address_from:{street1:"private"}};
+let calls=[];const fetcher=async(url,opts)=>{calls.push({url,opts});return {ok:true,json:async()=>url.includes("?")?{results:[{...shipment,test:false,object_id:"live_1"},shipment]}:shipment}};
+const result=await api.latestTestDiagnostics(env,fetcher);
+eq(result.available,true);eq(result.rateCount,0);eq(result.messages,[{source:"USPS",code:"test",text:"Carrier message"}]);eq("address_from" in result,false);eq(calls.length,2);eq(calls[1].url,"https://api.goshippo.com/shipments/ship_1/");eq(calls[0].opts.headers.Authorization,"ShippoToken shippo_test_fake");
+eq((await api.latestTestDiagnostics({...env,STORE_MODE:"live"},fetcher)).available,false);eq(calls.length,2);
+eq((await api.latestTestDiagnostics(env,async()=>({ok:true,json:async()=>({results:[{...shipment,test:false}]})}))).available,false);
+eq((await api.latestTestDiagnostics(env,async(url)=>({ok:true,json:async()=>url.includes("?")?{results:[shipment]}:{...shipment,test:false}}))).available,false);
+eq((await api.latestTestDiagnostics(env,async()=>({ok:false,status:401}))).httpStatus,401);
+console.log("Shipping diagnostics passed");

@@ -2,7 +2,7 @@
 import {storeProducts} from "../../script/store-catalog.js";
 import {rewardProject,rewardAvailable,adminSandboxRewards,verifiedBuyer,verifiedShippingStaff,awardPaidOrder} from "./rewards.js";
 import {refundEvents,intentFromRefundEvent,syncRefunds,retryRefunds} from "./refunds.js";
-import {shippingEnabled,settings as shippingSettings,getRates,selectedRate} from "./shipping.js";
+import {shippingEnabled,settings as shippingSettings,getRates,selectedRate,latestTestDiagnostics} from "./shipping.js";
 import {CD_PROFILE,readProduct,packFor,catalog,saveCatalog} from "./merchandise.js";
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status});};
 const str=(v,max,required=true)=>{if(typeof v!=="string"||v.length>max||required&&!v.trim())fail("Please complete the shipping address.");return v.trim();};
@@ -110,7 +110,7 @@ async function shippingAdmin(env,b){
   const p=JSON.parse(row.payload);
   return {mode:env.STORE_MODE,order:{id:row.id,status:row.status,shipping:row.status==="paid"?p.shippingService||null:null,total:row.total}};
  }
- const c=shippingEnabled(env)?shippingSettings(env):null;return {mode:env.STORE_MODE,enabled:!!c,countries:c?.countries||[],pack:c?.pack||null,internationalConfigured:!!c?.customs};
+ const c=shippingEnabled(env)?shippingSettings(env):null;return {mode:env.STORE_MODE,enabled:!!c,countries:c?.countries||[],pack:c?.pack||null,internationalConfigured:!!c?.customs,...(env.STORE_MODE==="test"?{latestTestShipment:await latestTestDiagnostics(env)}:{})};
 }
 async function startOrder(env,body){
  configured(env);

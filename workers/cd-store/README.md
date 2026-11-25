@@ -93,3 +93,6 @@ Apply migrations/0003_merchandise.sql to both remote D1 databases, after 0002. C
 
 ### USPS-only domestic launch
 The Worker currently offers only USPS Ground Advantage and Priority Mail for routine free scheduled pickup at eligible addresses. Other carriers and Media Mail are intentionally excluded; international expansion will require adding reviewed service tokens. In Shippo Settings > Carriers > USPS > Edit, enable test mode and save before testing with the test API token. Switch to appropriate live carrier configuration before production. If no rates return, `npx wrangler tail --config wrangler.toml` shows only safe aggregate rate/message counts, not private shipping data. Re-request old quotes after this update. No labels are purchased automatically.
+
+### Read-only sandbox rate diagnostics
+In Admin > Albums > Store > Shipping management, click Load shipping configuration. The server verifies the staff role first, then reads the most recent test shipment from Shippo using the existing sandbox secret. The admin-only latestTestShipment section shows the original carrier messages, status and rate count. These are not logged or exposed to the public. Do not share any personal information in returned carrier text. Production never queries this diagnostic endpoint. No new secrets, database migration or frontend deployment required.

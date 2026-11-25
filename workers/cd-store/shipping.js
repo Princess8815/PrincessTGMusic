@@ -57,3 +57,24 @@ export function selectedRate(saved,rateId,fingerprint,now=Date.now()){
  const q=JSON.parse(saved.payload),rate=q.options.find(r=>r.id===rateId);if(!rate||rate.carrier!=="USPS"||!pickupServices.has(rate.serviceToken))fail("Request a new quote and select an eligible USPS service.",409);
  return {...rate,shipmentId:q.shipmentId,parcel:q.parcel,international:q.international};
 }
+
+// Read-only diagnostics for the authenticated shipping admin in sandbox only.
+// Never send these messages to public checkout or write them to logs.
+export async function latestTestDiagnostics(env,fetcher=fetch){
+ if(env.STORE_MODE!=="test"||!env.SHIPPO_API_KEY?.startsWith("shippo_test_"))return {available:false,reason:"Sandbox diagnostics only."};
+ const headers={Authorization:"ShippoToken "+env.SHIPPO_API_KEY,Accept:"application/json"};
+ try{
+  const list=await fetcher("https://api.goshippo.com/shipments/?results=10",{headers});
+  if(!list.ok)return {available:false,reason:"Shippo shipment lookup failed.",httpStatus:list.status};
+  const data=await list.json();
+  const rows=Array.isArray(data.results)?data.results:[];
+  const recent=rows.filter(x=>x?.test===true&&typeof x.object_id==="string"&&/^[a-zA-Z0-9_-]{1,100}$/.test(x.object_id)).sort((a,b)=>String(b.object_created||"").localeCompare(String(a.object_created||"")));
+  if(!recent.length)return {available:false,reason:"No recent test shipments found. Request a sandbox shipping quote and reload."};
+  const detail=await fetcher("https://api.goshippo.com/shipments/"+encodeURIComponent(recent[0].object_id)+"/",{headers});
+  if(!detail.ok)return {available:false,reason:"Shippo shipment detail lookup failed.",httpStatus:detail.status};
+  const ship=await detail.json();
+  if(ship.test!==true||ship.object_id!==recent[0].object_id)return {available:false,reason:"Shipment mode or ID could not be verified."};
+  const safe=v=>typeof v==="string"?v.slice(0,1500):"";
+  return {available:true,shipmentId:ship.object_id,created:safe(ship.object_created),status:safe(ship.status),rateCount:Array.isArray(ship.rates)?ship.rates.length:0,messages:(Array.isArray(ship.messages)?ship.messages:[]).slice(0,50).map(m=>({source:safe(m?.source),code:safe(m?.code),text:safe(m?.text)}))};
+ }catch{return {available:false,reason:"Shippo diagnostic request failed."};}
+}
