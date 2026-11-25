@@ -9,6 +9,12 @@ SHIPPING_ZONES = '[{"country":"US","state":"WI","city":"*","firstCents":500,"ext
 CD_TAX_CODE = "txcd_99999999"
 REWARD_FIREBASE_PROJECT = "music-and-poetry"
 ADMIN_TEST_TIDE = "yes"
+# Enable after applying quote migration and configuring private origin.
+SHIPPO_ENABLED = "no"
+SHIPPO_COUNTRIES = "US"
+SHIPPO_PACKAGING_VERIFIED = "no"
+# Sample test measurements only.
+SHIPPO_PACKAGE_JSON = '{"length":6,"width":6,"baseHeight":0.75,"discHeight":0.45,"baseWeight":2,"discWeight":4,"packagingCents":0,"insuranceCents":0,"trackingCents":0}'
 [[d1_databases]]
 binding = "ORDERS"
 database_name = "princesstg-cd-orders"
