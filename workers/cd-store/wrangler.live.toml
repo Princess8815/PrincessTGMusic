@@ -5,12 +5,18 @@ compatibility_date = "2026-11-24"
 [vars]
 FIREBASE_PROJECT = "music-and-poetry"
 STORE_MODE = "live"
-LIVE_READY = "no"
+LIVE_READY = "yes"
 ALLOWED_ORIGINS = "https://princesstgcreations.pages.dev"
 SHIPPING_ZONES = '[{"country":"US","state":"WI","city":"*","firstCents":500,"extraCents":100}]'
 CD_TAX_CODE = "txcd_99999999"
 REWARD_FIREBASE_PROJECT = "music-and-poetry"
 ADMIN_TEST_TIDE = "no"
+# Merchant-requested US-only CD launch using accepted packaging estimates.
+SHIPPO_ENABLED = "yes"
+SHIPPO_COUNTRIES = "US"
+SHIPPO_PACKAGING_VERIFIED = "no"
+SHIPPO_ALLOW_ESTIMATED_CD_PACKAGING = "yes"
+SHIPPO_PACKAGE_JSON = '{"length":7,"width":6,"baseHeight":0.5,"discHeight":0.25,"baseWeight":1,"discWeight":2,"packagingCents":0,"insuranceCents":0,"trackingCents":0}'
 
 [[d1_databases]]
 binding = "ORDERS"
