@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import {readFile} from "node:fs/promises";
 import {ERROR_LIST,errorCode,publicError,siteError,storeError,withErrorCode} from "../script/site-errors.js";
 
 const codes=new Set(ERROR_LIST.map(item=>item.code));
@@ -32,4 +33,14 @@ assert.equal(errorCode(retry),"PTG-204");
 assert.equal(errorCode(storeError(Error(privateDetails),"/claim-reward")),"PTG-213");
 assert.ok(!publicError(retry).includes("Firebase"));
 assert.equal(errorCode(null,"missing"),"PTG-001");
+// Verify the final displayed state for both missing-song routes.
+const songPage=await readFile(new URL("../audioPlayer/script/song-pages.js",import.meta.url),"utf8");
+const initialize=songPage.match(/async function initializeSongPage\(\) \{[\s\S]+?\n\}/)[0]
+ .replaceAll("import.meta.url",JSON.stringify(new URL("../audioPlayer/script/song-pages.js",import.meta.url).href));
+for(const search of ["","?id=missing-song"]){
+ const displayed=new Map();
+ await new Function("window","setText","publicError","loadSong","SONG_JSON",initialize+";return initializeSongPage();")(
+  {location:{search}},(id,value)=>displayed.set(id,value),publicError,async()=>null,"");
+ assert.equal(displayed.get("songStatus"),publicError(null,"PTG-008"));
+}
 console.log("Public error messages and service mapping passed");
