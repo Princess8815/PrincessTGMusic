@@ -15,7 +15,7 @@ export function normalizeDocLink(raw,base){
 export function isSiteLink(url,siteRoot){
  // GitHub Pages shares an origin with other projects. Match the actual
  // site path, not a string prefix of the hostname or another repo's path.
- const roots=[new URL(siteRoot),new URL("https://princess8815.github.io/PrincessTGMusic/")];
+ const roots=[new URL(siteRoot),new URL("https://princess8815.github.io/PrincessTGMusic/"),new URL("https://princesstgcreations.pages.dev/")];
  return roots.some(root=>{
   const path=root.pathname.endsWith("/")?root.pathname:root.pathname+"/";
   if(url.origin!==root.origin)return false;

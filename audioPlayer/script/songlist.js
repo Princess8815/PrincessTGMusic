@@ -73,7 +73,7 @@ import {songAlbums} from "../../script/song-albums.js";
   else dialog.setAttribute("open","");
 })();
 
-const SITE_URL = "https://princess8815.github.io/PrincessTGMusic";
+const SITE_URL = "https://princesstgcreations.pages.dev";
 const LOGO_URL = `${SITE_URL}/images/logo%20avatar.png`;
 
 
