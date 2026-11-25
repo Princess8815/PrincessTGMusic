@@ -62,7 +62,7 @@ export function guess(state,letter){
 export function publicState(s){
  const r=s.round;
  return {totalWins:s.totalWins,wins:s.wins,streak:s.streak,streakDifficulty:s.streakDifficulty,best:s.best,
- round:r?{id:r.id,difficulty:r.difficulty,letters:r.letters,status:r.status,awarded:r.awarded,unlocks:r.unlocks,
+ round:r?{id:r.id,difficulty:r.difficulty,letters:r.letters,status:r.status,awarded:r.awarded,
   mask:[...r.word].map(c=>r.letters.includes(c)||r.status!=="playing"?c:"_"),
   misses:r.letters.filter(c=>!r.word.includes(c)).length}:null};
 }

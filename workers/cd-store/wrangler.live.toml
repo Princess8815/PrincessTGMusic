@@ -7,6 +7,7 @@ FIREBASE_PROJECT = "music-and-poetry"
 STORE_MODE = "live"
 LIVE_READY = "yes"
 ALLOWED_ORIGINS = "https://princesstgcreations.pages.dev"
+HANGGIRL_PREVIEW_HOST = "princesstgcreations.pages.dev"
 SHIPPING_ZONES = '[{"country":"US","state":"WI","city":"*","firstCents":500,"extraCents":100}]'
 CD_TAX_CODE = "txcd_99999999"
 REWARD_FIREBASE_PROJECT = "music-and-poetry"

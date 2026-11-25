@@ -6,7 +6,7 @@ import {shippingEnabled,settings as shippingSettings,getRates,selectedRate,lates
 import {CD_PROFILE,readProduct,packFor,catalog,saveCatalog} from "./merchandise.js";
 import {inventoryList,inventoryLines,processingFor,saveInventory,orderStage,fulfillmentOrders} from "./inventory.js";
 import {submitSurvey,surveyPreviewOrigin} from "./surveys.js";
-import {playHanggirl} from "./hanggirl.mjs";
+import {playHanggirl,hanggirlOrigin} from "./hanggirl.mjs";
 import {publicError,errorCode} from "../../script/site-errors.js";
 import {ownerTools} from "./owner-tools.js";
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status});};
@@ -267,7 +267,7 @@ async function status(env,b,ctx){
 async function body(req,max=20000){const raw=await req.text();if(raw.length>max)fail("Request too large.",413);try{return JSON.parse(raw);}catch{fail("Invalid JSON.");}}
 export default {
  async fetch(req,env,ctx){
-  const url=new URL(req.url),origin=req.headers.get("Origin")||"",allowed=(env.ALLOWED_ORIGINS||"").split(",").map(x=>x.trim()).includes(origin)||(["/surveys/submit","/owner/terminal-commands"].includes(url.pathname)&&surveyPreviewOrigin(env,origin));
+  const url=new URL(req.url),origin=req.headers.get("Origin")||"",allowed=(env.ALLOWED_ORIGINS||"").split(",").map(x=>x.trim()).includes(origin)||(["/surveys/submit","/owner/terminal-commands"].includes(url.pathname)&&surveyPreviewOrigin(env,origin))||(url.pathname==="/games/hanggirl"&&hanggirlOrigin(env,origin));
   const headers={"Content-Type":"application/json","Cache-Control":"no-store","Vary":"Origin"};
   if(allowed)Object.assign(headers,{"Access-Control-Allow-Origin":origin,"Access-Control-Allow-Methods":"GET, POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type"});
   const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers});

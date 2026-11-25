@@ -31,6 +31,7 @@ test("all tiers and milestones award once; hard streak and total trophies",()=>{
 test("repeated guesses, no answer exposure, losses, abandonment and streak resets",()=>{
  let s=begin(win(initialState(),"easy"),"hard","apple","test");
  assert.equal(JSON.stringify(publicState(s)).includes("apple"),false);
+ assert.equal(Object.hasOwn(publicState(s).round,"unlocks"),false);
  s=guess(s,"p");assert.deepEqual(publicState(s).round.mask,["_","p","p","_","_"]);
  assert.equal(guess(s,"p"),s);
  for(const c of "bcdfgh")s=guess(s,c);

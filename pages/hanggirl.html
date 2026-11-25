@@ -7,7 +7,7 @@
 <script type="module" src="../script/site-shell.js"></script><script type="module" src="../script/auth.js"></script>
 <script type="module" src="../script/star-coins.js"></script><script type="module" src="../script/hanggirl.js"></script>
 </head><body><div id="auth-container"></div>
-<main class="hg-main"><header><p class="hg-kicker">Games and More</p><h1>Hanggirl</h1><p>Guess the hidden word before you run out of chances. Every win brings you closer to a new collectible.</p></header>
+<main class="hg-main"><header><p class="hg-kicker">Games and More</p><h1>Hanggirl</h1><p>Guess the hidden word before you run out of chances.</p></header>
 <section class="hg-card" data-star-wallet hidden><strong><span data-star-balance>…</span> Star Coins</strong><p data-star-status role="status"></p></section>
 <section class="hg-card"><div id="hg-mode" role="status"></div><button id="hg-login" hidden>Sign in</button>
 <div class="hg-options"><label for="hg-difficulty">Difficulty</label><select id="hg-difficulty"><option value="easy">Easy · 1 Star Coin</option><option value="medium">Medium · 2 Star Coins</option><option value="hard">Hard · 3 Star Coins</option></select><button id="hg-start">New game</button><button id="hg-abandon" hidden>Give up</button><button id="hg-reload" hidden>Retry connection</button></div>
@@ -25,6 +25,6 @@
 <div><p id="hg-chances"></p><p id="hg-word" class="hg-word" aria-label="Hidden word"></p></div></div>
 <div id="hg-keyboard" class="hg-keyboard" aria-label="Guess a letter"></div><p id="hg-result" aria-live="polite"></p></div>
 <p id="hg-message" role="status" aria-live="polite"></p></section>
-<section class="hg-card"><h2>Your stats</h2><div id="hg-stats" aria-live="polite">Start a game to see your progress.</div><p><a href="profile.html#tab-collections">Visit your collections and trophies</a></p></section>
-<section class="hg-card"><h2>How to play</h2><p>Choose a difficulty and guess one letter at a time. Every correct guess reveals every matching position. Six wrong letters end the round. A loss or surrender ends your streak; switching difficulties starts a new streak when you win. Refreshing resumes your live game. Each verified win earns 1, 2 or 3 Star Coins. Axolotl unlocks are secret; trophies show their requirements.</p><p>Words are rated by letter rarity, distinct letters, traditional vowels, familiarity and common letter patterns, not length alone. Word data: <a href="https://www.datamuse.com/api/" rel="noopener noreferrer">Datamuse</a>.</p></section>
+<section class="hg-card"><h2>Your stats</h2><div id="hg-stats" aria-live="polite">Start a game to see your progress.</div><p><a href="profile.html#tab-collections">View trophies</a></p></section>
+<section class="hg-card"><h2>How to play</h2><p>Choose a difficulty and guess one letter at a time. Every correct guess reveals every matching position. Six wrong letters end the round. A loss or surrender ends your streak; switching difficulties starts a new streak when you win. Refreshing resumes your game. Each verified win earns 1, 2 or 3 Star Coins.</p><p>Words are rated by letter rarity, distinct letters, traditional vowels, familiarity and common letter patterns, not length alone. Word data: <a href="https://www.datamuse.com/api/" rel="noopener noreferrer">Datamuse</a>.</p></section>
 </main></body></html>

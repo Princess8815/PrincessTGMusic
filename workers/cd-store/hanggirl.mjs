@@ -8,9 +8,9 @@ const fields=v=>Object.fromEntries(Object.entries(v).map(([k,x])=>[k,encode(x)])
 const decode=v=>v?.mapValue?Object.fromEntries(Object.entries(v.mapValue.fields||{}).map(([k,x])=>[k,decode(x)])):v?.arrayValue?(v.arrayValue.values||[]).map(decode):v&&"integerValue"in v?Number(v.integerValue):v&&"nullValue"in v?null:v?.stringValue??v?.booleanValue;
 const unpack=doc=>doc?decode({mapValue:{fields:doc.fields}}):null;
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-// Only live service can change real balances. Preview uses practice mode instead.
+// Only the live game service can change real balances, including from approved previews.
 export async function playHanggirl(env,input){
- if(env.STORE_MODE!=="live"||!env.FIREBASE_PROJECT||env.REWARD_FIREBASE_PROJECT!==env.FIREBASE_PROJECT)fail("Reward play is available on the live site only.",503);
+ if(env.STORE_MODE!=="live"||!env.FIREBASE_PROJECT||env.REWARD_FIREBASE_PROJECT!==env.FIREBASE_PROJECT)fail("Hanggirl reward service is not configured.",503);
  if(!input||!["state","start","guess","abandon"].includes(input.action))fail("Unknown game action.");
  const {action,roundId,letter,difficulty}=input;
  if(action!=="state"&&!uuid.test(roundId||""))fail("Invalid round ID.");
@@ -63,4 +63,15 @@ export async function playHanggirl(env,input){
   fail("Game save failed. Your reward has not been confirmed; retry.",503);
  }
  fail("Game changed in another tab. Retry to refresh.",409);
+}
+
+ // Additional origins apply only to Hanggirl, never checkout.
+export function hanggirlOrigin(env,origin){
+ if(env.STORE_MODE!=="live"||typeof origin!=="string")return false;
+ if(/^http:\/\/(?:localhost|127\.0\.0\.1)(?::[0-9]{1,5})?$/.test(origin))return true;
+ const host=env.HANGGIRL_PREVIEW_HOST;
+ if(!host||!origin.startsWith("https://"))return false;
+ const suffix="."+host;
+ const hostname=origin.slice(8);
+ return hostname.endsWith(suffix)&&/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(hostname.slice(0,-suffix.length));
 }
