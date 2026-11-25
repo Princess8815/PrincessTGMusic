@@ -14,4 +14,6 @@ const mixed={...result,rates:[...result.rates,{...result.rates[0],object_id:"ups
 eq(api.shippingOptions(mixed,pack,"test").map(r=>r.id),["rate","priority"]);
 throws(()=>api.shippingOptions({...result,rates:[mixed.rates[2],mixed.rates[3]]},pack,"test"));
 throws(()=>api.selectedRate({...saved,payload:JSON.stringify({options:[{...rates[0],serviceToken:"usps_media_mail"}]})},"rate","hash",99));
+const live={...env,STORE_MODE:"live",SHIPPO_API_KEY:"shippo_live_fake",SHIPPO_ALLOW_ESTIMATED_CD_PACKAGING:"yes"};
+eq(api.settings(live).estimatedPackaging,true);eq(api.settings({...live,SHIPPO_PACKAGING_VERIFIED:"yes"}).estimatedPackaging,false);throws(()=>api.settings({...live,SHIPPO_COUNTRIES:"US,CA"}));throws(()=>api.settings({...env,SHIPPO_ORIGIN_JSON:env.SHIPPO_ORIGIN_JSON.replace("54494","YOUR ZIP CODE")}));
 console.log("Shipping tests passed");

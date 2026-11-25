@@ -1,2 +1,4 @@
-// Public configuration only. Never place Stripe secret keys or Formspree secrets here.
-export const STORE_WORKER_URL = "https://princesstg-cd-store.transgirl1991.workers.dev"; // e.g. https://princesstg-store.<your-subdomain>.workers.dev
+// Public endpoints only. Preview, localhost and legacy GitHub Pages remain sandbox.
+export const STORE_WORKER_URL = globalThis.location?.origin === "https://princesstgcreations.pages.dev"
+ ? "https://princesstg-cd-store-live.transgirl1991.workers.dev"
+ : "https://princesstg-cd-store.transgirl1991.workers.dev";

@@ -111,7 +111,7 @@ async function shippingAdmin(env,b){
   const p=JSON.parse(row.payload);
   return {mode:env.STORE_MODE,order:{id:row.id,status:row.status,shipping:row.status==="paid"?p.shippingService||null:null,total:row.total}};
  }
- const c=shippingEnabled(env)?shippingSettings(env):null;return {mode:env.STORE_MODE,enabled:!!c,countries:c?.countries||[],pack:c?.pack||null,internationalConfigured:!!c?.customs,...(env.STORE_MODE==="test"?{latestTestShipment:await latestTestDiagnostics(env)}:{})};
+ const c=shippingEnabled(env)?shippingSettings(env):null;return {mode:env.STORE_MODE,enabled:!!c,countries:c?.countries||[],pack:c?.pack||null,internationalConfigured:!!c?.customs,packagingVerified:env.SHIPPO_PACKAGING_VERIFIED==="yes",estimatedPackagingAccepted:c?.estimatedPackaging===true,...(env.STORE_MODE==="test"?{latestTestShipment:await latestTestDiagnostics(env)}:{})};
 }
 async function startOrder(env,body){
  configured(env);

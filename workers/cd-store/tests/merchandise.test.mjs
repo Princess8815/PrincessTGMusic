@@ -6,4 +6,7 @@ eq(api.profileRecord(pack).maxUnits,10);eq(api.productRecord(product).priceCents
 throws(()=>api.profileRecord({...pack,maxUnits:0}));throws(()=>api.profileRecord({...pack,discWeight:-1}));throws(()=>api.productRecord({...product,priceCents:0}));throws(()=>api.productRecord({...product,coverUrl:"javascript:alert(1)"}));throws(()=>api.productRecord({...product,originCountry:"US"}));throws(()=>api.productRecord({...product,taxCode:"fake"}));
 const env={STORE_MODE:"test",ORDERS:{prepare(){return {bind(){return {first:async()=>({payload:JSON.stringify(pack)})}}}}}};
 eq((await api.packFor(env,[{profileId:"cd-slim"}],2)).id,"cd-slim");await rejects(()=>api.packFor(env,[{profileId:"cd-slim"},{profileId:"plush-box"}],2));await rejects(()=>api.packFor(env,[{profileId:"cd-slim"}],11));await rejects(()=>api.packFor({...env,STORE_MODE:"live"},[{profileId:"cd-slim"}],1));
+const live={...env,STORE_MODE:"live",SHIPPO_COUNTRIES:"US",SHIPPO_ALLOW_ESTIMATED_CD_PACKAGING:"yes"};
+eq((await api.packFor(live,[{kind:"cd",profileId:"cd-slim"}],1)).verified,false);
+await rejects(()=>api.packFor(live,[{kind:"merch",profileId:"cd-slim"}],1));await rejects(()=>api.packFor({...live,SHIPPO_COUNTRIES:"US,CA"},[{kind:"cd",profileId:"cd-slim"}],1));
 console.log("Merchandise tests passed");

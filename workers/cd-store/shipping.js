@@ -11,13 +11,15 @@ export function settings(env){
  const origin=parse(env.SHIPPO_ORIGIN_JSON,"Shipping origin"),pack=parse(env.SHIPPO_PACKAGE_JSON,"Packaging");
  if(!origin||origin.country!=="US"||!["name","street1","city","state","zip","phone","email"].every(k=>text(origin[k],254)))fail("Complete private US shipping origin.",503);
  if(!pack||!["length","width","baseHeight","discHeight","baseWeight","discWeight"].every(k=>typeof pack[k]==="number"&&Number.isFinite(pack[k])&&pack[k]>0&&pack[k]<=100)||!["packagingCents","insuranceCents","trackingCents"].every(k=>int(pack[k],0,5000)))fail("Invalid packaging settings.",503);
- if(env.STORE_MODE==="live"&&env.SHIPPO_PACKAGING_VERIFIED!=="yes")fail("Verify actual packaging before live shipping.",503);
+ if(!/^\d{5}(?:-\d{4})?$/.test(origin.zip)||!/^[A-Z]{2}$/.test(origin.state))fail("Enter a real US shipping origin ZIP and state.",503);
+ const estimatedPackaging=env.STORE_MODE==="live"&&env.SHIPPO_PACKAGING_VERIFIED!=="yes";
+ if(estimatedPackaging&&(env.SHIPPO_ALLOW_ESTIMATED_CD_PACKAGING!=="yes"||countries.length!==1||countries[0]!=="US"))fail("Verify actual packaging before live shipping or explicitly accept domestic CD estimate risk.",503);
  let customs=null;
  if(countries.some(x=>x!=="US")){
   customs=parse(env.SHIPPO_CUSTOMS_JSON,"International customs");
   if(!customs||!/^[A-Z]{2}$/.test(customs.originCountry||"")||!/^\d{6,10}$/.test(customs.tariffNumber||"")||!text(customs.signer,120)||customs.approved!==true||!["DDU","DAP"].includes(customs.incoterm))fail("International customs require merchant approval.",503);
  }
- return {countries,origin,pack,customs};
+ return {countries,origin,pack,customs,estimatedPackaging};
 }
 export function parcelFor(p,count){
  if(!int(count,1,20))fail("Invalid package quantity.");

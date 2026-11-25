@@ -76,6 +76,9 @@ export async function packFor(env,lines,count){
  const p=ids[0]===CD_PROFILE?await defaultProfile(env):await readProfile(env,ids[0]);
  if(!p)fail("Shipping profile no longer available.",409);
  if(count>p.maxUnits)fail("This package supports at most "+p.maxUnits+" items. Split the order.",409);
- if(env.STORE_MODE==="live"&&!p.verified)fail("This product's packaging has not been verified.",503);
+ if(env.STORE_MODE==="live"&&!p.verified){
+  // Explicit merchant opt-in for domestic CDs only, never unverified merchandise.
+  if(env.SHIPPO_ALLOW_ESTIMATED_CD_PACKAGING!=="yes"||env.SHIPPO_COUNTRIES!=="US"||p.id!==CD_PROFILE||!lines.every(l=>l.kind==="cd"))fail("This product's packaging has not been verified.",503);
+ }
  return p;
 }
