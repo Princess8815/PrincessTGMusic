@@ -41,7 +41,7 @@ function renderCart(){
  for(const [sku,q] of cart){
   const p=products.get(sku);
   const row=el("div");row.className="store-cart-row";row.append(el("strong",p?.name||sku));
-  if(!p){row.append(el("p",catalogReady?"Unavailable CD; remove before checkout.":"Checking availability…"));row.append(btn("Remove",()=>change(sku,-q)));box.append(row);continue;}
+  if(!p){row.append(el("p",catalogReady?"Unavailable product; remove before checkout.":"Checking availability…"));row.append(btn("Remove",()=>change(sku,-q)));box.append(row);continue;}
   subtotal+=q*p.priceCents;count+=q;
   const amount=el("p",money(p.priceCents)+" each · "+money(q*p.priceCents));amount.className="store-cart-price";row.append(amount);
   const controls=el("div");controls.className="cart-controls";controls.append(btn("−",()=>change(sku,-1)),el("span",String(q)),btn("+",()=>change(sku,1)),btn("Remove",()=>change(sku,-q)));row.append(controls);box.append(row);
@@ -54,7 +54,8 @@ function renderCart(){
 function change(sku,delta){
  if(order||busy||receiptKind){message("Cancel or finish the current payment before editing your cart.");return;}
  const q=(cart.get(sku)||0)+delta;
- if(q>10||q>0&&cart.size>=8&&!cart.has(sku)||[...cart.values()].reduce((a,b)=>a+b,0)+delta>20){$("store-status").textContent="Up to 10 copies per CD, 8 different CDs and 20 CDs per order.";return;}
+ if(delta>0&&[...cart.keys()].some(key=>(products.get(key)?.profileId||"cd-slim")!==(products.get(sku)?.profileId||"cd-slim"))){$("store-status").textContent="Items with different packaging need separate orders. Finish this cart before adding that product.";return;}
+ if(q>10||q>0&&cart.size>=8&&!cart.has(sku)||[...cart.values()].reduce((a,b)=>a+b,0)+delta>20){$("store-status").textContent="Up to 10 copies per product, 8 different products and 20 items per order.";return;}
  if(q<=0)cart.delete(sku);else cart.set(sku,q);
  clearShippingQuote();persist();renderCart();
  if(delta>0){const product=products.get(sku);$("store-cart-feedback").textContent=product?"Added "+product.name+" to your cart.":"Cart updated."; }
@@ -64,9 +65,10 @@ function updateCDDetails(){
  const p=products.get(detailSKU);if(!p)return;
  $("cd-detail-title").textContent=p.name;
  $("cd-detail-price").textContent=money(p.priceCents);
- $("cd-detail-meta").textContent=p.songIds.length+" tracks · "+p.category;
+ $("cd-detail-meta").textContent=p.kind==="merch"?p.category:p.songIds.length+" tracks · "+p.category;
  $("cd-detail-description").textContent=p.description;
  $("cd-detail-description").hidden=!p.description;
+ $("cd-detail-track-title").hidden=p.kind==="merch";$("cd-detail-tracks").hidden=p.kind==="merch";
  $("cd-detail-tracks").replaceChildren(...p.songIds.map(id=>el("li",titles.get(id)||id)));
 }
 function openCDDetails(p){
@@ -79,8 +81,8 @@ $("cd-detail-add").onclick=()=>{if(detailSKU)change(detailSKU,1);};
 function makeProduct(p){
  const card=el("article");card.className="store-card";
  const open=btn("",()=>openCDDetails(p));open.className="store-icon-open";
- open.setAttribute("aria-label","View details and tracks for "+p.name);open.title=p.name;
- const fallback=el("div","CD");fallback.className="store-cover";fallback.setAttribute("aria-hidden","true");
+ open.setAttribute("aria-label","View details for "+p.name);open.title=p.name;
+ const fallback=el("div",p.kind==="merch"?"Product":"CD");fallback.className="store-cover";fallback.setAttribute("aria-hidden","true");
  if(/^https:\/\//i.test(p.coverUrl)){
   const img=el("img");img.src=p.coverUrl;img.alt="";img.loading="lazy";img.onerror=()=>img.replaceWith(fallback);open.append(img);
  }else open.append(fallback);
@@ -94,7 +96,7 @@ function refreshAlbumOptions(){
  const choices=new Map(filterCDs([...products.values()],selectedCategory).map(p=>[p.albumId,p.albumName]));
  const select=$("store-album-select");
  if(selectedAlbum&&!choices.has(selectedAlbum))selectedAlbum="";
- select.replaceChildren(new Option("All albums",""),...[...choices].sort((a,b)=>a[1].localeCompare(b[1])).map(([id,name])=>new Option(name,id)));
+ select.replaceChildren(new Option("All products",""),...[...choices].sort((a,b)=>a[1].localeCompare(b[1])).map(([id,name])=>new Option(name,id)));
  select.value=selectedAlbum;
 }
 function chooseCategory(key){
@@ -104,7 +106,7 @@ function chooseCategory(key){
  refreshAlbumOptions();renderProducts();
 }
 function mountCatalogFilters(){
- const categories=[["","All CDs"],...categoryOptions([...products.values()])];
+ const categories=[["","All products"],...categoryOptions([...products.values()])];
  if(!categories.some(([key])=>key===selectedCategory))selectedCategory="";
  const tabs=$("store-category-tabs"),dropdown=$("store-category-select");
  tabs.replaceChildren(...categories.map(([key,name])=>{const button=btn(name,()=>chooseCategory(key));button.dataset.category=key;button.setAttribute("aria-pressed",String(key===selectedCategory));return button;}));
@@ -122,10 +124,10 @@ function renderProducts(){
  $("store-featured-section").hidden=!featured.length;
  $("store-regular-section").hidden=!!featured.length&&!regular.length;
  $("store-regular-title").hidden=!featured.length||!regular.length;
- $("store-filter-count").textContent=visible.length+" "+(visible.length===1?"CD":"CDs");
+ $("store-filter-count").textContent=visible.length+" "+(visible.length===1?"product":"products");
  for(const p of featured)featuredRoot.append(makeProduct(p));
  for(const p of regular)root.append(makeProduct(p));
- if(!visible.length){const empty=el("p",products.size?"No CDs match this selection.":"No CDs are listed for sale yet.");empty.className="store-grid-empty";root.append(empty);}
+ if(!visible.length){const empty=el("p",products.size?"No products match this selection.":"No products are listed for sale yet.");empty.className="store-grid-empty";root.append(empty);}
  updateControls();
 }
 async function loadCatalog(){
@@ -133,9 +135,11 @@ async function loadCatalog(){
   const [{db},{collection,getDocs}]=await Promise.all([import("./firebase.js"),import("https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js")]);
   const snap=await getDocs(collection(db,"albums"));
   products=new Map(snap.docs.flatMap(s=>storeProducts(s.id,s.data())).map(p=>[p.sku,p]));
-  catalogReady=true;mountCatalogFilters();renderProducts();renderCart();$("store-status").textContent=products.size+" CD listings"+(!STORE_WORKER_URL?" · Checkout is not configured yet.":".");
+  let merchandiseUnavailable=false;
+  if(STORE_WORKER_URL)try{const catalog=await api("/catalog");for(const p of catalog.products||[])products.set(p.sku,p);}catch(e){merchandiseUnavailable=true;console.warn("Merchandise catalog unavailable",e.message);}
+  catalogReady=true;mountCatalogFilters();renderProducts();renderCart();$("store-status").textContent=products.size+" product listings"+(!STORE_WORKER_URL?" · Checkout is not configured yet.":merchandiseUnavailable?" · Additional merchandise is temporarily unavailable.":".");
   void import("./song-data.js").then(({loadAllSongs})=>loadAllSongs("../audioPlayer/audio/song-details.json")).then(songs=>{titles=new Map(songs.map(s=>[s.pageId,s.title]));if(detailSKU)updateCDDetails();}).catch(()=>{});
- }catch(e){$("store-status").textContent="Could not load the CD catalog: "+e.message;}
+ }catch(e){$("store-status").textContent="Could not load the store catalog: "+e.message;}
 }
 async function api(path,data){
  if(!STORE_WORKER_URL)throw Error("Checkout service has not been configured.");
@@ -292,7 +296,7 @@ form.onsubmit=async e=>{
   try{
    const values=Object.fromEntries(new FormData(form));
    const address={name:values.name,email:values.email,country:values.country,state:values.stateChoice==="__other"?values.stateOther||"":values.stateChoice,city:values.cityChoice==="__other"?values.cityOther:values.cityChoice,line1:values.line1,line2:values.line2,postal_code:values.postal_code,phone:values.phone||""};
-   const lines=[...cart].map(([sku,quantity])=>{const p=products.get(sku);if(!p)throw Error("Remove unavailable CDs.");return {albumId:p.albumId,volume:p.volume,quantity};});
+   const lines=[...cart].map(([sku,quantity])=>{const p=products.get(sku);if(!p)throw Error("Remove unavailable products.");return p.kind==="merch"?{productId:p.id,quantity}:{albumId:p.albumId,volume:p.volume,quantity};});
    const fingerprint=JSON.stringify({address,lines});let selection={};
    if(config.carrierShipping){
     if(!shippingQuote||shippingQuote.fingerprint!==fingerprint||shippingQuote.expires<=Date.now()){
