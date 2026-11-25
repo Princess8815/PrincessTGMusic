@@ -10,7 +10,8 @@ const remove=(storage,key)=>{try{storage.removeItem(key);}catch{}};
 let products=new Map(),titles=new Map(),cart=new Map(),config=null,stripe=null,elements=null,paymentElement=null,order=null,busy=false,catalogReady=false;
 let selectedCategory="",selectedAlbum="";
 let paymentReady=false,paymentMayProceed=false,configFailed=false,claimBusy=false;
-let receiptKind=null;
+let receiptKind=null,shippingQuote=null;
+function clearShippingQuote(){shippingQuote=null;const panel=$("shipping-rate-panel");if(panel)panel.hidden=true;$("quote-button").textContent=config?.carrierShipping?"Find shipping services":"Calculate shipping and tax";}
 function updateControls(){
  const active=!!order;
  $("store-checkout").disabled=busy||active||!catalogReady||!cart.size||[...cart.keys()].some(s=>!products.has(s))||!STORE_WORKER_URL;
@@ -55,7 +56,7 @@ function change(sku,delta){
  const q=(cart.get(sku)||0)+delta;
  if(q>10||q>0&&cart.size>=8&&!cart.has(sku)||[...cart.values()].reduce((a,b)=>a+b,0)+delta>20){$("store-status").textContent="Up to 10 copies per CD, 8 different CDs and 20 CDs per order.";return;}
  if(q<=0)cart.delete(sku);else cart.set(sku,q);
- persist();renderCart();
+ clearShippingQuote();persist();renderCart();
  if(delta>0){const product=products.get(sku);$("store-cart-feedback").textContent=product?"Added "+product.name+" to your cart.":"Cart updated."; }
 }
 let detailSKU=null;
@@ -156,6 +157,7 @@ function countryChanged(){
  if(z.some(x=>x.state==="*")){if(country==="US")us.forEach(x=>states.add(x));else if(country==="CA")ca.forEach(x=>states.add(x));else states.add("__other");}
  options(field("stateChoice"),[...states].sort().map(x=>[x,x==="__other"?"Other / not applicable":x]),"Select state / province");stateChanged();
  field("postal_code").required=["US","CA"].includes(country);
+ if(field("phone"))field("phone").required=!!config.carrierShipping&&country!==""&&country!=="US";
 }
 function stateChanged(){
  if(!config)return;
@@ -171,7 +173,7 @@ async function meetShelly(){
   const reef=await import("./reef-collection.js");
   const root=$("store-reef-friends"),card=el("div");card.className="store-friend";
   const art=el("div");art.innerHTML=reef.axolotlPortrait("shelly");
-  const words=el("div");words.append(el("strong","Shelly"),el("span","Welcome to the CD store! Visiting my shop discovers me for your collection."));
+  const words=el("div");words.append(el("strong","Shelly"),el("span","Welcome to the store! Visiting my shop discovers me for your collection."));
   card.append(art,words);root.replaceChildren(card);
   const state=el("span","Saving your discovery…");state.setAttribute("role","status");words.append(state);
   const retry=btn("Retry saving Shelly",()=>void saveShelly());retry.hidden=true;words.append(retry);
@@ -243,7 +245,7 @@ async function openCheckout(){
   config=null;configFailed=false;$("retry-config").hidden=true;message("Loading available destinations…");
   try{
    config=await api("/config");$("checkout-mode").textContent=config.mode==="test"?"TEST MODE · No real payment or shipment.":"Secure checkout · USD";
-   options(field("country"),[...new Set(config.zones.map(x=>x.country))].sort().map(x=>[x,regionName(x)]),"Select nation");countryChanged();message("");
+   clearShippingQuote();options(field("country"),[...new Set(config.zones.map(x=>x.country))].sort().map(x=>[x,regionName(x)]),"Select nation");countryChanged();message("");
   }catch(e){config=null;configFailed=true;message(e.message+" Retry shipping setup.");$("retry-config").hidden=false;}
  });
 }
@@ -267,6 +269,8 @@ async function mountPayment(q,reference){
  const element=elements.create("payment");paymentElement=element;
  paymentMayProceed=true;
  $("payment-panel").hidden=false;$("shipping-form").hidden=true;$("check-order").hidden=false;$("resume-payment").hidden=true;
+ if($("shipping-rate-panel"))$("shipping-rate-panel").hidden=true;
+ if($("quote-service"))$("quote-service").textContent=q.shippingService?q.shippingService.carrier+" · "+q.shippingService.service:"";
  const list=$("order-lines");list.replaceChildren(...q.lines.map(l=>el("p",l.quantity+" × "+l.name+" · "+money(l.quantity*l.priceCents))));
  for(const k of ["subtotal","shipping","tax","total"])$("quote-"+k).textContent=money(q[k]);
  $("pay-button").textContent="Pay "+money(q.total);
@@ -281,16 +285,30 @@ function showRecovery(text,resume=true){
  $("check-order").hidden=false;$("resume-payment").hidden=!resume;$("edit-checkout").hidden=false;
  message(text);
 }
+form.oninput=e=>{if(e.target?.id!=="shipping-rate-select"&&!order&&shippingQuote)clearShippingQuote();};
 form.onsubmit=async e=>{
  e.preventDefault();if(busy||!config||order||!cart.size||receiptKind)return;
  await exclusive(async()=>{
   try{
    const values=Object.fromEntries(new FormData(form));
-   const address={name:values.name,email:values.email,country:values.country,state:values.stateChoice==="__other"?values.stateOther||"":values.stateChoice,city:values.cityChoice==="__other"?values.cityOther:values.cityChoice,line1:values.line1,line2:values.line2,postal_code:values.postal_code};
+   const address={name:values.name,email:values.email,country:values.country,state:values.stateChoice==="__other"?values.stateOther||"":values.stateChoice,city:values.cityChoice==="__other"?values.cityOther:values.cityChoice,line1:values.line1,line2:values.line2,postal_code:values.postal_code,phone:values.phone||""};
    const lines=[...cart].map(([sku,quantity])=>{const p=products.get(sku);if(!p)throw Error("Remove unavailable CDs.");return {albumId:p.albumId,volume:p.volume,quantity};});
+   const fingerprint=JSON.stringify({address,lines});let selection={};
+   if(config.carrierShipping){
+    if(!shippingQuote||shippingQuote.fingerprint!==fingerprint||shippingQuote.expires<=Date.now()){
+     clearShippingQuote();message("Requesting carrier shipping rates…");
+     const quote=await api("/shipping-quotes",{address,cart:lines});shippingQuote={...quote,fingerprint};
+     options($("shipping-rate-select"),quote.options.map(r=>[r.id,r.carrier+" · "+r.service+" · "+money(r.totalCents)+(r.days===null?"":" · estimated "+r.days+" days")]),"Choose a shipping service");
+     $("shipping-rate-panel").hidden=false;$("shipping-rate-note").textContent=(quote.international?"Recipient-paid import duties and fees may apply. ":"")+"Estimates exclude processing time. Shipping includes configured packaging and service fees. Rates expire after 15 minutes.";
+     $("quote-button").textContent="Review total and payment";message("Select a shipping service to calculate tax and total.");return;
+    }
+    const rateId=$("shipping-rate-select").value;
+    if(!shippingQuote.options.some(r=>r.id===rateId)){message("Select a shipping service first.");return;}
+    selection={quoteId:shippingQuote.id,rateId};
+   }
    const reference={id:crypto.randomUUID(),token:crypto.randomUUID()};
    saveOrder(reference);order=reference;renderCart();message("Calculating your order…");
-   const q=await api("/checkout",{...reference,address,cart:lines,idToken:await buyerToken()});await mountPayment(q,reference);
+   const q=await api("/checkout",{...reference,address,cart:lines,...selection,idToken:await buyerToken()});await mountPayment(q,reference);
   }catch(err){if(order){destroyPayment();showRecovery(err.message+" Resume payment or cancel to edit your cart.");}else message(err.message);}
  });
 };
@@ -346,7 +364,7 @@ async function checkOrder(prefix=""){
  }catch(e){paymentMayProceed=false;showRecovery(detail+e.message+" Check order status or cancel before starting another order.",e.status!==503);}
 }
 function resetCheckout(){
- remove(sessionStorage,orderKey);order=null;destroyPayment();
+ remove(sessionStorage,orderKey);order=null;destroyPayment();clearShippingQuote();
  $("payment-panel").hidden=true;$("shipping-form").hidden=false;$("check-order").hidden=true;$("resume-payment").hidden=true;
  $("pay-button").textContent="Pay";$("order-lines").replaceChildren();for(const key of ["subtotal","shipping","tax","total"])$("quote-"+key).textContent="";
  message("");renderCart();
