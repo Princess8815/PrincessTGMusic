@@ -1,17 +1,24 @@
 import {auth} from "./firebase.js";
 import {watchOwnerRole} from "./staff-auth.js";
 import {STORE_WORKER_URL} from "./store-config.js";
-import {publicError,siteError} from "./site-errors.js";
+import {publicError,siteError,errorCode} from "./site-errors.js";
 const $=id=>document.getElementById(id),link=$("admin-owner-code"),content=$("owner-code-content"),status=$("owner-code-status");
-let allowed=false,epoch=0,commands=[];
+let allowed=false,access=null,ownerUid="",epoch=0,commands=[],loaded=false,loading=false,checking=false;
 const element=(tag,text)=>{const node=document.createElement(tag);if(text!==undefined)node.textContent=text;return node;};
+const current=version=>version===epoch&&!!ownerUid&&auth.currentUser?.uid===ownerUid;
 async function request(action){
  const user=auth.currentUser;if(!allowed||!user)throw siteError("PTG-003");
- const idToken=await user.getIdToken(true);if(!allowed||auth.currentUser?.uid!==user.uid)throw siteError("PTG-003");
- const response=await fetch(STORE_WORKER_URL+"/owner/terminal-commands",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({idToken,action})});
- let data;try{data=await response.json();}catch{throw siteError("PTG-903");}
- if(!response.ok)throw siteError(data.code||"PTG-903");
- return data;
+ const version=epoch,idToken=await user.getIdToken();
+ // Metadata can temporarily be pending while credentials refresh. The server
+ // still verifies the current owner role on every request.
+ if(access===false||epoch!==version||auth.currentUser?.uid!==user.uid)throw siteError("PTG-003");
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20000);
+ try{
+  const response=await fetch(STORE_WORKER_URL+"/owner/terminal-commands",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({idToken,action}),signal:controller.signal});
+  let data;try{data=await response.json();}catch{throw siteError("PTG-903");}
+  if(!response.ok)throw Object.assign(siteError(data.code||"PTG-903"),{status:response.status});
+  return data;
+ }finally{clearTimeout(timer);}
 }
 function render(){
  if(!content)return;
@@ -38,32 +45,51 @@ function render(){
  }
 }
 async function load(){
- const version=epoch;if(!allowed||!content)return;status.textContent="Loading commands…";$("owner-code-retry").hidden=true;
+ const version=epoch;if(!allowed||!content||loading)return;loading=true;status.textContent="Loading commands…";$("owner-code-retry").hidden=true;
  try{
-  const data=await request("list");if(!allowed||version!==epoch)return;
-  commands=data.commands;const select=$("owner-command-category");select.replaceChildren(new Option("All commands","all"));
+  const data=await request("list");if(!current(version))return;
+  commands=data.commands;loaded=true;const select=$("owner-command-category");select.replaceChildren(new Option("All commands","all"));
   for(const category of [...new Set(commands.map(item=>item.category))])select.append(new Option(category,category));
-  content.hidden=false;status.textContent="";render();
- }catch(error){if(version===epoch){status.textContent=publicError(error,"PTG-903");content.hidden=false;$("owner-code-retry").hidden=false;}}
+  content.hidden=!allowed;status.textContent=allowed?"":"Checking owner access…";render();
+ }catch(error){if(current(version)){status.textContent=publicError(error,"PTG-903");content.hidden=!allowed;$("owner-code-retry").hidden=false;}}
+ finally{if(version===epoch)loading=false;}
+}
+function showCheckResult(result){
+ $("owner-check-status").textContent=result.ok?"TEST response saved. No coins awarded.":publicError(null,result.code||"PTG-711");
+ if(!result.ok){
+  const detail=result.diagnostic||{};
+  $("owner-check-details").textContent=["Step: "+(detail.step||"Owner request"),"Status: "+(detail.status||"Unavailable"),"Reason: "+(detail.reason||result.code||"UNAVAILABLE")].join("\n");
+  $("owner-check-details").hidden=false;
+ }
+ if(allowed)$("owner-check-status").scrollIntoView({block:"nearest"});
 }
 if(content){
  $("owner-command-search").addEventListener("input",render);$("owner-command-category").addEventListener("change",render);
  $("owner-code-retry").addEventListener("click",load);
  $("owner-survey-check").addEventListener("click",async event=>{
-  const version=epoch;if(!allowed)return;event.target.disabled=true;$("owner-check-status").textContent="Checking…";$("owner-check-details").hidden=true;
+  const version=epoch;if(!allowed||checking)return;checking=true;event.target.disabled=true;event.target.textContent="Checking…";$("owner-check-status").textContent="Checking survey save…";$("owner-check-details").hidden=true;
   try{
-   const result=await request("check-survey");if(!allowed||version!==epoch)return;
-   $("owner-check-status").textContent=result.ok?"TEST response saved. No coins awarded.":publicError(null,result.code||"PTG-711");
-   if(!result.ok){const detail=result.diagnostic||{};$("owner-check-details").textContent=["Step: "+detail.step,"Status: "+detail.status,"Reason: "+detail.reason].join("\n");$("owner-check-details").hidden=false;}
-  }catch(error){if(version===epoch)$("owner-check-status").textContent=publicError(error,"PTG-903");}
-  finally{event.target.disabled=false;}
+   const result=await request("check-survey");if(!current(version))return;
+   showCheckResult(result);
+  }catch(error){if(current(version))showCheckResult({ok:false,code:errorCode(error,"PTG-903"),diagnostic:{step:"Owner request",status:error.status||"Unavailable",reason:errorCode(error,"PTG-903")}});}
+  finally{if(version===epoch){checking=false;event.target.disabled=false;event.target.textContent="Check survey save";}}
  });
 }
 watchOwnerRole(value=>{
- if(value===true&&allowed)return;
- epoch++;allowed=value===true;if(link)link.hidden=!allowed;
+ const uid=auth.currentUser?.uid||"",identityChanged=uid!==ownerUid;
+ if(value===true&&allowed&&!identityChanged)return;
+ // Hide pending permissions immediately, while preserving the same owner's
+ // in-flight result. A real denial or account switch discards it completely.
+ if(identityChanged||value===false){
+  epoch++;ownerUid=uid;commands=[];loaded=false;loading=false;checking=false;
+  if(content){
+   $("owner-command-list").replaceChildren();$("owner-check-details").textContent="";$("owner-check-details").hidden=true;$("owner-check-status").textContent="";
+   $("owner-survey-check").disabled=false;$("owner-survey-check").textContent="Check survey save";
+  }
+ }
+ access=value;allowed=value===true;if(link)link.hidden=!allowed;
  if(!content)return;
- content.hidden=true;commands=[];$("owner-command-list").replaceChildren();$("owner-check-details").textContent="";$("owner-check-status").textContent="";
+ content.hidden=!allowed||!loaded;
  status.textContent=value===null?"Checking owner access…":allowed?"":publicError(null,"PTG-003");
- if(allowed)load();
+ if(allowed&&!loaded&&!loading)load();
 });
