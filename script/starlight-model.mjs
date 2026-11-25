@@ -9,7 +9,7 @@ export function purchaseCheck({account,item,wallet,owned,expectedPrice}){
  const fail=(message,status)=>{throw Object.assign(Error(message),{status});};
  if(!account||(account.status||"active")!=="active")fail("An active account is required.",403);
  if(owned)return {alreadyOwned:true,charged:0};
- if(!item||item.active!==true||!validName(item.name)||!validId(item.typeId)||!validPrice(item.price)||!validImage(item.image))fail("This collectible is unavailable.",404);
+ if(!item||item.active!==true||!validName(item.name)||!validId(item.typeId)||item.typeId==="trophies"||!validPrice(item.price)||!validImage(item.image))fail("This collectible is unavailable.",404);
  if(item.price!==expectedPrice)fail("The price changed. Refresh the store.",409);
  const balance=wallet?.balance??0;
  if(!Number.isSafeInteger(balance)||balance<0)fail("Wallet balance unavailable.",503);

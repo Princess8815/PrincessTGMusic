@@ -11,6 +11,7 @@ test("exact price, low balance, retired, banned, repeat purchase",()=>{
  assert.throws(()=>purchaseCheck({...input,wallet:{balance:24}}),/Not enough/);
  assert.throws(()=>purchaseCheck({...input,expectedPrice:1}),/price changed/);
  assert.throws(()=>purchaseCheck({...input,item:{...item,active:false}}),/unavailable/);
+ assert.throws(()=>purchaseCheck({...input,item:{...item,typeId:"trophies"}}),/unavailable/);
  assert.throws(()=>purchaseCheck({...input,account:{status:"banned"}}),/active account/);
  assert.deepEqual(purchaseCheck({...input,owned:true,item:null}),{alreadyOwned:true,charged:0});
  assert.equal(validImage("data:image/svg+xml;base64,AAAA"),false);

@@ -2705,7 +2705,8 @@ service cloud.firestore {
     }
     function starlightType(typeId) {
       return typeId is string && starlightId(typeId)
-        && (typeId in ['axolotls','trophies','cards']
+        && typeId != 'trophies'
+        && (typeId in ['axolotls','cards']
             || exists(/databases/$(database)/documents/starlightTypes/$(typeId)));
     }
     match /starlightTypes/{typeId} {
