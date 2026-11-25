@@ -97,3 +97,5 @@ export async function awardPaidOrder(env,row){
  await env.ORDERS.prepare("UPDATE orders SET reward_done=1,reward_added=? WHERE id=? AND status='paid' AND reward_uid=?").bind(JSON.stringify(added),row.id,uid).run();
  return added;
 }
+
+export async function verifiedShippingStaff(env,token){const uid=await verifiedBuyer(env,token);return !!uid&&await verifiedStaffAccount(env,uid);}
