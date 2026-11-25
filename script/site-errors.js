@@ -47,6 +47,12 @@ export const ERROR_LIST=Object.freeze([
  ["PTG-602","Journal update incomplete.","Retry and confirm your entry was saved."],
  ["PTG-701","Submission unavailable.","Check your entry and try again."],
  ["PTG-702","Content unavailable.","Refresh the page and try again."],
+ ["PTG-710","Surveys temporarily unavailable.","Please try again later."],
+ ["PTG-711","Survey save not confirmed.","Retry before leaving. Your account can receive the reward only once."],
+ ["PTG-712","Survey results unavailable.","Refresh the results and check administrator access."],
+ ["PTG-713","Survey download incomplete.","Try Download all again."],
+ ["PTG-714","Use a test response in this preview.","Select the testing checkbox. Test responses do not earn coins."],
+ ["PTG-715","Answer at least one question.","You may skip any individual question."],
  ["PTG-801","Settings update unavailable.","Review your settings and try again."],
  ["PTG-901","Administrator action unavailable.","Check your entries and try again."],
  ["PTG-902","Some changes could not be saved.","Review the remaining items and retry."]

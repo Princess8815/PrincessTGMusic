@@ -164,6 +164,8 @@ const GROUPS=[
     ["Accidental Songwriter","pages/Accidental-Songwriters-Challenge.html","challenges"],
     ["Poetry","pages/poems-home.html","poetry"],
     ["Stories","arts/artsLanding.html","stories"]]},
+  {title:"Research & Surveys",links:[
+    ["Surveys","pages/research-surveys.html","docs"]]},
   {title:"Productivity",links:[
     ["PrincessTG Docs","pages/docs.html","docs"],
     ["Public Doc Board","pages/docs-board.html","docs"]]},

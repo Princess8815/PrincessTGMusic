@@ -111,3 +111,21 @@ npx wrangler d1 execute princesstg-cd-orders-live --config wrangler.live.toml --
 npx wrangler deploy --config wrangler.live.toml
 ```
 Check `/config` and `/catalog` from the allowed production origin after deployment, then merge PR #28 to publish the frontend routing. Missing or mismatched credentials still block checkout. A successful Pages preview is separate from a successful live Worker deployment.
+
+### Research & Surveys and Star Coins
+
+`POST /surveys/submit` reuses the existing service account and Firebase project settings. It requires a signed, current token with `email_verified: true` and an active account; site verification exceptions do not qualify. Production saves one real response per account for this study and credits exactly 500 Star Coins, atomically with its completion record. Test mode accepts only explicitly marked test responses and never credits coins. Live mode also accepts marked tests without crediting coins.
+
+Answer documents under `researchSurveys/transgender-public-attitudes-v1/responses` contain no account identifiers, email, IP address, token, or account-to-response reference. Account completion records under `users/{uid}/surveyRewards` and the `users/{uid}/wallets/starCoins` balance contain no answers or response reference. The answer date is day-only. Infrastructure metadata and free text can still identify people; the UI does not claim untraceability. The endpoint does not log submission bodies or identities. Retain platform request logs only as needed for operation and security.
+
+Before publishing the frontend, apply the full `security/firestore.rules` (the supplied rules plus three additive matches) in the correct project, then deploy both existing Workers:
+
+```sh
+cd workers/cd-store
+npx wrangler deploy --config wrangler.toml
+npx wrangler deploy --config wrangler.live.toml
+```
+
+No new secrets or D1 migration are required. Existing service-account permissions must allow Firestore document reads and commits. Missing configuration fails closed with a public error code. Preview/legacy/local site origins use the test Worker and require the TEST checkbox. The existing allowed-origin lists still apply; add an exact preview origin when needed. There is no coin spending or cash value feature in this change.
+
+Admin > Surveys reads all responses with staff-only rules, loads pages of 100, and downloads every page, including tests, regardless of the display filter. Each response starts on a new page in one native `.docx`. The public hub is `pages/research-surveys.html`; balances also appear in Profile > Overview.

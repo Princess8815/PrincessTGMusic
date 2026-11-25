@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+ <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+ <title>Public attitudes toward transgender people | PrincessTG</title>
+ <link rel="stylesheet" href="../styles/site-shell.css" data-ptg-shell-style="1">
+ <link rel="stylesheet" href="../styles/auth.css"><link rel="stylesheet" href="../styles/surveys.css">
+ <script type="module" src="../script/site-shell.js"></script><script type="module" src="../script/auth.js"></script>
+ <script type="module" src="../script/survey.js"></script>
+</head><body><div id="auth-container"></div>
+ <main class="research-main">
+  <a href="research-surveys.html">Research &amp; Surveys</a>
+  <h1>Public attitudes toward transgender people</h1>
+  <p>A survey exploring the perceived causes of prejudice, hostility and discrimination.</p>
+  <p>Participation is voluntary. You may skip any question. Please answer honestly and respectfully; there are no right or wrong answers.</p>
+  <p>Your name, email and account ID are not saved with your answers or shown in results. Rewards are recorded separately. Do not include identifying details.</p>
+  <p><span class="survey-reward">+500 Star Coins</span> Once per account, saved for future use.</p>
+  <section id="survey-gate" class="survey-gate" aria-label="Account access">
+   <p id="survey-gate-message" role="status">Checking account…</p>
+   <div class="survey-submit-row">
+    <button type="button" id="survey-login" hidden>Sign in / Register</button>
+    <button type="button" id="survey-send-verification" hidden>Send verification email</button>
+    <button type="button" id="survey-check-verification" class="secondary" hidden>I've verified my email</button>
+    <button type="button" id="survey-retry-access" class="secondary" hidden>Check again</button>
+   </div>
+  </section>
+  <section id="survey-member" hidden>
+   <p id="survey-completed" hidden>You've completed this survey. Your 500 Star Coins are saved to your account.</p>
+   <label class="survey-test-toggle"><input type="checkbox" id="survey-is-test"><span>Do not check — testing purposes only</span></label>
+   <div id="survey-test-banner" class="survey-test-banner" hidden>TEST</div>
+   <form id="survey-form" autocomplete="off">
+    <div id="survey-questions"></div>
+    <div class="survey-submit-row"><button type="submit" id="survey-submit">Submit anonymous answers</button><span class="survey-hint">Answer at least one question to submit.</span></div>
+   </form>
+   <p id="survey-status" class="survey-status" role="status" aria-live="polite"></p>
+  </section>
+  <noscript><p>Enable JavaScript to sign in and complete this survey.</p></noscript>
+ </main>
+</body></html>

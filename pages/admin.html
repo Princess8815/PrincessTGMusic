@@ -30,6 +30,8 @@
   <script type="module" src="../script/admin-inbox.js"></script>
   <script type="module" src="../script/admin-newsletter.js"></script>
   <script type="module" src="../script/admin-tabs.js"></script>
+  <script type="module" src="../script/admin-surveys.js"></script>
+  <link rel="stylesheet" href="../styles/surveys.css">
 
   <style>
     * { box-sizing: border-box; }
@@ -364,6 +366,8 @@
                 data-admin-tab="accounts"
                 aria-controls="admin-main-panel-accounts"
                 aria-selected="false">Accounts</button>
+        <button type="button" role="tab" id="admin-main-tab-surveys" data-admin-tab="surveys"
+                aria-controls="admin-main-panel-surveys" aria-selected="false">Surveys</button>
       </nav>
 
       <!-- MAIL TAB -->
@@ -1478,7 +1482,23 @@
         </section>
       </section>
 
-      
+      <section id="admin-main-panel-surveys" class="admin-main-panel survey-admin"
+               role="tabpanel" aria-labelledby="admin-main-tab-surveys" hidden>
+        <div class="admin-card">
+          <h2>Research &amp; Surveys</h2>
+          <h3>Public attitudes toward transgender people</h3>
+          <p>Anonymous answers. Account details are not included. Each response begins on a new page in the Word download.</p>
+          <div class="survey-admin-actions">
+            <button type="button" id="survey-admin-refresh" disabled>Refresh</button>
+            <button type="button" id="survey-admin-download" disabled>Download all (.docx)</button>
+            <label>Show <select id="survey-admin-filter"><option value="all">All responses</option><option value="research">Research only</option><option value="test">Tests only</option></select></label>
+          </div>
+          <p id="survey-admin-counts" class="survey-counts"></p>
+          <p id="survey-admin-status" role="status" aria-live="polite"></p>
+          <div id="survey-admin-results"></div>
+          <button type="button" id="survey-admin-more" hidden>Load more</button>
+        </div>
+      </section>
     </div>
   </main>
 </body>

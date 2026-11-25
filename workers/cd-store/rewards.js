@@ -37,12 +37,18 @@ async function verifiedStaffAccount(env,uid){
 export async function verifiedBuyer(env,token){
  const project=rewardProject(env);
  if(!project||!token)return null;
+ const uid=await verifyFirebaseIdentity(project,token);
+ // No guest or non-staff binding for production sandbox rewards.
+ if(adminSandboxRewards(env)&&!await verifiedStaffAccount(env,uid))return null;
+ return uid;
+}
+export async function verifyFirebaseIdentity(project,token,requireVerifiedEmail=false){
  if(typeof token!=="string"||token.length>12000)reject("Invalid sign-in token.");
  try{
   const parts=token.split(".");
   if(parts.length!==3)throw Error("JWT");
   const h=json(parts[0]),p=json(parts[1]),now=Math.floor(Date.now()/1000);
-  if(h.alg!=="RS256"||typeof h.kid!=="string"||p.aud!==project||p.iss!=="https://securetoken.google.com/"+project||typeof p.sub!=="string"||!p.sub||p.sub.length>128||p.sub.includes("/")||!Number.isFinite(p.exp)||p.exp<=now||!Number.isFinite(p.iat)||p.iat>now+60||!Number.isFinite(p.auth_time)||p.auth_time>now+60)throw Error("Claims");
+  if(h.alg!=="RS256"||typeof h.kid!=="string"||p.aud!==project||p.iss!=="https://securetoken.google.com/"+project||typeof p.sub!=="string"||!p.sub||p.sub.length>128||[".",".."].includes(p.sub)||p.sub.includes("/")||!Number.isFinite(p.exp)||p.exp<=now||!Number.isFinite(p.iat)||p.iat>now+60||!Number.isFinite(p.auth_time)||p.auth_time>now+60)throw Error("Claims");
   if(!keysCache||keysCache.expires<now||!keysCache.keys.some(k=>k.kid===h.kid)){
    const r=await fetch("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com");
    if(!r.ok)reject("Firebase sign-in verification unavailable.",503);
@@ -52,13 +58,11 @@ export async function verifiedBuyer(env,token){
   if(!jwk)throw Error("Key");
   const key=await crypto.subtle.importKey("jwk",jwk,{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["verify"]);
   if(!await crypto.subtle.verify("RSASSA-PKCS1-v1_5",key,decode(parts[2]),enc.encode(parts[0]+"."+parts[1])))throw Error("Signature");
-  // No guest or non-staff binding for production sandbox rewards.
-  if(adminSandboxRewards(env)&&!await verifiedStaffAccount(env,p.sub))return null;
+  if(requireVerifiedEmail&&p.email_verified!==true)throw Object.assign(Error("Verified email required."),{status:403,publicCode:"PTG-109"});
   return p.sub;
  }catch(e){if(e.status)throw e;reject("Sign in again before claiming purchase collectibles.");}
 }
-async function accessToken(env){
- const project=rewardProject(env);
+export async function accessToken(env,project=rewardProject(env)){
  if(!project)reject("Purchase rewards are disabled in this environment.",503);
  if(oauthCache?.project===project&&oauthCache.exp>Date.now()+60000)return oauthCache.token;
  let sa;try{sa=JSON.parse(env.FIREBASE_REWARD_SERVICE_ACCOUNT||"");}catch{reject("Reward service is not configured.",503);}

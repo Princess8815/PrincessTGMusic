@@ -14,6 +14,7 @@
   <script type="module" src="../script/auth.js"></script>
   <script type="module" src="../script/profile-promotions.js"></script>
   <script type="module" src="../script/profile.js"></script>
+  <script type="module" src="../script/star-coins.js"></script>
   <script type="module" src="../script/profile-health.js"></script>
   <script type="module" src="../script/profile-playlists.js"></script>
   <script type="module">import {mountReefCollection} from "../script/reef-collection.js";mountReefCollection();</script>
@@ -205,6 +206,11 @@
           <span id="profile-joined"></span>
         </p>
 
+        <section data-star-wallet hidden aria-label="Star Coins" class="profile-field">
+          <strong><span data-star-balance>…</span> Star Coins</strong>
+          <p class="muted">Saved for future use. <a href="research-surveys.html">Research &amp; Surveys</a></p>
+          <p data-star-status role="status" aria-live="polite"></p>
+        </section>
         <form id="profile-form">
 
           <div class="profile-field">

@@ -50,7 +50,8 @@ export async function verifyStaff() {
       return false;
     }
 
-    return isStaffRole(snapshot.data().role);
+    return isStaffRole(snapshot.data().role) &&
+      (snapshot.data().status || "active") === "active";
 
   } catch (error) {
     console.error(
@@ -106,7 +107,8 @@ export function watchStaffRole(callback) {
 
           const allowed =
             snapshot.exists() &&
-            isStaffRole(snapshot.data().role);
+            isStaffRole(snapshot.data().role) &&
+            (snapshot.data().status || "active") === "active";
 
           callback(allowed);
         },
