@@ -18,6 +18,9 @@
   <script type="module" src="../script/admin-songs.js"></script>
   <script type="module" src="../script/admin-albums.js"></script>
   <script type="module" src="../script/admin-store.js"></script>
+  <script type="module" src="../script/admin-shipping.js"></script>
+  <script type="module" src="../script/admin-inventory.js"></script>
+  <script type="module" src="../script/admin-merchandise.js"></script>
   <link rel="stylesheet" href="../styles/store.css">
   <script type="module" src="../script/admin-genres.js"></script>
   <script type="module" src="../script/admin-bulk-genres.js"></script>
@@ -1012,16 +1015,60 @@
           <button type="button" data-admin-subtab="albums:add" aria-selected="true">Add</button>
           <button type="button" data-admin-subtab="albums:edit" aria-selected="false">Edit</button>
           <button type="button" data-admin-subtab="albums:delete" aria-selected="false">Delete</button>
-          <button type="button" data-admin-subtab="albums:store" aria-selected="false">CD Store</button>
+          <button type="button" data-admin-subtab="albums:store" aria-selected="false">Store</button>
         </nav>
         <section class="admin-subpanel" data-admin-subpanel="albums:store" hidden><section class="admin-card">
  <h2>CD store listings</h2><p class="helper">Choose an album, enable it for sale, set the number of CDs and assign its songs. Each CD defaults to $10.00 USD.</p>
  <button type="button" id="cd-admin-load">Load / refresh albums</button>
  <form id="cd-admin-form"><div class="form-field"><label for="cd-admin-album">Album</label><select id="cd-admin-album" required><option value="">Load albums first</option></select></div>
- <div id="cd-admin-fields" hidden><label class="admin-inline-check"><input id="cd-sellable" type="checkbox"> Sell this album in the CD store</label>
+ <div id="cd-admin-fields" hidden><label class="admin-inline-check"><input id="cd-sellable" type="checkbox"> Sell this album in the store</label>
  <div class="form-field"><label for="cd-volume-count">Number of CDs</label><input id="cd-volume-count" type="number" min="1" max="20" step="1" value="1" required></div>
  <datalist id="cd-category-suggestions"></datalist><div id="cd-volume-editor"></div><p class="helper">Use an existing category or type a new one to create its store tab. Feature any individual CD using its checkbox.</p><p class="helper">A single-disc album uses the album name and includes all its songs.</p><div id="cd-track-section" hidden><h3>Track assignments</h3><p class="helper">Each track belongs to one volume.</p><div id="cd-track-assignments"></div></div>
- <button id="cd-admin-save" type="submit">Save CD listing</button></div></form><p id="cd-admin-status" role="status" aria-live="polite"></p></section></section>
+ <button id="cd-admin-save" type="submit">Save CD listing</button></div></form><p id="cd-admin-status" role="status" aria-live="polite"></p><section class="admin-card" aria-labelledby="merch-title">
+<h2 id="merch-title">Products &amp; shipping profiles</h2>
+<p class="helper">Add physical merchandise without changing code. Albums above continue to use the slim jewel case profile. These records are separate in sandbox and production. Save drafts with Publish unchecked; stock availability is managed manually.</p>
+<button type="button" id="merch-load">Load / refresh catalog</button>
+<p id="merch-mode" class="helper"></p><p id="merch-status" role="status" aria-live="polite"></p>
+<h3>Shipping profiles</h3>
+<form id="merch-profile-form">
+<label>Choose profile <select id="merch-profile-picker"><option value="">Create new profile</option></select></label>
+<div class="form-field"><label>Profile ID (lowercase letters, numbers, hyphens)<input name="id" required maxlength="60" pattern="[a-z0-9][a-z0-9-]{0,59}"></label></div>
+<div class="form-field"><label>Profile name<input name="name" required maxlength="100"></label></div>
+<p class="helper">Package length and width stay constant. Height and weight are the packaging base plus each item's added height/weight. Measure all supported quantities. For a fixed-size box containing one item, set max quantity to one.</p>
+<div class="shipping-grid">
+<label>Length (in)<input type="number" name="length" required min=".01" max="100" step=".01"></label>
+<label>Width (in)<input type="number" name="width" required min=".01" max="100" step=".01"></label>
+<label>Packaging base height (in)<input type="number" name="baseHeight" required min=".01" max="100" step=".01"></label>
+<label>Added height per item (in)<input type="number" name="discHeight" required min=".01" max="100" step=".01"></label>
+<label>Packaging base weight (oz)<input type="number" name="baseWeight" required min=".01" max="100" step=".01"></label>
+<label>Added weight per item (oz)<input type="number" name="discWeight" required min=".01" max="100" step=".01"></label>
+<label>Maximum items per parcel<input type="number" name="maxUnits" required min="1" max="20" step="1" value="1"></label>
+<label>Packaging fee (USD)<input type="number" name="packagingCents" required min="0" max="50" step=".01" value="0"></label>
+<label>Insurance fee (USD)<input type="number" name="insuranceCents" required min="0" max="50" step=".01" value="0"></label>
+<label>Tracking fee (USD)<input type="number" name="trackingCents" required min="0" max="50" step=".01" value="0"></label>
+</div><p class="helper">Fees do not automatically buy insurance or tracking. Only charge fees for services actually provided.</p>
+<label class="admin-inline-check"><input type="checkbox" name="verified"> I verified actual packed dimensions and weight for every supported quantity.</label>
+<button type="submit">Save shipping profile</button></form>
+<h3>Merchandise listings</h3>
+<form id="merch-product-form">
+<label>Choose product <select id="merch-product-picker"><option value="">Create new product</option></select></label>
+<div class="form-field"><label>Product ID<input name="id" required maxlength="60" pattern="[a-z0-9][a-z0-9-]{0,59}"></label></div>
+<div class="form-field"><label>Product name<input name="name" required maxlength="140"></label></div>
+<div class="form-field"><label>Category<input name="category" required maxlength="60" list="merch-categories"></label><datalist id="merch-categories"><option>Plushies</option><option>Books</option><option>Clothing</option><option>Stickers</option><option>Posters</option></datalist></div>
+<div class="form-field"><label>Description<textarea name="description" maxlength="2000" rows="3"></textarea></label></div>
+<div class="form-field"><label>Image URL (HTTPS)<input name="coverUrl" type="url" maxlength="1500"></label></div>
+<div class="form-field"><label>Price (USD)<input name="priceCents" type="number" required min=".50" max="1000" step=".01"></label></div>
+<div class="form-field"><label>Shipping profile<select name="profileId" required></select></label></div>
+<div class="form-field"><label>Stripe tax code<input name="taxCode" required pattern="txcd_[0-9]+" maxlength="30"></label><p class="helper"><a href="https://docs.stripe.com/tax/tax-codes" target="_blank" rel="noopener noreferrer">Find the correct tax code</a> for this product before publishing.</p></div>
+<details><summary>International customs (optional, domestic only if blank)</summary><p class="helper">Fill all fields only after verifying the actual country of origin, tariff code and net item weight.</p>
+<label>Customs description<input name="customsDescription" maxlength="100"></label>
+<label>Country of origin (ISO 2-letter code)<input name="originCountry" maxlength="2"></label>
+<label>HS / tariff code<input name="tariffNumber" maxlength="10"></label>
+<label>Net item weight (oz)<input name="unitWeight" type="number" min=".01" max="100" step=".01"></label></details>
+<label class="admin-inline-check"><input name="featured" type="checkbox"> Feature in store</label>
+<label class="admin-inline-check"><input name="enabled" type="checkbox"> Publish / available for sale</label>
+<button type="submit">Save product</button></form>
+<p class="helper">Customers must order items with different packaging profiles separately for now. Manage stock and processing time in Inventory below. No digital delivery.</p></section><section aria-labelledby="inventory-admin-title"><h3 id="inventory-admin-title">Inventory and order fulfillment</h3><p>Existing listings default to made to order, 2–3 business days. Available stock excludes reserved and sold units. Refunded stock must be restocked manually after inspection.</p><button type="button" id="inventory-load">Load inventory and orders</button><p id="inventory-status" role="status"></p><form id="inventory-form"><label>Product <select name="sku" required></select></label><label>Availability <select name="mode"><option value="made_to_order">Made to order</option><option value="in_stock">In stock</option><option value="out_of_stock">Out of stock</option></select></label><label>Available quantity <input name="stock" type="number" min="0" max="1000000" required value="0"></label><label>Minimum processing business days <input name="minDays" type="number" min="0" max="60" required value="2"></label><label>Maximum processing business days <input name="maxDays" type="number" min="0" max="60" required value="3"></label><button type="submit">Save availability</button></form><h4>Recent orders</h4><p>Manually mark production, packaging, shipping and delivery. Tracking is entered after purchasing the label in Shippo. Payment and refund state remain separate.</p><div id="fulfillment-orders"></div></section><section aria-labelledby="shipping-admin-title"><h3 id="shipping-admin-title">Shipping management</h3><p>Review package configuration and selected carrier for paid orders. Labels, insurance and tracking are managed manually in Shippo.</p><button type="button" id="shipping-admin-load">Load shipping configuration</button><form id="shipping-admin-form"><label>Order reference <input id="shipping-admin-order" required maxlength="36"></label><button type="submit">Look up shipping</button></form><pre id="shipping-admin-result" style="white-space:pre-wrap" role="status"></pre><p><a href="https://app.goshippo.com/" target="_blank" rel="noopener noreferrer">Open Shippo dashboard</a></p></section></section></section>
         <section class="admin-subpanel" data-admin-subpanel="albums:add">
           <section class="admin-card">
             <h2>Add Album</h2>

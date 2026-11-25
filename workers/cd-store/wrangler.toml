@@ -4,10 +4,17 @@ compatibility_date = "2026-11-24"
 [vars]
 FIREBASE_PROJECT = "music-and-poetry"
 STORE_MODE = "test"
-ALLOWED_ORIGINS = "https://princess8815.github.io,http://localhost:5501,http://127.0.0.1:5501"
+ALLOWED_ORIGINS = "https://2f4640f7.princesstgcreations.pages.dev,https://princesstgcreations.pages.dev,https://princess8815.github.io,http://localhost:5501,http://127.0.0.1:5501"
 SHIPPING_ZONES = '[{"country":"US","state":"WI","city":"*","firstCents":500,"extraCents":100}]'
 CD_TAX_CODE = "txcd_99999999"
-REWARD_FIREBASE_PROJECT = ""
+REWARD_FIREBASE_PROJECT = "music-and-poetry"
+ADMIN_TEST_TIDE = "yes"
+# Enable after applying quote migration and configuring private origin.
+SHIPPO_ENABLED = "yes"
+SHIPPO_COUNTRIES = "US"
+SHIPPO_PACKAGING_VERIFIED = "no"
+# Sample test measurements only.
+SHIPPO_PACKAGE_JSON = '{"length":7,"width":6,"baseHeight":0.5,"discHeight":0.25,"baseWeight":1,"discWeight":2,"packagingCents":0,"insuranceCents":0,"trackingCents":0}'
 [[d1_databases]]
 binding = "ORDERS"
 database_name = "princesstg-cd-orders"

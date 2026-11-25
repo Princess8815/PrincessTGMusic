@@ -13,3 +13,6 @@ ui-debug.log
 database-debug.log
 firebase-export/
 .emulator-data/
+
+# Generated site publishing output
+/dist/
