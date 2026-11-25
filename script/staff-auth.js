@@ -1,4 +1,5 @@
 import {publicError} from "./site-errors.js";
+import {isActiveOwner} from "./owner-access.js";
 
 import { auth, db } from "./firebase.js";
 
@@ -72,7 +73,7 @@ export async function verifyStaff() {
 // null  = still checking
 // ==========================================
 
-export function watchStaffRole(callback) {
+export function watchStaffRole(callback,{ownerOnly=false}={}) {
   let stopDocumentListener = () => {};
 
   const stopAuthListener = onAuthStateChanged(
@@ -107,8 +108,9 @@ export function watchStaffRole(callback) {
 
           const allowed =
             snapshot.exists() &&
-            isStaffRole(snapshot.data().role) &&
-            (snapshot.data().status || "active") === "active";
+            (ownerOnly ? isActiveOwner(snapshot.data()) :
+              isStaffRole(snapshot.data().role) &&
+              (snapshot.data().status || "active") === "active");
 
           callback(allowed);
         },
@@ -139,6 +141,10 @@ export function watchStaffRole(callback) {
     stopAuthListener();
     stopDocumentListener();
   };
+}
+
+export function watchOwnerRole(callback){
+  return watchStaffRole(callback,{ownerOnly:true});
 }
 
 // ==========================================

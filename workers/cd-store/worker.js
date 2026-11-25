@@ -7,6 +7,7 @@ import {CD_PROFILE,readProduct,packFor,catalog,saveCatalog} from "./merchandise.
 import {inventoryList,inventoryLines,processingFor,saveInventory,orderStage,fulfillmentOrders} from "./inventory.js";
 import {submitSurvey,surveyPreviewOrigin} from "./surveys.js";
 import {publicError,errorCode} from "../../script/site-errors.js";
+import {ownerTools} from "./owner-tools.js";
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status});};
 const str=(v,max,required=true)=>{if(typeof v!=="string"||v.length>max||required&&!v.trim())fail("Please complete the shipping address.");return v.trim();};
 const integer=(v,min,max)=>Number.isInteger(v)&&v>=min&&v<=max;
@@ -265,7 +266,7 @@ async function status(env,b,ctx){
 async function body(req,max=20000){const raw=await req.text();if(raw.length>max)fail("Request too large.",413);try{return JSON.parse(raw);}catch{fail("Invalid JSON.");}}
 export default {
  async fetch(req,env,ctx){
-  const url=new URL(req.url),origin=req.headers.get("Origin")||"",allowed=(env.ALLOWED_ORIGINS||"").split(",").map(x=>x.trim()).includes(origin)||(url.pathname==="/surveys/submit"&&surveyPreviewOrigin(env,origin));
+  const url=new URL(req.url),origin=req.headers.get("Origin")||"",allowed=(env.ALLOWED_ORIGINS||"").split(",").map(x=>x.trim()).includes(origin)||(["/surveys/submit","/owner/terminal-commands"].includes(url.pathname)&&surveyPreviewOrigin(env,origin));
   const headers={"Content-Type":"application/json","Cache-Control":"no-store","Vary":"Origin"};
   if(allowed)Object.assign(headers,{"Access-Control-Allow-Origin":origin,"Access-Control-Allow-Methods":"GET, POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type"});
   const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers});
@@ -278,6 +279,7 @@ export default {
    if(req.method!=="POST")fail("Not found.",404);
    const b=await body(req,url.pathname==="/surveys/submit"?80000:20000);
    if(url.pathname==="/surveys/submit")return json(await submitSurvey(env,b));
+   if(url.pathname==="/owner/terminal-commands")return json(await ownerTools(env,b));
    if(url.pathname==="/shipping-quotes")return json(await shippingQuote(env,b));
    if(url.pathname==="/shipping-admin")return json(await shippingAdmin(env,b));
    if(url.pathname==="/inventory-admin"){if(!await verifiedShippingStaff(env,b.idToken))fail("Administrator access required.",403);if(b.action==="save")await saveInventory(env,b.inventory);else if(b.action==="stage")await orderStage(env,b);else if(b.action!=="list")fail("Unknown inventory action.");return json({mode:env.STORE_MODE,inventory:await inventoryList(env),orders:await fulfillmentOrders(env),products:(await catalog(env,true)).products});}
@@ -287,7 +289,7 @@ export default {
    if(url.pathname==="/cancel")return json(await cancel(env,b));
    if(url.pathname==="/claim-reward")return json(await claimReward(env,b));
    fail("Not found.",404);
-  }catch(e){if(url.pathname==="/surveys/submit")return json({error:publicError(e,"PTG-711"),code:errorCode(e,"PTG-711")},e.status||503);if(!e.status)console.error("Store service error",e.message);return json({error:e.status?e.message:"Store service unavailable."},e.status||500);}
+  }catch(e){if(url.pathname==="/surveys/submit"||url.pathname==="/owner/terminal-commands"){const fallback=url.pathname==="/surveys/submit"?"PTG-711":"PTG-903";return json({error:publicError(e,fallback),code:errorCode(e,fallback)},e.status||503);}if(!e.status)console.error("Store service error",e.message);return json({error:e.status?e.message:"Store service unavailable."},e.status||500);}
  },
  async scheduled(event,env,ctx){
   // Expire abandoned checkouts only after Stripe confirms cancellation; never release stock for processing or successful payments.

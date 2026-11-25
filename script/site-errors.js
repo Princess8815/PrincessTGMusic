@@ -55,7 +55,9 @@ export const ERROR_LIST=Object.freeze([
  ["PTG-715","Answer at least one question.","You may skip any individual question."],
  ["PTG-801","Settings update unavailable.","Review your settings and try again."],
  ["PTG-901","Administrator action unavailable.","Check your entries and try again."],
- ["PTG-902","Some changes could not be saved.","Review the remaining items and retry."]
+ ["PTG-902","Some changes could not be saved.","Review the remaining items and retry."],
+ ["PTG-903","Owner tools unavailable.","Sign in with an active owner account and try again."],
+ ["PTG-904","Copy unavailable.","Select the command text and copy it manually."]
 ].map(([code,message,help])=>Object.freeze({code,message,help})));
 
 const entries=new Map(ERROR_LIST.map(item=>[item.code,item]));

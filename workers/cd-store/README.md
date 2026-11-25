@@ -131,3 +131,11 @@ No new secrets or D1 migration are required. Existing service-account permission
 Normal Pages updates deploy automatically. Run the two Worker deploy commands above when files under `workers/cd-store` or their imported shared modules change. Pull the latest PR branch first; publishing Pages alone does not update the survey save endpoint.
 
 Admin > Surveys reads all responses with staff-only rules, loads pages of 100, and downloads every page, including tests, regardless of the display filter. Each response starts on a new page in one native `.docx`. The public hub is `pages/research-surveys.html`; balances also appear in Profile > Overview.
+
+### Owner Code & Terminal
+
+Admin > Code & Terminal appears only for an active `owner`. The page starts with no command catalog and requests it from `POST /owner/terminal-commands`; the Worker verifies the signed token and current owner role before returning any commands. Regular administrators, members, guests and inactive owners cannot access the endpoint. Removing owner access clears the page. The repository is public, so the command source is not a secret; no credentials or secret values are included.
+
+All copyable commands start from the `PrincessTGMusic` repository root, including config and SQL paths. The page has search and category filters for deployment, Git, local testing, logs, rules, database setup and music maintenance. Copy buttons copy text only; the page does not execute terminal commands.
+
+The owner-only Check survey save action submits an explicitly marked TEST response with no reward and returns a bounded diagnostic containing the failing step, HTTP status and service error code. The same safe fields appear in Worker logs as `Survey save failed`; answer bodies, account IDs, tokens, service credentials and raw provider error messages are excluded. Public survey errors continue to show only their short PTG reference.

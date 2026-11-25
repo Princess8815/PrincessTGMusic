@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+ <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+ <title>Code &amp; Terminal | PrincessTG</title>
+ <link rel="stylesheet" href="../styles/site-shell.css" data-ptg-shell-style="1"><link rel="stylesheet" href="../styles/auth.css">
+ <link rel="stylesheet" href="../styles/admin-code.css">
+ <script type="module" src="../script/site-shell.js"></script><script type="module" src="../script/auth.js"></script>
+ <script type="module" src="../script/admin-code.js"></script>
+</head><body class="owner-code-page"><div id="auth-container"></div>
+ <main class="owner-code-main">
+  <a href="admin.html">Admin</a><p class="owner-code-eyebrow">Owner only</p><h1>Code &amp; Terminal</h1>
+  <p id="owner-code-status" role="status" aria-live="polite">Checking owner access…</p>
+  <section id="owner-code-content" hidden>
+   <div class="owner-code-root"><h2>Start in the project root</h2><p>Every command below runs from <strong>PrincessTGMusic</strong>, the folder containing <code>firebase.json</code> and <code>workers</code>.</p><p>If your terminal ends in <code>workers\cd-store</code>, type <code>cd ../..</code> first.</p><p>Copy a command, then paste it into your VS Code terminal.</p></div>
+   <section class="owner-service-check" aria-labelledby="owner-check-title">
+    <h2 id="owner-check-title">Survey connection</h2><p>Save one clearly marked test response. No coins are awarded.</p>
+    <button type="button" id="owner-survey-check">Check survey save</button>
+    <p id="owner-check-status" role="status" aria-live="polite"></p>
+    <pre id="owner-check-details" hidden></pre>
+   </section>
+   <div class="owner-code-filters">
+    <label>Find a command<input type="search" id="owner-command-search" placeholder="Deploy, rules, logs…" autocomplete="off"></label>
+    <label>Category<select id="owner-command-category"><option value="all">All commands</option></select></label>
+   </div>
+   <p id="owner-command-count" class="owner-code-muted" role="status" aria-live="polite"></p>
+   <div id="owner-command-list"></div>
+   <button type="button" id="owner-code-retry" hidden>Retry</button>
+  </section>
+ </main>
+</body></html>

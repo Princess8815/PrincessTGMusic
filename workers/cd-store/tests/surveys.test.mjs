@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {submitSurvey} from "../surveys.js";
 import worker from "../worker.js";
+import {ownerTools} from "../owner-tools.js";
+import {TERMINAL_COMMANDS} from "../terminal-commands.js";
 import {SURVEY_ID} from "../../../script/survey-schema.js";
 const encoder=new TextEncoder(),b64=data=>Buffer.from(data).toString("base64url");
 const pair=await crypto.subtle.generateKey({name:"RSASSA-PKCS1-v1_5",modulusLength:2048,publicExponent:new Uint8Array([1,0,1]),hash:"SHA-256"},true,["sign","verify"]);
@@ -14,8 +16,8 @@ async function token(claims={}){
 }
 const identityToken=await token(),root="projects/survey-test/databases/(default)/documents/";
 const account={name:root+"users/member-one",fields:{role:{stringValue:"user"},status:{stringValue:"active"}},updateTime:"2026-11-25T12:00:00.000000Z"};
-let docs,commits,failCommit=false,archiveDuringCommit=false;
-function reset(){docs=new Map([[account.name,structuredClone(account)]]);commits=[];failCommit=false;archiveDuringCommit=false;}
+let docs,commits,failCommit=false,archiveDuringCommit=false,storageStatus=503;
+function reset(){docs=new Map([[account.name,structuredClone(account)]]);commits=[];failCommit=false;archiveDuringCommit=false;storageStatus=503;}
 function response(data,status=200){return new Response(JSON.stringify(data),{status,headers:{"Content-Type":"application/json"}});}
 const originalFetch=globalThis.fetch;
 globalThis.fetch=async(url,options={})=>{
@@ -26,7 +28,7 @@ globalThis.fetch=async(url,options={})=>{
  assert.equal(options.headers.Authorization,"Bearer test-service-token");
  if(url.endsWith(":commit")){
   const {writes}=JSON.parse(options.body);commits.push(writes);
-  if(failCommit)return response({error:{message:"PRIVATE DATABASE DETAILS"}},503);
+  if(failCommit)return response({error:{message:"PRIVATE DATABASE DETAILS",status:storageStatus===403?"PERMISSION_DENIED":"UNAVAILABLE"}},storageStatus);
   if(archiveDuringCommit){docs.get(account.name).fields.status={stringValue:"archived"};docs.get(account.name).updateTime="changed";archiveDuringCommit=false;}
   for(const write of writes){
    const existing=docs.get(write.update.name);
@@ -97,9 +99,45 @@ test("Changing project previews reach test surveys without widening production o
   const response=await check(origin);assert.equal(response.status,204);assert.equal(response.headers.get("Access-Control-Allow-Origin"),origin);
   assert.equal((await check(origin,"live")).status,403);
   assert.equal((await check(origin,"test","/checkout")).status,403);
+  assert.equal((await check(origin,"test","/owner/terminal-commands")).status,204);
  }
  for(const origin of ["https://princesstgcreations.pages.dev.evil.test","https://another-project.pages.dev","https://nested.branch.princesstgcreations.pages.dev","http://branch.princesstgcreations.pages.dev","https://branch.princesstgcreations.pages.dev:444","https://branch.princesstgcreations.pages.dev/path","not-an-origin"]){
   const response=await check(origin);assert.equal(response.status,403);assert.equal(response.headers.get("Access-Control-Allow-Origin"),null);
  }
+});
+test("Command catalog is served only after a signed token and active owner check",async()=>{
+ reset();const input={idToken:identityToken,action:"list"};
+ await assert.rejects(ownerTools(env,{action:"list"}));
+ for(const role of ["user","admin"]){docs.get(account.name).fields.role={stringValue:role};await assert.rejects(ownerTools(env,input),{publicCode:"PTG-003"});}
+ docs.get(account.name).fields.role={stringValue:"owner"};
+ for(const value of ["banned","archived",""]){docs.get(account.name).fields.status={stringValue:value};await assert.rejects(ownerTools(env,input),{publicCode:"PTG-003"});}
+ docs.get(account.name).fields.status={stringValue:"active"};
+ const result=await ownerTools(env,input);assert.equal(result.root,"PrincessTGMusic");assert.deepEqual(result.commands,TERMINAL_COMMANDS);
+ assert.ok(!JSON.stringify(result).includes(identityToken));assert.ok(!JSON.stringify(result).includes(privateKey));
+ await assert.rejects(ownerTools(env,{...input,action:"run",command:"anything"}),{publicCode:"PTG-007"});
+ docs.get(account.name).fields.role={stringValue:"admin"};
+ const denied=await worker.fetch(new Request("https://worker.test/owner/terminal-commands",{method:"POST",headers:{Origin:"https://example.test","Content-Type":"application/json"},body:JSON.stringify(input)}),env,{});
+ assert.equal(denied.status,403);assert.ok(!JSON.stringify(await denied.json()).includes("wrangler deploy"));
+});
+test("Every command uses root paths and command IDs are unique",()=>{
+ assert.equal(new Set(TERMINAL_COMMANDS.map(item=>item.id)).size,TERMINAL_COMMANDS.length);
+ for(const item of TERMINAL_COMMANDS){
+  assert.ok(item.description&&item.category&&item.command);
+  assert.ok(!/\bcd\s/i.test(item.command),"Commands do not change away from the project root");
+  for(const match of item.command.matchAll(/--config (\S+)/g))assert.match(match[1],/^workers\/cd-store\/wrangler(?:\.live)?\.toml$/);
+  for(const match of item.command.matchAll(/--file (\S+)/g))assert.match(match[1],/^workers\/cd-store\//);
+ }
+});
+test("Owner connection checks save only TEST records and diagnostics omit private details",async()=>{
+ reset();docs.get(account.name).fields.role={stringValue:"owner"};
+ const input={idToken:identityToken,action:"check-survey"};
+ const saved=await ownerTools({...env,STORE_MODE:"test"},input);
+ assert.deepEqual(saved,{ok:true,isTest:true,awarded:0});assert.ok(![...docs.keys()].some(path=>path.includes("/wallets/")||path.includes("/surveyRewards/")));
+ failCommit=true;storageStatus=403;
+ const warn=console.warn,logs=[];console.warn=(...args)=>logs.push(args);
+ try{
+  const failure=await ownerTools(env,input);assert.equal(failure.ok,false);assert.equal(failure.code,"PTG-711");assert.equal(failure.diagnostic.step,"Save answers");assert.equal(failure.diagnostic.status,403);assert.equal(failure.diagnostic.reason,"PERMISSION_DENIED");
+  const diagnostic=JSON.stringify({failure,logs});assert.ok(!diagnostic.includes("PRIVATE DATABASE DETAILS"));assert.ok(!diagnostic.includes(identityToken));assert.ok(!diagnostic.includes("member-one"));
+ }finally{console.warn=warn;}
 });
 test.after(()=>{globalThis.fetch=originalFetch;});

@@ -1,6 +1,15 @@
 import {accessToken,verifyFirebaseIdentity} from "./rewards.js";
 import {SURVEY_ID,SURVEY_VERSION,SURVEY_REWARD,validateAnswers} from "../../script/survey-schema.js";
 const fail=(code,status=503)=>{throw Object.assign(Error(code),{publicCode:code,status});};
+function serviceFailure(step,status,reason){
+ const diagnostic={step,status,reason:typeof reason==="string"&&/^[A-Z_0-9]{1,60}$/.test(reason)?reason:"UNAVAILABLE"};
+ console.warn("Survey save failed",JSON.stringify(diagnostic));
+ throw Object.assign(Error("Survey save unavailable."),{publicCode:"PTG-711",status:503,surveyDiagnostic:diagnostic});
+}
+async function storageFailure(response,step){
+ let data;try{data=await response.json();}catch{}
+ serviceFailure(step,response.status,data?.error?.status||"HTTP_"+response.status);
+}
 const value=data=>{
  if(typeof data==="string")return {stringValue:data};
  if(typeof data==="boolean")return {booleanValue:data};
@@ -40,13 +49,15 @@ export async function submitSurvey(env,input){
  let uid;
  try{uid=await verifyFirebaseIdentity(env.FIREBASE_PROJECT,input.idToken,true);}
  catch(error){if(error.publicCode)throw error;fail(error.status===503?"PTG-710":"PTG-005",error.status||401);}
- const token=await accessToken(env,env.FIREBASE_PROJECT);
+ let token;
+ try{token=await accessToken(env,env.FIREBASE_PROJECT);}
+ catch(error){serviceFailure("Service authorization",error.status||503,"CREDENTIALS_UNAVAILABLE");}
  const root="projects/"+env.FIREBASE_PROJECT+"/databases/(default)/documents";
  const headers={Authorization:"Bearer "+token,"Content-Type":"application/json"};
  const read=async path=>{
   const response=await fetch("https://firestore.googleapis.com/v1/"+root+"/"+path,{headers});
   if(response.status===404)return null;
-  if(!response.ok)fail("PTG-711");
+  if(!response.ok)await storageFailure(response,"Read account or completion");
   return response.json();
  };
  const accountPath="users/"+encodeURIComponent(uid);
@@ -74,5 +85,5 @@ export async function submitSurvey(env,input){
   }
   fail("PTG-009",409);
  }
- fail("PTG-711");
+ await storageFailure(result,"Save answers");
 }
