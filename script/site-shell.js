@@ -58,7 +58,11 @@ export function colorContrast(a,b){
   return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);
 }
 function readableOn(hex){
-  return colorContrast(hex,"#101118")>=colorContrast(hex,"#ffffff")?"#101118":"#ffffff";
+  return colorContrast(hex,"#000000")>=colorContrast(hex,"#ffffff")?"#000000":"#ffffff";
+}
+function mixColors(left,right,weight){
+  const a=rgbFromHex(left),b=rgbFromHex(right);
+  return hexFromRgb(...a.map((channel,index)=>Math.round(channel*weight+b[index]*(1-weight))));
 }
 export function getSiteSettings(){
   let saved={};
@@ -89,7 +93,11 @@ export function applySiteSettings(settings=getSiteSettings()){
     "--ptg-text":values.textColor,
     "--ptg-highlight":values.highlight,
     "--ptg-on-primary":readableOn(values.primary),
-    "--ptg-on-highlight":readableOn(values.highlight)
+    "--ptg-on-highlight":readableOn(values.highlight),
+    "--ptg-on-secondary":readableOn(values.secondary),
+    "--ptg-on-raised":readableOn(mixColors(values.secondary,values.textColor,.84)),
+    "--ptg-on-hover":readableOn(mixColors(values.primary,"#ffffff",.78)),
+    "--ptg-on-tertiary":readableOn(values.tertiary)
   };
   for(const [name,value] of Object.entries(props))html.style.setProperty(name,value);
   html.style.colorScheme=colorContrast(values.tertiary,"#ffffff")>

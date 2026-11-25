@@ -196,12 +196,13 @@
   gap:12px;padding:9px 14px;border-radius:9px;
   border:1px solid var(--ptg-border,#55536a)!important;
   background:var(--ptg-tertiary,#111827)!important;
-  color:var(--ptg-text,#f3f4f6)!important;
+  color:var(--ptg-on-tertiary,#f3f4f6)!important;
   font:inherit;font-weight:750;cursor:pointer
 }
 .auth-google-button:hover,.auth-google-button:focus-visible{
   border-color:var(--ptg-highlight,#c084fc)!important;
   background:var(--ptg-raised,#303a4b)!important;
+  color:var(--ptg-on-raised,#ffffff)!important;
 }
 .auth-google-button:disabled{opacity:.6;cursor:wait}
 .auth-google-mark{

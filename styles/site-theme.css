@@ -7,8 +7,12 @@
   --ptg-tertiary:#111827;
   --ptg-text:#f3f4f6;
   --ptg-highlight:#c084fc;
-  --ptg-on-primary:#101118;
-  --ptg-on-highlight:#101118;
+  --ptg-on-primary:#000000;
+  --ptg-on-highlight:#000000;
+  --ptg-on-secondary:#ffffff;
+  --ptg-on-raised:#ffffff;
+  --ptg-on-hover:#000000;
+  --ptg-on-tertiary:#ffffff;
   --ptg-shell-accent:var(--ptg-highlight);
   --ptg-muted:color-mix(in srgb,var(--ptg-text) 72%,var(--ptg-secondary));
   --ptg-raised:color-mix(in srgb,var(--ptg-secondary) 84%,var(--ptg-text) 16%);
@@ -99,8 +103,15 @@ body.ptg-shell-ready :is(.album-track.is-playing,.track.active,.playlist-library
   background:color-mix(in srgb,var(--ptg-primary) 18%,var(--ptg-secondary)) !important;
   border-color:var(--ptg-primary) !important;
 }
-body.ptg-shell-ready :is(.profile-tabs [role=tab][aria-selected=true],
-  .ptg-tab-nav [role=tab][aria-selected=true],.auth-tabs button.active){
+/* Tab and toggle labels are paired with their actual backgrounds. */
+body.ptg-shell-ready :is(.profile-tabs,.ptg-tab-nav,.admin-main-tabs,.admin-subtabs,.admin-inbox-tabs,.auth-tabs,.health-tabs) button:not(:where(.has-unread,.profile-tab-danger)),
+body.ptg-shell-ready button[aria-pressed]:not(:where(.docs-app button,.ptg-theme-exempt,.bubbles-pet)){
+  background:var(--ptg-secondary) !important;
+  color:var(--ptg-on-secondary) !important;
+  border-color:var(--ptg-border) !important;
+}
+body.ptg-shell-ready :is(.profile-tabs,.ptg-tab-nav,.admin-main-tabs,.admin-subtabs,.admin-inbox-tabs,.auth-tabs,.health-tabs) button:where([aria-selected=true],.active):not(.has-unread),
+body.ptg-shell-ready button[aria-pressed=true]:not(:where(.docs-app button,.ptg-theme-exempt,.bubbles-pet)){
   background:var(--ptg-primary) !important;
   color:var(--ptg-on-primary) !important;
   border-color:var(--ptg-primary) !important;
@@ -138,16 +149,43 @@ body.ptg-shell-ready textarea::placeholder{color:var(--ptg-muted)}
 body.ptg-shell-ready :is(input,textarea,select,button,a,summary):focus-visible{
   outline:3px solid var(--ptg-highlight) !important;outline-offset:2px;
 }
-/* Common action buttons use the same primary hue. Specific semantic controls
-   (delete, stop, tabs, secondary, disabled and theme-exempt controls) keep their semantics. */
-body.ptg-shell-ready button:not(.danger-button):not(.secondary):not(.mail-secondary):not(.mail-danger):not(.auth-close):not(.ptg-mobile-toggle):not([role=tab]):not(#stopBtn):not(#orderResetBtn):not(:disabled):not([aria-pressed=true]):not(.bubbles-pet):not(.bubbles-speech button):not(.docs-app button):not(.ptg-theme-exempt),
-body.ptg-shell-ready :is(.challenge-submit,.new-entry-button,.open-album,.auth-primary){
+/* Filled links and buttons share one background/foreground pair. Exclusions
+   use :where so page controls can retain their explicit semantic styles. */
+body.ptg-shell-ready :is(
+  button:not(:where(.danger-button,.health-danger,.secondary,.mail-secondary,.health-secondary,.mail-danger,.auth-close,.auth-text-button,.auth-google-button,.ptg-mobile-toggle,[role=tab],[aria-selected],[aria-pressed],.auth-tabs button,#stopBtn,#orderResetBtn,.bubbles-pet,.bubbles-speech button,.docs-app button,.ptg-theme-exempt)),
+  .challenge-submit,.new-entry-button,.open-album,.auth-primary,
+  a.survey-link,a.profile-health-cta,a.owner-code-link,a[role=button]
+){
   background:var(--ptg-primary) !important;
   border-color:var(--ptg-primary) !important;
   color:var(--ptg-on-primary) !important;
 }
-body.ptg-shell-ready button:not(.danger-button):not(.secondary):not(.mail-secondary):not(.mail-danger):not(.auth-close):not(.ptg-mobile-toggle):not([role=tab]):not(#stopBtn):not(#orderResetBtn):not(:disabled):not([aria-pressed=true]):not(.bubbles-pet):not(.bubbles-speech button):not(.docs-app button):not(.ptg-theme-exempt):hover{
+body.ptg-shell-ready :is(
+  button:not(:where(.danger-button,.health-danger,.secondary,.mail-secondary,.health-secondary,.mail-danger,.auth-close,.auth-text-button,.auth-google-button,.ptg-mobile-toggle,[role=tab],[aria-selected],[aria-pressed],.auth-tabs button,#stopBtn,#orderResetBtn,.bubbles-pet,.bubbles-speech button,.docs-app button,.ptg-theme-exempt)),
+  .challenge-submit,.new-entry-button,.open-album,.auth-primary,
+  a.survey-link,a.profile-health-cta,a.owner-code-link,a[role=button]
+):not(:disabled):not([aria-disabled=true]):hover{
   background:var(--ptg-hover) !important;
+  color:var(--ptg-on-hover) !important;
+  filter:none;
+}
+body.ptg-shell-ready :is(button.secondary,button.mail-secondary,button.health-secondary,a.player-library-link):not(:where(.danger-button,.mail-danger,.health-danger)){
+  background:var(--ptg-raised) !important;
+  color:var(--ptg-on-raised) !important;
+  border-color:var(--ptg-border) !important;
+  filter:none;
+}
+/* A label's own accent rule must not override the readable button text. */
+body.ptg-shell-ready :is(button,a.survey-link,a.profile-health-cta,a.owner-code-link,a[role=button]):not(:where(.auth-google-button,.docs-app button,.bubbles-speech button,.ptg-theme-exempt)) :where(span,strong,em,b,i,small):not(:where(.inbox-unread-count,.mail-tab-count)){
+  color:inherit !important;
+}
+body.ptg-shell-ready button:disabled:not(:where(.docs-app button,.bubbles-pet,.bubbles-speech button,.ptg-theme-exempt)){
+  background:var(--ptg-raised) !important;
+  color:var(--ptg-on-raised) !important;
+  border-color:var(--ptg-border) !important;
+  border-style:dashed;
+  opacity:1;
+  cursor:not-allowed;
 }
 body.ptg-shell-ready :is(.ptg-add-playlist summary,.album-lyrics summary,
   .profile-playlist-lyrics summary,.profile-playlist-now,.overline,.roadmap-kicker,
@@ -176,8 +214,9 @@ body.ptg-shell-ready .ptg-settings-page > p,
 body.ptg-shell-ready .settings-card .settings-help{color:var(--ptg-muted)}
 body.ptg-shell-ready :is(.settings-actions button.secondary,.settings-reset-palette){
   background:var(--ptg-raised) !important;
-  color:var(--ptg-text) !important;
+  color:var(--ptg-on-raised) !important;
   border-color:var(--ptg-border) !important;
+  filter:none;
 }
 body.ptg-shell-ready .profile-playlist-controls button[aria-pressed=true]{
   background:var(--ptg-primary) !important;
@@ -185,6 +224,7 @@ body.ptg-shell-ready .profile-playlist-controls button[aria-pressed=true]{
 }
 body.ptg-shell-ready :is(.settings-actions button.secondary,.settings-reset-palette):hover{
   background:var(--ptg-secondary) !important;
+  color:var(--ptg-on-secondary) !important;
 }
 body.ptg-shell-ready :is(.challenge-card,.challenge-form input:not([type=checkbox]),
   .challenge-form select,.challenge-form textarea,.roadmap-card,.album-track-section){
