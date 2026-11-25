@@ -1,0 +1,27 @@
+
+[hidden]{display:none!important}
+.sl-main{max-width:1100px;margin:24px auto;padding:clamp(12px,3vw,28px);font:1rem/1.5 system-ui,sans-serif;color:var(--ptg-text)}
+.sl-hero{padding:clamp(20px,4vw,40px);border-radius:20px;border:1px solid var(--ptg-border);background:radial-gradient(ellipse at top right,#986cbe55,transparent 70%),var(--ptg-secondary)}
+.sl-hero h1{font-size:clamp(1.9rem,5vw,3rem);margin:.2em 0;color:var(--ptg-highlight)}
+.sl-kicker{font-size:.78rem;text-transform:uppercase;letter-spacing:.12em;color:var(--ptg-muted)}
+.sl-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.sl-tabs a,.sl-tabs button,.sl-card button,.sl-admin button,.sl-main button{display:inline-flex;justify-content:center;align-items:center;min-height:42px;border-radius:9px;border:1px solid var(--ptg-border);padding:8px 14px;font:inherit;font-weight:650;background:var(--ptg-raised);color:var(--ptg-on-raised);cursor:pointer;text-decoration:none}
+.sl-tabs [aria-current=page],.sl-tabs [aria-pressed=true],.sl-card button:not(:disabled),.sl-admin button[type=submit]{background:var(--ptg-primary)!important;color:var(--ptg-on-primary)!important}
+.sl-tabs :focus-visible,.sl-card :focus-visible,.sl-admin :focus-visible{outline:3px solid var(--ptg-highlight);outline-offset:3px}
+.sl-main button:disabled,.sl-admin button:disabled{opacity:.55;cursor:not-allowed}
+.sl-wallet{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 0;padding:14px;border:1px solid var(--ptg-border);border-radius:12px;background:var(--ptg-secondary)}
+.sl-wallet strong{font-size:1.3rem}
+.sl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(180px,100%),1fr));gap:12px}
+.sl-card{min-width:0;padding:13px;border:1px solid var(--ptg-border);background:var(--ptg-secondary);border-radius:16px;text-align:center;display:flex;flex-direction:column;gap:8px}
+.sl-card img{width:100%;aspect-ratio:1;object-fit:contain;border-radius:10px;background:var(--ptg-sunken)}
+.sl-card h3,.sl-card p{margin:0;overflow-wrap:anywhere}
+.sl-card button{margin-top:auto}
+.sl-cost{font-weight:750;color:var(--ptg-highlight)}
+.sl-admin fieldset{min-width:0;border:1px solid var(--ptg-border);border-radius:12px;padding:14px;margin:14px 0}
+.sl-admin label{display:grid;gap:5px;margin:9px 0}
+.sl-admin input,.sl-admin select{width:100%;min-width:0;padding:9px;border:1px solid var(--ptg-border);border-radius:8px;background:var(--ptg-sunken);color:var(--ptg-text);font:inherit}
+.sl-admin input[type=checkbox]{width:auto}
+.sl-admin .sl-check{display:flex;align-items:center;gap:8px}
+.sl-admin .sl-preview{width:112px;height:112px;object-fit:contain;border-radius:9px;background:var(--ptg-sunken)}
+.sl-admin .sl-pack-cards{display:grid;gap:6px;max-height:260px;overflow:auto}
+.sl-profile-owned{margin-top:16px}
