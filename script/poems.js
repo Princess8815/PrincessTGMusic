@@ -1,3 +1,4 @@
+import {publicError} from "./site-errors.js";
 
 const poemGrid = document.getElementById("poem-grid");
 const poemCount = document.getElementById("poem-count");
@@ -39,7 +40,7 @@ async function loadPoems() {
 
   } catch (error) {
     console.error("Poetry loading error:", error);
-    poemGrid.textContent = "Unable to load poems.";
+    poemGrid.textContent = publicError(error,"PTG-702");
   }
 }
 

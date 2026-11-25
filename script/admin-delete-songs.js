@@ -1,3 +1,4 @@
+import {publicError,withErrorCode} from "./site-errors.js";
 
 import { db } from "./firebase.js";
 
@@ -50,7 +51,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function showStatus(message, error = false) {
-    status.textContent = message;
+    status.textContent=error?withErrorCode(message,"PTG-901"):message;
 
     status.style.color =
       error ? "#fca5a5" : "#86efac";
@@ -126,7 +127,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     count.textContent =
       `${filtered.length} matching songs | ` +
-      `${songs.length} songs in Firestore`;
+      `${songs.length} saved songs`;
 
     select.disabled = deleting || !filtered.length;
 
@@ -139,7 +140,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   async function loadDatabaseSongs() {
     count.textContent =
-      "Loading Firestore songs...";
+      "Loading songs…";
 
     select.disabled = true;
     deleteButton.disabled = true;
@@ -205,7 +206,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       } catch (error) {
         showStatus(
-          `Refresh failed: ${error.message}`,
+          publicError(error,"PTG-901"),
           true
         );
 
@@ -238,8 +239,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       const approved = window.confirm(
         "PERMANENT SONG DELETION\n\n" +
         `Song: ${song.title}\n` +
-        `Firestore ID: ${song.id}\n\n` +
-        "This removes the Firestore document.\n" +
+        `Song ID: ${song.id}\n\n` +
+        "This removes the saved song.\n" +
         "The action cannot be undone.\n\n" +
         "Do you want to delete this song?"
       );
@@ -318,7 +319,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         showStatus(
           `"${song.title}" was deleted ` +
-          "from Firestore successfully."
+          "successfully."
         );
 
       } catch (error) {
@@ -328,7 +329,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         );
 
         showStatus(
-          `Could not delete song: ${error.message}`,
+          publicError(error,"PTG-901"),
           true
         );
 
@@ -365,7 +366,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     );
 
     showStatus(
-      `Unable to load songs: ${error.message}`,
+      publicError(error,"PTG-901"),
       true
     );
   }

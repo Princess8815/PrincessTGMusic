@@ -1,3 +1,4 @@
+import {publicError,withErrorCode} from "./site-errors.js";
 import {claimPendingAxolotls,discoverAxolotl} from "./reef-collection.js";
 
 import { auth } from "./firebase.js";
@@ -191,7 +192,7 @@ adminButton.addEventListener("click", async () => {
       adminButton.hidden = true;
 
       alert(
-        "Access denied. Administrator permissions required."
+        publicError(null,"PTG-003")
       );
 
       return;
@@ -218,7 +219,7 @@ adminButton.addEventListener("click", async () => {
   googleProvider.setCustomParameters({prompt:"select_account"});
 
   function setMessage(text, error = false) {
-    message.textContent = text;
+    message.textContent=error?withErrorCode(text,"PTG-101"):text;
     message.classList.toggle("auth-error", error);
   }
 
@@ -305,40 +306,7 @@ adminButton.addEventListener("click", async () => {
   }
 
   function friendlyError(error) {
-    switch (error?.code) {
-      case "auth/email-already-in-use":
-        return "This email already has an account. Sign in instead.";
-      case "auth/account-exists-with-different-credential":
-        return "An account already uses this email with another sign-in method. Please sign in with that method first.";
-      case "auth/invalid-email":
-        return "Please enter a valid email address.";
-      case "auth/weak-password":
-        return "Please choose a stronger password.";
-      case "auth/invalid-credential":
-        return "Incorrect email or password.";
-      case "auth/too-many-requests":
-        return "Too many attempts. Please try again later.";
-      case "auth/network-request-failed":
-        return "Network error. Please check your connection.";
-      case "auth/operation-not-allowed":
-        return "This sign-in method must be enabled in Firebase Authentication first.";
-      case "auth/unauthorized-domain":
-        return "Add this website's domain to Firebase Authentication's authorized domains.";
-      case "auth/popup-blocked":
-        return "Your browser blocked the Google sign-in popup. Please allow popups for this site and try again.";
-      case "auth/popup-closed-by-user":
-      case "auth/cancelled-popup-request":
-        return "Google sign-in was cancelled.";
-      case "auth/invalid-action-code":
-        return "This verification link is invalid or has expired. Request a new one.";
-      case "auth/unauthorized-continue-uri":
-      case "auth/invalid-continue-uri":
-        return "Add your website's domain under Firebase Authentication → Authorized domains.";
-      case "auth/user-token-expired":
-        return "Session expired. Sign in again before requesting verification.";
-      default:
-        return "Authentication could not be completed. Please try again.";
-    }
+    return publicError(error,"PTG-101");
   }
 
   async function sendVerification(user,automatic=false) {
@@ -355,13 +323,11 @@ adminButton.addEventListener("click", async () => {
       lastVerificationUid=user.uid;
       $("auth-verify-message").textContent = sent.alreadyVerified
         ? "This account is already verified. Select I've verified my email to continue."
-        : "Firebase accepted a verification request for "+(user.email||"this account")+
-          ". Check that address, including Spam/Junk. If nothing arrives, Firebase may have filtered or rate-limited delivery.";
+        : "Verification email requested. Check your inbox and spam folder.";
     } catch (error) {
       console.error("Firebase verification request rejected:",error?.code||"unknown",error);
       if(auth.currentUser?.uid!==user.uid)return;
       $("auth-verify-message").textContent =
-        (automatic?"The account was created, but the email was not sent: ":"Verification email was not sent: ")+
         verificationError(error);
     }
   }
@@ -473,7 +439,7 @@ adminButton.addEventListener("click", async () => {
       const verified=await refreshSiteVerification(user);
       if(!verified){
         $("auth-verify-message").textContent =
-          "Firebase still shows this address as unverified. Open the link, press Verify on Firebase's page, then try again.";
+          publicError(null,"PTG-109");
         return;
       }
       verifyPanel.hidden=true;
@@ -536,7 +502,7 @@ $("auth-logout").addEventListener("click", async () => {
 
   } catch (error) {
     console.error("Logout failed:", error);
-    alert("Could not log out. Please try again.");
+    alert(publicError(error,"PTG-101"));
   }
 });
 

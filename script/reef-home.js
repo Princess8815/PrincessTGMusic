@@ -1,3 +1,4 @@
+import {publicError} from "./site-errors.js";
 import {HOME_REEF,homeReefPortrait} from "./reef-home-art.js";
 const pip=document.getElementById("home-mystery-friend");
 const forbidden=document.getElementById("home-forbidden-button");
@@ -17,7 +18,7 @@ async function reveal(id){
  dialog.querySelector(".home-reef-reveal").textContent="You discovered "+friend[1]+"!";
  dialog.querySelector("#home-reef-title").textContent=id==="hex"?"You have freed me!":"Hello! My name is Pip!";
  const status=dialog.querySelector(".home-reef-status"),retry=dialog.querySelector("[data-home-reef-retry]");
- retry.hidden=true;retry.onclick=()=>void reveal(id);status.textContent="Recording your discovery…";
+ retry.hidden=true;retry.onclick=()=>void reveal(id);status.textContent="";
  if(!dialog.open)dialog.showModal();
  try{
   const [{discoverAxolotl},{auth}]=await Promise.all([import("./reef-collection.js"),import("./firebase.js")]);
@@ -25,10 +26,10 @@ async function reveal(id){
   discoverAxolotl(id);
   await auth.authStateReady();
   if(turn!==attempt||!dialog.open)return;
-  status.textContent=auth.currentUser?"Your discovery is queued for your collection. The collection confirms it when saved.":"Sign in or register on this device to save this discovery in your collection.";
+  status.textContent=auth.currentUser?"":"Sign in to keep your discoveries.";
  }catch(error){
   if(turn!==attempt||!dialog.open)return;
-  status.textContent="Could not record the discovery. Please retry.";retry.hidden=false;console.warn("Home reef encounter:",error);
+  status.textContent=publicError(error,"PTG-212");retry.hidden=false;console.warn("Home reef encounter:",error);
  }
 }
 if(pip&&forbidden){

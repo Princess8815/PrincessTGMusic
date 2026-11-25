@@ -1,3 +1,4 @@
+import {publicError} from "./site-errors.js";
 
 import { auth, db } from "./firebase.js";
 
@@ -175,8 +176,7 @@ async function checkExistingAppeal(user, banId) {
     if (version !== lookupVersion) return;
 
     appealStatus.textContent =
-      "Could not check existing appeals. " +
-      "Please refresh the page.";
+      publicError(error,"PTG-110");
   }
 }
 
@@ -291,7 +291,7 @@ appealForm.addEventListener(
       );
 
       appealStatus.textContent =
-        `Could not submit appeal: ${error.message}`;
+        publicError(error,"PTG-110");
 
     } finally {
       saving = false;

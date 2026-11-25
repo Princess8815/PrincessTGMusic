@@ -1,3 +1,4 @@
+import {publicError} from "./site-errors.js";
 import {songAlbums} from "./song-albums.js";
 import {addToPlaylistControl} from "./music-playlists.js";
 
@@ -501,6 +502,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Could not load releases:", error);
 
     status.textContent =
-      "Unable to load releases. Please try again later.";
+      publicError(error,"PTG-501");
   }
 });

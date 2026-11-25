@@ -1,3 +1,4 @@
+import {publicError} from "../../script/site-errors.js";
 import {songAlbums} from "../../script/song-albums.js";
 import {db} from "../../script/firebase.js";
 import {loadAllSongs} from "../../script/song-data.js";
@@ -79,7 +80,7 @@ async function loadAlbums(){
     cards=[...albums.values()].sort((a,b)=>a.name.localeCompare(b.name)).map(makeCard);
     search.disabled=false;display();
   }catch(e){
-    console.error(e);status.textContent="Album catalog unavailable.";
+    console.error(e);status.textContent=publicError(e,"PTG-501");
     empty.hidden=false;empty.textContent="Try Refresh.";
   }finally{reload.disabled=false;}
 }

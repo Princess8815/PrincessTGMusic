@@ -18,8 +18,8 @@ const firebaseConfig = {
 };
 
 
-// Local previews default to the emulator, but Settings can explicitly
-// switch this browser origin to live Firebase. Public sites are always live.
+// Local previews default to the emulator; an explicit local preference can
+// select live services for this browser origin. Public sites are always live.
 const testingLocally=isLocalPreview();
 export const usingLocalFirebaseEmulators=
   testingLocally&&getLocalFirebaseMode()==="emulator";
@@ -72,7 +72,8 @@ export async function checkLocalFirestoreEmulator() {
 if (usingLocalFirebaseEmulators) {
   connectAuthEmulator(
     auth,
-    "http://127.0.0.1:9099"
+    "http://127.0.0.1:9099",
+    {disableWarnings:true}
   );
 
   connectFirestoreEmulator(

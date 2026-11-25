@@ -1,3 +1,4 @@
+import {publicError,withErrorCode} from "./site-errors.js";
 import {auth,db} from "./firebase.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {collection,getDocsFromServer}
@@ -36,7 +37,7 @@ function svg(tag,attributes={},body){
 }
 function message(value,error=false){
   const el=$("profile-health-status");
-  el.textContent=value;
+  el.textContent=error?withErrorCode(value,"PTG-601"):value;
   el.style.color=error?"#fecaca":"#cbd5e1";
 }
 function clearPanels(){
@@ -292,7 +293,7 @@ async function refresh(force=false){
   if(!force&&currentUid===user.uid&&lastLoaded&&Date.now()-lastLoaded<REFRESH_MS)return;
   const uid=user.uid,token=generation;
   refreshButton.disabled=true;
-  message("Loading your health history from Firestore...");
+  message("Loading your health history…");
   loading=(async()=>{
     try{
       // The profile needs each historical week and month, not a 45-day
@@ -313,9 +314,7 @@ async function refresh(force=false){
     }catch(error){
       if(token!==generation)return;
       clearPanels();
-      message("Unable to load your health analytics: "+
-        (error?.message||"unknown error")+
-        ". Check your Firestore health rules and internet connection.",true);
+      message(publicError(error,"PTG-601"),true);
     }finally{
       if(token===generation){
         refreshButton.disabled=false;

@@ -1,3 +1,4 @@
+import {publicError,withErrorCode} from "./site-errors.js";
 import {
   getSiteSettings,saveSiteSettings,applySiteSettings,
   DEFAULT_SETTINGS,DEFAULT_PALETTE,
@@ -46,7 +47,7 @@ function buildEditor(){
           const value=hexFromRgb(...numbers.map(box=>Number(box.value)));
           setColor(key,value);
         }catch{
-          status.textContent="RGB values must be whole numbers between 0 and 255.";
+          status.textContent=withErrorCode("Use whole numbers from 0 to 255.","PTG-007");
         }
       };
       number.addEventListener("input",sync);
@@ -120,7 +121,7 @@ form.addEventListener("submit",event=>{
     const saved=saveSiteSettings(collect());
     fill(saved);
     status.textContent="Your colors and preferences were saved in this browser.";
-  }catch(error){status.textContent="Could not save settings: "+error.message;}
+  }catch(error){status.textContent=publicError(error,"PTG-801");}
 });
 $("settings-reset-palette").addEventListener("click",()=>{
   for(const [key] of FIELDS)draft[key]=DEFAULT_PALETTE[key];
@@ -136,7 +137,7 @@ $("settings-reset").addEventListener("click",()=>{
     const saved=saveSiteSettings({...DEFAULT_SETTINGS});
     fill(saved);
     status.textContent="All settings restored to PrincessTG defaults.";
-  }catch(error){status.textContent="Could not reset settings: "+error.message;}
+  }catch(error){status.textContent=publicError(error,"PTG-801");}
 });
 window.addEventListener("storage",event=>{
   if(event.key==="princesstg-site-preferences-v1"){

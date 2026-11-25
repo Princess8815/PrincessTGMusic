@@ -434,7 +434,7 @@
                  class="helper"
                  role="status"
                  aria-live="polite">
-                Loading appeals from Firestore...
+                Loading appeals…
               </p>
             </div>
 
@@ -677,7 +677,7 @@
                 Preview Cleaned Lyrics
               </button>
               <button type="submit" id="save-song" disabled>
-                Save Song to Firestore
+                Save Song
               </button>
               <button type="reset" class="secondary">
                 Clear Form
@@ -706,7 +706,7 @@
         <section class="admin-card" id="edit-song-section">
           <h2>Edit Existing Songs</h2>
           <p class="helper">
-            Search JSON and Firestore songs.
+            Search songs.
             Select a song to edit it.
           </p>
 
@@ -914,7 +914,7 @@
 
             <div class="form-actions">
               <button type="submit" id="edit-song-save">
-                Save Changes to Firestore
+                Save Changes
               </button>
             </div>
 
@@ -935,7 +935,7 @@
         <section class="admin-card" id="delete-song-section">
           <h2>Delete Song From Database</h2>
           <p class="helper">
-            Deletes the Firestore record only,
+            Deletes the saved song,
             not MP3 or legacy JSON files.
           </p>
 
@@ -1026,7 +1026,7 @@
  <datalist id="cd-category-suggestions"></datalist><div id="cd-volume-editor"></div><p class="helper">Use an existing category or type a new one to create its store tab. Feature any individual CD using its checkbox.</p><p class="helper">A single-disc album uses the album name and includes all its songs.</p><div id="cd-track-section" hidden><h3>Track assignments</h3><p class="helper">Each track belongs to one volume.</p><div id="cd-track-assignments"></div></div>
  <button id="cd-admin-save" type="submit">Save CD listing</button></div></form><p id="cd-admin-status" role="status" aria-live="polite"></p><section class="admin-card" aria-labelledby="merch-title">
 <h2 id="merch-title">Products &amp; shipping profiles</h2>
-<p class="helper">Add physical merchandise without changing code. Albums above continue to use the slim jewel case profile. These records are separate in sandbox and production. Save drafts with Publish unchecked; stock availability is managed manually.</p>
+<p class="helper">Add merchandise and choose its packaging. Save drafts with Publish unchecked. Manage stock in Inventory.</p>
 <button type="button" id="merch-load">Load / refresh catalog</button>
 <p id="merch-mode" class="helper"></p><p id="merch-status" role="status" aria-live="polite"></p>
 <h3>Shipping profiles</h3>
@@ -1072,7 +1072,7 @@
         <section class="admin-subpanel" data-admin-subpanel="albums:add">
           <section class="admin-card">
             <h2>Add Album</h2>
-            <p class="helper">Create a Firestore album record. Existing album names remain available for older songs.</p>
+            <p class="helper">Create an album. Existing album names remain available for older songs.</p>
             <form id="add-album-form">
               <div class="form-field"><label for="new-album-name">Album Name *</label>
                 <input id="new-album-name" maxlength="100" required></div>
@@ -1109,7 +1109,7 @@
         <section class="admin-subpanel" data-admin-subpanel="albums:edit" hidden>
           <section class="admin-card">
             <h2>Edit Album</h2>
-            <p class="helper">Changing the release date updates all associated songs, including older JSON-only songs through Firestore overrides.</p>
+            <p class="helper">Changing the release date updates associated songs.</p>
             <button type="button" class="secondary" id="album-refresh">Refresh Albums</button>
             <div class="form-field"><label for="edit-album-select">Choose Album</label>
               <select id="edit-album-select"><option value="">Choose an album...</option></select></div>
@@ -1458,8 +1458,8 @@
               <h4>Email verification exception</h4>
               <p class="helper">The owner can allow an account to use
                 member features without proving email ownership. This does
-                <strong>not</strong> set Firebase Authentication's verified flag.</p>
-              <p><strong>Firebase email status:</strong>
+                <strong>not</strong> verify email ownership.</p>
+              <p><strong>Email verification:</strong>
                 <span id="account-verification-auth-status">Checking…</span></p>
               <p><strong>Site exception:</strong>
                 <span id="account-verification-bypass-status">Checking…</span></p>

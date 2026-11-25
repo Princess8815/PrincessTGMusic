@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+ <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+ <title>Error List | PrincessTG Creations</title>
+ <link rel="stylesheet" href="../styles/site-shell.css">
+ <link rel="stylesheet" href="../styles/errors.css">
+ <script type="module" src="../script/site-shell.js"></script>
+ <script type="module" src="../script/error-list.js"></script>
+</head>
+<body><main class="error-list-main">
+ <h1>Error List</h1>
+ <p>Find your code for a quick next step.</p>
+ <label for="error-search">Search by code or message</label>
+ <input id="error-search" type="search" placeholder="PTG-203" autocomplete="off">
+ <p id="error-count" role="status" aria-live="polite"></p>
+ <div class="error-table-wrap"><table>
+  <thead><tr><th scope="col">Code</th><th scope="col">Message</th><th scope="col">What to try</th></tr></thead>
+  <tbody id="error-list"></tbody>
+ </table></div>
+ <p id="error-empty" hidden>No matching codes.</p>
+ <p>Still stuck? Email <a href="mailto:princesstgcreations@yahoo.com">princesstgcreations@yahoo.com</a> with the code.</p>
+ <noscript><p>Enable JavaScript to search the error list.</p></noscript>
+</main></body>
+</html>

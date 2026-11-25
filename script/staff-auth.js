@@ -1,3 +1,4 @@
+import {publicError} from "./site-errors.js";
 
 import { auth, db } from "./firebase.js";
 
@@ -175,7 +176,7 @@ export async function guardStaffPage({
   if (!allowed) {
     if (status) {
       status.textContent =
-        "Access denied. Redirecting...";
+        publicError(null,"PTG-003");
     }
 
     window.location.replace(redirectURL);

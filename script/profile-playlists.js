@@ -1,3 +1,4 @@
+import {publicError} from "./site-errors.js";
 import {auth} from "./firebase.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {loadAllSongs} from "./song-data.js";
@@ -13,7 +14,7 @@ const audio=$("profile-playlist-audio");
 let selectedId="",catalog=new Map(),audioPaths=[],currentKey="",shuffling=false,shuffleRemaining=[];
 let searchTerm="",sortMode="recent",colorFilter="all";
 const status=message=>{$("profile-playlist-status").textContent=message;};
-const saveAction=async action=>{try{await action();}catch(e){status(e.message);}};
+const saveAction=async action=>{try{await action();}catch(e){status(publicError(e,"PTG-503"));}};
 const storageKey=()=> "princesstg-profile-playlist-selected-v1:"+(auth.currentUser?.uid||"guest");
 function selected(){return getPlaylists().find(p=>p.id===selectedId)||null;}
 function songEntry(key){
@@ -47,7 +48,7 @@ async function playKey(key){
   currentKey=key;
   if(audio.src!==url){audio.src=url;audio.load();}
   try{await audio.play();status("Playing "+songEntry(key).title);}
-  catch{status("Playback could not start. Press Play to retry.");}
+  catch{status(publicError(null,"PTG-502"));}
   showCurrent();renderTracks();
 }
 function next(){
@@ -197,7 +198,7 @@ async function buildCatalog(uid){
   });
   refreshList();
   if(songResult.status!=="fulfilled"||indexResult.status!=="fulfilled"){
-    status("Some song information is unavailable. Your saved playlists are still here.");
+    status(publicError(null,"PTG-501"));
   }
 }
 $("profile-playlist-create-form").addEventListener("submit",async event=>{
@@ -208,7 +209,7 @@ $("profile-playlist-create-form").addEventListener("submit",async event=>{
     $("profile-playlist-name").value="";
     selectPlaylist(playlist.id);refreshList();
     status("Created "+playlist.name+".");
-  }catch(error){status(error.message);}
+  }catch(error){status(publicError(error,"PTG-503"));}
 });
 $("profile-playlist-send").addEventListener("click",()=>{
   const playlist=selected();
@@ -226,7 +227,7 @@ $("profile-playlist-delete").addEventListener("click",async()=>{
 });
 $("profile-playlist-color").addEventListener("change",async event=>{
   const playlist=selected();if(!playlist)return;
-  try{await setPlaylistColor(playlist.id,event.target.value);}catch(error){status(error.message);}
+  try{await setPlaylistColor(playlist.id,event.target.value);}catch(error){status(publicError(error,"PTG-503"));}
 });
 $("profile-playlist-search").addEventListener("input",event=>{
   searchTerm=event.target.value.trim().toLowerCase();refreshList();
@@ -260,6 +261,6 @@ onAuthStateChanged(auth,user=>{
   refreshList();
   if(user){
     void buildCatalog(user.uid);
-    void ensurePlaylists(user.uid).then(()=>{if(auth.currentUser?.uid===user.uid){refreshList();status(playlistState()||"Playlists synchronized with your account.");}}).catch(e=>{if(auth.currentUser?.uid===user.uid)status(e.message);});
+    void ensurePlaylists(user.uid).then(()=>{if(auth.currentUser?.uid===user.uid){refreshList();status(playlistState()||"Playlists synchronized with your account.");}}).catch(e=>{if(auth.currentUser?.uid===user.uid)status(publicError(e,"PTG-503"));});
   }else status("Sign in to use playlists.");
 });

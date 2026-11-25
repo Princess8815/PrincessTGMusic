@@ -1,3 +1,4 @@
+import {publicError,withErrorCode} from "./site-errors.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   "use strict";
@@ -295,7 +296,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function showError(message) {
     console.error("Challenge submission error:", message);
 
-    submitError.textContent = message;
+    submitError.textContent=withErrorCode(message,"PTG-701");
     submitError.hidden = false;
 
     submitError.scrollIntoView({
@@ -327,8 +328,7 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
     submitError.textContent =
-      `Please complete "${field.name || "required field"}": ` +
-      field.validationMessage;
+      withErrorCode("Check the required fields.","PTG-007");
 
     submitError.hidden = false;
   }, true);
@@ -388,7 +388,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (Array.isArray(result?.errors)) {
         const messages = result.errors
-          .map(error => error.message)
+          .map(error => publicError(error,"PTG-701"))
           .filter(Boolean);
 
         if (messages.length > 0) {
@@ -535,18 +535,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (error) {
       console.error("Form submission failed:", error);
 
-      if (error instanceof TypeError) {
-        showError(
-          "Unable to connect to Formspree. " +
-          "Check your internet connection, browser extensions, " +
-          "and browser console for network or CORS errors."
-        );
-      } else {
-        showError(
-          error.message ||
-          "An unknown error prevented submission."
-        );
-      }
+      showError(publicError(error,"PTG-701"));
 
     } finally {
       submitButton.disabled = false;

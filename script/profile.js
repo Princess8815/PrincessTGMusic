@@ -1,3 +1,4 @@
+import {publicError,withErrorCode} from "./site-errors.js";
 
 import { auth, db, usingLocalFirebaseEmulators, checkLocalFirestoreEmulator } from "./firebase.js";
 import {hasOwnerVerificationBypass} from "./verification-access.js";
@@ -47,7 +48,7 @@ function setStatus(id, message, error = false) {
   const element = $(id);
   if (!element) return;
 
-  element.textContent = message;
+  element.textContent=error?withErrorCode(message,"PTG-110"):message;
   element.style.color = error
     ? "#fca5a5"
     : "#86efac";
@@ -215,9 +216,7 @@ async function loadAccountSnapshot(user) {
       getDocFromServer(accountRef(user)),
       new Promise((_, reject) => {
         timer = setTimeout(() =>
-          reject(new Error(usingLocalFirebaseEmulators
-            ? "The Firestore emulator did not answer the account lookup on port 8080. Check the Firestore service in the emulator dashboard, then select Retry."
-            : "Account lookup timed out. Check your connection and retry.")),
+          reject(new Error("Account lookup timed out.")),
           usingLocalFirebaseEmulators ? 8500 : 15000);
       })
     ]);
@@ -232,11 +231,7 @@ async function loadProfile(user) {
     // Firestore on 8080 has started. Detect that before a long SDK timeout.
     const firestore=await checkLocalFirestoreEmulator();
     if(!firestore.connected){
-      throw new Error(
-        "The Auth emulator is connected, but the Firestore emulator is not responding at 127.0.0.1:8080. " +
-        "Open http://localhost:4000/firestore and confirm Firestore is running, " +
-        "or restart: firebase emulators:start --only auth,firestore --project demo-princesstg"
-      );
+      throw new Error("Account temporarily unavailable.");
     }
   }
 
@@ -249,10 +244,7 @@ async function loadProfile(user) {
     snapshot = await loadAccountSnapshot(user);
   }
   if (!snapshot.exists()) {
-    throw new Error(usingLocalFirebaseEmulators
-      ? "This test user exists in Authentication but not in Firestore users/. " +
-        "Check the emulator Firestore tab, then select Retry to initialize the profile."
-      : "Your account record is not ready yet. Try again shortly.");
+    throw new Error("Your account is not ready yet.");
   }
 
   account = user;
@@ -319,7 +311,7 @@ $("profile-form").addEventListener(
     } catch (error) {
       setStatus(
         "profile-save-status",
-        error.message,
+        publicError(error,"PTG-110"),
         true
       );
 
@@ -382,7 +374,7 @@ $("profile-email-form").addEventListener(
     } catch (error) {
       setStatus(
         "profile-email-status",
-        `Email change failed: ${error.message}`,
+        publicError(error,"PTG-110"),
         true
       );
 
@@ -451,7 +443,7 @@ async function loadSubmissions(user) {
   } catch (error) {
     setStatus(
       "profile-submissions-status",
-      `Unable to load songs: ${error.message}`,
+      publicError(error,"PTG-110"),
       true
     );
   }
@@ -511,7 +503,7 @@ $("newsletter-button").addEventListener(
     } catch (error) {
       setStatus(
         "newsletter-status",
-        `Could not update subscription: ${error.message}`,
+        publicError(error,"PTG-110"),
         true
       );
 
@@ -597,7 +589,7 @@ $("close-account-form").addEventListener(
 
     const confirmed = window.confirm(
       "FINAL WARNING:\n\n" +
-      "Your Firebase login will be permanently deleted.\n" +
+      "Your login will be permanently deleted.\n" +
       "Your account record will be archived.\n" +
       "You may lose access to your submissions and account history.\n\n" +
       "Do you want to continue?"
@@ -657,10 +649,7 @@ $("close-account-form").addEventListener(
     } catch (error) {
       setStatus(
         "close-account-status",
-        `Closure failed: ${error.message}. ` +
-        (accountData.status === "archived"
-          ? "Your profile is archived, but login deletion may still need completion. You can retry here."
-          : "Your account has not been archived by this attempt."),
+        publicError(error,"PTG-111"),
         true
       );
 
@@ -728,11 +717,7 @@ async function tryLoadProfile(user) {
     $("profile-retry").hidden=true;
   } catch(error) {
     console.error("Profile initialization failed:",error);
-    const isPermissionDenied=error?.code==="permission-denied";
-    setStatus("profile-status",
-      "Could not load profile: "+(isPermissionDenied
-        ? "Firestore security rules denied access to this account. Check emulator rules for users/{uid}."
-        : error?.message||"Unknown Firestore error."),true);
+    setStatus("profile-status",publicError(error,"PTG-110"),true);
     $("profile-retry").hidden=false;
   } finally {
     loadingProfile=false;

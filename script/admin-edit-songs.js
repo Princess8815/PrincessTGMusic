@@ -1,3 +1,4 @@
+import {publicError,withErrorCode} from "./site-errors.js";
 import {songAlbums,albumRecordMap,fillAlbumSelectors,validatedAlbums,membershipFields,releaseForAlbums} from "./song-albums.js";
 
 import { auth, db } from "./firebase.js";
@@ -202,7 +203,7 @@ let originalTitlesById = new Map();
   let invalidLegacyDate = null;
 
   function showSaveStatus(message, error = false) {
-    saveStatus.textContent = message;
+    saveStatus.textContent=error?withErrorCode(message,"PTG-901"):message;
     saveStatus.style.color =
       error ? "#fca5a5" : "#86efac";
   }
@@ -220,14 +221,14 @@ let originalTitlesById = new Map();
 
     if (!authorized) {
       searchStatus.textContent =
-        "Administrator permissions required.";
+        publicError(null,"PTG-003");
       return;
     }
   } catch (error) {
     console.error(error);
 
     searchStatus.textContent =
-      "Could not verify administrator access.";
+      publicError(error,"PTG-003");
 
     return;
   }
@@ -241,7 +242,7 @@ let originalTitlesById = new Map();
 
   async function loadCatalog() {
     searchStatus.textContent =
-      "Loading JSON and Firestore songs...";
+      "Loading songs…";
 
     const [jsonResponse, databaseSnapshot] =
       await Promise.all([
@@ -428,9 +429,9 @@ let originalTitlesById = new Map();
       const labels = [];
 
       if (!isInDatabase(song)) {
-        labels.push("Not in Firestore");
+        labels.push("Needs saving");
       } else {
-        labels.push("In Firestore");
+        labels.push("Saved");
       }
 
       if (missingLyrics(song)) {
@@ -465,7 +466,7 @@ let originalTitlesById = new Map();
         ? ` (showing first ${MAX_RESULTS})`
         : "") +
       ` | ${missingCount} missing lyrics` +
-      ` | ${notInDatabaseCount} not in Firestore`;
+      ` | ${notInDatabaseCount} not saved`;
   }
 
   search.addEventListener(
@@ -500,7 +501,7 @@ let originalTitlesById = new Map();
         await loadCatalog();
       } catch (error) {
         searchStatus.textContent =
-          `Refresh failed: ${error.message}`;
+          publicError(error,"PTG-901");
       }
     }
   );
@@ -555,7 +556,7 @@ let originalTitlesById = new Map();
     if(!selectedSongId)return;
     const selected=albumSelects.map(s=>s.value);
     try{await loadAlbumNames();fillAlbumSelectors(albumSelects,albumNames,selected);previewRelease();}
-    catch(error){showSaveStatus(error.message,true);}
+    catch(error){showSaveStatus(publicError(error,"PTG-901"),true);}
   });
 
   // ========================================
@@ -770,8 +771,8 @@ translationCollapsedInput.checked =
 
       source.textContent =
         selectedExistsInDatabase
-          ? "Source: Firestore, with JSON fallback where available."
-          : "Source: JSON only. Saving will import this song into Firestore.";
+          ? "Saved song"
+          : "Imported song. Save to update it.";
 
       showSaveStatus("");
 
@@ -792,7 +793,7 @@ translationCollapsedInput.checked =
       );
 
       searchStatus.textContent =
-        `Could not load song: ${error.message}`;
+        publicError(error,"PTG-901");
     }
   }
 
@@ -819,7 +820,7 @@ translationCollapsedInput.checked =
 
       if (!authorized || !user) {
         throw new Error(
-          "Administrator permissions required."
+          publicError(null,"PTG-003")
         );
       }
 
@@ -994,7 +995,7 @@ const changes = {
       }
 
       source.textContent =
-        "Source: Firestore, with JSON fallback where available.";
+        "Saved song";
 
       originalDate.textContent =
         "Original date is independent of later albums.";
@@ -1030,7 +1031,7 @@ const changes = {
       );
 
       showSaveStatus(
-        `Could not save: ${error.message}`,
+        publicError(error,"PTG-901"),
         true
       );
 
@@ -1054,6 +1055,6 @@ const changes = {
     );
 
     searchStatus.textContent =
-      `Unable to load songs: ${error.message}`;
+      publicError(error,"PTG-901");
   }
 });

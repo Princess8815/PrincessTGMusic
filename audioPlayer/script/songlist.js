@@ -271,7 +271,7 @@ async function checkReleasedSongPlayback() {
 
     if (!indexResponse.ok) {
       throw new Error(
-        "Could not check audio availability."
+        "Music unavailable. (PTG-501)"
       );
     }
 

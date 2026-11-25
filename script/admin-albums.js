@@ -1,3 +1,4 @@
+import {publicError,withErrorCode} from "./site-errors.js";
 import {songAlbums, albumKey, originalRelease, releaseForAlbums, membershipFields, renamedMembership, albumRecordMap} from "./song-albums.js";
 import { auth, db } from "./firebase.js";
 import { verifyStaff } from "./staff-auth.js";
@@ -24,7 +25,7 @@ const userIsStaff = async () => {
 };
 const show = (id, text, error = false) => {
   const el = $(id);
-  el.textContent = text;
+  el.textContent=error?withErrorCode(text,"PTG-901"):text;
   el.style.color = error ? "#fca5a5" : "#86efac";
 };
 
@@ -174,7 +175,7 @@ async function loadTrackEditor(name) {
     renderTrackEditor();
   } catch(error) {
     trackEditorLoading = false;
-    $("edit-album-track-order").textContent="Unable to load album tracks: "+error.message;
+    $("edit-album-track-order").textContent=publicError(error,"PTG-901");
   }
 }
 
@@ -321,7 +322,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     await userIsStaff();
     await catalog();
   } catch (e) {
-    show("add-album-status", "Album management unavailable: " + e.message, true);
+    show("add-album-status", "Album management unavailable: " + publicError(e,"PTG-901"), true);
     return;
   }
   $("add-album-form").addEventListener("submit", async event => {
@@ -345,7 +346,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       await catalog();
       notifyAlbumsChanged();
       show("add-album-status", "Album added. Open albums/album.html?id=" + slug(data.name));
-    } catch(e) { show("add-album-status", e.message, true); }
+    } catch(e) { show("add-album-status", publicError(e,"PTG-901"), true); }
     finally { button.disabled = false; }
   });
   $("edit-album-order-alpha").addEventListener("click", () => {
@@ -355,7 +356,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("edit-album-select").addEventListener("change", fillEdit);
   $("album-refresh").addEventListener("click", async () => {
     try { await catalog(); fillEdit(); show("edit-album-status", "Album list refreshed."); }
-    catch(e) { show("edit-album-status", e.message, true); }
+    catch(e) { show("edit-album-status", publicError(e,"PTG-901"), true); }
   });
   $("edit-album-form").addEventListener("submit", async event => {
     event.preventDefault();
@@ -369,7 +370,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       $("edit-album-select").value = data.name;
       fillEdit();
       show("edit-album-status", "Album saved. Updated " + count + " associated song(s).");
-    } catch(e) { show("edit-album-status", e.message, true); }
+    } catch(e) { show("edit-album-status", publicError(e,"PTG-901"), true); }
     finally { button.disabled = false; }
   });
   $("delete-album-button").addEventListener("click", async () => {
@@ -384,7 +385,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       $("delete-album-select").value = "";
       $("delete-album-confirm").value = "";
       show("delete-album-status", 'Album "' + name + '" deleted. (' + removed + " songs affected)");
-    } catch(e) { show("delete-album-status", e.message, true); }
+    } catch(e) { show("delete-album-status", publicError(e,"PTG-901"), true); }
     finally { button.disabled = false; }
   });
 });

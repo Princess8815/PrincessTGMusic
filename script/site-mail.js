@@ -1,3 +1,4 @@
+import {publicError,withErrorCode} from "./site-errors.js";
 import {auth,db} from "./firebase.js";
 import {hasSiteVerificationAccess,refreshSiteVerificationAccess} from "./verification-access.js";
 import {
@@ -203,7 +204,7 @@ function updateMailVerification(user){
   return verified;
 }
 const setStatus=(message,isError=false)=>{
-  const el=$("mail-status");el.textContent=message;
+  const el=$("mail-status");el.textContent=isError?withErrorCode(message,"PTG-401"):message;
   el.dataset.error=isError?"true":"false";
 };
 function element(tag,cls,body){
@@ -216,14 +217,7 @@ function safeTime(ms){
   if(!Number.isFinite(ms)||ms<=0)return "Date unavailable";
   return new Date(ms).toLocaleString(undefined,{year:"numeric",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
 }
-const errorMessage=error=>{
-  const msg=String(error?.message||"Request failed");
-  if(error?.code==="permission-denied")
-    return "Permission denied. Verify your email and confirm the new direct-mail Firestore rules are published.";
-  if(error?.code==="unavailable")
-    return "Firestore is temporarily unavailable. Check your connection and try again.";
-  return msg.replace(/^.*?siteMail:\s*/,"").slice(0,240);
-};
+const errorMessage=error=>publicError(error,"PTG-401");
 function unreadCount(){
   return messages.inbox.filter(m=>!m.read).length;
 }
@@ -323,7 +317,7 @@ function makeSharedContent(saved){
       const url=new URL("docs-board.html",location.href);url.searchParams.set("share",saved.token);
       anchor.href=url.href;anchor.target="_blank";anchor.rel="noopener noreferrer";
       section.append(anchor);
-    }else section.append(element("p","","Invalid document link."));
+    }else section.append(element("p","",publicError(null,"PTG-303")));
   }else if(saved.kind==="playlist"){
     section.style.setProperty("--shared-color",saved.color||"#8b5cf6");
     section.append(element("strong","","≡ Playlist: "+saved.name));
@@ -702,7 +696,7 @@ $("mail-compose-form").addEventListener("submit",async event=>{
     });
     resetCompose();chooseView("sent");
     setStatus("Mail sent! It will automatically expire "+safeTime(result.expiresAt)+".");
-  }catch(error){setStatus("Could not send mail: "+errorMessage(error),true);}
+  }catch(error){setStatus(publicError(error,"PTG-402"),true);}
   finally{busy=false;$("mail-send").disabled=false;}
 });
 $("mail-send-verification").addEventListener("click",async()=>{
@@ -714,13 +708,11 @@ $("mail-send-verification").addEventListener("click",async()=>{
     if(auth.currentUser?.uid!==user.uid)return;
     $("mail-verification-status").textContent=result.alreadyVerified
       ? "Your email is already verified. Click I've verified my email to unlock Site Mail."
-      : "Firebase accepted a verification request for "+(result.recipient||user.email)+
-        ". Check that address, including Spam/Junk. Acceptance does not guarantee delivery.";
+      : "Verification email requested. Check your inbox and spam folder.";
   }catch(error){
     if(auth.currentUser?.uid!==user.uid)return;
     console.error("Site Mail verification request rejected:",error?.code||"unknown",error);
-    $("mail-verification-status").textContent="Firebase did not send a verification email to "+(user.email||"this account")+
-      ": "+verificationError(error);
+    $("mail-verification-status").textContent=verificationError(error);
   }finally{$("mail-send-verification").disabled=false;}
 });
 $("mail-check-verification").addEventListener("click",async()=>{
@@ -731,7 +723,7 @@ $("mail-check-verification").addEventListener("click",async()=>{
     const verified=await refreshSiteVerification(user);
     if(!verified){
       $("mail-verification-status").textContent=
-        "Firebase still shows your email as unverified. Confirm it through the email link, then try again.";
+        publicError(null,"PTG-109");
       return;
     }
     updateMailVerification(user);

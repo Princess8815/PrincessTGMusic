@@ -61,7 +61,7 @@ export async function makeDocx(model){
  const imgMime={png:"png",jpeg:"jpg",webp:"webp",gif:"gif"};
  async function imageRun(el){
   const src=el.getAttribute("src")||"",m=src.match(/^data:image\/(png|jpeg|webp|gif);base64,([A-Za-z0-9+/=\s]+)$/i);
-  if(!m){warnings.add("Some images could not be embedded.");return textRun("[Picture]");}
+  if(!m){warnings.add(publicError(null,"PTG-305"));return textRun("[Picture]");}
   let ext=imgMime[m[1].toLowerCase()],bytes;
   const image=new Image();
   try{await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;image.src=src;});
@@ -69,7 +69,7 @@ export async function makeDocx(model){
     const canvas=document.createElement("canvas");canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;canvas.getContext("2d").drawImage(image,0,0);
     const b64=canvas.toDataURL("image/png").split(",")[1];bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));ext="png";
    }else bytes=Uint8Array.from(atob(m[2].replace(/\s/g,"")),c=>c.charCodeAt(0));
-  }catch{warnings.add("Some images could not be embedded.");return textRun("[Picture]");}
+  }catch{warnings.add(publicError(null,"PTG-305"));return textRun("[Picture]");}
   const num=++pictureId,name="image"+num+"."+ext;files.push(["word/media/"+name,bytes]);const id=rel("image","media/"+name);
   const width=Math.max(100,Math.min(available,len(el.style.width,available)||image.naturalWidth*15));
   const height=Math.max(100,Math.round(width*image.naturalHeight/Math.max(1,image.naturalWidth)));
@@ -141,3 +141,4 @@ export async function makeDocx(model){
  const ct='<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="jpg" ContentType="image/jpeg"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>'+(l.header?'<Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>':"")+(l.footer||l.numbers?'<Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>':"")+'</Types>';
  files.push(["[Content_Types].xml",X+ct]);return {blob:zipStore(files),warnings:[...warnings]};
 }
+import {publicError} from "./site-errors.js";

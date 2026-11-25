@@ -1,3 +1,4 @@
+import {publicError,withErrorCode} from "./site-errors.js";
 import {auth, db} from "./firebase.js";
 import {verifyStaff} from "./staff-auth.js";
 import {loadAllSongs} from "./song-data.js";
@@ -11,7 +12,7 @@ const norm = x => clean(x).toLowerCase();
 const genresRef = doc(db,"enums","genres");
 let genres = [];
 function status(id,message,isError=false) {
-  const e = $(id); e.textContent = message;
+  const e = $(id); e.textContent=isError?withErrorCode(message,"PTG-901"):message;
   e.style.color = isError ? "#fca5a5" : "#86efac";
 }
 async function requireAdmin() {
@@ -89,7 +90,7 @@ async function editGenre(oldName,newName,remove=false) {
 }
 document.addEventListener("DOMContentLoaded",async()=>{
   try{await requireAdmin();await refresh();}
-  catch(e){status("add-genre-status","Genre management unavailable: "+e.message,true);return;}
+  catch(e){status("add-genre-status","Genre management unavailable: "+publicError(e,"PTG-901"),true);return;}
   $("add-genre-form").addEventListener("submit",async event=>{
     event.preventDefault();
     try{
@@ -106,7 +107,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
       $("add-genre-form").reset();
       await refresh();
       status("add-genre-status","Genre added.");
-    }catch(e){status("add-genre-status",e.message,true);}
+    }catch(e){status("add-genre-status",publicError(e,"PTG-901"),true);}
   });
   $("edit-genre-select").addEventListener("change",()=>{
     $("edit-genre-name").value=$("edit-genre-select").value;
@@ -120,7 +121,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
       const count=await editGenre(oldName,newName);
       $("edit-genre-select").value=newName;
       status("edit-genre-status","Genre saved. Updated "+count+" song(s).");
-    }catch(e){status("edit-genre-status",e.message,true);}
+    }catch(e){status("edit-genre-status",publicError(e,"PTG-901"),true);}
   });
   $("delete-genre-button").addEventListener("click",async()=>{
     try{
@@ -131,6 +132,6 @@ document.addEventListener("DOMContentLoaded",async()=>{
       $("delete-genre-select").value="";
       $("delete-genre-confirm").value="";
       status("delete-genre-status","Genre deleted.");
-    }catch(e){status("delete-genre-status",e.message,true);}
+    }catch(e){status("delete-genre-status",publicError(e,"PTG-901"),true);}
   });
 });

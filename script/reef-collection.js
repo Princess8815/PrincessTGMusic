@@ -1,3 +1,4 @@
+import {publicError} from "./site-errors.js";
 // Original PrincessTG reef collection. Discoveries are cosmetic, not entitlements.
 import {auth,db} from "./firebase.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
@@ -62,7 +63,7 @@ async function syncPending(uid){
   if(!current(uid))return;
   if(!account.exists())throw Error("Your account record is still initializing.");
  }catch(e){
-  if(current(uid)){claimErrors.set(uid,e.message);notify();scheduleRetry(uid);}
+  if(current(uid)){claimErrors.set(uid,publicError(e,"PTG-212"));notify();scheduleRetry(uid);}
   return;
  }
  for(const id of encounterIds){
@@ -71,7 +72,7 @@ async function syncPending(uid){
   if(confirmed.has(uid+":"+id)){removePending(id,uid);continue;}
   try{
    const ref=doc(pathFor(uid),id);
-   const newlyClaimed=await runTransaction(db,async tx=>{
+   await runTransaction(db,async tx=>{
     if(!current(uid))throw Error("Account changed");
     const snap=await tx.get(ref);
     if(!current(uid))throw Error("Account changed");
@@ -80,11 +81,9 @@ async function syncPending(uid){
     return true;
    });
    confirmed.add(uid+":"+id);removePending(id,uid);claimErrors.delete(uid);notify();
-   // The transaction result describes the committed attempt, not an optimistic write.
-   if(newlyClaimed&&current(uid))announceDiscovery(uid,id);
   }catch(e){
-   retry=true;claimErrors.set(uid,e.code==="permission-denied"?"Firestore denied the discovery. Check that the updated collection rules are published.":e.message);
-   notify();console.warn("Reef discovery kept for its account:",e.code||e.message);
+   retry=true;claimErrors.set(uid,publicError(e,"PTG-212"));
+   notify();console.warn("Reef discovery kept for its account:",e.code||publicError(e,"PTG-212"));
   }
  }
  if(retry)scheduleRetry(uid);
@@ -133,60 +132,11 @@ onAuthStateChanged(auth,user=>{
 });
 window.addEventListener("online",()=>{attempts=0;void flush(auth.currentUser?.uid);});
 window.addEventListener("storage",e=>{if(e.key?.startsWith(prefix))void flush(auth.currentUser?.uid);});
-// Announce only confirmed first discoveries. Wait for native dialogs to close
-// so the notice is visible and does not interrupt an external-link decision.
-const discoveries=[];
-let discoveryTimer=null,discoveryExpiry=null,visibleDiscoveryUid=null;
-function announceDiscovery(uid,id){
- if(!current(uid)||!ids.has(id))return;
- discoveries.push({uid,id});
- showNextDiscovery();
-}
-function clearDiscoveryNotice(){
- clearTimeout(discoveryExpiry);discoveryExpiry=null;visibleDiscoveryUid=null;
- document.getElementById("reef-discovery-toast")?.remove();
-}
-function showNextDiscovery(){
- if(discoveryTimer!==null||visibleDiscoveryUid!==null)return;
- while(discoveries.length&&!current(discoveries[0].uid))discoveries.shift();
- if(!discoveries.length)return;
- if(!document.body||document.querySelector("dialog[open]")){
-  discoveryTimer=setTimeout(()=>{discoveryTimer=null;showNextDiscovery();},250);
-  return;
- }
- const {uid,id}=discoveries.shift();
- const friend=reef.find(f=>f[0]===id);
- if(!friend)return showNextDiscovery();
- installStyles();
- const toast=document.createElement("div");
- toast.id="reef-discovery-toast";toast.className="reef-discovery-toast";
- const art=document.createElement("div");art.className="reef-discovery-art";
- art.setAttribute("aria-hidden","true");art.innerHTML=portrait(id);
- const message=document.createElement("div");message.setAttribute("role","status");message.setAttribute("aria-live","polite");message.setAttribute("aria-atomic","true");
- const dismiss=document.createElement("button");dismiss.type="button";dismiss.textContent="×";dismiss.setAttribute("aria-label","Dismiss discovery notice");
- dismiss.onclick=()=>{clearDiscoveryNotice();showNextDiscovery();};
- toast.append(art,message,dismiss);document.body.append(toast);visibleDiscoveryUid=uid;
- const title=document.createElement("strong");title.textContent=friend[1]+" was discovered!";
- const detail=document.createElement("span");detail.textContent="Added to your axolotl collection.";
- message.append(title,detail);
- discoveryExpiry=setTimeout(()=>{clearDiscoveryNotice();showNextDiscovery();},6000);
-}
-onAuthStateChanged(auth,user=>{
- for(let i=discoveries.length-1;i>=0;i--)if(discoveries[i].uid!==user?.uid)discoveries.splice(i,1);
- if(visibleDiscoveryUid!==null&&visibleDiscoveryUid!==user?.uid){clearDiscoveryNotice();showNextDiscovery();}
-});
-
 function installStyles(){
  if(document.querySelector("link[data-reef-style]"))return;
  const link=document.createElement("link");link.rel="stylesheet";link.href=new URL("../styles/reef-collection.css",import.meta.url).href;link.dataset.reefStyle="1";document.head.append(link);
 }
 
-export function announcePurchaseDiscovery(id){
- if(!purchaseOnly.has(id)||!auth.currentUser)return;
- const uid=auth.currentUser.uid;
- // Verify the server-created record before showing a discovery notice.
- void getDocFromServer(doc(pathFor(uid),id)).then(snap=>{if(current(uid)&&snap.exists()&&!confirmed.has(uid+":"+id)){confirmed.add(uid+":"+id);notify();announceDiscovery(uid,id);}}).catch(()=>{});
-}
 export function axolotlPortrait(id){return portrait(id);}
 let tidePortraitSerial=0;
 function portrait(id){
@@ -271,7 +221,7 @@ export function mountReefCollection(){
    const found=new Set(snap.docs.map(s=>s.id).filter(id=>ids.has(id)));
    for(const id of found)confirmed.add(user.uid+":"+id);
    render(found);
-  },e=>{if(epoch===token)render(new Set(),"Collection unavailable: "+e.message);});
+  },e=>{if(epoch===token)render(new Set(),"Collection unavailable: "+publicError(e,"PTG-212"));});
  });
 }
 export async function deleteReefCollection(uid){

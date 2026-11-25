@@ -1,3 +1,4 @@
+import {publicError} from "./site-errors.js";
 import { auth, db } from "./firebase.js";
 import { verifyStaff } from "./staff-auth.js";
 
@@ -177,7 +178,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     if (!usersReady || !appealsReady || !readsReady) {
-      status.textContent = "Loading appeals from Firestore...";
+      status.textContent = "Loading appeals…";
       return;
     }
 
@@ -236,7 +237,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     } catch (error) {
       console.error("Could not mark appeal as read:", error);
       status.textContent =
-        `Message opened but could not save read status: ${error.message}`;
+        publicError(error,"PTG-901");
     } finally {
       reading.delete(key);
     }
@@ -258,7 +259,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         renderInbox();
       },
       error => {
-        loadError = `Could not load users: ${error.message}`;
+        loadError = publicError(error,"PTG-901");
         renderInbox();
       }
     ));
@@ -277,7 +278,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         renderInbox();
       },
       error => {
-        loadError = `Could not load appeals: ${error.message}`;
+        loadError = publicError(error,"PTG-901");
         renderInbox();
       }
     ));
@@ -290,13 +291,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         renderInbox();
       },
       error => {
-        loadError = `Could not load read receipts: ${error.message}`;
+        loadError = publicError(error,"PTG-901");
         renderInbox();
       }
     ));
   } catch (error) {
     console.error("Admin inbox initialization failed:", error);
-    loadError = error.message;
+    loadError = publicError(error,"PTG-901");
     renderInbox();
   }
 

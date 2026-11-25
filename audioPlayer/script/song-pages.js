@@ -1,3 +1,4 @@
+import {publicError} from "../../script/site-errors.js";
 import {songAlbums} from "../../script/song-albums.js";
 
 import {
@@ -161,7 +162,7 @@ async function setupAudio(song) {
           );
 
           showAudioNotice(
-            "Unable to play this audio file."
+            publicError(error,"PTG-502")
           );
         }
       }
@@ -183,7 +184,7 @@ async function setupAudio(song) {
     console.error("Audio check failed:", error);
 
     showAudioNotice(
-      "Audio availability could not be checked."
+      publicError(error,"PTG-501")
     );
   }
 }
@@ -363,6 +364,7 @@ async function initializeSongPage() {
 
   if (!pageId) {
     setText("songTitle", "Song Not Found");
+    setText("songStatus",publicError(null,"PTG-008"));
     setText(
       "songStatus",
       "No song ID was provided."
@@ -384,6 +386,7 @@ async function initializeSongPage() {
 
     if (!song) {
       setText("songTitle", "Song Not Found");
+    setText("songStatus",publicError(null,"PTG-008"));
       setText(
         "songStatus",
         "This song does not exist."
@@ -463,7 +466,7 @@ async function initializeSongPage() {
     setText("songTitle", "Loading Error");
     setText(
       "songStatus",
-      "Unable to load this song."
+      publicError(error,"PTG-501")
     );
   }
 }

@@ -1,3 +1,4 @@
+import {publicError} from "./site-errors.js";
 import {auth,db} from "./firebase.js";
 import {collection,getDocs} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 import {verifyStaff} from "./staff-auth.js";
@@ -36,8 +37,8 @@ async function request(action,extra={}){
   if(!await verifyStaff()||!auth.currentUser)throw Error("Administrator access required.");
   if(action==="list"){const snap=await getDocs(collection(db,"albums"));albums=snap.docs.flatMap(d=>storeProducts(d.id,d.data()));}
   const res=await fetch(STORE_WORKER_URL.replace(/\/$/,"")+"/inventory-admin",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,...extra,idToken:await auth.currentUser.getIdToken()})});
-  const result=await res.json();if(!res.ok)throw Error(result.error||"Inventory unavailable.");
+  const result=await res.json();if(!res.ok)throw Object.assign(Error(result.error||"Inventory unavailable."),{status:res.status});
   data=result;render();status.textContent=(data.mode==="live"?"LIVE":"SANDBOX")+" · "+(action==="list"?"Loaded.":"Saved.");
- }catch(e){status.textContent=e.message;}finally{busy=false;controls();}
+ }catch(e){status.textContent=publicError(e,"PTG-901");}finally{busy=false;controls();}
 }
 if(form&&load){controls();load.onclick=()=>void request("list");field("sku").onchange=fill;field("mode").onchange=()=>{field("stock").disabled=field("mode").value!=="in_stock";if(field("mode").value!=="in_stock")field("stock").value=0;};form.onsubmit=e=>{e.preventDefault();if(!data||!field("sku").value)return;void request("save",{inventory:{sku:field("sku").value,mode:field("mode").value,stock:Number(field("stock").value),minDays:Number(field("minDays").value),maxDays:Number(field("maxDays").value),revision:current().revision}});};}

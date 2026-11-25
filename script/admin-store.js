@@ -1,3 +1,4 @@
+import {publicError} from "./site-errors.js";
 import {songAlbums} from "./song-albums.js";
 // Admin CD listing editor, mounted inside existing album administration.
 import {auth,db} from "./firebase.js";
@@ -88,9 +89,9 @@ async function save(){
 }
 function mount(){
  if(!$("cd-admin-form"))return;
- $("cd-admin-load").onclick=()=>loadAlbums().then(choose).catch(e=>status(e.message));
- $("cd-admin-album").onchange=()=>choose().catch(e=>status(e.message));
+ $("cd-admin-load").onclick=()=>loadAlbums().then(choose).catch(e=>status(publicError(e,"PTG-901")));
+ $("cd-admin-album").onchange=()=>choose().catch(e=>status(publicError(e,"PTG-901")));
  $("cd-volume-count").onchange=()=>{readVolumeInputs();const n=Number($("cd-volume-count").value);if(!Number.isInteger(n)||n<1||n>MAX_VOLUMES)return;volumes=defaults(n).map((v,i)=>({...v,...(volumes[i]||{}),name:n===1?"":(volumes[i]?.name||v.name)}));for(const [id,i] of assignment)if(i>=n)assignment.set(id,n-1);render();};
- $("cd-admin-form").onsubmit=async e=>{e.preventDefault();const button=$("cd-admin-save");button.disabled=true;try{await save();}catch(err){status(err.message);}finally{button.disabled=false;}};
+ $("cd-admin-form").onsubmit=async e=>{e.preventDefault();const button=$("cd-admin-save");button.disabled=true;try{await save();}catch(err){status(publicError(err,"PTG-901"));}finally{button.disabled=false;}};
 }
 mount();

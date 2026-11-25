@@ -1,3 +1,4 @@
+import {publicError,withErrorCode} from "./site-errors.js";
 
 import { auth, db } from "./firebase.js";
 
@@ -94,7 +95,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         ? "Revoke verification bypass" : "Grant verification bypass";
     }catch(error){
       if(selectedUid!==uid)return;
-      verificationStatus.textContent="Cannot load exception: "+error.message;
+      verificationStatus.textContent=publicError(error,"PTG-901");
       bypassStatus.textContent="Unavailable";
       selectedBypass=false;
       bypassButton.disabled=true;
@@ -131,8 +132,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       if(!window.confirm(
         (next?"GRANT":"REVOKE")+" email verification BYPASS for "+label+"?\n\n"+
         (next
-          ?"This account will use member features without proving ownership of its email address. Firebase Auth will remain unverified."
-          :"This account will need genuine Firebase email verification to regain verified-only features.")+
+          ?"Allow member features without verifying email ownership?"
+          :"Require email verification for member features?")+
         "\n\nConfirm this owner-only exception change?"
       ))return;
       const audit=doc(collection(db,"verificationOverrideAudit"));
@@ -163,7 +164,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }catch(error){
       console.error("Owner verification bypass action failed:",error);
-      verificationStatus.textContent="Bypass change failed: "+error.message;
+      verificationStatus.textContent="Bypass change failed: "+publicError(error,"PTG-901");
       verificationStatus.style.color="#fca5a5";
     }finally{
       bypassLoading=false;
@@ -223,7 +224,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function showStatus(message, error = false) {
-    saveStatus.textContent = message;
+    saveStatus.textContent=error?withErrorCode(message,"PTG-901"):message;
     saveStatus.style.color =
       error ? "#fca5a5" : "#86efac";
   }
@@ -621,7 +622,7 @@ await updateDoc(targetRef, {
         error
       );
 
-      showStatus(error.message, true);
+      showStatus(publicError(error,"PTG-901"), true);
 
     } finally {
       if (selectedUid) {
@@ -647,7 +648,7 @@ await updateDoc(targetRef, {
         await loadAccounts();
       } catch (error) {
         searchStatus.textContent =
-          `Could not refresh: ${error.message}`;
+          publicError(error,"PTG-901");
       }
     }
   );

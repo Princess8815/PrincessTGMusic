@@ -1,3 +1,4 @@
+import {publicError,withErrorCode} from "./site-errors.js";
 import {songAlbums,albumRecordMap,fillAlbumSelectors,validatedAlbums,membershipFields,releaseForAlbums} from "./song-albums.js";
 
 import { auth, db } from "./firebase.js";
@@ -155,7 +156,7 @@ form.addEventListener("reset", () => {
   let allowedAlbums = [];
 
   function showStatus(message, error = false) {
-    status.textContent = message;
+    status.textContent=error?withErrorCode(message,"PTG-901"):message;
     status.style.color = error
       ? "#fca5a5"
       : "#86efac";
@@ -182,7 +183,7 @@ form.addEventListener("reset", () => {
 
   if (genreSelect.options.length <= 1) {
     showStatus(
-      "Genre list could not be loaded.",
+      publicError(null,"PTG-901"),
       true
     );
   }
@@ -209,7 +210,7 @@ form.addEventListener("reset", () => {
 
     if (!snapshot.exists()) {
       throw new Error(
-        "Missing Firestore document: enums/albums"
+        "Album list unavailable."
       );
     }
 
@@ -251,10 +252,10 @@ form.addEventListener("reset", () => {
   } catch (error) {
     console.error("Album loading error:", error);
 
-    albumStatus.textContent = error.message;
+    albumStatus.textContent = publicError(error,"PTG-901");
 
     showStatus(
-      "Unable to load the album dropdown.",
+      publicError(error,"PTG-901"),
       true
     );
   }
@@ -264,7 +265,7 @@ form.addEventListener("reset", () => {
 window.addEventListener("princesstg:albums-updated", () => {
   void loadAlbums().catch(error => {
     console.error("Album selector refresh failed:", error);
-    albumStatus.textContent = error.message;
+    albumStatus.textContent = publicError(error,"PTG-901");
   });
 });
 
@@ -463,7 +464,7 @@ translationCollapsed: translationCollapsedInput.checked,
       // existing Firestore document.
       // ====================================
 
-      showStatus("Saving song to Firestore...");
+      showStatus("Saving song…");
 
       await runTransaction(db, async transaction => {
 
@@ -497,8 +498,7 @@ translationCollapsed: translationCollapsedInput.checked,
       previewContainer.hidden = true;
 
       showStatus(
-        `Song saved successfully! ` +
-        `Firestore document: songs/${pageId}`
+        "Song saved."
       );
 
     } catch (error) {
@@ -508,7 +508,7 @@ translationCollapsed: translationCollapsedInput.checked,
       );
 
       showStatus(
-        `Could not save song: ${error.message}`,
+        publicError(error,"PTG-901"),
         true
       );
 

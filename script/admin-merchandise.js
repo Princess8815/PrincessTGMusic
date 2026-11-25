@@ -1,3 +1,4 @@
+import {publicError} from "./site-errors.js";
 import {auth} from "./firebase.js";
 import {verifyStaff} from "./staff-auth.js";
 import {STORE_WORKER_URL} from "./store-config.js";
@@ -41,10 +42,10 @@ async function request(action,extra={},selectedProfile=pPick.value,selectedProdu
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),25000);
   try{
    const res=await fetch(STORE_WORKER_URL.replace(/\/$/,"")+"/catalog-admin",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,...extra,idToken:await auth.currentUser.getIdToken()}),signal:controller.signal});
-   const result=await res.json();if(!res.ok)throw Error(result.error||"Catalog unavailable.");
+   const result=await res.json();if(!res.ok)throw Object.assign(Error(result.error||"Catalog unavailable."),{status:res.status});
    data=result;ready=true;render(selectedProfile,selectedProduct);status.textContent=action==="list"?"Catalog loaded.":"Saved successfully.";
   }finally{clearTimeout(timer);}
- }catch(e){status.textContent=e.message;}finally{busy=false;controls();}
+ }catch(e){status.textContent=publicError(e,"PTG-901");}finally{busy=false;controls();}
 }
 if(load&&profile&&product){
  controls();load.onclick=()=>void request("list");pPick.onchange=chooseProfile;mPick.onchange=chooseProduct;

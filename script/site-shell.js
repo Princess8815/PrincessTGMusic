@@ -1,7 +1,18 @@
 // Public navigation renders independently of Firebase; account links attach later.
-import {isLocalPreview,getLocalFirebaseMode,setLocalFirebaseMode,LOCAL_FIREBASE_MODE_KEY} from "./firebase-mode.js";
+import {publicError,errorCode} from "./site-errors.js";
 const root=new URL("../",import.meta.url);
 const siteUrl=path=>new URL(path,root).href;
+function showUnexpectedError(error){
+ if(!document.body){document.addEventListener("DOMContentLoaded",()=>showUnexpectedError(error),{once:true});return;}
+ let notice=document.getElementById("ptg-error-notice");
+ if(!notice){notice=document.createElement("div");notice.id="ptg-error-notice";notice.className="ptg-error-notice";notice.setAttribute("role","alert");document.body.prepend(notice);}
+ const message=document.createElement("span");message.textContent=publicError(error);
+ const help=document.createElement("a");help.href=siteUrl("pages/errors.html?code="+errorCode(error));help.textContent="Error help";
+ const close=document.createElement("button");close.type="button";close.textContent="×";close.setAttribute("aria-label","Dismiss error");close.onclick=()=>notice.remove();
+ notice.replaceChildren(message,help,close);
+}
+window.addEventListener("unhandledrejection",event=>showUnexpectedError(event.reason));
+window.addEventListener("error",event=>{if(event.error)showUnexpectedError(event.error);});
 const SETTINGS_KEY="princesstg-site-preferences-v1";
 const FIELDS=["primary","secondary","tertiary","textColor","highlight"];
 export const DEFAULT_PALETTE=Object.freeze({
@@ -161,7 +172,8 @@ const GROUPS=[
   {title:"Account",links:[
     ["My Profile","pages/profile.html","profile","profile"],
     ["Admin Panel","pages/admin.html","admin","admin"],
-    ["Settings","pages/settings.html","settings"]]},
+    ["Settings","pages/settings.html","settings"],
+    ["Error List","pages/errors.html","docs"]]},
   {title:"Legal & Policies",links:[
     ["Privacy Policy","pages/privacy-policy.html","docs"],
     ["Terms of Service","pages/terms-of-service.html","docs"],
@@ -250,7 +262,8 @@ function buildFooter(){
     }
     socials.append(a);
   }
-  inner.append(copy,socials);footer.append(inner);
+  const help=document.createElement("a");help.href=siteUrl("pages/errors.html");help.textContent="Error List";
+  inner.append(copy,help,socials);footer.append(inner);
   document.body.append(footer);
 }
 function buildMobileBar(){
@@ -268,57 +281,11 @@ function buildMobileBar(){
   bar.append(button,brand);document.body.prepend(bar);
   return button;
 }
-function buildLocalFirebaseControl(sidebar){
-  if(!isLocalPreview()||document.getElementById("ptg-local-firebase-control"))return;
-  const live=getLocalFirebaseMode()==="production";
-  const control=document.createElement("div");
-  control.id="ptg-local-firebase-control";
-  control.className="ptg-local-firebase-control";
-  control.dataset.mode=live?"production":"emulator";
-  control.setAttribute("role","group");
-  control.setAttribute("aria-label","Local developer Firebase connection");
-  const label=document.createElement("strong");
-  label.className="ptg-local-firebase-label";
-  label.textContent=live?"Live Firebase":"Local emulators";
-  label.title=live?"Real accounts and data":"Isolated test accounts";
-  const button=document.createElement("button");
-  button.type="button";
-  button.textContent=live?"Switch to emulator":"Switch to live";
-  button.title=live?"Use isolated test accounts":"Use real Firebase accounts and data";
-  const status=document.createElement("span");
-  status.className="ptg-local-firebase-status";
-  status.setAttribute("role","status");
-  status.setAttribute("aria-live","polite");
-  button.addEventListener("click",()=>{
-    const next=live?"emulator":"production";
-    if(next==="production"&&!window.confirm(
-      "Switch this local preview to LIVE Firebase?\n\n"+
-      "You will use REAL accounts and database records. Tests may change or delete real data.\n\nContinue?"
-    ))return;
-    try{
-      setLocalFirebaseMode(next);
-      button.disabled=true;
-      status.textContent="Reloading…";
-      window.location.reload();
-    }catch(error){
-      button.disabled=false;
-      status.textContent="Could not switch: "+error.message;
-    }
-  });
-  control.append(label,button,status);
-  // In-flow navigation item, never an overlay on the page.
-  sidebar.querySelector("nav").before(control);
-  window.addEventListener("storage",event=>{
-    if(event.key===LOCAL_FIREBASE_MODE_KEY&&getLocalFirebaseMode()!==(live?"production":"emulator"))
-      window.location.reload();
-  });
-}
 function init(){
   if(document.getElementById("ptg-site-sidebar"))return;
   const {aside,special}=buildSidebar();
   const toggle=buildMobileBar();
   buildFooter();
-  buildLocalFirebaseControl(aside);
   document.body.classList.add("ptg-shell-ready");
 
   const media=window.matchMedia("(max-width:850px)");

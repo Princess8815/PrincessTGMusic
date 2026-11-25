@@ -1,3 +1,4 @@
+import {publicError} from "./site-errors.js";
 import {auth,db} from "./firebase.js";
 import {showGuestReef} from "./reef-collection.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
@@ -84,7 +85,7 @@ export async function ensurePlaylists(expectedUid){
   loading=(async()=>{
     // A migration failure leaves the original local backup intact and surfaces an error.
     let migrationError="";
-    try{await migrate(uid);}catch(e){migrationError="Local playlist migration incomplete: "+e.message;}
+    try{await migrate(uid);}catch(e){migrationError=publicError(e,"PTG-503");}
     assertOwner(uid);
     if(token!==generation)throw Error("Account changed.");
     const first=await getDocsFromServer(pathFor(uid));
@@ -94,9 +95,9 @@ export async function ensurePlaylists(expectedUid){
     unsubscribe=onSnapshot(pathFor(uid),{includeMetadataChanges:true},snap=>{
       if(token!==generation||!current(uid)||snap.metadata.hasPendingWrites||snap.metadata.fromCache)return;
       cache=snap.docs.map(s=>asPlaylist({...s.data(),id:s.id}));ready=true;failure=migrationError;notify();
-    },e=>{if(token===generation&&current(uid)){failure="Playlist synchronization unavailable: "+e.message;ready=false;cache=[];notify();}});
+    },e=>{if(token===generation&&current(uid)){failure=publicError(e,"PTG-503");ready=false;cache=[];notify();}});
     return getPlaylists();
-  })().catch(e=>{if(token===generation){failure=e.message;ready=false;cache=[];notify();}throw e;}).finally(()=>{if(token===generation)loading=null;});
+  })().catch(e=>{if(token===generation){failure=publicError(e,"PTG-503");ready=false;cache=[];notify();}throw e;}).finally(()=>{if(token===generation)loading=null;});
   return loading;
 }
 onAuthStateChanged(auth,user=>{
@@ -267,7 +268,7 @@ export function addToPlaylistControl(getKeys, options = {}) {
   add.addEventListener("click",async()=>{
     add.disabled=true;
     try{const uid=auth.currentUser?.uid;const id=select.value;const list=await keys();assertOwner(uid);const amount=await addToPlaylist(id,list);message.textContent=amount+" song(s) added.";root.open=false;}
-    catch(err){message.textContent=err.message;}finally{add.disabled=false;}
+    catch(err){message.textContent=publicError(err,"PTG-503");}finally{add.disabled=false;}
   });
   create.addEventListener("click",async()=>{
     create.disabled=true;
@@ -277,9 +278,9 @@ export function addToPlaylistControl(getKeys, options = {}) {
       refresh();select.value=playlist.id;
       message.textContent="Created "+playlist.name+" with "+playlist.tracks.length+" song(s).";
       root.open=false;
-    }catch(err){message.textContent=err.message;}finally{create.disabled=false;}
+    }catch(err){message.textContent=publicError(err,"PTG-503");}finally{create.disabled=false;}
   });
-  root.addEventListener("toggle",()=>{if(root.open){refresh();void auth.authStateReady().then(()=>auth.currentUser?ensurePlaylists():null).then(refresh).catch(e=>{refresh();message.textContent=e.message;});}});
+  root.addEventListener("toggle",()=>{if(root.open){refresh();void auth.authStateReady().then(()=>auth.currentUser?ensurePlaylists():null).then(refresh).catch(e=>{refresh();message.textContent=publicError(e,"PTG-503");});}});
   // Rebuild choices when the picker opens; detached rows do not retain listeners.
   const signIn=document.createElement("a");signIn.textContent="Sign in or register to save playlists";signIn.href=new URL("../pages/profile.html",import.meta.url).href;
   function update(){refresh();signIn.hidden=!!auth.currentUser;}

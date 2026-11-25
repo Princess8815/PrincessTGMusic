@@ -1,3 +1,4 @@
+import {publicError} from "../../script/site-errors.js";
 import {songAlbums} from "../../script/song-albums.js";
 import {db} from "../../script/firebase.js";
 import {loadAllSongs} from "../../script/song-data.js";
@@ -42,7 +43,7 @@ async function playTrack(track,auto=true,remember=true){
   renderTracks();
   if(auto) {
     try {await audio.play();setMessage("Playing "+track.title);}
-    catch(error){setMessage("Unable to play this song. Choose Play to try again.");}
+    catch(error){setMessage(publicError(error,"PTG-502"));}
   }
   refreshNowPlaying(track);
 }
@@ -201,7 +202,7 @@ async function load(){
         }catch(error){console.warn("Legacy album names unavailable",error);}
       }
     }
-    if(!albumName){$("album-status").textContent="Album not found.";return;}
+    if(!albumName){$("album-status").textContent=publicError(null,"PTG-008");return;}
     document.title=albumName+" | PrincessTG Music";
     $("album-title").textContent=albumName;
     $("album-date").textContent="Release date · "+(metadata?.releaseDate||"TBD");
@@ -234,7 +235,7 @@ async function load(){
     if(!playable().length)setMessage("No on-site audio is available yet. Lyrics and track details are still accessible.");
   }catch(error){
     console.error("Unable to load album",error);
-    $("album-status").textContent="Unable to load album: "+error.message;
+    $("album-status").textContent=publicError(error,"PTG-501");
   }
 }
 void load();

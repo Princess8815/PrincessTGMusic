@@ -1,3 +1,4 @@
+import {publicError,withErrorCode} from "./site-errors.js";
 import {app, auth} from "./firebase.js";
 import {getFunctions, httpsCallable} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-functions.js";
 
@@ -11,7 +12,7 @@ async function call(action, other = {}) {
   return result.data;
 }
 function status(message, error = false) {
-  $("newsletter-status").textContent = message;
+  $("newsletter-status").textContent=error?withErrorCode(message,"PTG-901"):message;
   $("newsletter-status").style.color = error ? "#fca5a5" : "#86efac";
 }
 function button(label, click, className = "secondary") {
@@ -71,7 +72,7 @@ async function refresh() {
     renderCampaigns(result.campaigns || []);
     status("Newsletter data loaded.");
   } catch (e) {
-    status(`Could not load newsletter: ${e.message}`, true);
+    status(publicError(e,"PTG-901"), true);
   }
 }
 function renderSongs(songs) {
@@ -84,7 +85,7 @@ function renderSongs(songs) {
     const remove = button("Remove from next newsletter", async () => {
       if (!confirm(`Remove “${s.title}” from the queued newsletter? This does NOT delete the song.`)) return;
       try { await call("queueSong", {id:s.id,queued:false}); await refresh(); }
-      catch (e) { status(e.message,true); }
+      catch (e) { status(publicError(e,"PTG-901"),true); }
     });
     row.append(label,remove); list.append(row);
   }
@@ -103,7 +104,7 @@ function renderMessages(items) {
     controls.append(button("Edit",()=>selectMessage(m)),button("Delete",async()=>{
       if (!confirm(`Permanently delete the saved message “${m.title}”?`)) return;
       try { await call("delete",{id:m.id});clearForm();await refresh(); }
-      catch (e) { status(e.message,true); }
+      catch (e) { status(publicError(e,"PTG-901"),true); }
     }));
     row.append(text,controls);list.append(row);
   }
@@ -136,7 +137,7 @@ async function perform(task) {
   if (busy) return;
   setBusy(true);
   try { await task(); }
-  catch (e) { status(e.message,true); }
+  catch (e) { status(publicError(e,"PTG-901"),true); }
   finally {setBusy(false);}
 }
 

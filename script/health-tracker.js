@@ -1,3 +1,4 @@
+import {publicError,withErrorCode} from "./site-errors.js";
 import {showGuestReef} from "./reef-collection.js";
 import {auth,db} from "./firebase.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
@@ -53,7 +54,7 @@ const foodTotalText=day=>{
 };
 function setStatus(text,error=false){
   const el=$("health-sync-status");
-  el.textContent=text;
+  el.textContent=error?withErrorCode(text,"PTG-602"):text;
   el.dataset.error=String(!!error);
 }
 function setBusy(busy){
@@ -120,8 +121,8 @@ async function refreshFromServer(){
     if(state.user?.uid!==uid)return;
     await Promise.all([fetchDay(state.day),fetchDay(state.planDate)]);
     if(state.user?.uid!==uid)return;
-    render();void renderPlanWeek();setStatus("Synced with Firestore.");
-  }catch(error){setStatus("Refresh failed: "+(error?.message||"unknown error"),true);}
+    render();void renderPlanWeek();setStatus("Saved");
+  }catch(error){setStatus("Refresh failed: "+publicError(error,"PTG-602"),true);}
 }
 async function fetchDay(date,force=false){
   if(!state.user)return emptyDay(date);
@@ -199,7 +200,7 @@ async function saveAction(action,success){
     setStatus(success);
   }catch(error){
     console.error("Health tracker save failed",error);
-    setStatus("Could not save: "+(error?.message||"unknown error"),true);
+    setStatus("Could not save: "+publicError(error,"PTG-602"),true);
   }finally{
     setBusy(false);
     render();
@@ -319,7 +320,7 @@ async function renderPlanWeek(){
   if(!uid)return;
   const dates=Array.from({length:7},(_,i)=>shiftDay(stamp,i));
   try{await Promise.all(dates.map(day=>fetchDay(day)));}
-  catch(e){setStatus("Unable to load some planned dates: "+e.message,true);return;}
+  catch(e){setStatus(publicError(e,"PTG-602"),true);return;}
   if(uid!==state.user?.uid||stamp!==state.planDate)return;
   const wrapper=$("health-planner-week");
   wrapper.replaceChildren();
@@ -537,7 +538,7 @@ async function changeDay(date){
     setStatus("Loading "+date+"...");
     await fetchDay(date);
     render();setStatus("Viewing "+date+".");
-  }catch(error){setStatus("Unable to load selected date: "+error.message,true);}
+  }catch(error){setStatus(publicError(error,"PTG-602"),true);}
 }
 async function changePlanDate(date){
   if(!parseDay(date)){setStatus("Choose a valid planning date.",true);return;}
@@ -546,7 +547,7 @@ async function changePlanDate(date){
     await fetchDay(date);
     renderPlanDay(getDay(date));
     void renderPlanWeek();
-  }catch(error){setStatus("Could not open meal plan: "+error.message,true);}
+  }catch(error){setStatus(publicError(error,"PTG-602"),true);}
 }
 function wireEvents(){
   for(const button of document.querySelectorAll("[data-health-tab]"))
@@ -680,7 +681,7 @@ async function exportData(){
     document.body.append(anchor);anchor.click();anchor.remove();
     setTimeout(()=>URL.revokeObjectURL(url),1000);
     setStatus("Your private health data export is ready.");
-  }catch(error){setStatus("Could not export: "+error.message,true);}
+  }catch(error){setStatus(publicError(error,"PTG-602"),true);}
   finally{setBusy(false);}
 }
 async function deleteAllData(){
@@ -703,7 +704,7 @@ async function deleteAllData(){
     $("health-goals-form").reset();
     render();void renderPlanWeek();
     setStatus("Your saved health tracker data was deleted.");
-  }catch(error){setStatus("Deletion incomplete: "+error.message+
+  }catch(error){setStatus("Deletion incomplete: "+publicError(error,"PTG-602")+
     ". Retry, or contact support if the problem continues.",true);}
   finally{setBusy(false);}
 }
@@ -744,8 +745,7 @@ async function initializeForUser(user){
   }catch(error){
     console.error("Health tracker load failed",error);
     if(version===state.version){
-      const message="Unable to load private journal: "+error.message+
-        ". Check the deployed health Firestore rules and network connection.";
+      const message=publicError(error,"PTG-601");
       $("health-load-message").textContent=message;
       $("health-retry").hidden=false;
       setStatus(message,true);

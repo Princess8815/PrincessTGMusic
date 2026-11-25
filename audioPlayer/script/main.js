@@ -1,3 +1,4 @@
+import {publicError} from "../../script/site-errors.js";
 import {songAlbums} from "../../script/song-albums.js";
 import {wireDragReorder} from "../../script/drag-reorder.js";
 
@@ -55,7 +56,7 @@ function loadTrack(path,autoplay=true){
   player.src=track.path;
   nowPlaying.textContent=track.title+" — "+formatAlbums(track.albums);
   updateActiveTrack();
-  if(autoplay)void player.play().catch(()=>setStatus("Playback was blocked. Press Play to retry."));
+  if(autoplay)void player.play().catch(()=>setStatus(publicError(null,"PTG-502")));
 }
 function stopPlayback(){
   isStopped=true;player.pause();player.currentTime=0;
@@ -126,7 +127,7 @@ function lazyPlaylistControl(getKeys,options={}){
       control.querySelector("summary")?.click();
     }catch(error){
       console.warn("Playlist controls unavailable:",error);
-      setStatus("Saved playlists are temporarily unavailable. Music playback is still available.");
+      setStatus(publicError(error,"PTG-503"));
       button.disabled=false;
     }
   });
@@ -268,7 +269,7 @@ async function loadTracks(){
   }catch(error){
     if(generation!==loadGeneration)return;
     console.error("Audio catalog loading failed:",error);
-    setStatus("Could not load songs: "+error.message+". Tap Refresh to try again.");
+    setStatus(publicError(error,"PTG-501"));
   }
 }
 // Save a filtered full album into an existing or new profile playlist.

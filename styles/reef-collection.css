@@ -15,15 +15,3 @@
 .reef-card-art{height:112px;display:grid;place-items:center}
 .reef-card-art svg{max-height:112px}
 .reef-mystery{font-weight:900;font-size:3rem;color:#b8b0df;background:radial-gradient(ellipse,#8279bd30,transparent 68%)}
-
-/* First-time collection discovery toast; never blocks page interaction. */
-.reef-discovery-toast{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));z-index:2147483647;box-sizing:border-box;display:flex;align-items:center;gap:12px;width:min(380px,calc(100vw - 24px));padding:12px 14px;border:1px solid #aaa2e9;border-radius:18px;background:linear-gradient(145deg,#302d59,#173a49);color:#fff;box-shadow:0 8px 32px #0007;animation:reef-toast-in .28s ease-out}
-.reef-discovery-art{flex:0 0 76px;filter:drop-shadow(0 0 9px #ffd28b44)}
-.reef-discovery-art svg{display:block;width:100%;height:auto}
-.reef-discovery-toast [role=status]{flex:1;min-width:0;line-height:1.4}
-.reef-discovery-toast strong{display:block;font-size:1.06rem;color:#ffe2a7}
-.reef-discovery-toast span{display:block;font-size:.85rem;color:#e2efff;margin-top:4px}
-.reef-discovery-toast button{align-self:flex-start;border:0;background:transparent;color:#fff;font:inherit;font-size:1.3rem;line-height:1;padding:6px;cursor:pointer;border-radius:8px}
-.reef-discovery-toast button:focus-visible{outline:2px solid #ffd28b;outline-offset:2px}
-@keyframes reef-toast-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-@media(prefers-reduced-motion:reduce){.reef-discovery-toast{animation:none}}

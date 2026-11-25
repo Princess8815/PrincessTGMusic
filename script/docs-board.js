@@ -1,3 +1,4 @@
+import {publicError} from "./site-errors.js";
 import {discoverAxolotl} from "./reef-collection.js";
 import {boardPage,readShared,validToken,shareUrl} from "./docs-share.js";
 import {normalizeDocLink,isSiteLink,headingId,appendDocText} from "./docs-links.js";
@@ -84,7 +85,7 @@ function showPreview(value){
    if(!target)return;
    if(target.kind==="heading"){
     const heading=doc.getElementById(target.id);
-    if(!heading){status("This heading no longer exists in the shared copy.");return;}
+    if(!heading){status(publicError(null,"PTG-008"));return;}
     // Scroll this frame directly. Never assign a hash to a srcdoc iframe:
     // its inherited base URL can otherwise reload the parent board.
     const scroll=doc.scrollingElement;
@@ -117,13 +118,13 @@ async function list(){
    $("board-list").append(card);
   }
   $("board-more").hidden=!cursor;status($("board-list").children.length?"Browse documents published by site members.":"No public documents have been published yet.");
- }catch(e){status("Could not load the public board: "+e.message);}
+ }catch(e){status(publicError(e,"PTG-303"));}
  finally{busy=false;$("board-more").disabled=false;}
 }
 $("board-more").onclick=()=>void list();
 const token=new URLSearchParams(location.search).get("share");
 if(token!==null){
  $("board-title").textContent="Shared document";$("board-list").hidden=true;
- if(!validToken(token))status("Invalid document link.");
- else (async()=>{try{const {meta,value}=await readShared(token);$("board-title").textContent=meta.title||"Shared document";showPreview(value);$("board-reader").hidden=false;status((meta.pageCount||0)+" page(s) · "+(meta.visibility==="public"?"Public":"Unlisted link"));}catch(e){status("Unable to open document: "+e.message);}})();
+ if(!validToken(token))status(publicError(null,"PTG-303"));
+ else (async()=>{try{const {meta,value}=await readShared(token);$("board-title").textContent=meta.title||"Shared document";showPreview(value);$("board-reader").hidden=false;status((meta.pageCount||0)+" page(s) · "+(meta.visibility==="public"?"Public":"Unlisted link"));}catch(e){status(publicError(e,"PTG-303"));}})();
 }else void list();

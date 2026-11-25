@@ -1,3 +1,4 @@
+import {publicError,withErrorCode} from "./site-errors.js";
 import {songAlbums, membershipFields, originalRelease} from "./song-albums.js";
 import {auth,db} from "./firebase.js";
 import {verifyStaff} from "./staff-auth.js";
@@ -89,11 +90,11 @@ function createIssues(song,approvedAlbums){
     const probable=[...approvedAlbums].find(name=>
       name.toLocaleLowerCase()===album.toLocaleLowerCase());
     issues.push("album \""+(album||"(blank)")+
-      "\" is not an exact match in Firestore's approved album list"+
+      "\" is not an exact match in the album list"+
       (probable?" (did you mean \""+probable+"\"?)":"; add or correct it under Admin → Albums"));
   }
   if(!lyrics.trim())
-    issues.push("lyrics are missing; the current Firestore create rules require lyrics");
+    issues.push("lyrics are missing");
   if(description.length>5000)
     issues.push("description is too long");
   return issues;
@@ -192,7 +193,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   let loading=null,ready=false,saving=false;
 
   function message(value,error=false){
-    status.textContent=value;
+    status.textContent=error?withErrorCode(value,"PTG-902"):value;
     status.style.color=error?"#fca5a5":"#86efac";
   }
   function updateControls(){
@@ -217,7 +218,7 @@ document.addEventListener("DOMContentLoaded",()=>{
     const blockedTotal=candidates.filter(song=>createIssues(song,approvedAlbums).length).length;
     count.textContent=candidates.length+" song"+(candidates.length===1?"":"s")+
       " without genres · "+visible.length+" shown"+
-      (blockedTotal?" · "+blockedTotal+" need metadata fixes before Firestore can create them":"");
+      (blockedTotal?" · "+blockedTotal+" need details before saving":"");
     if(!visible.length){
       const text=!candidates.length
         ?"All songs have a genre! Nothing to assign."
@@ -237,18 +238,11 @@ document.addEventListener("DOMContentLoaded",()=>{
       );
       const issues=createIssues(song,approvedAlbums);
       if(issues.length){
-        const warning=textNode("small","Cannot create Firestore record yet: "+
+        const warning=textNode("small","Needs review: "+
           issues.join("; ")+".","bulk-genre-warning");
         warning.setAttribute("role","note");
         meta.append(warning);
         row.dataset.blocked="true";
-      }
-      if(song.dbSong===null && hasCustomReleaseDate(song.display.releaseDate)){
-        meta.append(textNode("small","Original display release date will stay \""+
-          clean(song.display.releaseDate)+"\". Firestore stores tbd internally.",
-          "bulk-genre-date-note"));
-      }else if(song.dbSong===null && normalizeReleaseDate(song.display.releaseDate)!==clean(song.display.releaseDate||"tbd")){
-        meta.append(textNode("small","Firestore stores lowercase tbd; existing JSON display text is unchanged.","bulk-genre-date-note"));
       }
       const label=document.createElement("label");
       const fieldId="bulk-genre-choice-"+index;
@@ -306,9 +300,9 @@ document.addEventListener("DOMContentLoaded",()=>{
       return true;
     }catch(error){
       ready=false;
-      list.replaceChildren(textNode("p","Could not load unassigned songs.","bulk-genre-empty"));
-      count.textContent="Genre list unavailable";
-      message("Cannot load bulk genre editor: "+error.message,true);
+      list.replaceChildren(textNode("p",publicError(error,"PTG-901"),"bulk-genre-empty"));
+      count.textContent=publicError(error,"PTG-901");
+      message(publicError(error,"PTG-901"),true);
       return false;
     }finally{
       loading=null;
@@ -338,7 +332,7 @@ document.addEventListener("DOMContentLoaded",()=>{
         const allowed=new Set(genres);
         selection=new Map([...selection].filter(([,g])=>allowed.has(g)));
         render();
-      }catch(error){message("Could not update genre options: "+error.message,true);}
+      }catch(error){message(publicError(error,"PTG-901"),true);}
     })();
   });
 
@@ -382,7 +376,7 @@ document.addEventListener("DOMContentLoaded",()=>{
             selection.delete(song.id);
           }catch(error){
             results.failed++;
-            errors.push(song.title+": "+(error?.message||"save failed"));
+            errors.push(song.title+": "+publicError(error,"PTG-901"));
           }
           completed++;
           if(completed%5===0||completed===eligible.length)
@@ -392,7 +386,7 @@ document.addEventListener("DOMContentLoaded",()=>{
       await Promise.all(Array.from({length:Math.min(MAX_PARALLEL_SAVES,eligible.length)},worker));
       const summary=results.saved+" saved, "+results.skipped+
         " skipped because they already had a genre, "+blocked.length+
-        " blocked by missing/invalid JSON metadata, "+results.failed+" Firestore write failures.";
+        " need song details, "+results.failed+" could not be saved.";
       // Locally remove confirmed writes even if the refresh request fails.
       const successful=new Set(jobs.filter(job=>!selection.has(job.song.id)).map(job=>job.song.id));
       candidates=candidates.filter(song=>!successful.has(song.id));
@@ -402,13 +396,13 @@ document.addEventListener("DOMContentLoaded",()=>{
         job.song.title+": "+issues.join("; ")).join("\n");
       message(summary+
         (reloaded?"":"\nThe list could not refresh. Use Refresh List to retry.")+
-        (blockedDetails?"\nNot sent to Firestore:\n"+blockedDetails+
+        (blockedDetails?"\nNeeds review:\n"+blockedDetails+
           (blocked.length>8?"\nAnd "+(blocked.length-8)+" more; see song rows for reasons.":""):"")+
-        (errors.length?"\nFirestore denied these:\n"+errors.slice(0,5).join("\n")+
+        (errors.length?"\nCould not save:\n"+errors.slice(0,5).join("\n")+
           (errors.length>5?"\nAnd "+(errors.length-5)+" more errors.":""):""),
         results.failed>0||blocked.length>0||!reloaded);
     }catch(error){
-      message("Could not complete bulk save: "+error.message,true);
+      message(publicError(error,"PTG-901"),true);
     }finally{
       saving=false;
       render();
