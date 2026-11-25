@@ -30,6 +30,7 @@
   <script type="module" src="../script/admin-inbox.js"></script>
   <script type="module" src="../script/admin-newsletter.js"></script>
   <script type="module" src="../script/admin-tabs.js"></script>
+  <script type="module" src="../script/admin-starlight.js"></script><link rel="stylesheet" href="../styles/starlight.css">
   <script type="module" src="../script/admin-code.js"></script>
   <link rel="stylesheet" href="../styles/admin-code.css">
   <script type="module" src="../script/admin-surveys.js"></script>
@@ -371,6 +372,7 @@
                 aria-selected="false">Accounts</button>
         <button type="button" role="tab" id="admin-main-tab-surveys" data-admin-tab="surveys"
                 aria-controls="admin-main-panel-surveys" aria-selected="false">Surveys</button>
+        <button type="button" role="tab" id="admin-main-tab-starlight" data-admin-tab="starlight" aria-controls="admin-main-panel-starlight" aria-selected="false">Starlight Store</button>
       </nav>
 
       <!-- MAIL TAB -->
@@ -1483,6 +1485,33 @@
             </section>
           </div>
         </section>
+      </section>
+
+
+      <section id="admin-main-panel-starlight" class="admin-main-panel sl-admin" role="tabpanel" aria-labelledby="admin-main-tab-starlight" hidden>
+       <div class="admin-card"><h2>Starlight Store administration</h2><p id="sl-admin-status" role="status">Checking staff access…</p>
+        <div id="sl-admin-body" hidden>
+         <form id="sl-type-form"><fieldset><legend>Collection tabs</legend><p>Create a new category or rename one. Built-in Axolotls, Trophies and Cards remain available.</p>
+          <label>Choose tab<select id="sl-type-edit"></select></label><label>Tab name<input id="sl-type-name" required maxlength="80"></label><button type="submit">Save collection tab</button></fieldset></form>
+         <form id="sl-item-form"><fieldset><legend>Collectibles</legend>
+          <label>Choose collectible<select id="sl-item-edit"></select></label>
+          <label>Name<input id="sl-item-name" required maxlength="80"></label>
+          <label>Collectible type<select id="sl-item-type" required></select></label>
+          <label>Star Coin price<input id="sl-item-price" required type="number" min="1" max="100000000" step="1"></label>
+          <label>Image (upload; required for new items)<input id="sl-item-image" type="file" accept="image/png,image/jpeg,image/webp,image/gif"></label><img class="sl-preview" id="sl-item-preview" alt="Collectible preview" hidden>
+          <label class="sl-check"><input type="checkbox" id="sl-item-active">Available in Starlight Store</label>
+          <p>Uncheck availability to retire an item without removing anyone's collection. Item type cannot change after creation.</p>
+          <button type="submit">Save collectible</button>
+         </fieldset></form>
+         <form id="sl-pack-form"><fieldset><legend>Card packs (draft foundation)</legend><p>Design future packs now. No pack can be purchased or opened until the feature is implemented.</p>
+          <label>Choose pack<select id="sl-pack-edit"></select></label>
+          <label>Pack name<input id="sl-pack-name" maxlength="80" required></label>
+          <label>Star Coin price<input id="sl-pack-price" required type="number" min="1" max="100000000" step="1"></label>
+          <label>Pack artwork<input id="sl-pack-image" type="file" accept="image/png,image/jpeg,image/webp,image/gif"></label><img class="sl-preview" id="sl-pack-preview" alt="Card pack preview" hidden>
+          <label>Cards per pack<input id="sl-pack-count" type="number" min="1" max="20" step="1" value="5" required></label>
+          <p>Eligible card pool (distinct cards)</p><div id="sl-pack-pool" class="sl-pack-cards"></div><button type="submit">Save draft card pack</button>
+         </fieldset></form>
+        </div></div>
       </section>
 
       <section id="admin-main-panel-surveys" class="admin-main-panel survey-admin"

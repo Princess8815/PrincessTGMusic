@@ -1,0 +1,11 @@
+
+# Starlight Store
+
+- Review this PR, run `node --test workers/cd-store/tests/starlight.test.mjs`, and run the existing regression tests.
+- Publish the full `security/firestore.rules` to music-and-poetry. Do not enable browser wallet or ownership writes.
+- Deploy the existing live Worker: `cd workers/cd-store && npx wrangler deploy --config wrangler.live.toml`.
+- Publish the site from main after merge. For local testing select Settings → Live Firebase and sign in with a verified real account. Approved Pages previews use the same real balances; Stripe checkout is unchanged. No new secrets, Blaze, D1 migration, or storage subscription needed.
+- Admin → Starlight Store: create a collection tab, create a collectible, upload artwork, choose a whole-number price and check Available to publish. Draft and retired items are hidden from shoppers. Built-in categories are Axolotls, Trophies and Cards. Purchased axolotls/trophies appear alongside their existing earned collection, without modifying secret discovery or earned trophy rules.
+- To set up future packs, create Cards-type items first, then create a pack draft with artwork, price, quantity and eligible cards. Drafts are staff-only; no pack sales, random draws, duplicates, trading or rarity logic yet.
+- Test a purchase, refresh, verify wallet and profile, attempt to buy the same item twice, try concurrent purchases, insufficient funds, and changed price. The service uses conditional atomic writes so one collectible is owned once, the price must match the catalog, and balances never go negative. Direct client writes are denied. Items and types are not deleted, and purchases store an immutable artwork/name/type snapshot; retiring an item does not revoke ownership. Catalog metadata and ownership are stored in Firestore, using small compressed image data rather than paid Cloud Storage.
+- Each image is compressed to at most 512 px and capped at 180,000 data URL characters. This is intended for small collectible catalogs; monitor read bandwidth and storage. Wallet and purchased collection records remain private with archived accounts, matching existing wallet retention. Actual Firestore IAM/REST commit, browser, and deployment testing are still required.

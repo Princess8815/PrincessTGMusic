@@ -7,6 +7,7 @@ import {CD_PROFILE,readProduct,packFor,catalog,saveCatalog} from "./merchandise.
 import {inventoryList,inventoryLines,processingFor,saveInventory,orderStage,fulfillmentOrders} from "./inventory.js";
 import {submitSurvey,surveyPreviewOrigin} from "./surveys.js";
 import {playHanggirl,hanggirlOrigin} from "./hanggirl.mjs";
+import {buyStarlight,starlightOrigin} from "./starlight.mjs";
 import {publicError,errorCode} from "../../script/site-errors.js";
 import {ownerTools} from "./owner-tools.js";
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status});};
@@ -267,7 +268,7 @@ async function status(env,b,ctx){
 async function body(req,max=20000){const raw=await req.text();if(raw.length>max)fail("Request too large.",413);try{return JSON.parse(raw);}catch{fail("Invalid JSON.");}}
 export default {
  async fetch(req,env,ctx){
-  const url=new URL(req.url),origin=req.headers.get("Origin")||"",allowed=(env.ALLOWED_ORIGINS||"").split(",").map(x=>x.trim()).includes(origin)||(["/surveys/submit","/owner/terminal-commands"].includes(url.pathname)&&surveyPreviewOrigin(env,origin))||(url.pathname==="/games/hanggirl"&&hanggirlOrigin(env,origin));
+  const url=new URL(req.url),origin=req.headers.get("Origin")||"",allowed=(env.ALLOWED_ORIGINS||"").split(",").map(x=>x.trim()).includes(origin)||(["/surveys/submit","/owner/terminal-commands"].includes(url.pathname)&&surveyPreviewOrigin(env,origin))||(url.pathname==="/games/hanggirl"&&hanggirlOrigin(env,origin))||(url.pathname==="/starlight/buy"&&starlightOrigin(env,origin));
   const headers={"Content-Type":"application/json","Cache-Control":"no-store","Vary":"Origin"};
   if(allowed)Object.assign(headers,{"Access-Control-Allow-Origin":origin,"Access-Control-Allow-Methods":"GET, POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type"});
   const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers});
@@ -281,6 +282,7 @@ export default {
    const b=await body(req,url.pathname==="/surveys/submit"?80000:20000);
    if(url.pathname==="/surveys/submit")return json(await submitSurvey(env,b));
    if(url.pathname==="/games/hanggirl")return json(await playHanggirl(env,b));
+   if(url.pathname==="/starlight/buy")return json(await buyStarlight(env,b));
    if(url.pathname==="/owner/terminal-commands")return json(await ownerTools(env,b));
    if(url.pathname==="/shipping-quotes")return json(await shippingQuote(env,b));
    if(url.pathname==="/shipping-admin")return json(await shippingAdmin(env,b));

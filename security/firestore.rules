@@ -22,6 +22,2738 @@ service cloud.firestore {
     }
     // END Research & Surveys.
 
+    // Starlight catalog: active staff can author inventory; buyers never write
+    // wallets or ownership. Inactive items are readable only by staff.
+    function starlightId(id) {
+      return id.matches('^[a-z0-9-]{1,64}
+
+    // Hanggirl: the authoritative answer and counters are Worker-only.
+    match /users/{uid}/privateGames/{gameId} {
+      allow read, write: if false;
+    }
+    match /users/{uid}/trophies/{trophyId} {
+      allow get, list: if isOwner(uid);
+      allow create, update, delete: if false;
+    }
+    // Hanggirl axolotl IDs deliberately remain absent from the existing client-create allowlist.
+
+
+
+  match /albums/{albumId} {
+  allow read: if true;
+  allow create, update, delete: if request.auth != null
+    && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+    && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'owner'];
+}
+
+    // ======================================
+    // ACCOUNT SECURITY HELPERS
+    // ======================================
+
+    function isOwner(uid) {
+      return request.auth != null
+        && request.auth.uid == uid;
+    }
+
+    function validAuth(uid) {
+      return request.auth != null
+        && request.resource.data.auth is map
+        && request.resource.data.auth.keys().hasOnly([
+          "uid",
+          "email",
+          "displayName",
+          "photoURL",
+          "emailVerified"
+        ])
+        && request.resource.data.auth.keys().hasAll([
+          "uid",
+          "email",
+          "displayName",
+          "photoURL",
+          "emailVerified"
+        ])
+        && request.resource.data.auth.uid == uid
+        && request.resource.data.auth.email
+          == request.auth.token.email
+        && request.resource.data.auth.emailVerified
+          == request.auth.token.email_verified;
+    }
+
+    function isOwnerManager() {
+      return request.auth != null
+        && exists(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        )
+        && get(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        ).data.role == "owner"
+        && get(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        ).data.get("status", "active") == "active";
+    }
+
+    function isStaff() {
+      return request.auth != null
+        && exists(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        )
+        && get(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        ).data.role in ["admin", "owner"]
+        && get(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        ).data.get("status", "active") == "active";
+    }
+
+    function isRestrictionOver() {
+      return resource.data.get("status", "active") == "active"
+        || (
+          resource.data.get("status", "active") == "banned"
+          && resource.data.get("banUntil", null) is timestamp
+          && resource.data.banUntil <= request.time
+        );
+    }
+
+    // ======================================
+    // OWNER-APPROVED VERIFICATION BYPASS
+    // ======================================
+    // A bypass is NOT email ownership proof and never changes Firebase Auth.
+    // It grants site-only access to an account at a specific email address.
+    // Users cannot write their own bypass. Every change has an immutable log.
+
+    function ownerBypassedEmail(uid) {
+      return exists(/databases/$(database)/documents/verificationOverrides/$(uid))
+        && get(/databases/$(database)/documents/verificationOverrides/$(uid))
+          .data.get("enabled", false) == true
+        && exists(/databases/$(database)/documents/users/$(uid))
+        && get(/databases/$(database)/documents/verificationOverrides/$(uid))
+          .data.get("targetEmail", "")
+          == get(/databases/$(database)/documents/users/$(uid))
+            .data.auth.get("email", null);
+    }
+
+    match /verificationOverrides/{uid} {
+      allow get: if isOwner(uid) || isOwnerManager();
+      allow list, delete: if false;
+
+      function validChange() {
+        let d = request.resource.data;
+        let audit = /databases/$(database)/documents/verificationOverrideAudit/$(d.auditId);
+        return isOwnerManager()
+          && request.auth.token.email_verified == true
+          && request.auth.uid != uid
+          && exists(/databases/$(database)/documents/users/$(uid))
+          && get(/databases/$(database)/documents/users/$(uid)).data.role != "owner"
+          && get(/databases/$(database)/documents/users/$(uid))
+            .data.get("status", "active") != "archived"
+          && d.keys().hasOnly(["enabled", "updatedAt", "updatedBy", "targetEmail", "auditId"])
+          && d.keys().hasAll(["enabled", "updatedAt", "updatedBy", "targetEmail", "auditId"])
+          && d.enabled is bool
+          && d.updatedAt == request.time
+          && d.updatedBy == request.auth.uid
+          && d.targetEmail is string
+          && d.targetEmail == get(/databases/$(database)/documents/users/$(uid))
+            .data.auth.get("email", null)
+          && d.auditId is string
+          && d.auditId.matches('^[A-Za-z0-9]{20}$')
+          && !exists(audit)
+          && getAfter(audit).data.targetUid == uid
+          && getAfter(audit).data.actorUid == request.auth.uid
+          && getAfter(audit).data.targetEmail == d.targetEmail
+          && getAfter(audit).data.enabled == d.enabled
+          && getAfter(audit).data.createdAt == request.time;
+      }
+      allow create, update: if validChange();
+    }
+
+    match /verificationOverrideAudit/{eventId} {
+      allow get, list: if isOwnerManager();
+      allow update, delete: if false;
+      allow create: if isOwnerManager()
+        && request.auth.token.email_verified == true
+        && request.resource.data.keys().hasOnly([
+          "targetUid", "enabled", "actorUid", "targetEmail", "createdAt"
+        ])
+        && request.resource.data.keys().hasAll([
+          "targetUid", "enabled", "actorUid", "targetEmail", "createdAt"
+        ])
+        && request.resource.data.targetUid is string
+        && request.resource.data.targetUid.matches('^[A-Za-z0-9_-]{8,140}$')
+        && request.resource.data.enabled is bool
+        && request.resource.data.actorUid == request.auth.uid
+        && request.resource.data.targetEmail is string
+        && request.resource.data.createdAt == request.time
+        && getAfter(/databases/$(database)/documents/verificationOverrides/$(request.resource.data.targetUid))
+          .data.auditId == eventId
+        && getAfter(/databases/$(database)/documents/verificationOverrides/$(request.resource.data.targetUid))
+          .data.updatedAt == request.time
+        && getAfter(/databases/$(database)/documents/verificationOverrides/$(request.resource.data.targetUid))
+          .data.enabled == request.resource.data.enabled
+        && getAfter(/databases/$(database)/documents/verificationOverrides/$(request.resource.data.targetUid))
+          .data.targetEmail == request.resource.data.targetEmail;
+    }
+
+    // ======================================
+    // PRIVATE SITE MAIL - FIRESTORE DIRECT
+    // ======================================
+    // No mail Cloud Function is required. The browser writes matched Inbox
+    // and Sent copies with a rate-limit receipt in one atomic batch.
+    // Firebase Auth verification OR an owner-only exception and active account
+    // status are enforced here. No user can self-approve an exception.
+
+    function verifiedMailMember(uid) {
+      return request.auth != null
+        && request.auth.uid == uid
+        && (
+          request.auth.token.email_verified == true
+          || (ownerBypassedEmail(uid)
+              && request.auth.token.email == get(
+                /databases/$(database)/documents/verificationOverrides/$(uid)
+              ).data.targetEmail)
+        )
+        && activeMailMember(uid);
+    }
+
+    function activeMailMember(uid) {
+      return exists(/databases/$(database)/documents/users/$(uid))
+        && (
+          get(/databases/$(database)/documents/users/$(uid))
+            .data.auth.get("emailVerified", false) == true
+          || ownerBypassedEmail(uid)
+        )
+        && (
+          get(/databases/$(database)/documents/users/$(uid))
+            .data.get("status", "active") == "active"
+          || (
+            get(/databases/$(database)/documents/users/$(uid))
+              .data.get("status", "active") == "banned"
+            && get(/databases/$(database)/documents/users/$(uid))
+              .data.get("banUntil", null) is timestamp
+            && get(/databases/$(database)/documents/users/$(uid))
+              .data.banUntil <= request.time
+          )
+        );
+    }
+
+    function mailDisplayName(uid) {
+      let name = get(/databases/$(database)/documents/users/$(uid))
+        .data.auth.get("displayName", null);
+      return name is string && name.size() > 0 ? name : "Site member";
+    }
+
+    // The directory contains only the member's public display name.
+    // No account emails, roles, login tokens or profile records are public.
+    match /siteMailDirectory/{uid} {
+      allow get, list: if request.auth != null
+        && verifiedMailMember(request.auth.uid);
+      allow create, update: if verifiedMailMember(uid)
+        && request.resource.data.keys().hasOnly(["name", "updatedAt"])
+        && request.resource.data.keys().hasAll(["name", "updatedAt"])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 90
+        && request.resource.data.name == mailDisplayName(uid)
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    function validMailImage(image) {
+      return image is map
+        && image.keys().hasOnly(["name", "dataUrl"])
+        && image.keys().hasAll(["name", "dataUrl"])
+        && image.name is string
+        && image.name.size() > 0
+        && image.name.size() <= 90
+        && image.dataUrl is string
+        && image.dataUrl.size() <= 200000
+        && image.dataUrl.matches('^data:image/jpeg;base64,[A-Za-z0-9+/=]+$');
+    }
+
+    function validMailImages(images) {
+      return images is list
+        && images.size() <= 3
+        && (images.size() < 1 || validMailImage(images[0]))
+        && (images.size() < 2 || validMailImage(images[1]))
+        && (images.size() < 3 || validMailImage(images[2]));
+    }
+
+    function validMailShare(share) {
+      return share == null
+        || (share is map && (
+          (
+            share.get("kind", "") == "song"
+            && share.keys().hasOnly(["kind", "key", "title"])
+            && share.keys().hasAll(["kind", "key", "title"])
+            && share.key is string
+            && share.key.size() > 0
+            && share.key.size() <= 230
+            && (
+              share.key.matches('^song:[A-Za-z0-9._-]{1,130}$')
+              || share.key.matches('^audio/[A-Za-z0-9 _().%/-]+[.]mp3$')
+            )
+            && share.title is string
+            && share.title.size() <= 90
+          ) || (
+            share.get("kind", "") == "playlist"
+            && share.keys().hasOnly(["kind", "name", "color", "tracks"])
+            && share.keys().hasAll(["kind", "name", "color", "tracks"])
+            && share.name is string
+            && share.name.size() > 0
+            && share.name.size() <= 90
+            && share.color is string
+            && share.color.matches('^#[A-Fa-f0-9]{6}$')
+            && share.tracks is list
+            && share.tracks.size() > 0
+            && share.tracks.size() <= 150
+          ) || (
+            share.get("kind", "") == "document"
+            && share.keys().hasOnly(["kind", "token", "title"])
+            && share.keys().hasAll(["kind", "token", "title"])
+            && share.token is string
+            && share.token.matches('^[a-f0-9]{64}$')
+            && share.title is string
+            && share.title.size() >= 1
+            && share.title.size() <= 120
+          )
+        ));
+    }
+
+    function validMailEnvelope(uid, folder) {
+      let d = request.resource.data;
+      return request.auth != null
+        && verifiedMailMember(request.auth.uid)
+        && d.keys().hasOnly([
+          "senderUid", "recipientUid", "senderName", "recipientName",
+          "folder", "subject", "body", "share", "images",
+          "createdAt", "expiresAt", "readAt"
+        ])
+        && d.keys().hasAll([
+          "senderUid", "recipientUid", "senderName", "recipientName",
+          "folder", "subject", "body", "share", "images",
+          "createdAt", "expiresAt", "readAt"
+        ])
+        && d.senderUid == request.auth.uid
+        && d.recipientUid is string
+        && d.recipientUid.size() >= 8
+        && d.recipientUid.size() <= 140
+        && d.recipientUid != d.senderUid
+        && activeMailMember(d.recipientUid)
+        && d.senderName == mailDisplayName(d.senderUid)
+        && d.recipientName == mailDisplayName(d.recipientUid)
+        && (
+          (folder == "siteSent" && uid == d.senderUid && d.folder == "sent")
+          || (folder == "siteInbox" && uid == d.recipientUid && d.folder == "inbox")
+        )
+        && d.subject is string
+        && d.subject.size() > 0
+        && d.subject.size() <= 120
+        && d.body is string
+        && d.body.size() <= 6000
+        && (d.body.size() > 0 || d.share != null || d.images.size() > 0)
+        && validMailShare(d.share)
+        && validMailImages(d.images)
+        && d.createdAt == request.time
+        && d.expiresAt is timestamp
+        && d.expiresAt > request.time + duration.value(30, 'd') - duration.value(10, 'm')
+        && d.expiresAt < request.time + duration.value(30, 'd') + duration.value(10, 'm')
+        && d.readAt == null;
+    }
+
+    // Require two identical message copies (except the folder field) plus
+    // one rate receipt, all in the same atomic batch. A sender cannot create
+    // an orphaned message in someone else's mailbox.
+    function pairedMailCopy(uid, folder, messageId) {
+      let d = request.resource.data;
+      return (
+        folder == "siteSent"
+        && getAfter(/databases/$(database)/documents/siteMailboxes/$(d.recipientUid)/siteInbox/$(messageId))
+          .data.folder == "inbox"
+        && getAfter(/databases/$(database)/documents/siteMailboxes/$(d.recipientUid)/siteInbox/$(messageId))
+          .data.diff(d).affectedKeys().hasOnly(["folder"])
+      ) || (
+        folder == "siteInbox"
+        && getAfter(/databases/$(database)/documents/siteMailboxes/$(d.senderUid)/siteSent/$(messageId))
+          .data.folder == "sent"
+        && getAfter(/databases/$(database)/documents/siteMailboxes/$(d.senderUid)/siteSent/$(messageId))
+          .data.diff(d).affectedKeys().hasOnly(["folder"])
+      );
+    }
+
+    function matchingMailThrottle(messageId) {
+      let rate = getAfter(/databases/$(database)/documents/siteMailThrottle/$(request.auth.uid)).data;
+      return rate.lastMessageId == messageId
+        && rate.lastSentAt == request.time;
+    }
+
+    // Only the owner can view or delete their copy of a message.
+    // A sender is allowed to *create* an Inbox copy for the recipient, but
+    // only through the atomic, validated path above. They cannot read it.
+    match /siteMailboxes/{uid}/{folder}/{messageId} {
+      allow get: if (folder == "siteInbox" || folder == "siteSent")
+        && verifiedMailMember(uid)
+        && resource.data.expiresAt > request.time;
+      allow list: if (folder == "siteInbox" || folder == "siteSent")
+        && verifiedMailMember(uid)
+        && request.query.limit <= 200;
+      allow create: if (folder == "siteInbox" || folder == "siteSent")
+        && validMailEnvelope(uid, folder)
+        && pairedMailCopy(uid, folder, messageId)
+        && matchingMailThrottle(messageId);
+      allow update: if folder == "siteInbox"
+        && verifiedMailMember(uid)
+        && resource.data.readAt == null
+        && request.resource.data.diff(resource.data)
+          .affectedKeys().hasOnly(["readAt"])
+        && request.resource.data.readAt == request.time;
+      allow delete: if (folder == "siteInbox" || folder == "siteSent")
+        && verifiedMailMember(uid);
+    }
+
+    // Prevent users bypassing the send-per-day limit or the cooldown.
+    // This document must be updated with exactly one message in each batch.
+    match /siteMailThrottle/{uid} {
+      function validRateFields() {
+        return request.resource.data.keys().hasOnly([
+            "lastSentAt", "dayStart", "dayCount", "lastMessageId"
+          ])
+          && request.resource.data.keys().hasAll([
+            "lastSentAt", "dayStart", "dayCount", "lastMessageId"
+          ])
+          && request.resource.data.lastSentAt == request.time
+          && request.resource.data.dayStart is timestamp
+          && request.resource.data.dayCount is int
+          && request.resource.data.lastMessageId is string
+          && request.resource.data.lastMessageId.size() >= 8
+          && request.resource.data.lastMessageId.size() <= 140;
+      }
+      allow get: if verifiedMailMember(uid);
+      allow list, delete: if false;
+      allow create: if verifiedMailMember(uid)
+        && validRateFields()
+        && request.resource.data.dayStart == request.time
+        && request.resource.data.dayCount == 1;
+      allow update: if verifiedMailMember(uid)
+        && validRateFields()
+        && resource.data.lastSentAt + duration.value(15, 's') <= request.time
+        && (
+          (
+            resource.data.dayStart + duration.value(24, 'h') > request.time
+            && request.resource.data.dayStart == resource.data.dayStart
+            && request.resource.data.dayCount == resource.data.dayCount + 1
+            && request.resource.data.dayCount <= 50
+          ) || (
+            resource.data.dayStart + duration.value(24, 'h') <= request.time
+            && request.resource.data.dayStart == request.time
+            && request.resource.data.dayCount == 1
+          )
+        );
+    }
+
+    // Old Cloud-Function-only mail storage stays private, even if old
+    // documents remain. No browser may access these legacy collections.
+    match /siteMailMessages/{messageId} {
+      allow read, write: if false;
+    }
+    match /siteMailSendRate/{uid} {
+      allow read, write: if false;
+    }
+
+    // ======================================
+    // DATABASE ENUMS
+    // ======================================
+
+    match /enums/{enumId} {
+      allow get: if true;
+      allow list: if false;
+      allow create, update, delete: if isStaff();
+    }
+
+    // ======================================
+    // USER ACCOUNT DOCUMENTS
+    // ======================================
+
+    match /users/{uid} {
+
+      // Own account or active staff.
+      allow get: if isOwner(uid) || isStaff();
+
+      // Staff can load account information.
+      allow list: if isStaff();
+
+      // ====================================
+      // NEW ACCOUNT REGISTRATION
+      // ====================================
+
+      allow create: if isOwner(uid)
+
+        && request.resource.data.keys().hasOnly([
+          "auth",
+          "role",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ])
+
+        && request.resource.data.keys().hasAll([
+          "auth",
+          "role",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ])
+
+        && validAuth(uid)
+
+        && request.resource.data.role == "user"
+
+        && request.resource.data.status == "active"
+
+        && request.resource.data.createdAt == request.time
+
+        && request.resource.data.updatedAt == request.time;
+
+      // ====================================
+      // USER PROFILE AND ACCOUNT CLOSURE
+      // ====================================
+
+      allow update: if isOwner(uid)
+
+        && validAuth(uid)
+
+        && request.resource.data.updatedAt == request.time
+
+        && (
+
+          (
+            resource.data.get("status", "active")
+              in ["active", "banned"]
+
+            && request.resource.data.diff(resource.data)
+              .affectedKeys().hasOnly([
+                "auth",
+                "bio",
+                "newsletterSubscribed",
+                "newsletterUpdatedAt",
+                "updatedAt"
+              ])
+
+            && request.resource.data.get("bio", "") is string
+
+            && request.resource.data.get("bio", "").size() <= 500
+
+            && request.resource.data.get(
+              "newsletterSubscribed",
+              false
+            ) is bool
+
+            && (
+              !request.resource.data.keys().hasAny([
+                "newsletterUpdatedAt"
+              ])
+
+              || request.resource.data.newsletterUpdatedAt
+                 is timestamp
+            )
+
+            && (
+              !request.resource.data.diff(resource.data)
+                .affectedKeys().hasAny([
+                  "newsletterSubscribed"
+                ])
+
+              || request.resource.data.newsletterUpdatedAt
+                 == request.time
+            )
+          )
+
+          ||
+
+          (
+            isRestrictionOver()
+
+            && resource.data.role != "owner"
+
+            && request.resource.data.status == "archived"
+
+            && request.resource.data.archivedAt == request.time
+
+            && request.resource.data.bio == ""
+
+            && request.resource.data.newsletterSubscribed == false
+
+            && request.resource.data.newsletterUpdatedAt
+               == request.time
+
+            && request.resource.data.diff(resource.data)
+              .affectedKeys().hasOnly([
+                "status",
+                "archivedAt",
+                "bio",
+                "newsletterSubscribed",
+                "newsletterUpdatedAt",
+                "updatedAt"
+              ])
+          )
+        );
+
+      // ====================================
+      // OWNER MANAGES ROLES AND BANS
+      // ====================================
+
+      allow update: if isOwnerManager()
+
+        && request.auth.uid != uid
+
+        && resource.data.role != "owner"
+
+        && resource.data.get("status", "active")
+           != "archived"
+
+        && request.resource.data.diff(resource.data)
+          .affectedKeys().hasOnly([
+            "role",
+            "status",
+            "banUntil",
+            "banId",
+            "updatedAt"
+          ])
+
+        && request.resource.data.keys().hasAll([
+          "role",
+          "status",
+          "banUntil",
+          "banId",
+          "updatedAt"
+        ])
+
+        && request.resource.data.role in [
+          "user",
+          "admin"
+        ]
+
+        && request.resource.data.status in [
+          "active",
+          "banned"
+        ]
+
+        && (
+
+          (
+            request.resource.data.status == "active"
+
+            && request.resource.data.banUntil == null
+
+            && request.resource.data.banId == null
+          )
+
+          ||
+
+          (
+            request.resource.data.status == "banned"
+
+            && request.resource.data.role == "user"
+
+            && request.resource.data.banId is string
+
+            && request.resource.data.banId.size() >= 16
+
+            && request.resource.data.banId.size() <= 100
+
+            && (
+              request.resource.data.banUntil == null
+
+              ||
+
+              (
+                request.resource.data.banUntil is timestamp
+
+                && request.resource.data.banUntil
+                   > request.time
+              )
+            )
+          )
+        )
+
+        && request.resource.data.updatedAt == request.time;
+
+      // ====================================
+      // ADMIN MANAGES REGULAR USER BANS
+      // ====================================
+
+      allow update: if isStaff()
+
+        && !isOwnerManager()
+
+        && request.auth.uid != uid
+
+        && resource.data.role == "user"
+
+        && resource.data.get("status", "active")
+           in ["active", "banned"]
+
+        && request.resource.data.diff(resource.data)
+          .affectedKeys().hasOnly([
+            "status",
+            "banUntil",
+            "banId",
+            "updatedAt"
+          ])
+
+        && request.resource.data.keys().hasAll([
+          "role",
+          "status",
+          "banUntil",
+          "banId",
+          "updatedAt"
+        ])
+
+        && request.resource.data.role == "user"
+
+        && request.resource.data.status in [
+          "active",
+          "banned"
+        ]
+
+        && (
+
+          (
+            request.resource.data.status == "active"
+
+            && request.resource.data.banUntil == null
+
+            && request.resource.data.banId == null
+          )
+
+          ||
+
+          (
+            request.resource.data.status == "banned"
+
+            && request.resource.data.banId is string
+
+            && request.resource.data.banId.size() >= 16
+
+            && request.resource.data.banId.size() <= 100
+
+            && (
+              request.resource.data.banUntil == null
+
+              ||
+
+              (
+                request.resource.data.banUntil is timestamp
+
+                && request.resource.data.banUntil
+                   > request.time
+              )
+            )
+          )
+        )
+
+        && request.resource.data.updatedAt == request.time;
+
+      // ====================================
+      // AUTOMATIC TEMPORARY BAN EXPIRATION
+      // ====================================
+
+      allow update: if isOwner(uid)
+
+        && resource.data.get("status", "active") == "banned"
+
+        && resource.data.get("banUntil", null) is timestamp
+
+        && resource.data.banUntil <= request.time
+
+        && request.resource.data.status == "active"
+
+        && request.resource.data.banUntil == null
+
+        && request.resource.data.get("banId", null) == null
+
+        && request.resource.data.diff(resource.data)
+          .affectedKeys().hasOnly([
+            "status",
+            "banUntil",
+            "banId",
+            "updatedAt"
+          ])
+
+        && request.resource.data.updatedAt == request.time;
+
+      // Preserve account and ban history.
+      allow delete: if false;
+    }
+
+
+    // ======================================
+    // PRIVATE ACCOUNT MUSIC PLAYLISTS (PR #23)
+    // ======================================
+    match /users/{uid}/playlists/{playlistId} {
+      function validPlaylist() {
+        let d = request.resource.data;
+        return playlistId.matches('^[A-Za-z0-9_-]{1,140}$')
+          && d.keys().hasOnly(['name', 'color', 'tracks', 'createdAt', 'updatedAt'])
+          && d.keys().hasAll(['name', 'color', 'tracks', 'createdAt', 'updatedAt'])
+          && d.name is string && d.name.size() >= 1 && d.name.size() <= 90
+          && d.color is string && d.color.matches('^#[A-Fa-f0-9]{6}$')
+          && d.tracks is list && d.tracks.size() <= 1000
+          && d.createdAt is timestamp
+          && d.updatedAt == request.time;
+      }
+      // No public or staff access. Owners can remove playlists during account closure.
+      function activePlaylistOwner() {
+        return isOwner(uid)
+          && exists(/databases/$(database)/documents/users/$(uid))
+          && (get(/databases/$(database)/documents/users/$(uid)).data.get('status', 'active') == 'active'
+            || (get(/databases/$(database)/documents/users/$(uid)).data.get('status', 'active') == 'banned'
+              && get(/databases/$(database)/documents/users/$(uid)).data.get('banUntil', null) is timestamp
+              && get(/databases/$(database)/documents/users/$(uid)).data.banUntil <= request.time));
+      }
+      allow get, list, delete: if isOwner(uid);
+      allow create: if activePlaylistOwner() && validPlaylist()
+        && request.resource.data.createdAt == request.time;
+      allow update: if activePlaylistOwner() && validPlaylist()
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    // ======================================
+    // PRIVATE AXOLOTL COLLECTION
+    // ======================================
+    // Shelly is an ordinary store visit encounter. Tide alone is purchase-only:
+    // the trusted Worker writes Tide via service-account IAM after verifying
+    // Stripe payment. Clients cannot create or update Tide.
+    // Only the member sees their reef.
+    match /users/{uid}/axolotls/{axolotlId} {
+      function activeCollector() {
+        let account = get(/databases/$(database)/documents/users/$(uid)).data;
+        return isOwner(uid)
+          && exists(/databases/$(database)/documents/users/$(uid))
+          && (account.get('status', 'active') == 'active'
+            || (account.get('status', 'active') == 'banned'
+              && account.get('banUntil', null) is timestamp
+              && account.banUntil <= request.time));
+      }
+      allow get, list, delete: if isOwner(uid);
+      allow create: if activeCollector()
+        && axolotlId in ['marina', 'luna', 'sprout', 'sunny', 'pearl', 'bubbles', 'pebble', 'nori', 'pip', 'hex', 'shelly']
+        && request.resource.data.keys().hasOnly(['foundAt'])
+        && request.resource.data.keys().hasAll(['foundAt'])
+        && request.resource.data.foundAt == request.time;
+      allow update: if false;
+    }
+
+    // ======================================
+    // PRIVATE MEMBER HEALTH TRACKER
+    // ======================================
+    // These subcollections are available to every signed-in member,
+    // but are never readable by other members, staff, or the site owner.
+    // A member can only read and change records under their own UID.
+
+    match /users/{uid}/healthDays/{dayId} {
+      function validPrivateHealthDay() {
+        let data = request.resource.data;
+        return data.keys().hasOnly([
+            "date", "weightLb", "foods", "workouts", "plans", "updatedAt"
+          ])
+          && data.keys().hasAll([
+            "date", "weightLb", "foods", "workouts", "plans", "updatedAt"
+          ])
+          && data.date is string
+          && data.date == dayId
+          && data.date.matches("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
+          && (data.weightLb == null ||
+              (data.weightLb is number &&
+               data.weightLb >= 1 && data.weightLb <= 3307))
+          && data.foods is list
+          && data.foods.size() <= 100
+          && data.workouts is list
+          && data.workouts.size() <= 60
+          && data.plans is list
+          && data.plans.size() <= 60
+          && data.updatedAt == request.time;
+      }
+
+      allow get, list: if isOwner(uid);
+      allow create, update: if isOwner(uid) && validPrivateHealthDay();
+      allow delete: if isOwner(uid);
+    }
+
+    match /users/{uid}/healthSettings/{settingsId} {
+      function validHealthSettings() {
+        let data = request.resource.data;
+        return settingsId == "main"
+          && data.keys().hasOnly([
+            "calorieTarget", "goalWeightLb", "startingWeightLb", "updatedAt"
+          ])
+          && data.keys().hasAll(["updatedAt"])
+          && (data.get("calorieTarget", null) == null ||
+              (data.calorieTarget is number &&
+               data.calorieTarget >= 1 && data.calorieTarget <= 20000))
+          && (data.get("goalWeightLb", null) == null ||
+              (data.goalWeightLb is number &&
+               data.goalWeightLb >= 1 && data.goalWeightLb <= 3307))
+          && (data.get("startingWeightLb", null) == null ||
+              (data.startingWeightLb is number &&
+               data.startingWeightLb >= 1 && data.startingWeightLb <= 3307))
+          && data.updatedAt == request.time;
+      }
+
+      allow get, list: if isOwner(uid) && settingsId == "main";
+      allow create, update: if isOwner(uid) && validHealthSettings();
+      allow delete: if isOwner(uid) && settingsId == "main";
+    }
+
+    // ======================================
+    // PRINCESSTG DOCS: PRIVATE ACCOUNT DOCUMENTS
+    // ======================================
+    match /users/{uid}/documents/{documentId} {
+      function validDocumentMetadata() {
+        let data = request.resource.data;
+        return documentId.matches('^[A-Za-z0-9-]{1,100}$')
+          && data.keys().hasAll(['title','pageCount','chunkCount','bytes','revision','updatedAt'])
+          && data.keys().hasOnly(['title','pageCount','chunkCount','bytes','revision','updatedAt'])
+          && data.title is string && data.title.size() >= 1 && data.title.size() <= 120
+          && data.pageCount is int && data.pageCount >= 1 && data.pageCount <= 300
+          && data.chunkCount is int && data.chunkCount >= 1 && data.chunkCount <= 80
+          && data.bytes is int && data.bytes >= 1 && data.bytes <= 4194304
+          && data.revision is int && data.revision >= 1
+          && data.updatedAt == request.time;
+      }
+      allow get, list, delete: if isOwner(uid);
+      allow create: if isOwner(uid) && validDocumentMetadata()
+        && request.resource.data.revision == 1;
+      allow update: if isOwner(uid) && validDocumentMetadata()
+        && request.resource.data.revision == resource.data.revision + 1;
+
+      match /chunks/{chunkId} {
+        function validDocumentChunk() {
+          let data = request.resource.data;
+          return chunkId.matches('^[0-9]{3}$')
+            && data.keys().hasAll(['text','revision'])
+            && data.keys().hasOnly(['text','revision'])
+            && data.text is string && data.text.size() <= 400000
+            && data.revision is int && data.revision >= 1;
+        }
+        // Ownership is explicit; no staff role grants access to private text.
+        allow get, list, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && validDocumentChunk();
+      }
+    }
+
+    // PRINCESSTG DOCS: READ-ONLY SHARING AND PUBLIC BOARD
+    // A random 256-bit link is an unlisted capability, not a private ACL.
+    // Private originals remain under /users/{uid}/documents.
+    match /users/{uid}/documentShares/{documentId} {
+      function validShareMapping() {
+        let d = request.resource.data;
+        return documentId.matches('^[A-Za-z0-9-]{1,100}$')
+          && d.keys().hasAll(['token','visibility'])
+          && d.keys().hasOnly(['token','visibility'])
+          && d.token is string && d.token.matches('^[a-f0-9]{64}$')
+          && d.visibility in ['link','public'];
+      }
+      allow get, list, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid) && validShareMapping();
+    }
+
+    match /sharedDocs/{token} {
+      function validSharedMetadata() {
+        let d = request.resource.data;
+        return token.matches('^[a-f0-9]{64}$')
+          && d.keys().hasAll(['ownerUid','title','pageCount','chunkCount','bytes','revision','visibility','updatedAt'])
+          && d.keys().hasOnly(['ownerUid','title','pageCount','chunkCount','bytes','revision','visibility','updatedAt'])
+          && d.ownerUid is string && isOwner(d.ownerUid)
+          && d.title is string && d.title.size() >= 1 && d.title.size() <= 120
+          && d.pageCount is int && d.pageCount >= 1 && d.pageCount <= 300
+          && d.chunkCount is int && d.chunkCount >= 1 && d.chunkCount <= 80
+          && d.bytes is int && d.bytes >= 1 && d.bytes <= 4194304
+          && d.revision is int && d.revision >= 1
+          && d.visibility in ['link','public']
+          && d.updatedAt == request.time;
+      }
+      // Direct reads require the exact unguessable token. Unlisted copies
+      // cannot be discovered through a collection query, even signed in.
+      allow get: if resource == null || resource.data.visibility in ['link','public'];
+      allow list: if resource.data.visibility == 'public' && request.query.limit <= 50;
+      allow create: if validSharedMetadata() && request.resource.data.revision == 1;
+      allow update: if isOwner(resource.data.ownerUid) && validSharedMetadata()
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.resource.data.revision == resource.data.revision + 1;
+      allow delete: if isOwner(resource.data.ownerUid);
+      match /chunks/{chunkId} {
+        function sharedParent() {
+          return get(/databases/$(database)/documents/sharedDocs/$(token));
+        }
+        function nextSharedParent() {
+          return getAfter(/databases/$(database)/documents/sharedDocs/$(token));
+        }
+        function validSharedChunk() {
+          let d = request.resource.data;
+          return chunkId.matches('^[0-9]{3}$')
+            && d.keys().hasAll(['text','revision'])
+            && d.keys().hasOnly(['text','revision'])
+            && d.text is string && d.text.size() <= 400000
+            && d.revision is int && d.revision >= 1;
+        }
+        allow get: if exists(/databases/$(database)/documents/sharedDocs/$(token))
+          && sharedParent().data.visibility in ['link','public'];
+        allow list: if false;
+        allow create, update: if request.auth != null && validSharedChunk()
+          && isOwner(nextSharedParent().data.ownerUid)
+          && request.resource.data.revision == nextSharedParent().data.revision;
+        allow delete: if request.auth != null && isOwner(sharedParent().data.ownerUid);
+      }
+    }
+
+    // ======================================
+    // USER BAN APPEALS
+    // ======================================
+    // Path:
+    // users/{uid}/banAppeals/{banId}
+    //
+    // One appeal may be created per ban.
+    // Users cannot edit or delete appeals.
+    // ======================================
+
+    match /users/{uid}/banAppeals/{appealId} {
+
+      function bannedAccount() {
+        return get(
+          /databases/$(database)/documents/users/$(uid)
+        ).data;
+      }
+
+      function banCurrentlyActive() {
+        return bannedAccount().get("status", "active") == "banned"
+          && (
+            bannedAccount().get("banUntil", null) == null
+
+            || (
+              bannedAccount().get("banUntil", null) is timestamp
+
+              && bannedAccount().banUntil > request.time
+            )
+          );
+      }
+
+      function matchesCurrentBan() {
+        return bannedAccount().get("banId", "legacy") == appealId;
+      }
+
+      // Users may read their own appeals.
+      // Staff may review appeals.
+      allow get, list: if isOwner(uid) || isStaff();
+
+      allow create: if isOwner(uid)
+
+        && exists(
+          /databases/$(database)/documents/users/$(uid)
+        )
+
+        && banCurrentlyActive()
+
+        && matchesCurrentBan()
+
+        && request.resource.data.keys().hasOnly([
+          "uid",
+          "banId",
+          "message",
+          "status",
+          "createdAt"
+        ])
+
+        && request.resource.data.keys().hasAll([
+          "uid",
+          "banId",
+          "message",
+          "status",
+          "createdAt"
+        ])
+
+        && request.resource.data.uid == uid
+
+        && request.resource.data.banId == appealId
+
+        && request.resource.data.message is string
+
+        && request.resource.data.message.size() >= 20
+
+        && request.resource.data.message.size() <= 3000
+
+        && request.resource.data.status == "pending"
+
+        && request.resource.data.createdAt == request.time;
+
+      // No resubmitting, changing, or deleting.
+      allow update, delete: if false;
+    }
+
+    // ======================================
+    // STAFF INBOX: LOAD ALL BAN APPEALS
+    // ======================================
+    //
+    // Required by:
+    // collectionGroup(db, "banAppeals")
+    //
+    // Only active admins and owners can
+    // list appeals across all accounts.
+    // ======================================
+
+    match /{path=**}/banAppeals/{appealId} {
+
+      allow list: if isStaff();
+
+    }
+
+    // ======================================
+    // STAFF INBOX: READ RECEIPTS
+    // ======================================
+    //
+    // Required by:
+    // collection(
+    //   db,
+    //   "staffInboxReads",
+    //   staffUid,
+    //   "appeals"
+    // )
+    //
+    // Each staff member has their own
+    // read/unread status.
+    //
+    // Path:
+    // staffInboxReads/{staffUid}/appeals/{receiptId}
+    // ======================================
+
+    match /staffInboxReads/{staffUid}/appeals/{receiptId} {
+
+      function validReadReceipt() {
+
+        return request.resource.data.keys().hasOnly([
+          "uid",
+          "banId",
+          "readAt"
+        ])
+
+        && request.resource.data.keys().hasAll([
+          "uid",
+          "banId",
+          "readAt"
+        ])
+
+        && request.resource.data.uid is string
+
+        && request.resource.data.uid.size() > 0
+
+        && request.resource.data.uid.size() <= 128
+
+        && request.resource.data.banId is string
+
+        && request.resource.data.banId.size() > 0
+
+        && request.resource.data.banId.size() <= 100
+
+        && receiptId == (
+          request.resource.data.uid + "__" +
+          request.resource.data.banId
+        )
+
+        && request.resource.data.readAt == request.time;
+      }
+
+      // Only the logged-in staff member
+      // can read their own read receipts.
+      allow get, list: if isOwner(staffUid)
+        && isStaff();
+
+      // Opening an appeal marks it as read.
+      allow create: if isOwner(staffUid)
+        && isStaff()
+        && validReadReceipt();
+
+      // Existing receipt may update only
+      // its read timestamp.
+      allow update: if isOwner(staffUid)
+
+        && isStaff()
+
+        && validReadReceipt()
+
+        && request.resource.data.uid == resource.data.uid
+
+        && request.resource.data.banId == resource.data.banId
+
+        && request.resource.data.diff(resource.data)
+          .affectedKeys().hasOnly([
+            "readAt"
+          ]);
+
+      // Read receipts cannot be deleted.
+      allow delete: if false;
+    }
+
+    // ======================================
+    // SONG DATABASE
+    // ======================================
+
+    match /songs/{songId} {
+
+      // PR25: keep the legacy primary album and validate optional memberships.
+      function validAlbumMembership(data) {
+        let approved = getAfter(/databases/$(database)/documents/enums/albums).data.values;
+        return data.album is string && data.album in approved
+          && (!data.keys().hasAny(["albums"]) || (
+            data.albums is list
+            && data.albums.size() >= 1 && data.albums.size() <= 3
+            && data.albums[0] == data.album
+            && data.albums.toSet().size() == data.albums.size()
+            && data.albums.hasOnly(approved)
+          ));
+      }
+
+      function validReleaseDate(value) {
+        return value is string && (value == "tbd" || value.matches("^[0-9]{4}-[0-9]{2}-[0-9]{2}$"));
+      }
+
+      function validSongDates(data) {
+        return validReleaseDate(data.releaseDate)
+          && (!data.keys().hasAny(["originalReleaseDate"]) || validReleaseDate(data.originalReleaseDate));
+      }
+
+      function validNewSong() {
+
+        let data = request.resource.data;
+
+        return data.keys().hasOnly([
+          "title",
+          "pageId",
+          "description",
+          "album",
+          "albums",
+          "originalReleaseDate",
+          "genre",
+          "releaseDate",
+          "lyrics",
+          "translation",
+          "lyricsCollapsed",
+          "translationCollapsed",
+          "newsletterQueued",
+          "submittedBy",
+          "createdAt",
+          "updatedAt"
+        ])
+
+        && data.keys().hasAll([
+          "title",
+          "pageId",
+          "description",
+          "album",
+          "genre",
+          "releaseDate",
+          "lyrics",
+          "submittedBy",
+          "createdAt",
+          "updatedAt"
+        ])
+
+        && data.title is string
+
+        && data.title.size() > 0
+
+        && data.title.size() <= 160
+
+        && data.pageId == songId
+
+        && data.description is string
+
+        && data.description.size() <= 5000
+
+        && validAlbumMembership(data)
+
+        && data.genre is string
+
+        && data.genre.size() > 0
+
+        && data.genre.size() <= 150
+
+        && validSongDates(data)
+
+        && data.lyrics is string
+
+        && data.lyrics.size() > 0
+
+        && (
+          !data.keys().hasAny([
+            "translation"
+          ])
+
+          || (
+            data.translation is string
+
+            && data.translation.size() <= 100000
+          )
+        )
+
+        // Optional newsletter queue flag.
+        && (
+          !data.keys().hasAny(["newsletterQueued"])
+          || data.newsletterQueued is bool
+        )
+
+        // ====================================
+        // OPTIONAL LYRICS COLLAPSE SETTINGS
+        // ====================================
+        // Older songs without these fields
+        // remain valid.
+
+        && (
+          !data.keys().hasAny(["lyricsCollapsed"])
+          || data.lyricsCollapsed is bool
+        )
+
+        && (
+          !data.keys().hasAny(["translationCollapsed"])
+          || data.translationCollapsed is bool
+        )
+
+        && data.submittedBy is map
+
+        && data.submittedBy.keys().hasOnly([
+          "uid",
+          "username"
+        ])
+
+        && data.submittedBy.keys().hasAll([
+          "uid",
+          "username"
+        ])
+
+        && data.submittedBy.uid == request.auth.uid
+
+        && data.submittedBy.username is string
+
+        && data.submittedBy.username.size() > 0
+
+        && data.submittedBy.username.size() <= 150
+
+        && data.createdAt == request.time
+
+        && data.updatedAt == request.time;
+      }
+
+      // Public songs are readable.
+      allow get, list: if true;
+
+      // Active staff may create songs.
+      allow create: if isStaff()
+        && validNewSong();
+
+      // Existing unrelated edits are unchanged. Validate membership and dates
+      // when those particular fields are touched, without rejecting older records.
+      allow update: if isStaff()
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["album", "albums"])
+          || validAlbumMembership(request.resource.data))
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["releaseDate", "originalReleaseDate"])
+          || validSongDates(request.resource.data));
+      allow delete: if isStaff();
+    }
+
+  }
+});
+    }
+    function starlightName(name) {
+      return name is string && name.size() >= 1 && name.size() <= 80;
+    }
+    function starlightPrice(price) {
+      return price is int && price >= 1 && price <= 100000000;
+    }
+    function starlightImage(image) {
+      return image is string && image.size() <= 180000
+        && image.matches('^data:image/(webp|png|jpeg);base64,[A-Za-z0-9+/=]+
+
+    // Hanggirl: the authoritative answer and counters are Worker-only.
+    match /users/{uid}/privateGames/{gameId} {
+      allow read, write: if false;
+    }
+    match /users/{uid}/trophies/{trophyId} {
+      allow get, list: if isOwner(uid);
+      allow create, update, delete: if false;
+    }
+    // Hanggirl axolotl IDs deliberately remain absent from the existing client-create allowlist.
+
+
+
+  match /albums/{albumId} {
+  allow read: if true;
+  allow create, update, delete: if request.auth != null
+    && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+    && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'owner'];
+}
+
+    // ======================================
+    // ACCOUNT SECURITY HELPERS
+    // ======================================
+
+    function isOwner(uid) {
+      return request.auth != null
+        && request.auth.uid == uid;
+    }
+
+    function validAuth(uid) {
+      return request.auth != null
+        && request.resource.data.auth is map
+        && request.resource.data.auth.keys().hasOnly([
+          "uid",
+          "email",
+          "displayName",
+          "photoURL",
+          "emailVerified"
+        ])
+        && request.resource.data.auth.keys().hasAll([
+          "uid",
+          "email",
+          "displayName",
+          "photoURL",
+          "emailVerified"
+        ])
+        && request.resource.data.auth.uid == uid
+        && request.resource.data.auth.email
+          == request.auth.token.email
+        && request.resource.data.auth.emailVerified
+          == request.auth.token.email_verified;
+    }
+
+    function isOwnerManager() {
+      return request.auth != null
+        && exists(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        )
+        && get(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        ).data.role == "owner"
+        && get(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        ).data.get("status", "active") == "active";
+    }
+
+    function isStaff() {
+      return request.auth != null
+        && exists(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        )
+        && get(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        ).data.role in ["admin", "owner"]
+        && get(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        ).data.get("status", "active") == "active";
+    }
+
+    function isRestrictionOver() {
+      return resource.data.get("status", "active") == "active"
+        || (
+          resource.data.get("status", "active") == "banned"
+          && resource.data.get("banUntil", null) is timestamp
+          && resource.data.banUntil <= request.time
+        );
+    }
+
+    // ======================================
+    // OWNER-APPROVED VERIFICATION BYPASS
+    // ======================================
+    // A bypass is NOT email ownership proof and never changes Firebase Auth.
+    // It grants site-only access to an account at a specific email address.
+    // Users cannot write their own bypass. Every change has an immutable log.
+
+    function ownerBypassedEmail(uid) {
+      return exists(/databases/$(database)/documents/verificationOverrides/$(uid))
+        && get(/databases/$(database)/documents/verificationOverrides/$(uid))
+          .data.get("enabled", false) == true
+        && exists(/databases/$(database)/documents/users/$(uid))
+        && get(/databases/$(database)/documents/verificationOverrides/$(uid))
+          .data.get("targetEmail", "")
+          == get(/databases/$(database)/documents/users/$(uid))
+            .data.auth.get("email", null);
+    }
+
+    match /verificationOverrides/{uid} {
+      allow get: if isOwner(uid) || isOwnerManager();
+      allow list, delete: if false;
+
+      function validChange() {
+        let d = request.resource.data;
+        let audit = /databases/$(database)/documents/verificationOverrideAudit/$(d.auditId);
+        return isOwnerManager()
+          && request.auth.token.email_verified == true
+          && request.auth.uid != uid
+          && exists(/databases/$(database)/documents/users/$(uid))
+          && get(/databases/$(database)/documents/users/$(uid)).data.role != "owner"
+          && get(/databases/$(database)/documents/users/$(uid))
+            .data.get("status", "active") != "archived"
+          && d.keys().hasOnly(["enabled", "updatedAt", "updatedBy", "targetEmail", "auditId"])
+          && d.keys().hasAll(["enabled", "updatedAt", "updatedBy", "targetEmail", "auditId"])
+          && d.enabled is bool
+          && d.updatedAt == request.time
+          && d.updatedBy == request.auth.uid
+          && d.targetEmail is string
+          && d.targetEmail == get(/databases/$(database)/documents/users/$(uid))
+            .data.auth.get("email", null)
+          && d.auditId is string
+          && d.auditId.matches('^[A-Za-z0-9]{20}$')
+          && !exists(audit)
+          && getAfter(audit).data.targetUid == uid
+          && getAfter(audit).data.actorUid == request.auth.uid
+          && getAfter(audit).data.targetEmail == d.targetEmail
+          && getAfter(audit).data.enabled == d.enabled
+          && getAfter(audit).data.createdAt == request.time;
+      }
+      allow create, update: if validChange();
+    }
+
+    match /verificationOverrideAudit/{eventId} {
+      allow get, list: if isOwnerManager();
+      allow update, delete: if false;
+      allow create: if isOwnerManager()
+        && request.auth.token.email_verified == true
+        && request.resource.data.keys().hasOnly([
+          "targetUid", "enabled", "actorUid", "targetEmail", "createdAt"
+        ])
+        && request.resource.data.keys().hasAll([
+          "targetUid", "enabled", "actorUid", "targetEmail", "createdAt"
+        ])
+        && request.resource.data.targetUid is string
+        && request.resource.data.targetUid.matches('^[A-Za-z0-9_-]{8,140}$')
+        && request.resource.data.enabled is bool
+        && request.resource.data.actorUid == request.auth.uid
+        && request.resource.data.targetEmail is string
+        && request.resource.data.createdAt == request.time
+        && getAfter(/databases/$(database)/documents/verificationOverrides/$(request.resource.data.targetUid))
+          .data.auditId == eventId
+        && getAfter(/databases/$(database)/documents/verificationOverrides/$(request.resource.data.targetUid))
+          .data.updatedAt == request.time
+        && getAfter(/databases/$(database)/documents/verificationOverrides/$(request.resource.data.targetUid))
+          .data.enabled == request.resource.data.enabled
+        && getAfter(/databases/$(database)/documents/verificationOverrides/$(request.resource.data.targetUid))
+          .data.targetEmail == request.resource.data.targetEmail;
+    }
+
+    // ======================================
+    // PRIVATE SITE MAIL - FIRESTORE DIRECT
+    // ======================================
+    // No mail Cloud Function is required. The browser writes matched Inbox
+    // and Sent copies with a rate-limit receipt in one atomic batch.
+    // Firebase Auth verification OR an owner-only exception and active account
+    // status are enforced here. No user can self-approve an exception.
+
+    function verifiedMailMember(uid) {
+      return request.auth != null
+        && request.auth.uid == uid
+        && (
+          request.auth.token.email_verified == true
+          || (ownerBypassedEmail(uid)
+              && request.auth.token.email == get(
+                /databases/$(database)/documents/verificationOverrides/$(uid)
+              ).data.targetEmail)
+        )
+        && activeMailMember(uid);
+    }
+
+    function activeMailMember(uid) {
+      return exists(/databases/$(database)/documents/users/$(uid))
+        && (
+          get(/databases/$(database)/documents/users/$(uid))
+            .data.auth.get("emailVerified", false) == true
+          || ownerBypassedEmail(uid)
+        )
+        && (
+          get(/databases/$(database)/documents/users/$(uid))
+            .data.get("status", "active") == "active"
+          || (
+            get(/databases/$(database)/documents/users/$(uid))
+              .data.get("status", "active") == "banned"
+            && get(/databases/$(database)/documents/users/$(uid))
+              .data.get("banUntil", null) is timestamp
+            && get(/databases/$(database)/documents/users/$(uid))
+              .data.banUntil <= request.time
+          )
+        );
+    }
+
+    function mailDisplayName(uid) {
+      let name = get(/databases/$(database)/documents/users/$(uid))
+        .data.auth.get("displayName", null);
+      return name is string && name.size() > 0 ? name : "Site member";
+    }
+
+    // The directory contains only the member's public display name.
+    // No account emails, roles, login tokens or profile records are public.
+    match /siteMailDirectory/{uid} {
+      allow get, list: if request.auth != null
+        && verifiedMailMember(request.auth.uid);
+      allow create, update: if verifiedMailMember(uid)
+        && request.resource.data.keys().hasOnly(["name", "updatedAt"])
+        && request.resource.data.keys().hasAll(["name", "updatedAt"])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 90
+        && request.resource.data.name == mailDisplayName(uid)
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    function validMailImage(image) {
+      return image is map
+        && image.keys().hasOnly(["name", "dataUrl"])
+        && image.keys().hasAll(["name", "dataUrl"])
+        && image.name is string
+        && image.name.size() > 0
+        && image.name.size() <= 90
+        && image.dataUrl is string
+        && image.dataUrl.size() <= 200000
+        && image.dataUrl.matches('^data:image/jpeg;base64,[A-Za-z0-9+/=]+$');
+    }
+
+    function validMailImages(images) {
+      return images is list
+        && images.size() <= 3
+        && (images.size() < 1 || validMailImage(images[0]))
+        && (images.size() < 2 || validMailImage(images[1]))
+        && (images.size() < 3 || validMailImage(images[2]));
+    }
+
+    function validMailShare(share) {
+      return share == null
+        || (share is map && (
+          (
+            share.get("kind", "") == "song"
+            && share.keys().hasOnly(["kind", "key", "title"])
+            && share.keys().hasAll(["kind", "key", "title"])
+            && share.key is string
+            && share.key.size() > 0
+            && share.key.size() <= 230
+            && (
+              share.key.matches('^song:[A-Za-z0-9._-]{1,130}$')
+              || share.key.matches('^audio/[A-Za-z0-9 _().%/-]+[.]mp3$')
+            )
+            && share.title is string
+            && share.title.size() <= 90
+          ) || (
+            share.get("kind", "") == "playlist"
+            && share.keys().hasOnly(["kind", "name", "color", "tracks"])
+            && share.keys().hasAll(["kind", "name", "color", "tracks"])
+            && share.name is string
+            && share.name.size() > 0
+            && share.name.size() <= 90
+            && share.color is string
+            && share.color.matches('^#[A-Fa-f0-9]{6}$')
+            && share.tracks is list
+            && share.tracks.size() > 0
+            && share.tracks.size() <= 150
+          ) || (
+            share.get("kind", "") == "document"
+            && share.keys().hasOnly(["kind", "token", "title"])
+            && share.keys().hasAll(["kind", "token", "title"])
+            && share.token is string
+            && share.token.matches('^[a-f0-9]{64}$')
+            && share.title is string
+            && share.title.size() >= 1
+            && share.title.size() <= 120
+          )
+        ));
+    }
+
+    function validMailEnvelope(uid, folder) {
+      let d = request.resource.data;
+      return request.auth != null
+        && verifiedMailMember(request.auth.uid)
+        && d.keys().hasOnly([
+          "senderUid", "recipientUid", "senderName", "recipientName",
+          "folder", "subject", "body", "share", "images",
+          "createdAt", "expiresAt", "readAt"
+        ])
+        && d.keys().hasAll([
+          "senderUid", "recipientUid", "senderName", "recipientName",
+          "folder", "subject", "body", "share", "images",
+          "createdAt", "expiresAt", "readAt"
+        ])
+        && d.senderUid == request.auth.uid
+        && d.recipientUid is string
+        && d.recipientUid.size() >= 8
+        && d.recipientUid.size() <= 140
+        && d.recipientUid != d.senderUid
+        && activeMailMember(d.recipientUid)
+        && d.senderName == mailDisplayName(d.senderUid)
+        && d.recipientName == mailDisplayName(d.recipientUid)
+        && (
+          (folder == "siteSent" && uid == d.senderUid && d.folder == "sent")
+          || (folder == "siteInbox" && uid == d.recipientUid && d.folder == "inbox")
+        )
+        && d.subject is string
+        && d.subject.size() > 0
+        && d.subject.size() <= 120
+        && d.body is string
+        && d.body.size() <= 6000
+        && (d.body.size() > 0 || d.share != null || d.images.size() > 0)
+        && validMailShare(d.share)
+        && validMailImages(d.images)
+        && d.createdAt == request.time
+        && d.expiresAt is timestamp
+        && d.expiresAt > request.time + duration.value(30, 'd') - duration.value(10, 'm')
+        && d.expiresAt < request.time + duration.value(30, 'd') + duration.value(10, 'm')
+        && d.readAt == null;
+    }
+
+    // Require two identical message copies (except the folder field) plus
+    // one rate receipt, all in the same atomic batch. A sender cannot create
+    // an orphaned message in someone else's mailbox.
+    function pairedMailCopy(uid, folder, messageId) {
+      let d = request.resource.data;
+      return (
+        folder == "siteSent"
+        && getAfter(/databases/$(database)/documents/siteMailboxes/$(d.recipientUid)/siteInbox/$(messageId))
+          .data.folder == "inbox"
+        && getAfter(/databases/$(database)/documents/siteMailboxes/$(d.recipientUid)/siteInbox/$(messageId))
+          .data.diff(d).affectedKeys().hasOnly(["folder"])
+      ) || (
+        folder == "siteInbox"
+        && getAfter(/databases/$(database)/documents/siteMailboxes/$(d.senderUid)/siteSent/$(messageId))
+          .data.folder == "sent"
+        && getAfter(/databases/$(database)/documents/siteMailboxes/$(d.senderUid)/siteSent/$(messageId))
+          .data.diff(d).affectedKeys().hasOnly(["folder"])
+      );
+    }
+
+    function matchingMailThrottle(messageId) {
+      let rate = getAfter(/databases/$(database)/documents/siteMailThrottle/$(request.auth.uid)).data;
+      return rate.lastMessageId == messageId
+        && rate.lastSentAt == request.time;
+    }
+
+    // Only the owner can view or delete their copy of a message.
+    // A sender is allowed to *create* an Inbox copy for the recipient, but
+    // only through the atomic, validated path above. They cannot read it.
+    match /siteMailboxes/{uid}/{folder}/{messageId} {
+      allow get: if (folder == "siteInbox" || folder == "siteSent")
+        && verifiedMailMember(uid)
+        && resource.data.expiresAt > request.time;
+      allow list: if (folder == "siteInbox" || folder == "siteSent")
+        && verifiedMailMember(uid)
+        && request.query.limit <= 200;
+      allow create: if (folder == "siteInbox" || folder == "siteSent")
+        && validMailEnvelope(uid, folder)
+        && pairedMailCopy(uid, folder, messageId)
+        && matchingMailThrottle(messageId);
+      allow update: if folder == "siteInbox"
+        && verifiedMailMember(uid)
+        && resource.data.readAt == null
+        && request.resource.data.diff(resource.data)
+          .affectedKeys().hasOnly(["readAt"])
+        && request.resource.data.readAt == request.time;
+      allow delete: if (folder == "siteInbox" || folder == "siteSent")
+        && verifiedMailMember(uid);
+    }
+
+    // Prevent users bypassing the send-per-day limit or the cooldown.
+    // This document must be updated with exactly one message in each batch.
+    match /siteMailThrottle/{uid} {
+      function validRateFields() {
+        return request.resource.data.keys().hasOnly([
+            "lastSentAt", "dayStart", "dayCount", "lastMessageId"
+          ])
+          && request.resource.data.keys().hasAll([
+            "lastSentAt", "dayStart", "dayCount", "lastMessageId"
+          ])
+          && request.resource.data.lastSentAt == request.time
+          && request.resource.data.dayStart is timestamp
+          && request.resource.data.dayCount is int
+          && request.resource.data.lastMessageId is string
+          && request.resource.data.lastMessageId.size() >= 8
+          && request.resource.data.lastMessageId.size() <= 140;
+      }
+      allow get: if verifiedMailMember(uid);
+      allow list, delete: if false;
+      allow create: if verifiedMailMember(uid)
+        && validRateFields()
+        && request.resource.data.dayStart == request.time
+        && request.resource.data.dayCount == 1;
+      allow update: if verifiedMailMember(uid)
+        && validRateFields()
+        && resource.data.lastSentAt + duration.value(15, 's') <= request.time
+        && (
+          (
+            resource.data.dayStart + duration.value(24, 'h') > request.time
+            && request.resource.data.dayStart == resource.data.dayStart
+            && request.resource.data.dayCount == resource.data.dayCount + 1
+            && request.resource.data.dayCount <= 50
+          ) || (
+            resource.data.dayStart + duration.value(24, 'h') <= request.time
+            && request.resource.data.dayStart == request.time
+            && request.resource.data.dayCount == 1
+          )
+        );
+    }
+
+    // Old Cloud-Function-only mail storage stays private, even if old
+    // documents remain. No browser may access these legacy collections.
+    match /siteMailMessages/{messageId} {
+      allow read, write: if false;
+    }
+    match /siteMailSendRate/{uid} {
+      allow read, write: if false;
+    }
+
+    // ======================================
+    // DATABASE ENUMS
+    // ======================================
+
+    match /enums/{enumId} {
+      allow get: if true;
+      allow list: if false;
+      allow create, update, delete: if isStaff();
+    }
+
+    // ======================================
+    // USER ACCOUNT DOCUMENTS
+    // ======================================
+
+    match /users/{uid} {
+
+      // Own account or active staff.
+      allow get: if isOwner(uid) || isStaff();
+
+      // Staff can load account information.
+      allow list: if isStaff();
+
+      // ====================================
+      // NEW ACCOUNT REGISTRATION
+      // ====================================
+
+      allow create: if isOwner(uid)
+
+        && request.resource.data.keys().hasOnly([
+          "auth",
+          "role",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ])
+
+        && request.resource.data.keys().hasAll([
+          "auth",
+          "role",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ])
+
+        && validAuth(uid)
+
+        && request.resource.data.role == "user"
+
+        && request.resource.data.status == "active"
+
+        && request.resource.data.createdAt == request.time
+
+        && request.resource.data.updatedAt == request.time;
+
+      // ====================================
+      // USER PROFILE AND ACCOUNT CLOSURE
+      // ====================================
+
+      allow update: if isOwner(uid)
+
+        && validAuth(uid)
+
+        && request.resource.data.updatedAt == request.time
+
+        && (
+
+          (
+            resource.data.get("status", "active")
+              in ["active", "banned"]
+
+            && request.resource.data.diff(resource.data)
+              .affectedKeys().hasOnly([
+                "auth",
+                "bio",
+                "newsletterSubscribed",
+                "newsletterUpdatedAt",
+                "updatedAt"
+              ])
+
+            && request.resource.data.get("bio", "") is string
+
+            && request.resource.data.get("bio", "").size() <= 500
+
+            && request.resource.data.get(
+              "newsletterSubscribed",
+              false
+            ) is bool
+
+            && (
+              !request.resource.data.keys().hasAny([
+                "newsletterUpdatedAt"
+              ])
+
+              || request.resource.data.newsletterUpdatedAt
+                 is timestamp
+            )
+
+            && (
+              !request.resource.data.diff(resource.data)
+                .affectedKeys().hasAny([
+                  "newsletterSubscribed"
+                ])
+
+              || request.resource.data.newsletterUpdatedAt
+                 == request.time
+            )
+          )
+
+          ||
+
+          (
+            isRestrictionOver()
+
+            && resource.data.role != "owner"
+
+            && request.resource.data.status == "archived"
+
+            && request.resource.data.archivedAt == request.time
+
+            && request.resource.data.bio == ""
+
+            && request.resource.data.newsletterSubscribed == false
+
+            && request.resource.data.newsletterUpdatedAt
+               == request.time
+
+            && request.resource.data.diff(resource.data)
+              .affectedKeys().hasOnly([
+                "status",
+                "archivedAt",
+                "bio",
+                "newsletterSubscribed",
+                "newsletterUpdatedAt",
+                "updatedAt"
+              ])
+          )
+        );
+
+      // ====================================
+      // OWNER MANAGES ROLES AND BANS
+      // ====================================
+
+      allow update: if isOwnerManager()
+
+        && request.auth.uid != uid
+
+        && resource.data.role != "owner"
+
+        && resource.data.get("status", "active")
+           != "archived"
+
+        && request.resource.data.diff(resource.data)
+          .affectedKeys().hasOnly([
+            "role",
+            "status",
+            "banUntil",
+            "banId",
+            "updatedAt"
+          ])
+
+        && request.resource.data.keys().hasAll([
+          "role",
+          "status",
+          "banUntil",
+          "banId",
+          "updatedAt"
+        ])
+
+        && request.resource.data.role in [
+          "user",
+          "admin"
+        ]
+
+        && request.resource.data.status in [
+          "active",
+          "banned"
+        ]
+
+        && (
+
+          (
+            request.resource.data.status == "active"
+
+            && request.resource.data.banUntil == null
+
+            && request.resource.data.banId == null
+          )
+
+          ||
+
+          (
+            request.resource.data.status == "banned"
+
+            && request.resource.data.role == "user"
+
+            && request.resource.data.banId is string
+
+            && request.resource.data.banId.size() >= 16
+
+            && request.resource.data.banId.size() <= 100
+
+            && (
+              request.resource.data.banUntil == null
+
+              ||
+
+              (
+                request.resource.data.banUntil is timestamp
+
+                && request.resource.data.banUntil
+                   > request.time
+              )
+            )
+          )
+        )
+
+        && request.resource.data.updatedAt == request.time;
+
+      // ====================================
+      // ADMIN MANAGES REGULAR USER BANS
+      // ====================================
+
+      allow update: if isStaff()
+
+        && !isOwnerManager()
+
+        && request.auth.uid != uid
+
+        && resource.data.role == "user"
+
+        && resource.data.get("status", "active")
+           in ["active", "banned"]
+
+        && request.resource.data.diff(resource.data)
+          .affectedKeys().hasOnly([
+            "status",
+            "banUntil",
+            "banId",
+            "updatedAt"
+          ])
+
+        && request.resource.data.keys().hasAll([
+          "role",
+          "status",
+          "banUntil",
+          "banId",
+          "updatedAt"
+        ])
+
+        && request.resource.data.role == "user"
+
+        && request.resource.data.status in [
+          "active",
+          "banned"
+        ]
+
+        && (
+
+          (
+            request.resource.data.status == "active"
+
+            && request.resource.data.banUntil == null
+
+            && request.resource.data.banId == null
+          )
+
+          ||
+
+          (
+            request.resource.data.status == "banned"
+
+            && request.resource.data.banId is string
+
+            && request.resource.data.banId.size() >= 16
+
+            && request.resource.data.banId.size() <= 100
+
+            && (
+              request.resource.data.banUntil == null
+
+              ||
+
+              (
+                request.resource.data.banUntil is timestamp
+
+                && request.resource.data.banUntil
+                   > request.time
+              )
+            )
+          )
+        )
+
+        && request.resource.data.updatedAt == request.time;
+
+      // ====================================
+      // AUTOMATIC TEMPORARY BAN EXPIRATION
+      // ====================================
+
+      allow update: if isOwner(uid)
+
+        && resource.data.get("status", "active") == "banned"
+
+        && resource.data.get("banUntil", null) is timestamp
+
+        && resource.data.banUntil <= request.time
+
+        && request.resource.data.status == "active"
+
+        && request.resource.data.banUntil == null
+
+        && request.resource.data.get("banId", null) == null
+
+        && request.resource.data.diff(resource.data)
+          .affectedKeys().hasOnly([
+            "status",
+            "banUntil",
+            "banId",
+            "updatedAt"
+          ])
+
+        && request.resource.data.updatedAt == request.time;
+
+      // Preserve account and ban history.
+      allow delete: if false;
+    }
+
+
+    // ======================================
+    // PRIVATE ACCOUNT MUSIC PLAYLISTS (PR #23)
+    // ======================================
+    match /users/{uid}/playlists/{playlistId} {
+      function validPlaylist() {
+        let d = request.resource.data;
+        return playlistId.matches('^[A-Za-z0-9_-]{1,140}$')
+          && d.keys().hasOnly(['name', 'color', 'tracks', 'createdAt', 'updatedAt'])
+          && d.keys().hasAll(['name', 'color', 'tracks', 'createdAt', 'updatedAt'])
+          && d.name is string && d.name.size() >= 1 && d.name.size() <= 90
+          && d.color is string && d.color.matches('^#[A-Fa-f0-9]{6}$')
+          && d.tracks is list && d.tracks.size() <= 1000
+          && d.createdAt is timestamp
+          && d.updatedAt == request.time;
+      }
+      // No public or staff access. Owners can remove playlists during account closure.
+      function activePlaylistOwner() {
+        return isOwner(uid)
+          && exists(/databases/$(database)/documents/users/$(uid))
+          && (get(/databases/$(database)/documents/users/$(uid)).data.get('status', 'active') == 'active'
+            || (get(/databases/$(database)/documents/users/$(uid)).data.get('status', 'active') == 'banned'
+              && get(/databases/$(database)/documents/users/$(uid)).data.get('banUntil', null) is timestamp
+              && get(/databases/$(database)/documents/users/$(uid)).data.banUntil <= request.time));
+      }
+      allow get, list, delete: if isOwner(uid);
+      allow create: if activePlaylistOwner() && validPlaylist()
+        && request.resource.data.createdAt == request.time;
+      allow update: if activePlaylistOwner() && validPlaylist()
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    // ======================================
+    // PRIVATE AXOLOTL COLLECTION
+    // ======================================
+    // Shelly is an ordinary store visit encounter. Tide alone is purchase-only:
+    // the trusted Worker writes Tide via service-account IAM after verifying
+    // Stripe payment. Clients cannot create or update Tide.
+    // Only the member sees their reef.
+    match /users/{uid}/axolotls/{axolotlId} {
+      function activeCollector() {
+        let account = get(/databases/$(database)/documents/users/$(uid)).data;
+        return isOwner(uid)
+          && exists(/databases/$(database)/documents/users/$(uid))
+          && (account.get('status', 'active') == 'active'
+            || (account.get('status', 'active') == 'banned'
+              && account.get('banUntil', null) is timestamp
+              && account.banUntil <= request.time));
+      }
+      allow get, list, delete: if isOwner(uid);
+      allow create: if activeCollector()
+        && axolotlId in ['marina', 'luna', 'sprout', 'sunny', 'pearl', 'bubbles', 'pebble', 'nori', 'pip', 'hex', 'shelly']
+        && request.resource.data.keys().hasOnly(['foundAt'])
+        && request.resource.data.keys().hasAll(['foundAt'])
+        && request.resource.data.foundAt == request.time;
+      allow update: if false;
+    }
+
+    // ======================================
+    // PRIVATE MEMBER HEALTH TRACKER
+    // ======================================
+    // These subcollections are available to every signed-in member,
+    // but are never readable by other members, staff, or the site owner.
+    // A member can only read and change records under their own UID.
+
+    match /users/{uid}/healthDays/{dayId} {
+      function validPrivateHealthDay() {
+        let data = request.resource.data;
+        return data.keys().hasOnly([
+            "date", "weightLb", "foods", "workouts", "plans", "updatedAt"
+          ])
+          && data.keys().hasAll([
+            "date", "weightLb", "foods", "workouts", "plans", "updatedAt"
+          ])
+          && data.date is string
+          && data.date == dayId
+          && data.date.matches("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
+          && (data.weightLb == null ||
+              (data.weightLb is number &&
+               data.weightLb >= 1 && data.weightLb <= 3307))
+          && data.foods is list
+          && data.foods.size() <= 100
+          && data.workouts is list
+          && data.workouts.size() <= 60
+          && data.plans is list
+          && data.plans.size() <= 60
+          && data.updatedAt == request.time;
+      }
+
+      allow get, list: if isOwner(uid);
+      allow create, update: if isOwner(uid) && validPrivateHealthDay();
+      allow delete: if isOwner(uid);
+    }
+
+    match /users/{uid}/healthSettings/{settingsId} {
+      function validHealthSettings() {
+        let data = request.resource.data;
+        return settingsId == "main"
+          && data.keys().hasOnly([
+            "calorieTarget", "goalWeightLb", "startingWeightLb", "updatedAt"
+          ])
+          && data.keys().hasAll(["updatedAt"])
+          && (data.get("calorieTarget", null) == null ||
+              (data.calorieTarget is number &&
+               data.calorieTarget >= 1 && data.calorieTarget <= 20000))
+          && (data.get("goalWeightLb", null) == null ||
+              (data.goalWeightLb is number &&
+               data.goalWeightLb >= 1 && data.goalWeightLb <= 3307))
+          && (data.get("startingWeightLb", null) == null ||
+              (data.startingWeightLb is number &&
+               data.startingWeightLb >= 1 && data.startingWeightLb <= 3307))
+          && data.updatedAt == request.time;
+      }
+
+      allow get, list: if isOwner(uid) && settingsId == "main";
+      allow create, update: if isOwner(uid) && validHealthSettings();
+      allow delete: if isOwner(uid) && settingsId == "main";
+    }
+
+    // ======================================
+    // PRINCESSTG DOCS: PRIVATE ACCOUNT DOCUMENTS
+    // ======================================
+    match /users/{uid}/documents/{documentId} {
+      function validDocumentMetadata() {
+        let data = request.resource.data;
+        return documentId.matches('^[A-Za-z0-9-]{1,100}$')
+          && data.keys().hasAll(['title','pageCount','chunkCount','bytes','revision','updatedAt'])
+          && data.keys().hasOnly(['title','pageCount','chunkCount','bytes','revision','updatedAt'])
+          && data.title is string && data.title.size() >= 1 && data.title.size() <= 120
+          && data.pageCount is int && data.pageCount >= 1 && data.pageCount <= 300
+          && data.chunkCount is int && data.chunkCount >= 1 && data.chunkCount <= 80
+          && data.bytes is int && data.bytes >= 1 && data.bytes <= 4194304
+          && data.revision is int && data.revision >= 1
+          && data.updatedAt == request.time;
+      }
+      allow get, list, delete: if isOwner(uid);
+      allow create: if isOwner(uid) && validDocumentMetadata()
+        && request.resource.data.revision == 1;
+      allow update: if isOwner(uid) && validDocumentMetadata()
+        && request.resource.data.revision == resource.data.revision + 1;
+
+      match /chunks/{chunkId} {
+        function validDocumentChunk() {
+          let data = request.resource.data;
+          return chunkId.matches('^[0-9]{3}$')
+            && data.keys().hasAll(['text','revision'])
+            && data.keys().hasOnly(['text','revision'])
+            && data.text is string && data.text.size() <= 400000
+            && data.revision is int && data.revision >= 1;
+        }
+        // Ownership is explicit; no staff role grants access to private text.
+        allow get, list, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && validDocumentChunk();
+      }
+    }
+
+    // PRINCESSTG DOCS: READ-ONLY SHARING AND PUBLIC BOARD
+    // A random 256-bit link is an unlisted capability, not a private ACL.
+    // Private originals remain under /users/{uid}/documents.
+    match /users/{uid}/documentShares/{documentId} {
+      function validShareMapping() {
+        let d = request.resource.data;
+        return documentId.matches('^[A-Za-z0-9-]{1,100}$')
+          && d.keys().hasAll(['token','visibility'])
+          && d.keys().hasOnly(['token','visibility'])
+          && d.token is string && d.token.matches('^[a-f0-9]{64}$')
+          && d.visibility in ['link','public'];
+      }
+      allow get, list, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid) && validShareMapping();
+    }
+
+    match /sharedDocs/{token} {
+      function validSharedMetadata() {
+        let d = request.resource.data;
+        return token.matches('^[a-f0-9]{64}$')
+          && d.keys().hasAll(['ownerUid','title','pageCount','chunkCount','bytes','revision','visibility','updatedAt'])
+          && d.keys().hasOnly(['ownerUid','title','pageCount','chunkCount','bytes','revision','visibility','updatedAt'])
+          && d.ownerUid is string && isOwner(d.ownerUid)
+          && d.title is string && d.title.size() >= 1 && d.title.size() <= 120
+          && d.pageCount is int && d.pageCount >= 1 && d.pageCount <= 300
+          && d.chunkCount is int && d.chunkCount >= 1 && d.chunkCount <= 80
+          && d.bytes is int && d.bytes >= 1 && d.bytes <= 4194304
+          && d.revision is int && d.revision >= 1
+          && d.visibility in ['link','public']
+          && d.updatedAt == request.time;
+      }
+      // Direct reads require the exact unguessable token. Unlisted copies
+      // cannot be discovered through a collection query, even signed in.
+      allow get: if resource == null || resource.data.visibility in ['link','public'];
+      allow list: if resource.data.visibility == 'public' && request.query.limit <= 50;
+      allow create: if validSharedMetadata() && request.resource.data.revision == 1;
+      allow update: if isOwner(resource.data.ownerUid) && validSharedMetadata()
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.resource.data.revision == resource.data.revision + 1;
+      allow delete: if isOwner(resource.data.ownerUid);
+      match /chunks/{chunkId} {
+        function sharedParent() {
+          return get(/databases/$(database)/documents/sharedDocs/$(token));
+        }
+        function nextSharedParent() {
+          return getAfter(/databases/$(database)/documents/sharedDocs/$(token));
+        }
+        function validSharedChunk() {
+          let d = request.resource.data;
+          return chunkId.matches('^[0-9]{3}$')
+            && d.keys().hasAll(['text','revision'])
+            && d.keys().hasOnly(['text','revision'])
+            && d.text is string && d.text.size() <= 400000
+            && d.revision is int && d.revision >= 1;
+        }
+        allow get: if exists(/databases/$(database)/documents/sharedDocs/$(token))
+          && sharedParent().data.visibility in ['link','public'];
+        allow list: if false;
+        allow create, update: if request.auth != null && validSharedChunk()
+          && isOwner(nextSharedParent().data.ownerUid)
+          && request.resource.data.revision == nextSharedParent().data.revision;
+        allow delete: if request.auth != null && isOwner(sharedParent().data.ownerUid);
+      }
+    }
+
+    // ======================================
+    // USER BAN APPEALS
+    // ======================================
+    // Path:
+    // users/{uid}/banAppeals/{banId}
+    //
+    // One appeal may be created per ban.
+    // Users cannot edit or delete appeals.
+    // ======================================
+
+    match /users/{uid}/banAppeals/{appealId} {
+
+      function bannedAccount() {
+        return get(
+          /databases/$(database)/documents/users/$(uid)
+        ).data;
+      }
+
+      function banCurrentlyActive() {
+        return bannedAccount().get("status", "active") == "banned"
+          && (
+            bannedAccount().get("banUntil", null) == null
+
+            || (
+              bannedAccount().get("banUntil", null) is timestamp
+
+              && bannedAccount().banUntil > request.time
+            )
+          );
+      }
+
+      function matchesCurrentBan() {
+        return bannedAccount().get("banId", "legacy") == appealId;
+      }
+
+      // Users may read their own appeals.
+      // Staff may review appeals.
+      allow get, list: if isOwner(uid) || isStaff();
+
+      allow create: if isOwner(uid)
+
+        && exists(
+          /databases/$(database)/documents/users/$(uid)
+        )
+
+        && banCurrentlyActive()
+
+        && matchesCurrentBan()
+
+        && request.resource.data.keys().hasOnly([
+          "uid",
+          "banId",
+          "message",
+          "status",
+          "createdAt"
+        ])
+
+        && request.resource.data.keys().hasAll([
+          "uid",
+          "banId",
+          "message",
+          "status",
+          "createdAt"
+        ])
+
+        && request.resource.data.uid == uid
+
+        && request.resource.data.banId == appealId
+
+        && request.resource.data.message is string
+
+        && request.resource.data.message.size() >= 20
+
+        && request.resource.data.message.size() <= 3000
+
+        && request.resource.data.status == "pending"
+
+        && request.resource.data.createdAt == request.time;
+
+      // No resubmitting, changing, or deleting.
+      allow update, delete: if false;
+    }
+
+    // ======================================
+    // STAFF INBOX: LOAD ALL BAN APPEALS
+    // ======================================
+    //
+    // Required by:
+    // collectionGroup(db, "banAppeals")
+    //
+    // Only active admins and owners can
+    // list appeals across all accounts.
+    // ======================================
+
+    match /{path=**}/banAppeals/{appealId} {
+
+      allow list: if isStaff();
+
+    }
+
+    // ======================================
+    // STAFF INBOX: READ RECEIPTS
+    // ======================================
+    //
+    // Required by:
+    // collection(
+    //   db,
+    //   "staffInboxReads",
+    //   staffUid,
+    //   "appeals"
+    // )
+    //
+    // Each staff member has their own
+    // read/unread status.
+    //
+    // Path:
+    // staffInboxReads/{staffUid}/appeals/{receiptId}
+    // ======================================
+
+    match /staffInboxReads/{staffUid}/appeals/{receiptId} {
+
+      function validReadReceipt() {
+
+        return request.resource.data.keys().hasOnly([
+          "uid",
+          "banId",
+          "readAt"
+        ])
+
+        && request.resource.data.keys().hasAll([
+          "uid",
+          "banId",
+          "readAt"
+        ])
+
+        && request.resource.data.uid is string
+
+        && request.resource.data.uid.size() > 0
+
+        && request.resource.data.uid.size() <= 128
+
+        && request.resource.data.banId is string
+
+        && request.resource.data.banId.size() > 0
+
+        && request.resource.data.banId.size() <= 100
+
+        && receiptId == (
+          request.resource.data.uid + "__" +
+          request.resource.data.banId
+        )
+
+        && request.resource.data.readAt == request.time;
+      }
+
+      // Only the logged-in staff member
+      // can read their own read receipts.
+      allow get, list: if isOwner(staffUid)
+        && isStaff();
+
+      // Opening an appeal marks it as read.
+      allow create: if isOwner(staffUid)
+        && isStaff()
+        && validReadReceipt();
+
+      // Existing receipt may update only
+      // its read timestamp.
+      allow update: if isOwner(staffUid)
+
+        && isStaff()
+
+        && validReadReceipt()
+
+        && request.resource.data.uid == resource.data.uid
+
+        && request.resource.data.banId == resource.data.banId
+
+        && request.resource.data.diff(resource.data)
+          .affectedKeys().hasOnly([
+            "readAt"
+          ]);
+
+      // Read receipts cannot be deleted.
+      allow delete: if false;
+    }
+
+    // ======================================
+    // SONG DATABASE
+    // ======================================
+
+    match /songs/{songId} {
+
+      // PR25: keep the legacy primary album and validate optional memberships.
+      function validAlbumMembership(data) {
+        let approved = getAfter(/databases/$(database)/documents/enums/albums).data.values;
+        return data.album is string && data.album in approved
+          && (!data.keys().hasAny(["albums"]) || (
+            data.albums is list
+            && data.albums.size() >= 1 && data.albums.size() <= 3
+            && data.albums[0] == data.album
+            && data.albums.toSet().size() == data.albums.size()
+            && data.albums.hasOnly(approved)
+          ));
+      }
+
+      function validReleaseDate(value) {
+        return value is string && (value == "tbd" || value.matches("^[0-9]{4}-[0-9]{2}-[0-9]{2}$"));
+      }
+
+      function validSongDates(data) {
+        return validReleaseDate(data.releaseDate)
+          && (!data.keys().hasAny(["originalReleaseDate"]) || validReleaseDate(data.originalReleaseDate));
+      }
+
+      function validNewSong() {
+
+        let data = request.resource.data;
+
+        return data.keys().hasOnly([
+          "title",
+          "pageId",
+          "description",
+          "album",
+          "albums",
+          "originalReleaseDate",
+          "genre",
+          "releaseDate",
+          "lyrics",
+          "translation",
+          "lyricsCollapsed",
+          "translationCollapsed",
+          "newsletterQueued",
+          "submittedBy",
+          "createdAt",
+          "updatedAt"
+        ])
+
+        && data.keys().hasAll([
+          "title",
+          "pageId",
+          "description",
+          "album",
+          "genre",
+          "releaseDate",
+          "lyrics",
+          "submittedBy",
+          "createdAt",
+          "updatedAt"
+        ])
+
+        && data.title is string
+
+        && data.title.size() > 0
+
+        && data.title.size() <= 160
+
+        && data.pageId == songId
+
+        && data.description is string
+
+        && data.description.size() <= 5000
+
+        && validAlbumMembership(data)
+
+        && data.genre is string
+
+        && data.genre.size() > 0
+
+        && data.genre.size() <= 150
+
+        && validSongDates(data)
+
+        && data.lyrics is string
+
+        && data.lyrics.size() > 0
+
+        && (
+          !data.keys().hasAny([
+            "translation"
+          ])
+
+          || (
+            data.translation is string
+
+            && data.translation.size() <= 100000
+          )
+        )
+
+        // Optional newsletter queue flag.
+        && (
+          !data.keys().hasAny(["newsletterQueued"])
+          || data.newsletterQueued is bool
+        )
+
+        // ====================================
+        // OPTIONAL LYRICS COLLAPSE SETTINGS
+        // ====================================
+        // Older songs without these fields
+        // remain valid.
+
+        && (
+          !data.keys().hasAny(["lyricsCollapsed"])
+          || data.lyricsCollapsed is bool
+        )
+
+        && (
+          !data.keys().hasAny(["translationCollapsed"])
+          || data.translationCollapsed is bool
+        )
+
+        && data.submittedBy is map
+
+        && data.submittedBy.keys().hasOnly([
+          "uid",
+          "username"
+        ])
+
+        && data.submittedBy.keys().hasAll([
+          "uid",
+          "username"
+        ])
+
+        && data.submittedBy.uid == request.auth.uid
+
+        && data.submittedBy.username is string
+
+        && data.submittedBy.username.size() > 0
+
+        && data.submittedBy.username.size() <= 150
+
+        && data.createdAt == request.time
+
+        && data.updatedAt == request.time;
+      }
+
+      // Public songs are readable.
+      allow get, list: if true;
+
+      // Active staff may create songs.
+      allow create: if isStaff()
+        && validNewSong();
+
+      // Existing unrelated edits are unchanged. Validate membership and dates
+      // when those particular fields are touched, without rejecting older records.
+      allow update: if isStaff()
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["album", "albums"])
+          || validAlbumMembership(request.resource.data))
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["releaseDate", "originalReleaseDate"])
+          || validSongDates(request.resource.data));
+      allow delete: if isStaff();
+    }
+
+  }
+});
+    }
+    function starlightType(typeId) {
+      return typeId is string && starlightId(typeId)
+        && (typeId in ['axolotls','trophies','cards']
+            || exists(/databases/$(database)/documents/starlightTypes/$(typeId)));
+    }
+    match /starlightTypes/{typeId} {
+      allow get, list: if true;
+      allow create, update: if isStaff() && starlightId(typeId)
+        && !(typeId in ['axolotls','trophies','cards'])
+        && request.resource.data.keys().hasOnly(['name','updatedAt'])
+        && starlightName(request.resource.data.name)
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+    match /starlightItems/{itemId} {
+      function validItem() {
+        let d = request.resource.data;
+        return starlightId(itemId)
+          && d.keys().hasOnly(['name','price','typeId','image','active','updatedAt'])
+          && starlightName(d.name) && starlightPrice(d.price)
+          && starlightType(d.typeId) && starlightImage(d.image)
+          && d.active is bool && d.updatedAt == request.time;
+      }
+      allow get, list: if resource.data.active == true || isStaff();
+      allow create: if isStaff() && validItem();
+      allow update: if isStaff() && validItem()
+        && request.resource.data.typeId == resource.data.typeId;
+      allow delete: if false;
+    }
+    match /starlightPacks/{packId} {
+      // Draft metadata only. No sale or pack-opening endpoint exists.
+      function validDraft() {
+        let d = request.resource.data;
+        return starlightId(packId)
+          && d.keys().hasOnly(['name','price','image','cardsPerPack','cardIds','status','updatedAt'])
+          && starlightName(d.name) && starlightPrice(d.price) && starlightImage(d.image)
+          && d.cardsPerPack is int && d.cardsPerPack >= 1 && d.cardsPerPack <= 20
+          && d.cardIds is list && d.cardIds.size() >= d.cardsPerPack && d.cardIds.size() <= 100
+          && d.cardIds.toSet().size() == d.cardIds.size()
+          && d.status == 'draft' && d.updatedAt == request.time;
+      }
+      allow get, list: if isStaff();
+      allow create, update: if isStaff() && validDraft();
+      allow delete: if false;
+    }
+    match /users/{uid}/starlightCollectibles/{itemId} {
+      allow get, list: if isOwner(uid);
+      allow create, update, delete: if false;
+    }
+
+
     // Hanggirl: the authoritative answer and counters are Worker-only.
     match /users/{uid}/privateGames/{gameId} {
       allow read, write: if false;

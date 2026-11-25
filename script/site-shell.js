@@ -166,6 +166,7 @@ const GROUPS=[
     ["All Songs","audioPlayer/index.html","music"],
     ["Albums","albums/index.html","albums"],
     ["Store","pages/store.html","store"],
+    ["Starlight Store","pages/starlight-store.html","store"],
     ["Releases","pages/releases.html","releases"]]},
   {title:"Create & Discover",links:[
     ["Songwriter Challenges","pages/challenges.html","challenges"],
