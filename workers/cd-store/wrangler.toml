@@ -10,7 +10,7 @@ CD_TAX_CODE = "txcd_99999999"
 REWARD_FIREBASE_PROJECT = "music-and-poetry"
 ADMIN_TEST_TIDE = "yes"
 # Enable after applying quote migration and configuring private origin.
-SHIPPO_ENABLED = "no"
+SHIPPO_ENABLED = "yes"
 SHIPPO_COUNTRIES = "US"
 SHIPPO_PACKAGING_VERIFIED = "no"
 # Sample test measurements only.
