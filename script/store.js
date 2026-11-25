@@ -14,7 +14,7 @@ let receiptKind=null,shippingQuote=null;
 function clearShippingQuote(){shippingQuote=null;const panel=$("shipping-rate-panel");if(panel)panel.hidden=true;$("quote-button").textContent=config?.carrierShipping?"Find shipping services":"Calculate shipping and tax";}
 function updateControls(){
  const active=!!order;
- $("store-checkout").disabled=busy||active||!catalogReady||!cart.size||[...cart.keys()].some(s=>!products.has(s))||!STORE_WORKER_URL;
+ $("store-checkout").disabled=busy||active||!catalogReady||!cart.size||[...cart].some(([s,q])=>!products.has(s)||!canAdd(products.get(s),q))||!STORE_WORKER_URL;
  $("quote-button").disabled=busy||active||!config||configFailed||!cart.size;
  $("pay-button").disabled=busy||!active||!paymentReady||!paymentMayProceed;
  $("edit-checkout").disabled=busy||!active;
@@ -25,7 +25,7 @@ function updateControls(){
  $("shop-again").disabled=busy||claimBusy;
  $("restore-tide-claim").hidden=!read(sessionStorage,rewardKey,null);
  $("restore-tide-claim").disabled=busy||claimBusy||active;
- for(const button of document.querySelectorAll(".cart-controls button,.store-icon-add,.store-icon-open,#cd-detail-add"))button.disabled=busy||active;
+ for(const button of document.querySelectorAll(".cart-controls button,.store-icon-add,.store-icon-open,#cd-detail-add"))button.disabled=busy||active||(button.classList.contains("store-icon-add")&&!canAdd(products.get(button.dataset.sku),(cart.get(button.dataset.sku)||0)+1))||(button.id==="cd-detail-add"&&detailSKU&&!canAdd(products.get(detailSKU),(cart.get(detailSKU)||0)+1));
 }
 async function exclusive(action){
  if(busy)return false;
@@ -51,9 +51,13 @@ function renderCart(){
  updateControls();
  if(!STORE_WORKER_URL)$("store-checkout").title="Checkout service has not been configured.";
 }
+const stockInfo=p=>p?.inventory||{mode:"made_to_order",stock:0,minDays:2,maxDays:3};
+const stockLabel=p=>{const i=stockInfo(p);return i.mode==="out_of_stock"||i.mode==="in_stock"&&i.stock===0?"Out of stock":(i.mode==="in_stock"?i.stock+" in stock":"Made to order")+" · "+i.minDays+"–"+i.maxDays+" business days before shipping";};
+const canAdd=(p,q)=>{const i=stockInfo(p);return i.mode!=="out_of_stock"&&(i.mode!=="in_stock"||q<=i.stock);};
 function change(sku,delta){
  if(order||busy||receiptKind){message("Cancel or finish the current payment before editing your cart.");return;}
  const q=(cart.get(sku)||0)+delta;
+ if(delta>0&&!canAdd(products.get(sku),q)){$("store-status").textContent="Not enough stock for this quantity.";return;}
  if(delta>0&&[...cart.keys()].some(key=>(products.get(key)?.profileId||"cd-slim")!==(products.get(sku)?.profileId||"cd-slim"))){$("store-status").textContent="Items with different packaging need separate orders. Finish this cart before adding that product.";return;}
  if(q>10||q>0&&cart.size>=8&&!cart.has(sku)||[...cart.values()].reduce((a,b)=>a+b,0)+delta>20){$("store-status").textContent="Up to 10 copies per product, 8 different products and 20 items per order.";return;}
  if(q<=0)cart.delete(sku);else cart.set(sku,q);
@@ -66,6 +70,7 @@ function updateCDDetails(){
  $("cd-detail-title").textContent=p.name;
  $("cd-detail-price").textContent=money(p.priceCents);
  $("cd-detail-meta").textContent=p.kind==="merch"?p.category:p.songIds.length+" tracks · "+p.category;
+ $("cd-detail-meta").textContent+=" · "+stockLabel(p);
  $("cd-detail-description").textContent=p.description;
  $("cd-detail-description").hidden=!p.description;
  $("cd-detail-track-title").hidden=p.kind==="merch";$("cd-detail-tracks").hidden=p.kind==="merch";
@@ -90,7 +95,7 @@ function makeProduct(p){
  const info=el("div");info.className="store-icon-info";
  const price=el("span",money(p.priceCents));price.className="store-price";
  const add=btn("+",()=>change(p.sku,1));add.className="store-icon-add";add.setAttribute("aria-label","Add "+p.name+" to cart");add.title="Add to cart";
- info.append(price,add);card.append(info);return card;
+ info.append(price,add);card.append(info,el("small",stockLabel(p)));add.dataset.sku=p.sku;return card;
 }
 function refreshAlbumOptions(){
  const choices=new Map(filterCDs([...products.values()],selectedCategory).map(p=>[p.albumId,p.albumName]));
@@ -136,7 +141,7 @@ async function loadCatalog(){
   const snap=await getDocs(collection(db,"albums"));
   products=new Map(snap.docs.flatMap(s=>storeProducts(s.id,s.data())).map(p=>[p.sku,p]));
   let merchandiseUnavailable=false;
-  if(STORE_WORKER_URL)try{const catalog=await api("/catalog");for(const p of catalog.products||[])products.set(p.sku,p);}catch(e){merchandiseUnavailable=true;console.warn("Merchandise catalog unavailable",e.message);}
+  if(STORE_WORKER_URL)try{const catalog=await api("/catalog");for(const p of catalog.products||[])products.set(p.sku,p);for(const i of catalog.inventory||[]){const p=products.get(i.sku);if(p)p.inventory=i;}}catch(e){merchandiseUnavailable=true;console.warn("Merchandise catalog unavailable",e.message);}
   catalogReady=true;mountCatalogFilters();renderProducts();renderCart();$("store-status").textContent=products.size+" product listings"+(!STORE_WORKER_URL?" · Checkout is not configured yet.":merchandiseUnavailable?" · Additional merchandise is temporarily unavailable.":".");
   void import("./song-data.js").then(({loadAllSongs})=>loadAllSongs("../audioPlayer/audio/song-details.json")).then(songs=>{titles=new Map(songs.map(s=>[s.pageId,s.title]));if(detailSKU)updateCDDetails();}).catch(()=>{});
  }catch(e){$("store-status").textContent="Could not load the store catalog: "+e.message;}
@@ -274,7 +279,7 @@ async function mountPayment(q,reference){
  paymentMayProceed=true;
  $("payment-panel").hidden=false;$("shipping-form").hidden=true;$("check-order").hidden=false;$("resume-payment").hidden=true;
  if($("shipping-rate-panel"))$("shipping-rate-panel").hidden=true;
- if($("quote-service"))$("quote-service").textContent=q.shippingService?q.shippingService.carrier+" · "+q.shippingService.service:"";
+ if($("quote-service"))$("quote-service").textContent=q.shippingService?q.shippingService.carrier+" · "+q.shippingService.service+(q.processing?" · "+q.processing.minDays+"–"+q.processing.maxDays+" business days processing":"")+(q.shippingService.days==null?"":" + estimated "+q.shippingService.days+" transit days"):"";
  const list=$("order-lines");list.replaceChildren(...q.lines.map(l=>el("p",l.quantity+" × "+l.name+" · "+money(l.quantity*l.priceCents))));
  for(const k of ["subtotal","shipping","tax","total"])$("quote-"+k).textContent=money(q[k]);
  $("pay-button").textContent="Pay "+money(q.total);
@@ -302,8 +307,8 @@ form.onsubmit=async e=>{
     if(!shippingQuote||shippingQuote.fingerprint!==fingerprint||shippingQuote.expires<=Date.now()){
      clearShippingQuote();message("Requesting carrier shipping rates…");
      const quote=await api("/shipping-quotes",{address,cart:lines});shippingQuote={...quote,fingerprint};
-     options($("shipping-rate-select"),quote.options.map(r=>[r.id,r.carrier+" · "+r.service+" · "+money(r.totalCents)+(r.days===null?"":" · estimated "+r.days+" days")]),"Choose a shipping service");
-     $("shipping-rate-panel").hidden=false;$("shipping-rate-note").textContent=(quote.international?"Recipient-paid import duties and fees may apply. ":"")+"Estimates exclude processing time. Shipping includes configured packaging and service fees. Rates expire after 15 minutes.";
+     options($("shipping-rate-select"),quote.options.map(r=>[r.id,r.carrier+" · "+r.service+" · "+money(r.totalCents)+(r.days===null?"":" · estimated "+r.days+" transit days")]),"Choose a shipping service");
+     $("shipping-rate-panel").hidden=false;$("shipping-rate-note").textContent=(quote.international?"Recipient-paid import duties and fees may apply. ":"")+"Production / handling: "+(quote.processing?quote.processing.minDays+"–"+quote.processing.maxDays+" business days":"see product listing")+". Add carrier transit time shown above; weekends and holidays may extend delivery. Shipping includes configured packaging and service fees. Rates expire after 15 minutes.";
      $("quote-button").textContent="Review total and payment";message("Select a shipping service to calculate tax and total.");return;
     }
     const rateId=$("shipping-rate-select").value;

@@ -4,6 +4,7 @@ import {rewardProject,rewardAvailable,adminSandboxRewards,verifiedBuyer,verified
 import {refundEvents,intentFromRefundEvent,syncRefunds,retryRefunds} from "./refunds.js";
 import {shippingEnabled,settings as shippingSettings,getRates,selectedRate,latestTestDiagnostics} from "./shipping.js";
 import {CD_PROFILE,readProduct,packFor,catalog,saveCatalog} from "./merchandise.js";
+import {inventoryList,inventoryLines,processingFor,saveInventory,orderStage,fulfillmentOrders} from "./inventory.js";
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status});};
 const str=(v,max,required=true)=>{if(typeof v!=="string"||v.length>max||required&&!v.trim())fail("Please complete the shipping address.");return v.trim();};
 const integer=(v,min,max)=>Number.isInteger(v)&&v>=min&&v<=max;
@@ -63,7 +64,7 @@ async function productLines(env,cart){
   return {sku:p.sku,name:p.name,quantity:row.quantity,priceCents:p.priceCents,songIds:p.songIds,kind:"cd",profileId:CD_PROFILE,taxCode:env.CD_TAX_CODE};
  }));
  const count=lines.reduce((n,l)=>n+l.quantity,0);if(count>20)fail("Maximum 20 items per order.");
- return {lines,count};
+ return {lines:await inventoryLines(env,lines),count};
 }
 function configured(env){
  const mode=env.STORE_MODE;
@@ -100,7 +101,7 @@ async function shippingQuote(env,b){
  configured(env);if(!shippingEnabled(env))fail("Carrier shipping unavailable.",409);
  const a=addressOf(b.address),{lines,count}=await productLines(env,b.cart),pack=await packFor(env,lines,count),quote=await getRates(env,a,lines,count,fetch,pack),id=crypto.randomUUID(),expires=Date.now()+15*60*1000;
  await env.ORDERS.prepare("INSERT INTO shipping_quotes(id,fingerprint,expires,payload) VALUES(?,?,?,?)").bind(id,await quoteFingerprint(a,lines,pack,env),expires,JSON.stringify(quote)).run();
- return {id,expires,options:quote.options,international:quote.international};
+ return {id,expires,options:quote.options,international:quote.international,processing:processingFor(lines)};
 }
 async function shippingAdmin(env,b){
  if(!await verifiedShippingStaff(env,b.idToken))fail("Administrator access required.",403);
@@ -131,8 +132,8 @@ async function startOrder(env,body){
    ship=shippingService.totalCents;
   }else ship=shipping(zones(env),a,count);
   const totals=await calculate(env,lines,a,ship);
-  const payload=JSON.stringify({address:a,lines,subtotal:totals.subtotal,shipping:totals.shipping,tax:totals.tax,total:totals.total,shippingService});
-  await env.ORDERS.prepare("INSERT OR IGNORE INTO orders(id,token_hash,created,payload,total,calculation,reward_uid) VALUES(?,?,?,?,?,?,?)").bind(body.id,await hash(body.token),Date.now(),payload,totals.total,totals.calculation,buyer).run();
+  const payload=JSON.stringify({address:a,lines,subtotal:totals.subtotal,shipping:totals.shipping,tax:totals.tax,total:totals.total,shippingService,processing:processingFor(lines)});
+  try{await env.ORDERS.prepare("INSERT OR IGNORE INTO orders(id,token_hash,created,payload,total,calculation,reward_uid) VALUES(?,?,?,?,?,?,?)").bind(body.id,await hash(body.token),Date.now(),payload,totals.total,totals.calculation,buyer).run();}catch(e){if(String(e.message).includes("Inventory changed"))fail("Inventory changed. Cancel this checkout and refresh your cart.",409);throw e;}
   row=await ownedOrder(env,body.id,body.token);
  }
  if(row.status!=="pending"||Date.now()-row.created>30*60*1000)fail("This checkout is no longer editable. Check order status first.",409);
@@ -151,7 +152,7 @@ async function startOrder(env,body){
   }
  }
  if(!["requires_payment_method","requires_confirmation","requires_action"].includes(intent.status))fail("This payment is already processing or complete. Check order status.",409);
- return {id:row.id,clientSecret:intent.client_secret,publishableKey:env.STRIPE_PUBLISHABLE_KEY,mode:env.STORE_MODE,lines:p.lines,subtotal:p.subtotal,shipping:p.shipping,tax:p.tax,total:p.total,shippingService:p.shippingService||null};
+ return {id:row.id,clientSecret:intent.client_secret,publishableKey:env.STRIPE_PUBLISHABLE_KEY,mode:env.STORE_MODE,lines:p.lines,subtotal:p.subtotal,shipping:p.shipping,tax:p.tax,total:p.total,shippingService:p.shippingService||null,processing:p.processing||processingFor(p.lines)};
 }
 async function verifyWebhook(request,env){
  const raw=await request.text(),header=request.headers.get("Stripe-Signature")||"";
@@ -270,12 +271,13 @@ export default {
    if(url.pathname==="/webhook"&&req.method==="POST")return json(await webhook(req,env,ctx));
    if(!allowed)fail("Origin not allowed.",403);
    if(req.method==="OPTIONS")return new Response(null,{status:204,headers});
-   if(url.pathname==="/catalog"&&req.method==="GET")return json(await catalog(env));
+   if(url.pathname==="/catalog"&&req.method==="GET")return json({...await catalog(env),inventory:await inventoryList(env)});
    if(url.pathname==="/config"&&req.method==="GET"){configured(env);return json({mode:env.STORE_MODE,carrierShipping:shippingEnabled(env),zones:shippingEnabled(env)?shippingSettings(env).countries.map(country=>({country,state:"*",city:"*"})):zones(env).map(({country,state,city})=>({country,state,city}))});}
    if(req.method!=="POST")fail("Not found.",404);
    const b=await body(req);
    if(url.pathname==="/shipping-quotes")return json(await shippingQuote(env,b));
    if(url.pathname==="/shipping-admin")return json(await shippingAdmin(env,b));
+   if(url.pathname==="/inventory-admin"){if(!await verifiedShippingStaff(env,b.idToken))fail("Administrator access required.",403);if(b.action==="save")await saveInventory(env,b.inventory);else if(b.action==="stage")await orderStage(env,b);else if(b.action!=="list")fail("Unknown inventory action.");return json({mode:env.STORE_MODE,inventory:await inventoryList(env),orders:await fulfillmentOrders(env),products:(await catalog(env,true)).products});}
    if(url.pathname==="/catalog-admin"){if(!await verifiedShippingStaff(env,b.idToken))fail("Administrator access required.",403);return json(await saveCatalog(env,b));}
    if(url.pathname==="/checkout")return json(await startOrder(env,b));
    if(url.pathname==="/status")return json(await status(env,b,ctx));
@@ -285,6 +287,13 @@ export default {
   }catch(e){if(!e.status)console.error("Store service error",e.message);return json({error:e.status?e.message:"Store service unavailable."},e.status||500);}
  },
  async scheduled(event,env,ctx){
+  // Expire abandoned checkouts only after Stripe confirms cancellation; never release stock for processing or successful payments.
+  try{const stale=await env.ORDERS.prepare("SELECT id,intent FROM orders WHERE status='pending' AND created<? ORDER BY created LIMIT 10").bind(Date.now()-60*60*1000).all();for(const row of stale.results||[])try{
+   if(!row.intent){await env.ORDERS.prepare("UPDATE orders SET status='canceled' WHERE id=? AND status='pending' AND intent IS NULL").bind(row.id).run();continue;}
+   let pi=await stripe(env,"payment_intents/"+row.intent);if(pi.status==="succeeded"){await syncRefunds(env,stripe,pi.id);continue;}
+   if(["requires_payment_method","requires_confirmation","requires_action"].includes(pi.status))pi=await stripe(env,"payment_intents/"+row.intent+"/cancel",{},"cd-cancel-"+row.id);
+   if(pi.status==="canceled")await env.ORDERS.prepare("UPDATE orders SET status='canceled' WHERE id=? AND status='pending' AND intent=?").bind(row.id,row.intent).run();
+  }catch(e){console.warn("Expired checkout cleanup will retry",row.id);}}catch(e){console.warn("Inventory cleanup unavailable");}
   if(shippingEnabled(env))try{await env.ORDERS.prepare("DELETE FROM shipping_quotes WHERE expires<=?").bind(Date.now()).run();}catch(e){console.warn("Shipping quote cleanup unavailable",e.message);}
   await retryRefunds(env,stripe);
   const rows=await env.ORDERS.prepare("SELECT id FROM orders WHERE status='paid' AND notice_sent=0 AND notice_lock<? LIMIT 5").bind(Date.now()-120000).all();
