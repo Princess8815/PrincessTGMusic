@@ -22,3 +22,6 @@ CREATE INDEX IF NOT EXISTS order_refunds_retry ON order_refunds(tax_state,lock_u
 
 CREATE TABLE IF NOT EXISTS shipping_quotes (id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, expires INTEGER NOT NULL, payload TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS shipping_quotes_expiry ON shipping_quotes(expires);
+
+CREATE TABLE IF NOT EXISTS shipping_profiles (id TEXT PRIMARY KEY, payload TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS merchandise_products (id TEXT PRIMARY KEY, payload TEXT NOT NULL);

@@ -1,0 +1,9 @@
+import assert from "node:assert/strict";
+import {readFile} from "node:fs/promises";
+const source=await readFile(new URL("../merchandise.js",import.meta.url),"utf8");const api=await import("data:text/javascript;base64,"+Buffer.from(source).toString("base64"));
+const pack={"id":"cd-slim","name":"Slim jewel case","length":7,"width":6,"baseHeight":0.5,"discHeight":0.25,"baseWeight":1,"discWeight":2,"packagingCents":0,"insuranceCents":0,"trackingCents":0,"maxUnits":10,"verified":false},product={"id":"appey-plush","name":"Appey plush","category":"Plushies","priceCents":2500,"profileId":"plush-box","taxCode":"txcd_99999999","enabled":false};const eq=assert.deepEqual,throws=assert.throws,rejects=assert.rejects;
+eq(api.profileRecord(pack).maxUnits,10);eq(api.productRecord(product).priceCents,2500);eq(api.publicProduct(api.productRecord(product)).sku,"merch:appey-plush");eq(api.publicProduct(api.productRecord(product)).songIds,[]);
+throws(()=>api.profileRecord({...pack,maxUnits:0}));throws(()=>api.profileRecord({...pack,discWeight:-1}));throws(()=>api.productRecord({...product,priceCents:0}));throws(()=>api.productRecord({...product,coverUrl:"javascript:alert(1)"}));throws(()=>api.productRecord({...product,originCountry:"US"}));throws(()=>api.productRecord({...product,taxCode:"fake"}));
+const env={STORE_MODE:"test",ORDERS:{prepare(){return {bind(){return {first:async()=>({payload:JSON.stringify(pack)})}}}}}};
+eq((await api.packFor(env,[{profileId:"cd-slim"}],2)).id,"cd-slim");await rejects(()=>api.packFor(env,[{profileId:"cd-slim"},{profileId:"plush-box"}],2));await rejects(()=>api.packFor(env,[{profileId:"cd-slim"}],11));await rejects(()=>api.packFor({...env,STORE_MODE:"live"},[{profileId:"cd-slim"}],1));
+console.log("Merchandise tests passed");

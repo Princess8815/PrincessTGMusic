@@ -21,7 +21,7 @@ export function settings(env){
 }
 export function parcelFor(p,count){
  if(!int(count,1,20))fail("Invalid package quantity.");
- const round=n=>String(Math.round(n*100)/100);
+ const round=n=>String(Math.ceil(n*100-1e-8)/100);
  return {length:round(p.length),width:round(p.width),height:round(p.baseHeight+p.discHeight*count),distance_unit:"in",weight:round(p.baseWeight+p.discWeight*count),mass_unit:"oz"};
 }
 export function shippingOptions(result,p,mode){
@@ -35,13 +35,13 @@ export function shippingOptions(result,p,mode){
  if(!options.length)fail("No shipping services for this destination. Check address or contact the store.",422);
  return options.sort((a,b)=>a.totalCents-b.totalCents).slice(0,40);
 }
-export async function getRates(env,a,lines,count,fetcher=fetch){
- const {countries,origin,pack,customs}=settings(env);
+export async function getRates(env,a,lines,count,fetcher=fetch,profile=null){
+ const {countries,origin,pack:defaultPack,customs}=settings(env),pack=profile||defaultPack;
  if(!countries.includes(a.country))fail("We do not yet ship there.");
  const international=a.country!=="US";if(international&&!a.phone)fail("Recipient phone required for international shipping.");
  const parcel=parcelFor(pack,count);
  const body={address_from:origin,address_to:{name:a.name,street1:a.line1,street2:a.line2,city:a.city,state:a.state,zip:a.postal_code,country:a.country,phone:a.phone||undefined,email:a.email},parcels:[parcel],async:false};
- if(international)body.customs_declaration={certify:true,certify_signer:customs.signer,contents_type:"MERCHANDISE",non_delivery_option:"RETURN",incoterm:customs.incoterm,items:lines.map(l=>({description:"Recorded music compact disc",quantity:l.quantity,net_weight:String(pack.discWeight*l.quantity),mass_unit:"oz",value_amount:(l.priceCents*l.quantity/100).toFixed(2),value_currency:"USD",origin_country:customs.originCountry,tariff_number:customs.tariffNumber}))};
+ if(international)body.customs_declaration={certify:true,certify_signer:customs.signer,contents_type:"MERCHANDISE",non_delivery_option:"RETURN",incoterm:customs.incoterm,items:lines.map(l=>{const c=l.kind==="merch"?l.customs:{description:"Recorded music compact disc",originCountry:customs.originCountry,tariffNumber:customs.tariffNumber,unitWeight:pack.discWeight};if(!c?.description||!c.originCountry||!c.tariffNumber||!c.unitWeight)fail("A product is not approved for international shipping.",409);return {description:c.description,quantity:l.quantity,net_weight:String(c.unitWeight*l.quantity),mass_unit:"oz",value_amount:(l.priceCents*l.quantity/100).toFixed(2),value_currency:"USD",origin_country:c.originCountry,tariff_number:c.tariffNumber};})};
  const res=await fetcher("https://api.goshippo.com/shipments/",{method:"POST",headers:{Authorization:"ShippoToken "+env.SHIPPO_API_KEY,"Content-Type":"application/json"},body:JSON.stringify(body)});
  if(!res.ok)fail("Shipping carrier service unavailable. Check address or retry.",502);
  const result=await res.json();return {shipmentId:result.object_id,parcel,options:shippingOptions(result,pack,env.STORE_MODE),international};

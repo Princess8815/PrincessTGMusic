@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS shipping_profiles (id TEXT PRIMARY KEY, payload TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS merchandise_products (id TEXT PRIMARY KEY, payload TEXT NOT NULL);

@@ -3,6 +3,7 @@ import {storeProducts} from "../../script/store-catalog.js";
 import {rewardProject,rewardAvailable,adminSandboxRewards,verifiedBuyer,verifiedShippingStaff,awardPaidOrder} from "./rewards.js";
 import {refundEvents,intentFromRefundEvent,syncRefunds,retryRefunds} from "./refunds.js";
 import {shippingEnabled,settings as shippingSettings,getRates,selectedRate} from "./shipping.js";
+import {CD_PROFILE,readProduct,packFor,catalog,saveCatalog} from "./merchandise.js";
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status});};
 const str=(v,max,required=true)=>{if(typeof v!=="string"||v.length>max||required&&!v.trim())fail("Please complete the shipping address.");return v.trim();};
 const integer=(v,min,max)=>Number.isInteger(v)&&v>=min&&v<=max;
@@ -30,28 +31,38 @@ function addressOf(input){
 }
 function flatten(v){if(!v)return null;if("stringValue"in v)return v.stringValue;if("booleanValue"in v)return v.booleanValue;if("integerValue"in v)return Number(v.integerValue);if("doubleValue"in v)return v.doubleValue;if("arrayValue"in v)return (v.arrayValue.values||[]).map(flatten);if("mapValue"in v)return Object.fromEntries(Object.entries(v.mapValue.fields||{}).map(([k,x])=>[k,flatten(x)]));return null;}
 async function productLines(env,cart){
- if(!Array.isArray(cart)||!cart.length||cart.length>8)fail("Choose between 1 and 8 different CDs per order.");
+ if(!Array.isArray(cart)||!cart.length||cart.length>8)fail("Choose 1–8 different products per order.");
  const combined=new Map();
  for(const row of cart){
-  if(!row||typeof row.albumId!=="string"||!/^[a-z0-9-]{1,140}$/.test(row.albumId)||!integer(row.volume,1,20)||!integer(row.quantity,1,10))fail("Invalid CD cart.");
-  const sku=row.albumId+":"+row.volume;if(combined.has(sku))fail("Duplicate cart line.");
-  combined.set(sku,row);
+  if(!row||!integer(row.quantity,1,10))fail("Invalid cart quantity.");
+  let sku;
+  if(row.productId!==undefined){
+   if(typeof row.productId!=="string"||!/^[a-z0-9][a-z0-9-]{0,59}$/.test(row.productId)||row.albumId!==undefined||row.volume!==undefined)fail("Invalid merchandise cart.");
+   if(!shippingEnabled(env))fail("Merchandise requires carrier shipping.",409);
+   sku="merch:"+row.productId;
+  }else{
+   if(typeof row.albumId!=="string"||!/^[a-z0-9-]{1,140}$/.test(row.albumId)||!integer(row.volume,1,20))fail("Invalid CD cart.");
+   sku=row.albumId+":"+row.volume;
+  }
+  if(combined.has(sku))fail("Duplicate cart line.");combined.set(sku,row);
  }
  const albums=new Map();
- await Promise.all([...new Set(cart.map(x=>x.albumId))].map(async id=>{
+ await Promise.all([...new Set(cart.filter(r=>r.productId===undefined).map(x=>x.albumId))].map(async id=>{
   const url="https://firestore.googleapis.com/v1/projects/"+encodeURIComponent(env.FIREBASE_PROJECT)+"/databases/(default)/documents/albums/"+encodeURIComponent(id);
   const r=await fetch(url,{headers:{Accept:"application/json"},cf:{cacheTtl:0}});
   if(r.status===404)fail("An album is no longer available.",409);if(!r.ok)fail("Album catalog unavailable.",503);
   const data=await r.json();albums.set(id,Object.fromEntries(Object.entries(data.fields||{}).map(([k,v])=>[k,flatten(v)])));
  }));
- let count=0;
- const lines=cart.map(row=>{
+ const lines=await Promise.all([...combined].map(async ([sku,row])=>{
+  if(row.productId!==undefined){
+   const p=await readProduct(env,row.productId);if(!p?.enabled)fail("A product is no longer available.",409);
+   return {sku,name:p.name,quantity:row.quantity,priceCents:p.priceCents,songIds:[],kind:"merch",profileId:p.profileId,taxCode:p.taxCode,customs:{description:p.customsDescription,originCountry:p.originCountry,tariffNumber:p.tariffNumber,unitWeight:p.unitWeight}};
+  }
   const p=storeProducts(row.albumId,albums.get(row.albumId)).find(p=>p.volume===row.volume);
   if(!p)fail("A CD is no longer available.",409);
-  count+=row.quantity;
-  return {sku:p.sku,name:p.name,quantity:row.quantity,priceCents:p.priceCents,songIds:p.songIds};
- });
- if(count>20)fail("Maximum 20 CDs per order.");
+  return {sku:p.sku,name:p.name,quantity:row.quantity,priceCents:p.priceCents,songIds:p.songIds,kind:"cd",profileId:CD_PROFILE,taxCode:env.CD_TAX_CODE};
+ }));
+ const count=lines.reduce((n,l)=>n+l.quantity,0);if(count>20)fail("Maximum 20 items per order.");
  return {lines,count};
 }
 function configured(env){
@@ -73,7 +84,7 @@ function addressFields(a){const {name,email,phone,...address}=a;return address;}
 async function calculate(env,lines,a,ship){
  const params={currency:"usd","customer_details[address_source]":"shipping","shipping_cost[amount]":String(ship),"shipping_cost[tax_behavior]":"exclusive"};
  for(const [k,v] of Object.entries(addressFields(a)))if(v)params["customer_details[address]["+k+"]"]=v;
- lines.forEach((l,i)=>{const base="line_items["+i+"]";params[base+"[amount]"]=String(l.priceCents*l.quantity);params[base+"[quantity]"]=String(l.quantity);params[base+"[reference]"]=l.sku;params[base+"[tax_code]"]=env.CD_TAX_CODE;params[base+"[tax_behavior]"]="exclusive";});
+ lines.forEach((l,i)=>{const base="line_items["+i+"]";params[base+"[amount]"]=String(l.priceCents*l.quantity);params[base+"[quantity]"]=String(l.quantity);params[base+"[reference]"]=l.sku;params[base+"[tax_code]"]=l.taxCode||env.CD_TAX_CODE;params[base+"[tax_behavior]"]="exclusive";});
  const calc=await stripe(env,"tax/calculations",params);
  const subtotal=lines.reduce((n,l)=>n+l.priceCents*l.quantity,0);
  if(calc.currency!=="usd"||!integer(calc.tax_amount_exclusive,0,10000000)||calc.amount_total!==subtotal+ship+calc.tax_amount_exclusive)fail("Tax total could not be verified.",502);
@@ -84,11 +95,11 @@ async function ownedOrder(env,id,token){
  if(!uuid(id)||!uuid(token))fail("Invalid order reference.");
  const row=await getOrder(env,id);if(!row||!equals(row.token_hash,await hash(token)))fail("Order not found.",404);return row;
 }
-async function quoteFingerprint(a,lines){return hash(JSON.stringify({address:a,lines:lines.map(({sku,quantity,priceCents})=>({sku,quantity,priceCents})).sort((a,b)=>a.sku.localeCompare(b.sku))}));}
+async function quoteFingerprint(a,lines,pack,env){return hash(JSON.stringify({address:a,lines:[...lines].sort((a,b)=>a.sku.localeCompare(b.sku)),pack,customs:shippingSettings(env).customs}));}
 async function shippingQuote(env,b){
  configured(env);if(!shippingEnabled(env))fail("Carrier shipping unavailable.",409);
- const a=addressOf(b.address),{lines,count}=await productLines(env,b.cart),quote=await getRates(env,a,lines,count),id=crypto.randomUUID(),expires=Date.now()+15*60*1000;
- await env.ORDERS.prepare("INSERT INTO shipping_quotes(id,fingerprint,expires,payload) VALUES(?,?,?,?)").bind(id,await quoteFingerprint(a,lines),expires,JSON.stringify(quote)).run();
+ const a=addressOf(b.address),{lines,count}=await productLines(env,b.cart),pack=await packFor(env,lines,count),quote=await getRates(env,a,lines,count,fetch,pack),id=crypto.randomUUID(),expires=Date.now()+15*60*1000;
+ await env.ORDERS.prepare("INSERT INTO shipping_quotes(id,fingerprint,expires,payload) VALUES(?,?,?,?)").bind(id,await quoteFingerprint(a,lines,pack,env),expires,JSON.stringify(quote)).run();
  return {id,expires,options:quote.options,international:quote.international};
 }
 async function shippingAdmin(env,b){
@@ -114,7 +125,8 @@ async function startOrder(env,body){
   if(shippingEnabled(env)){
    if(!uuid(body.quoteId)||typeof body.rateId!=="string")fail("Request and select a shipping service first.");
    const q=await env.ORDERS.prepare("SELECT * FROM shipping_quotes WHERE id=?").bind(body.quoteId).first();
-   shippingService=selectedRate(q,body.rateId,await quoteFingerprint(a,lines));
+   const pack=await packFor(env,lines,count);
+   shippingService=selectedRate(q,body.rateId,await quoteFingerprint(a,lines,pack,env));
    if(!shippingSettings(env).countries.includes(a.country))fail("Destination no longer supported.",409);
    ship=shippingService.totalCents;
   }else ship=shipping(zones(env),a,count);
@@ -258,11 +270,13 @@ export default {
    if(url.pathname==="/webhook"&&req.method==="POST")return json(await webhook(req,env,ctx));
    if(!allowed)fail("Origin not allowed.",403);
    if(req.method==="OPTIONS")return new Response(null,{status:204,headers});
+   if(url.pathname==="/catalog"&&req.method==="GET")return json(await catalog(env));
    if(url.pathname==="/config"&&req.method==="GET"){configured(env);return json({mode:env.STORE_MODE,carrierShipping:shippingEnabled(env),zones:shippingEnabled(env)?shippingSettings(env).countries.map(country=>({country,state:"*",city:"*"})):zones(env).map(({country,state,city})=>({country,state,city}))});}
    if(req.method!=="POST")fail("Not found.",404);
    const b=await body(req);
    if(url.pathname==="/shipping-quotes")return json(await shippingQuote(env,b));
    if(url.pathname==="/shipping-admin")return json(await shippingAdmin(env,b));
+   if(url.pathname==="/catalog-admin"){if(!await verifiedShippingStaff(env,b.idToken))fail("Administrator access required.",403);return json(await saveCatalog(env,b));}
    if(url.pathname==="/checkout")return json(await startOrder(env,b));
    if(url.pathname==="/status")return json(await status(env,b,ctx));
    if(url.pathname==="/cancel")return json(await cancel(env,b));

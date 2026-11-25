@@ -14,7 +14,7 @@ SHIPPO_ENABLED = "no"
 SHIPPO_COUNTRIES = "US"
 SHIPPO_PACKAGING_VERIFIED = "no"
 # Sample test measurements only.
-SHIPPO_PACKAGE_JSON = '{"length":6,"width":6,"baseHeight":0.75,"discHeight":0.45,"baseWeight":2,"discWeight":4,"packagingCents":0,"insuranceCents":0,"trackingCents":0}'
+SHIPPO_PACKAGE_JSON = '{"length":7,"width":6,"baseHeight":0.5,"discHeight":0.25,"baseWeight":1,"discWeight":2,"packagingCents":0,"insuranceCents":0,"trackingCents":0}'
 [[d1_databases]]
 binding = "ORDERS"
 database_name = "princesstg-cd-orders"
