@@ -7,7 +7,7 @@ const fallback={
  .split(" "),
  medium:"bridge puzzle candle rocket lemon kitten marble velvet silver mushroom jungle pepper shadow blanket pencil keyboard castle glacier thunder lantern meadow pumpkin compass crystal dragon dolphin spiral island anchor rhythmical whisper squirrel necklace orchard bicycle cinnamon lavender strawberry waterfall"
  .split(" "),
- hard:"why cry try dry fly shy sky spy gym myth lynx crypt glyph rhythm nymph hymn shyly spry slyly tryst fizz buzz jazz zigzag quiz quizzical quartz queue xylophone zephyr sphinx jinx jazzy awkward knapsack twitch twitchy quirk quirky fuzzy dizzy wryly gypsyless".split(" ").filter(w=>w!=="gypsyless")
+ hard:"why cry try dry fly shy sky spy gym myth lynx crypt glyph rhythm nymph hymn shyly spry slyly tryst fizz buzz jazz zigzag quiz quizzical quartz queue xylophone zephyr sphinx jinx jazzy awkward knapsack twitch twitchy quirk quirky fuzzy dizzy wryly".split(" ")
 };
 const blocked=/^(?:fuck|shit|bitch|cunt|dick|pussy|porn|nigg|slut|whore|rape|fagg|asshole|cock|damn|sex|hitler|nazi)/i;
 const cache=new Map();
