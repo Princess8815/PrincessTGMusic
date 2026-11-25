@@ -1,0 +1,21 @@
+name = "princesstg-cd-store-live"
+main = "worker.js"
+compatibility_date = "2026-11-24"
+
+[vars]
+FIREBASE_PROJECT = "music-and-poetry"
+STORE_MODE = "live"
+LIVE_READY = "no"
+ALLOWED_ORIGINS = "https://princesstgcreations.pages.dev"
+SHIPPING_ZONES = '[{"country":"US","state":"WI","city":"*","firstCents":500,"extraCents":100}]'
+CD_TAX_CODE = "txcd_99999999"
+REWARD_FIREBASE_PROJECT = "music-and-poetry"
+ADMIN_TEST_TIDE = "no"
+
+[[d1_databases]]
+binding = "ORDERS"
+database_name = "princesstg-cd-orders-live"
+database_id = "47570956-e91a-40a7-b550-48488934be12"
+
+[triggers]
+crons = ["*/15 * * * *"]
