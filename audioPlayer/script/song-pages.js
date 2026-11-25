@@ -364,10 +364,9 @@ async function initializeSongPage() {
 
   if (!pageId) {
     setText("songTitle", "Song Not Found");
-    setText("songStatus",publicError(null,"PTG-008"));
     setText(
       "songStatus",
-      "No song ID was provided."
+      publicError(null,"PTG-008")
     );
 
     return;
@@ -386,10 +385,9 @@ async function initializeSongPage() {
 
     if (!song) {
       setText("songTitle", "Song Not Found");
-    setText("songStatus",publicError(null,"PTG-008"));
       setText(
         "songStatus",
-        "This song does not exist."
+        publicError(null,"PTG-008")
       );
 
       return;
