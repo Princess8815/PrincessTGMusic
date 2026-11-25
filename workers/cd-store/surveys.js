@@ -17,6 +17,16 @@ const unpack=item=>{
 };
 const hash=async data=>Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(data))),n=>n.toString(16).padStart(2,"0")).join("");
 
+// Only the test survey endpoint accepts this project's changing Pages previews.
+// Production and checkout keep the explicit existing origin allowlist.
+export function surveyPreviewOrigin(env,origin){
+ if(env.STORE_MODE!=="test"||!env.SURVEY_PREVIEW_HOST)return false;
+ try{
+  const url=new URL(origin),suffix="."+env.SURVEY_PREVIEW_HOST;
+  return url.origin===origin&&url.protocol==="https:"&&!url.port&&url.hostname.endsWith(suffix)&&/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(url.hostname.slice(0,-suffix.length));
+ }catch{return false;}
+}
+
 // Identity stays on account reward records. Answer documents contain no account
 // identifiers, tokens, response-to-account links, IP addresses or precise dates.
 export async function submitSurvey(env,input){

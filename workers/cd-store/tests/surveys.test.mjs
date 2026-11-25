@@ -90,4 +90,16 @@ test("The HTTP route enforces origins and returns only public error codes",async
  const long=await call("https://example.test",submission({answers:Object.fromEntries(QUESTIONS_TEXT.map(key=>[key,"A".repeat(2000)]))}));assert.equal(long.status,200);
 });
 const QUESTIONS_TEXT=["q08","q11","q12","q13","q14","q16","q17","q18"];
+test("Changing project previews reach test surveys without widening production or checkout access",async()=>{
+ const previewEnv={...env,STORE_MODE:"test",SURVEY_PREVIEW_HOST:"princesstgcreations.pages.dev"};
+ const check=async(origin,mode="test",path="/surveys/submit")=>worker.fetch(new Request("https://worker.test"+path,{method:"OPTIONS",headers:{Origin:origin}}),{...previewEnv,STORE_MODE:mode},{});
+ for(const origin of ["https://2226eecb.princesstgcreations.pages.dev","https://feature-clean-shop-errors-20.princesstgcreations.pages.dev"]){
+  const response=await check(origin);assert.equal(response.status,204);assert.equal(response.headers.get("Access-Control-Allow-Origin"),origin);
+  assert.equal((await check(origin,"live")).status,403);
+  assert.equal((await check(origin,"test","/checkout")).status,403);
+ }
+ for(const origin of ["https://princesstgcreations.pages.dev.evil.test","https://another-project.pages.dev","https://nested.branch.princesstgcreations.pages.dev","http://branch.princesstgcreations.pages.dev","https://branch.princesstgcreations.pages.dev:444","https://branch.princesstgcreations.pages.dev/path","not-an-origin"]){
+  const response=await check(origin);assert.equal(response.status,403);assert.equal(response.headers.get("Access-Control-Allow-Origin"),null);
+ }
+});
 test.after(()=>{globalThis.fetch=originalFetch;});

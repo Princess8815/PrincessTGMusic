@@ -5,7 +5,7 @@ import {refundEvents,intentFromRefundEvent,syncRefunds,retryRefunds} from "./ref
 import {shippingEnabled,settings as shippingSettings,getRates,selectedRate,latestTestDiagnostics} from "./shipping.js";
 import {CD_PROFILE,readProduct,packFor,catalog,saveCatalog} from "./merchandise.js";
 import {inventoryList,inventoryLines,processingFor,saveInventory,orderStage,fulfillmentOrders} from "./inventory.js";
-import {submitSurvey} from "./surveys.js";
+import {submitSurvey,surveyPreviewOrigin} from "./surveys.js";
 import {publicError,errorCode} from "../../script/site-errors.js";
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status});};
 const str=(v,max,required=true)=>{if(typeof v!=="string"||v.length>max||required&&!v.trim())fail("Please complete the shipping address.");return v.trim();};
@@ -265,7 +265,7 @@ async function status(env,b,ctx){
 async function body(req,max=20000){const raw=await req.text();if(raw.length>max)fail("Request too large.",413);try{return JSON.parse(raw);}catch{fail("Invalid JSON.");}}
 export default {
  async fetch(req,env,ctx){
-  const url=new URL(req.url),origin=req.headers.get("Origin")||"",allowed=(env.ALLOWED_ORIGINS||"").split(",").map(x=>x.trim()).includes(origin);
+  const url=new URL(req.url),origin=req.headers.get("Origin")||"",allowed=(env.ALLOWED_ORIGINS||"").split(",").map(x=>x.trim()).includes(origin)||(url.pathname==="/surveys/submit"&&surveyPreviewOrigin(env,origin));
   const headers={"Content-Type":"application/json","Cache-Control":"no-store","Vary":"Origin"};
   if(allowed)Object.assign(headers,{"Access-Control-Allow-Origin":origin,"Access-Control-Allow-Methods":"GET, POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type"});
   const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers});

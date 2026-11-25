@@ -126,6 +126,8 @@ npx wrangler deploy --config wrangler.toml
 npx wrangler deploy --config wrangler.live.toml
 ```
 
-No new secrets or D1 migration are required. Existing service-account permissions must allow Firestore document reads and commits. Missing configuration fails closed with a public error code. Preview/legacy/local site origins use the test Worker and require the TEST checkbox. The existing allowed-origin lists still apply; add an exact preview origin when needed. There is no coin spending or cash value feature in this change.
+No new secrets or D1 migration are required. Existing service-account permissions must allow Firestore document reads and commits. Missing configuration fails closed with a public error code. Preview/legacy/local site origins use the test Worker and require the TEST checkbox. The test survey endpoint accepts HTTPS deployment and branch previews under the configured `SURVEY_PREVIEW_HOST`; changing preview addresses need no configuration edits. Production, checkout and other routes keep their explicit origin allowlists. There is no coin spending or cash value feature in this change.
+
+Normal Pages updates deploy automatically. Run the two Worker deploy commands above when files under `workers/cd-store` or their imported shared modules change. Pull the latest PR branch first; publishing Pages alone does not update the survey save endpoint.
 
 Admin > Surveys reads all responses with staff-only rules, loads pages of 100, and downloads every page, including tests, regardless of the display filter. Each response starts on a new page in one native `.docx`. The public hub is `pages/research-surveys.html`; balances also appear in Profile > Overview.
