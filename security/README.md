@@ -1,5 +1,7 @@
 `firestore.rules` is the full supplied rules file with the marked Research & Surveys block added. Existing rules outside that block are preserved. Publish it to the `music-and-poetry` project before using the survey. The trusted service performs submissions; browsers can only read their own reward and balance, while active administrators/owners can read anonymous answers.
 
+The Worker's OAuth service account is authorized by Google Cloud IAM, separately from these client rules. Its assigned role must include `datastore.entities.get`, `datastore.entities.create`, and `datastore.entities.update`. A TEST save also needs update access for the atomic account-version guard. A `Save answers / 403 / PERMISSION_DENIED` diagnostic requires checking that service-account role and its binding, rather than allowing browser writes. See the targeted troubleshooting steps in `workers/cd-store/README.md`. The local emulator tests do not validate production IAM permissions.
+
 Run normal regression tests from the repository root:
 
 ```sh

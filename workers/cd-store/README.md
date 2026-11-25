@@ -39,7 +39,7 @@ Paste the Worker HTTPS URL into script/store-config.js, and set ALLOWED_ORIGINS 
 ## 3. Purchase-only collectible security
 Shelly is an ordinary store-visit discovery, saved using the existing client-side collection flow. Tide is the only purchase-exclusive collectible and is revealed in rainbow colors on the verified order confirmation screen. Test purchases show Tide but do not grant production rewards. The Worker checks the Stripe PaymentIntent's amount, currency, environment and order ID. A signed-in buyer's verified Firebase ID token binds the order to their UID. A guest may claim a paid order using the private session order token and a verified Firebase sign-in; each order can bind to only one UID.
 
-The Worker needs a dedicated Google service account to write the paid collectible documents via Firestore REST. Grant only the necessary IAM data access (document get and create permissions; scope to the appropriate database where supported). Do not use Owner or Editor. The Worker must be treated as trusted infrastructure because service-account access bypasses Firestore client rules. Store the JSON credentials only with:
+The Worker needs a dedicated Google service account to write documents via Firestore REST. Its IAM role must include `datastore.entities.get`, `datastore.entities.create`, and `datastore.entities.update`; scope the binding to the appropriate database where supported. The survey's atomic commit and coin balance need update access, including the account-version guard on TEST saves. The older purchase-only get/create setup is insufficient. Do not use Owner or Editor. The Worker must be treated as trusted infrastructure because service-account access bypasses Firestore client rules. Store the JSON credentials only with:
 ```sh
 npx wrangler secret put FIREBASE_REWARD_SERVICE_ACCOUNT
 ```
@@ -139,3 +139,21 @@ Admin > Code & Terminal appears only for an active `owner`. The page starts with
 All copyable commands start from the `PrincessTGMusic` repository root, including config and SQL paths. The page has search and category filters for deployment, Git, local testing, logs, rules, database setup and music maintenance. Copy buttons copy text only; the page does not execute terminal commands.
 
 The owner-only Check survey save action submits an explicitly marked TEST response with no reward and returns a bounded diagnostic containing the failing step, HTTP status and service error code. The same safe fields appear in Worker logs as `Survey save failed`; answer bodies, account IDs, tokens, service credentials and raw provider error messages are excluded. Public survey errors continue to show only their short PTG reference.
+
+### PTG-711: Save answers / 403 / PERMISSION_DENIED
+
+This diagnostic means the service account's commit is denied by Google Cloud IAM. The account read and owner checks have already succeeded. Client rules intentionally deny browser writes to responses, rewards and wallets; weakening those rules cannot grant an OAuth service account the missing IAM permission.
+
+In Google Cloud project `music-and-poetry`, find the service account used by `FIREBASE_REWARD_SERVICE_ACCOUNT` and inspect its assigned custom role. Ensure the role includes these three permissions, preserving any other required permissions:
+
+```text
+datastore.entities.get
+datastore.entities.create
+datastore.entities.update
+```
+
+For an existing custom role, use IAM & Admin > Roles > Custom, open the assigned role, choose Edit role > Add permissions, add the missing permission(s), and save with Update. Check that the edited role is assigned to the Worker's actual service-account principal. If the test and live secrets refer to different principals, verify both bindings. Existing IAM conditions and deny policies also apply; do not broaden them without checking their intended scope.
+
+Allow up to five minutes for permission caching, then retry Code & Terminal > Check survey save. Editing a role on the same service-account principal does not require rotating its key, changing browser rules, or redeploying a Worker. IAM is not simulated by the local database emulator, so passing emulator tests does not prove production IAM access.
+
+References: [Firestore IAM method permissions](https://firebase.google.com/docs/firestore/security/iam), [REST authorization](https://firebase.google.com/docs/firestore/use-rest-api), [Edit a custom role](https://docs.cloud.google.com/iam/docs/creating-custom-roles#editing_an_existing_custom_role).
