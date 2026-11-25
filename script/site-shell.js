@@ -172,6 +172,8 @@ const GROUPS=[
     ["Accidental Songwriter","pages/Accidental-Songwriters-Challenge.html","challenges"],
     ["Poetry","pages/poems-home.html","poetry"],
     ["Stories","arts/artsLanding.html","stories"]]},
+  {title:"Games and More",links:[
+    ["Hanggirl","pages/hanggirl.html","challenges"]]},
   {title:"Research & Surveys",links:[
     ["Surveys","pages/research-surveys.html","docs"]]},
   {title:"Productivity",links:[

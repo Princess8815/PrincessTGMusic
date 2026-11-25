@@ -22,6 +22,17 @@ service cloud.firestore {
     }
     // END Research & Surveys.
 
+    // Hanggirl: the authoritative answer and counters are Worker-only.
+    match /users/{uid}/privateGames/{gameId} {
+      allow read, write: if false;
+    }
+    match /users/{uid}/trophies/{trophyId} {
+      allow get, list: if isOwner(uid);
+      allow create, update, delete: if false;
+    }
+    // Hanggirl axolotl IDs deliberately remain absent from the existing client-create allowlist.
+
+
 
   match /albums/{albumId} {
   allow read: if true;

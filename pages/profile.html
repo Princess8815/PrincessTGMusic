@@ -19,6 +19,7 @@
   <script type="module" src="../script/profile-playlists.js"></script>
   <script type="module">import {mountReefCollection} from "../script/reef-collection.js";mountReefCollection();</script>
   <script type="module" src="../script/site-mail.js"></script>
+  <script type="module" src="../script/hanggirl-collectibles.js"></script>
   <link rel="stylesheet" href="../styles/site-mail.css">
 
   <script
@@ -332,7 +333,10 @@
       <section class="profile-card profile-panel" id="profile-panel-collections" role="tabpanel" aria-labelledby="profile-tab-collections" data-profile-panel="collections" hidden>
         <h2>Axolotl collection</h2><p>Explore PrincessTG and meet the little reef residents. Every new friend reveals a mystery slot in your collection.</p>
         <p id="reef-collection-status" role="status" aria-live="polite">Loading your collection…</p>
+        <div role="group" aria-label="Collection type" style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><button type="button" id="show-axolotls" aria-pressed="true">Axolotls</button><button type="button" id="show-trophies" aria-pressed="false">Trophies</button></div>
         <div id="reef-collection-grid" class="reef-collection-grid"></div>
+        <section id="trophy-panel" hidden><h2>Trophies</h2><p>Skill-based achievements. Hover or focus a trophy for its unlock requirement.</p><p id="trophy-status" role="status"></p><div id="trophy-grid" class="reef-collection-grid"></div></section>
+        <script type="module">const a=document.getElementById("show-axolotls"),t=document.getElementById("show-trophies");function show(trophies){a.setAttribute("aria-pressed",String(!trophies));t.setAttribute("aria-pressed",String(trophies));document.getElementById("reef-collection-grid").hidden=trophies;document.getElementById("reef-collection-status").hidden=trophies;document.getElementById("trophy-panel").hidden=!trophies;}a.onclick=()=>show(false);t.onclick=()=>show(true);</script>
       </section>
       <section class="profile-card profile-panel" id="profile-panel-email" role="tabpanel" aria-labelledby="profile-tab-email" data-profile-panel="email" hidden>
         <h2>Email Address</h2>

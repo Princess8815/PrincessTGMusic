@@ -1,0 +1,22 @@
+
+.hg-main{max-width:940px;margin:24px auto;padding:clamp(12px,3vw,28px);font-family:system-ui,sans-serif;line-height:1.55}
+.hg-main [hidden],#trophy-grid [hidden]{display:none!important}
+.hg-main h1{font-size:clamp(2rem,5vw,3.4rem);margin:.15em 0;color:var(--ptg-highlight)}
+.hg-kicker{text-transform:uppercase;letter-spacing:.14em;font-size:.78rem;color:var(--ptg-muted)}
+.hg-card{margin:16px 0;border:1px solid var(--ptg-border);border-radius:18px;padding:clamp(14px,3vw,26px);background:var(--ptg-secondary);color:var(--ptg-text)}
+.hg-options{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:16px 0}
+.hg-main button,.hg-main select{font:inherit;border:1px solid var(--ptg-border);border-radius:9px;padding:9px 13px;min-height:44px;background:var(--ptg-raised);color:var(--ptg-on-raised);cursor:pointer}
+.hg-main #hg-start,.hg-main #hg-login{background:var(--ptg-primary);color:var(--ptg-on-primary);font-weight:700}
+.hg-main button:disabled,.hg-main select:disabled{opacity:.56;cursor:default}
+.hg-main button:focus-visible,.hg-main select:focus-visible,.hg-trophy:focus-visible{outline:3px solid var(--ptg-highlight);outline-offset:3px}
+.hg-stage{display:flex;gap:24px;align-items:center;flex-wrap:wrap;justify-content:center;text-align:center}
+.hg-word{font:700 clamp(1.25rem,4vw,2.2rem)/1.9 monospace;letter-spacing:.14em;overflow-wrap:anywhere;max-width:100%;text-transform:uppercase}
+.hg-keyboard{display:grid;grid-template-columns:repeat(auto-fit,minmax(43px,1fr));gap:7px;margin-top:16px}
+.hg-keyboard button{font-weight:700;padding:5px}
+.hg-keyboard button[data-hit=true]{border:2px solid #58cdb0}
+.hg-keyboard button[data-hit=false]{border:2px solid #f38c99}
+.hg-main [data-star].dim{opacity:.15}
+.hg-main a{color:var(--ptg-highlight)}
+.hg-trophy p{white-space:normal}
+.hg-trophy{cursor:default}
+@media(max-width:500px){.hg-stage{gap:5px}.hg-stage svg{width:125px;height:125px}.hg-word{font-size:1.3rem}.hg-options{align-items:stretch}.hg-keyboard{grid-template-columns:repeat(6,minmax(0,1fr))}}

@@ -6,6 +6,7 @@ import {shippingEnabled,settings as shippingSettings,getRates,selectedRate,lates
 import {CD_PROFILE,readProduct,packFor,catalog,saveCatalog} from "./merchandise.js";
 import {inventoryList,inventoryLines,processingFor,saveInventory,orderStage,fulfillmentOrders} from "./inventory.js";
 import {submitSurvey,surveyPreviewOrigin} from "./surveys.js";
+import {playHanggirl} from "./hanggirl.mjs";
 import {publicError,errorCode} from "../../script/site-errors.js";
 import {ownerTools} from "./owner-tools.js";
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status});};
@@ -279,6 +280,7 @@ export default {
    if(req.method!=="POST")fail("Not found.",404);
    const b=await body(req,url.pathname==="/surveys/submit"?80000:20000);
    if(url.pathname==="/surveys/submit")return json(await submitSurvey(env,b));
+   if(url.pathname==="/games/hanggirl")return json(await playHanggirl(env,b));
    if(url.pathname==="/owner/terminal-commands")return json(await ownerTools(env,b));
    if(url.pathname==="/shipping-quotes")return json(await shippingQuote(env,b));
    if(url.pathname==="/shipping-admin")return json(await shippingAdmin(env,b));
