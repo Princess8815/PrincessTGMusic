@@ -11,6 +11,6 @@ REWARD_FIREBASE_PROJECT = ""
 [[d1_databases]]
 binding = "ORDERS"
 database_name = "princesstg-cd-orders"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "daa0d06a-9454-4437-9640-3ada826e73b1"
 [triggers]
 crons = ["*/15 * * * *"]

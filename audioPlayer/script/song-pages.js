@@ -1,3 +1,4 @@
+import {songAlbums} from "../../script/song-albums.js";
 
 import {
   loadSong
@@ -397,7 +398,7 @@ async function initializeSongPage() {
 
     setText("songTitle", song.title);
     setText("songDescription", song.description);
-    setText("songAlbum", song.album, "Unknown");
+    setText("songAlbum", songAlbums(song).join(", "), "Unknown");
     setText(
       "songGenre",
       song.genre ||

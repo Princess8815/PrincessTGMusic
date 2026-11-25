@@ -1,3 +1,4 @@
+import {songAlbums} from "../../script/song-albums.js";
 import {db} from "../../script/firebase.js";
 import {loadAllSongs} from "../../script/song-data.js";
 import {wireDragReorder} from "../../script/drag-reorder.js";
@@ -191,7 +192,7 @@ async function load(){
     }catch(error){console.warn("Album metadata unavailable",error);}
     albumName=metadata?.name||"";
     if(!albumName){
-      const names=new Set(songs.flatMap(song=>Array.isArray(song.albums)?song.albums:[song.album]).filter(Boolean));
+      const names=new Set(songs.flatMap(song=>songAlbums(song)).filter(Boolean));
       albumName=[...names].find(name=>slug(name)===albumId)||"";
       if(!albumName){
         try{
@@ -215,7 +216,7 @@ async function load(){
       },{once:true});
     }
     const owned=songs.filter(song=>{
-      const list=Array.isArray(song.albums)?song.albums:[song.album];
+      const list=songAlbums(song);
       return list.some(name=>normalize(name)===normalize(albumName));
     });
     owned.sort((a,b)=>String(a.title).localeCompare(String(b.title)));

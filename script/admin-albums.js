@@ -1,9 +1,10 @@
+import {songAlbums, albumKey, originalRelease, releaseForAlbums, membershipFields, renamedMembership, albumRecordMap} from "./song-albums.js";
 import { auth, db } from "./firebase.js";
 import { verifyStaff } from "./staff-auth.js";
 import { loadAllSongs } from "./song-data.js";
 import {wireDragReorder} from "./drag-reorder.js";
 import {
-  collection, doc, getDoc, getDocs, writeBatch, serverTimestamp
+  collection, doc, getDoc, getDocs, getDocsFromServer, writeBatch, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
 // Existing dropdowns continue to use enums/albums.
@@ -211,9 +212,9 @@ function collect(prefix) {
   };
 }
 async function songMatches(albumName) {
-  const songs = await loadAllSongs("../audioPlayer/audio/song-details.json");
+  const songs = await loadAllSongs("../audioPlayer/audio/song-details.json", {strict:true});
   return songs.filter(song => {
-    const all = Array.isArray(song.albums) ? song.albums : [song.album];
+    const all = songAlbums(song);
     return all.some(value => key(value) === key(albumName));
   });
 }
@@ -260,21 +261,30 @@ async function applyAlbumChanges(originalName, updated, remove = false) {
   }
   // Reordering or editing album artwork must not rewrite every song.
   const mustUpdateSongs = !remove && (
-    key(current) !== key(updated.name) ||
+    current !== updated.name ||
     (originalRecord?.releaseDate || "tbd") !== updated.releaseDate
   );
   if (mustUpdateSongs) {
     // For older songs present only in song-details.json, create a valid
     // Firestore override so no manual JSON edits are necessary.
-    const stored = await getDocs(collection(db, "songs"));
-    const existing = new Set(stored.docs.map(d => d.id));
+    const [stored, rich] = await Promise.all([getDocsFromServer(collection(db,"songs")),getDocsFromServer(collection(db,"albums"))]);
+    const existing = new Map(stored.docs.map(d => [d.id,d.data()]));
+    const dates=albumRecordMap(rich);
+    dates.delete(albumKey(current));
+    dates.set(albumKey(updated.name),updated);
     const me = auth.currentUser;
     for (const song of matches) {
       const id = song.pageId || slug(song.title);
       const ref = doc(db, "songs", id);
+      const liveSong=existing.has(id)?{...song,...existing.get(id)}:song;
+      const names=renamedMembership(liveSong,current,updated.name);
+      if(!songAlbums(liveSong).some(name=>albumKey(name)===albumKey(current)))continue;
+      if(names.length>3)throw Error("Song "+song.title+" has more than three album memberships; resolve before saving.");
+      const originalReleaseDate=originalRelease(liveSong);
       const changes = {
-        album: updated.name,
-        releaseDate: updated.releaseDate,
+        ...membershipFields(names),
+        originalReleaseDate,
+        releaseDate:releaseForAlbums(names,originalReleaseDate,dates),
         updatedAt: serverTimestamp()
       };
       if (existing.has(id)) {

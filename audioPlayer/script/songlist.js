@@ -1,3 +1,4 @@
+import {songAlbums} from "../../script/song-albums.js";
 /* ==========================================
    LEGACY SONG LINK NOTICE
    Older /audioPlayer/pages/<slug>.html links remain usable, but
@@ -156,7 +157,7 @@ console.log("========================================");
       if (lyrics) lyrics.textContent = song.lyrics || "No lyrics available.";
       if (titleElement) titleElement.textContent = song.title;
       if (desc) desc.textContent = song.description || "";
-      if (album) album.textContent = song.album || "";
+      if (album) album.textContent = songAlbums(song).join(", ");
       if (date) date.textContent = song.releaseDate || "";
 
       updateSongMeta({
