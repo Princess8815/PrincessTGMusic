@@ -1,5 +1,5 @@
 
-name: Update Audio Index and Publish Website
+name: Update Audio Index and Publish Legacy Redirects
 
 on:
   push:
@@ -19,6 +19,7 @@ concurrency:
 
 jobs:
   publish:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
     environment:
@@ -77,13 +78,19 @@ jobs:
         uses: actions/configure-pages@v5
 
       # ====================================
-      # UPLOAD COMPLETE WEBSITE
+      # BUILD AND UPLOAD LEGACY REDIRECTS
       # ====================================
 
-      - name: Upload website files
+      - name: Verify redirect and metadata behavior
+        run: node tests/site-migration.test.cjs
+
+      - name: Build legacy redirect site
+        run: node build-site.cjs legacy
+
+      - name: Upload legacy redirect files
         uses: actions/upload-pages-artifact@v4
         with:
-          path: .
+          path: dist
 
       # ====================================
       # DEPLOY WEBSITE
@@ -101,7 +108,7 @@ jobs:
       # DEPLOY WEBSITE
       # ====================================
 
-      - name: Publish website
+      - name: Publish legacy redirects
         id: deployment
         uses: actions/deploy-pages@v4
 
