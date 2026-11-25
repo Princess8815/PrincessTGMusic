@@ -13,6 +13,7 @@ ADMIN_TEST_TIDE = "yes"
 SHIPPO_ENABLED = "yes"
 SHIPPO_COUNTRIES = "US"
 SHIPPO_PACKAGING_VERIFIED = "no"
+SHIPPO_PACKAGE_JSON = '{"length":7,"width":6,"baseHeight":0.5,"discHeight":0.25,"baseWeight":1,"discWeight":2,"packagingCents":0,"insuranceCents":0,"trackingCents":0}'
 # Sample test measurements only.
 SHIPPO_PACKAGE_JSON = '{"length":7,"width":6,"baseHeight":0.5,"discHeight":0.25,"baseWeight":1,"discWeight":2,"packagingCents":0,"insuranceCents":0,"trackingCents":0}'
 [[d1_databases]]
