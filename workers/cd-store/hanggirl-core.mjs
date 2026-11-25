@@ -17,7 +17,7 @@ const rare=new Set("jqxz"), uncommon=new Set("kvwfybgph");
 const commonPairs=/th|he|in|er|an|re|on|at|en|nd|st|es|or|te|of|ed|is|it|al|ar|ng|ch|sh|oo|ee|ea|ou|ai|ie|tion/g;
 export function difficultyScore(word,frequency=10){
  const unique=new Set(word), vowels=[...unique].filter(c=>"aeiou".includes(c)).length;
- const rarity=[...unique].reduce((n,c)=>n+(rare.has(c)?3:uncommon.has(c)?1:0),0)/unique.size;
+ const rarity=[...unique].reduce((n,c)=>n+(rare.has(c)?5:uncommon.has(c)?1:0),0)/unique.size;
  const familiarity=frequency>=40?0:frequency>=8?1:frequency>=1?2:3;
  return rarity*2 + (unique.size<=3?2:unique.size<=5?1:0) +
   (vowels===0?5:vowels===1?1.5:0)+familiarity -
