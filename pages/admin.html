@@ -30,6 +30,7 @@
   <script type="module" src="../script/admin-inbox.js"></script>
   <script type="module" src="../script/admin-newsletter.js"></script>
   <script type="module" src="../script/admin-tabs.js"></script>
+  <script type="module" src="../script/admin-orange-levels.js"></script>
   <script type="module" src="../script/admin-starlight.js"></script><link rel="stylesheet" href="../styles/starlight.css">
   <script type="module" src="../script/admin-code.js"></script>
   <link rel="stylesheet" href="../styles/admin-code.css">
@@ -372,6 +373,7 @@
                 aria-selected="false">Accounts</button>
         <button type="button" role="tab" id="admin-main-tab-surveys" data-admin-tab="surveys"
                 aria-controls="admin-main-panel-surveys" aria-selected="false">Surveys</button>
+        <button type="button" role="tab" id="admin-main-tab-orange" data-admin-tab="orange" aria-controls="admin-main-panel-orange" aria-selected="false">Orange Levels</button>
         <button type="button" role="tab" id="admin-main-tab-starlight" data-admin-tab="starlight" aria-controls="admin-main-panel-starlight" aria-selected="false">Starlight Store</button>
       </nav>
 
@@ -1486,6 +1488,7 @@
       </section>
 
 
+      <section id="admin-main-panel-orange" class="admin-main-panel" role="tabpanel" aria-labelledby="admin-main-tab-orange" hidden><div class="admin-card"><h2>Orange Knock Down campaign</h2><p>Publish official levels and choose which level introduces each mechanic. Existing attempts remain unchanged.</p><p><a href="orange-level-editor.html?official=1">Open official level editor</a></p><form id="orange-unlock-form"><div id="orange-unlock-fields"></div><button type="submit" id="orange-unlock-save" disabled>Save unlock schedule</button></form><p id="orange-admin-status" role="status"></p></div></section>
       <section id="admin-main-panel-starlight" class="admin-main-panel sl-admin" role="tabpanel" aria-labelledby="admin-main-tab-starlight" hidden>
        <div class="admin-card"><h2>Starlight Store administration</h2><p id="sl-admin-status" role="status">Checking staff access…</p>
         <div id="sl-admin-body" hidden>

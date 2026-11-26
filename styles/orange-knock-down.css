@@ -203,3 +203,5 @@ body #ok-area:is(:fullscreen,.ok-expanded){
  #ok-area:is(:fullscreen,.ok-expanded) #ok-arena-team .ok-quick{min-height:44px;padding:2px 4px}
  #ok-area:is(:fullscreen,.ok-expanded) #ok-arena-team .ok-quick svg{width:28px;height:25px}
 }
+
+#ok-stars{font-size:clamp(1.4rem,4vw,2.4rem);letter-spacing:.12em;color:#ffdb72;text-shadow:0 2px 4px #3d240c}#ok-area:is(:fullscreen,.ok-expanded) #ok-victory-feature:not([hidden]){display:grid!important;gap:3px;max-height:35vh;overflow:auto}#ok-area:is(:fullscreen,.ok-expanded) #ok-overlay{gap:6px;overflow:auto}#ok-area.ok-test-mode .ok-feature-panel,#ok-area.ok-test-mode .ok-note{display:none!important}#ok-area .ok-heading nav{display:flex;flex-wrap:wrap;gap:5px;font-size:.85rem}
