@@ -9,3 +9,5 @@
 - Manual live, browser and sound testing still required.
 
 - Fullscreen expands the whole game including score, wallet, controls and notifications. Escape or the fullscreen toggle exits; unsupported browser fullscreen falls back to a full-window overlay. Hold either arrow key to move repeatedly, or use A/D, lane buttons, or touch. The canvas scales to the available screen with device-pixel-ratio rendering. Browser testing is required.
+
+- The normal game now fits the measured remaining viewport beneath the site header; a compact score row and controls leave the canvas the rest of the available space. Very short windows may still scroll to preserve a usable minimum height. Fullscreen uses the same height-constrained layout.

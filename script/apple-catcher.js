@@ -16,7 +16,9 @@ function controls(){
 }
 function draw(){
  const w=600,h=420,ground=350;
- const rect=canvas.getBoundingClientRect(),ratio=Math.min(3,window.devicePixelRatio||1),pw=Math.max(1,Math.round(rect.width*ratio)),ph=Math.max(1,Math.round(rect.height*ratio));
+ const width=Math.max(1,Math.floor(Math.min(boardWrap.clientWidth,boardWrap.clientHeight*10/7))),height=Math.max(1,Math.floor(width*7/10));
+ const cw=width+"px",ch=height+"px";if(canvas.style.width!==cw)canvas.style.width=cw;if(canvas.style.height!==ch)canvas.style.height=ch;
+ const ratio=Math.min(3,window.devicePixelRatio||1),pw=Math.max(1,Math.round(width*ratio)),ph=Math.max(1,Math.round(height*ratio));
  if(canvas.width!==pw||canvas.height!==ph){canvas.width=pw;canvas.height=ph;}
  ctx.setTransform(canvas.width/w,0,0,canvas.height/h,0,0);
  ctx.clearRect(0,0,w,h);ctx.fillStyle="#d7f1cd";ctx.fillRect(0,0,w,h);
@@ -103,7 +105,7 @@ function refreshFullscreen(){
  fullscreenButton.setAttribute("aria-label",active?"Exit fullscreen":"Enter fullscreen");
  const stack=document.getElementById("ptg-toast-stack");
  if(stack)(active?playArea:document.body).append(stack);
- requestAnimationFrame(draw);
+ requestAnimationFrame(fitGame);
 }
 function exitExpanded(){if(!expanded)return;expanded=false;playArea.classList.remove("ac-expanded");document.body.style.overflow=oldOverflow;refreshFullscreen();fullscreenButton.focus({preventScroll:true});}
 fullscreenButton.addEventListener("click",async()=>{
@@ -114,7 +116,29 @@ fullscreenButton.addEventListener("click",async()=>{
  canvas.focus({preventScroll:true});
 });
 document.addEventListener("fullscreenchange",()=>{refreshFullscreen();if(document.fullscreenElement===playArea)canvas.focus({preventScroll:true});});
-if(typeof ResizeObserver!=="undefined")new ResizeObserver(()=>draw()).observe(boardWrap);else window.addEventListener("resize",draw);
+function fitGame(){
+ if(document.fullscreenElement!==playArea&&!expanded){
+  // Reserve only the remaining height below the site's actual header, including
+  // the mobile bar. Document position keeps sizing stable when the user scrolls.
+  const top=playArea.getBoundingClientRect().top+window.scrollY;
+  const viewport=window.visualViewport?.height||window.innerHeight;
+  const room=Math.max(0,Math.floor(viewport-top-8));
+  // Exception for very short windows: preserve a usable board and controls
+  // instead of hiding them. Fullscreen gives these devices more room.
+  const height=Math.max(230,room)+"px";
+  if(playArea.style.getPropertyValue("--ac-fit-height")!==height)playArea.style.setProperty("--ac-fit-height",height);
+ }
+ draw();
+}
+let fitFrame=0;
+function queueFit(){if(!fitFrame)fitFrame=requestAnimationFrame(()=>{fitFrame=0;fitGame();});}
+if(typeof ResizeObserver!=="undefined"){
+ const observer=new ResizeObserver(queueFit);
+ for(const el of [boardWrap,document.querySelector(".ac-game-heading"),document.getElementById("auth-container"),document.querySelector(".ptg-mobile-topbar")])if(el)observer.observe(el);
+}
+window.addEventListener("resize",queueFit);window.visualViewport?.addEventListener("resize",queueFit);
+window.addEventListener("load",queueFit);document.fonts?.ready.then(queueFit);
+queueFit();
 
 document.addEventListener("visibilitychange",()=>{if(document.hidden)held.clear();if(document.hidden&&playing)void save("checkpoint");else if(!document.hidden&&runId&&!game.done&&!busy&&!failed&&!playing&&$("ac-status").textContent.startsWith("Saved. Return"))resume();});
 window.addEventListener("beforeunload",e=>{if(playing||busy||failed){e.preventDefault();e.returnValue="";}});
