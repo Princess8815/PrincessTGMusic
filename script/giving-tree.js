@@ -24,11 +24,11 @@ function build(){
   const card=el(grid,"article","gt-plot"),head=el(card,"header"),title=el(head,"h3"),stats=el(head,"span","gt-stats");title.textContent="Plot "+(i+1);
   const art=el(card,"div","gt-plot-art"),picture=el(art,"div");picture.style.cssText="width:100%;height:100%;position:absolute;inset:0";
   const plant=btn(art,"Plant selected pear",()=>send("plant",{plot:i,fruitId:selected}));
-  const panel=el(card,"div"),state=el(panel,"p","gt-small"),growth=meter(panel,"Growth / fruit"),water=meter(panel,"Water","gt-blue"),fert=meter(panel,"Fertilizer","gt-gold");
+  const panel=el(card,"div","gt-care"),state=el(panel,"p","gt-small"),growth=meter(panel,"Growth / fruit"),water=meter(panel,"Water","gt-blue"),fert=meter(panel,"Fertilizer","gt-gold");
   const controls=el(panel,"div","gt-plot-controls"),w=btn(controls,"Water",()=>send("water",{plot:i}),"gt-water");
   const qty=el(controls,"input");qty.type="number";qty.min="1";qty.step="1";qty.value="1";qty.setAttribute("aria-label","Fertilizer packs for plot "+(i+1));qty.oninput=render;
   const buy=btn(controls,"Fertilize",()=>send("fertilize",{plot:i,quantity:Number(qty.value)}),"gt-fert");
-  const cut=btn(panel,"Cut down mature tree",()=>{if(confirm("Cut down this tree permanently? Its fertilizer and future fruit will be lost."))send("cut",{plot:i});},"gt-cut");
+  const cut=btn(panel,"Cut tree",()=>{if(confirm("Cut down this tree permanently? Its fertilizer and future fruit will be lost."))send("cut",{plot:i});},"gt-cut");
   plots.push({card,title,stats,art,picture,plant,panel,state,growth,water,fert,w,qty,buy,cut,stage:-2});
  }
  for(const kind of ["enemy","boss"]){
@@ -58,7 +58,7 @@ function render(){
   c.w.disabled=!enabled||actual.water===WATER_MS&&t.water===WATER_MS;
   const q=Number(c.qty.value),valid=Number.isSafeInteger(q)&&q>0&&Number.isSafeInteger(q*FERT_COST)&&Number.isSafeInteger(actual.fertilizer+q*FERT_MS);
   c.buy.textContent="Fertilize · "+(valid?fmt(q*FERT_COST):"?")+" ★";c.buy.disabled=!enabled||!valid||wallet<q*FERT_COST;
-  c.cut.disabled=!enabled||st!==3;
+  c.cut.hidden=st!==3;c.cut.disabled=!enabled||st!==3;
  }
  for(const kind of ["enemy","boss"]){
   const c=opponents[kind],op=projected?.[kind],unlocked=!!saved?.[kind==="enemy"?"enemiesUnlocked":"bossesUnlocked"];
@@ -78,7 +78,7 @@ function render(){
   inventorySignature=signature;const inv=$("gt-inventory");inv.replaceChildren();
   for(const p of saved?.inventory||[]){
    const b=btn(inv,"",()=>{selected=selected===p.id?null:p.id;render();},"gt-pear");b.innerHTML=pearArt;
-   const text=el(b,"small");text.textContent=fmt(p.attack)+" ATK · "+fmt(p.defense)+" DEF";b.setAttribute("aria-pressed",String(selected===p.id));b.setAttribute("aria-label","Pear attack "+p.attack+", defense "+p.defense);b.disabled=!enabled;
+   const text=el(b,"small","gt-pear-stats");const attack=el(text,"span"),defense=el(text,"span");attack.textContent="ATK "+fmt(p.attack);defense.textContent="DEF "+fmt(p.defense);b.setAttribute("aria-pressed",String(selected===p.id));b.setAttribute("aria-label","Pear attack "+p.attack+", defense "+p.defense);b.disabled=!enabled;
   }
  }
 }

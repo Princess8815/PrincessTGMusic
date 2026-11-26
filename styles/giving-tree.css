@@ -20,3 +20,63 @@
    shared game button rules. Only its label is painted. */
 .gt-main .gt-plot-art button.ptg-theme-exempt,.gt-main .gt-plot-art button.ptg-theme-exempt:hover,.gt-main .gt-plot-art button.ptg-theme-exempt:disabled{background:transparent!important;color:#263d23!important;border:0!important;box-shadow:none;text-shadow:0 1px #fff4dc}
 .gt-main .gt-plot-art button.ptg-theme-exempt:focus-visible{outline:3px solid #fff!important;outline-offset:-5px;box-shadow:inset 0 0 0 6px #304533}
+
+/* Inventory is a real third panel, not content below the entire garden.
+   Normal/narrow layouts keep the original two-column garden. */
+.gt-layout{align-items:start}
+.gt-layout>.gt-inventory-panel{grid-column:1/-1;margin-top:0}
+.gt-care{display:grid;gap:3px}
+.gt-pear-stats{display:flex;gap:5px;justify-content:center;flex-wrap:wrap;line-height:1.15}
+.gt-pear-stats span{white-space:nowrap}
+.gt-main .gt-inventory button.gt-pear{min-width:0}
+.gt-main .gt-inventory .gt-pear[aria-pressed=true]{border-width:2px;box-shadow:inset 0 0 0 1px #cd8c29}
+.gt-main:is(:fullscreen,.gt-expanded){padding:6px 10px}
+.gt-main:is(:fullscreen,.gt-expanded) .gt-heading h1{font-size:1.35rem;line-height:1.2}
+.gt-main:is(:fullscreen,.gt-expanded) .gt-heading p{display:none}
+.gt-main:is(:fullscreen,.gt-expanded) .gt-summary{margin:5px 0;gap:5px}
+.gt-main:is(:fullscreen,.gt-expanded) .gt-summary>div{padding:4px 8px;display:flex;justify-content:space-between;align-items:center;gap:5px}
+.gt-main:is(:fullscreen,.gt-expanded) .gt-summary strong{font-size:1.04rem}
+.gt-main:is(:fullscreen,.gt-expanded) #gt-status{margin:3px 0;line-height:1.15}
+.gt-main:is(:fullscreen,.gt-expanded) .gt-help{margin-top:3px}
+.gt-main:is(:fullscreen,.gt-expanded) .gt-help[open]{max-height:22vh;overflow:auto}
+.gt-main:is(:fullscreen,.gt-expanded) .gt-layout{gap:6px}
+.gt-main:is(:fullscreen,.gt-expanded) .gt-layout>section{padding:6px}
+.gt-main:is(:fullscreen,.gt-expanded) h2{font-size:1rem;margin:2px 0 4px}
+.gt-main:is(:fullscreen,.gt-expanded) .gt-hint,.gt-main:is(:fullscreen,.gt-expanded) .gt-small{margin:1px 0 3px;font-size:.75rem;line-height:1.2}
+.gt-main:is(:fullscreen,.gt-expanded) .gt-plot{padding:5px;gap:3px}
+.gt-main:is(:fullscreen,.gt-expanded) .gt-plot-art{height:clamp(52px,11vh,92px)}
+.gt-main:is(:fullscreen,.gt-expanded) .gt-plots{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;align-items:start}
+.gt-main:is(:fullscreen,.gt-expanded) .gt-meter{height:5px}
+.gt-main:is(:fullscreen,.gt-expanded) .gt-meter-label{font-size:.69rem;line-height:1.15}
+.gt-main:is(:fullscreen,.gt-expanded) .gt-care{gap:2px}
+.gt-main:is(:fullscreen,.gt-expanded) .gt-plot-controls{gap:3px;align-items:stretch}
+.gt-main:is(:fullscreen,.gt-expanded) .gt-plot-controls input{width:46px;padding:2px;font-size:.78rem}
+.gt-main:is(:fullscreen,.gt-expanded) button.ptg-theme-exempt{min-height:27px;padding:3px 5px;font-size:.76rem;line-height:1.2}
+.gt-main:is(:fullscreen,.gt-expanded) .gt-opponent{padding:5px;gap:3px;margin:0 0 5px}
+.gt-main:is(:fullscreen,.gt-expanded) .gt-opponent-art{height:clamp(42px,8vh,66px)}
+.gt-main:is(:fullscreen,.gt-expanded) .gt-opponent-art svg{height:100%;width:92px}
+.gt-main:is(:fullscreen,.gt-expanded) .gt-inventory{gap:3px;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));align-content:start}
+.gt-main:is(:fullscreen,.gt-expanded) .gt-inventory button.gt-pear{min-height:42px;display:flex;align-items:center;justify-content:center;gap:3px;padding:3px 2px}
+.gt-main:is(:fullscreen,.gt-expanded) .gt-pear svg{width:21px;height:27px;flex:none}
+.gt-main:is(:fullscreen,.gt-expanded) .gt-pear-stats{display:grid;gap:1px;font-size:.67rem;line-height:1.12;text-align:left;min-width:0}
+.gt-main:is(:fullscreen,.gt-expanded) .gt-pear-stats span{overflow:hidden;text-overflow:ellipsis;max-width:100%}
+/* At desktop sizes, no page-level scrolling: all three areas share one
+   bounded row. Only an individual crowded panel may scroll on short screens. */
+@media(min-width:960px) and (min-height:440px){
+ .gt-main:is(:fullscreen,.gt-expanded){display:flex;flex-direction:column;gap:3px;overflow:hidden}
+ .gt-main:is(:fullscreen,.gt-expanded)>:not(.gt-layout){flex:none}
+ .gt-main:is(:fullscreen,.gt-expanded) .gt-layout{flex:1 1 0;min-height:0;grid-template-columns:minmax(0,1.42fr) minmax(175px,.72fr) minmax(0,1.16fr);align-items:stretch;overflow:hidden}
+ .gt-main:is(:fullscreen,.gt-expanded) .gt-layout>section{min-height:0;overflow:auto;overscroll-behavior:contain}
+ .gt-main:is(:fullscreen,.gt-expanded) .gt-layout>.gt-inventory-panel{grid-column:auto;display:flex;flex-direction:column;overflow:hidden}
+ .gt-main:is(:fullscreen,.gt-expanded) .gt-inventory-panel>header,.gt-main:is(:fullscreen,.gt-expanded) .gt-inventory-panel>.gt-hint{flex:none}
+ .gt-main:is(:fullscreen,.gt-expanded) .gt-inventory{flex:1 1 0;min-height:0;overflow:auto;overscroll-behavior:contain;padding:2px}
+}
+@media(max-width:959px){
+ .gt-main:is(:fullscreen,.gt-expanded) .gt-layout{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .gt-main:is(:fullscreen,.gt-expanded) .gt-layout>.gt-inventory-panel{grid-column:1/-1;grid-row:1}
+}
+@media(max-width:550px){
+ .gt-main:is(:fullscreen,.gt-expanded) .gt-layout{grid-template-columns:1fr}
+ .gt-main:is(:fullscreen,.gt-expanded) .gt-summary>div{display:block}
+ .gt-main:is(:fullscreen,.gt-expanded) .gt-inventory button.gt-pear{min-height:44px}
+}
