@@ -8,6 +8,8 @@ export const AXOLOTLS={
  sploder:{name:"Sploder",color:"#ffc77c",gill:"#f1855a",description:"A harmless burst knocks nearby oranges loose."},
  sniper:{name:"Sniper",color:"#c5b2f6",gill:"#8874ce",description:"Choose any remaining orange for a guaranteed hit."}
 };
+export const ORANGE_TROPHY=["orange-knock-down-mastery","Orange Knock Down Mastery","Complete level 1,000 in Orange Knock Down."];
+export const hasOrangeMastery=s=>s.cleared>=1000;
 export const ORANGE_AXOLOTLS=[["tangie","Tangie","#ffb75d","#ee7943","orange"]];
 const clamp=(x,lo,hi)=>Math.max(lo,Math.min(hi,x));
 function layoutRandom(seed){let x=seed>>>0;return ()=>{x=(x+0x6d2b79f5)>>>0;let t=x;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;};}

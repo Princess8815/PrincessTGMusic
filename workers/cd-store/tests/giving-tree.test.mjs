@@ -1,7 +1,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import {initialGarden,makeTree,stage,growthWork,advanceGarden,gardenAction,damage,dropQuarters,dropCoins,makeOpponent,fruiterChance,sortedPears,geneticsRandom,INVENTORY_CAP,INVENTORY_MAX,inventoryCapacity,inventoryUpgradeCost,WATER_MS,FERT_MS,FERT_COST,FRUIT_WORK} from "../../../script/giving-tree-core.mjs";
+import {GIVING_TREE_TROPHY,hasGivingTreeMastery,initialGarden,makeTree,stage,growthWork,advanceGarden,gardenAction,damage,dropQuarters,dropCoins,makeOpponent,fruiterChance,sortedPears,geneticsRandom,INVENTORY_CAP,INVENTORY_MAX,inventoryCapacity,inventoryUpgradeCost,WATER_MS,FERT_MS,FERT_COST,FRUIT_WORK} from "../../../script/giving-tree-core.mjs";
 import {gardenWithStorage} from "../giving-tree.mjs";
 const NOW=1700000000000,mid=()=>.5;
 function planted(pear={attack:1,defense:1}){const s=initialGarden(NOW);s.inventory[0]={id:1,...pear};return gardenAction(s,{kind:"plant",plot:0,fruitId:1},NOW,0,mid).state;}
@@ -173,4 +173,20 @@ test("server migrates a legacy garden to a stable genetics seed and settles proj
  const b=await call("plant",2,a.state.revision,{plot:1,fruitId:expected.id});
  assert.equal(b.applied,true);assert.equal(b.state.plots[1].attack,expected.attack);assert.equal(b.state.plots[1].defense,expected.defense);assert.equal(b.wallet,1);
  const retry=await call("plant",2,a.state.revision,{plot:1,fruitId:expected.id});assert.equal(retry.wallet,1);assert.equal(commits,2);assert.equal(b.state.geneticsSeed,a.state.geneticsSeed);
+});
+
+test("boss 50 trophy is awarded atomically on victory or qualifying existing save",async()=>{
+ const root="documents",uid="trophy-test",user="users/"+uid,path=user+"/privateGames/givingTree",dest=user+"/trophies/"+GIVING_TREE_TROPHY[0];
+ const s=initialGarden(NOW);s.geneticsSeed=1;s.bossesUnlocked=true;s.bossesDefeated=49;s.boss=makeOpponent("boss",49);s.boss.hp=1;s.inventory=[{id:1,attack:s.boss.defense+1,defense:s.boss.attack}];
+ assert.equal(hasGivingTreeMastery(s),false);
+ const store=new Map([[user,{updateTime:"1",fields:{status:{stringValue:"active"}}}],[path,{updateTime:"2",fields:{payload:{stringValue:JSON.stringify({state:s})}}}]]);let commits=0;
+ const read=async p=>store.get(p)||null,commit=async writes=>{commits++;for(const w of writes)if(w.update)store.set(w.update.name.slice(root.length+1),{updateTime:String(commits+2),fields:w.update.fields});return true;};
+ const call=(kind,n,revision,extra={})=>gardenWithStorage({read,commit,root,uid,input:{kind,requestId:"00000000-0000-4000-8000-"+String(n).padStart(12,"0"),revision,...extra},clock:()=>NOW,rng:mid});
+ const before=await call("sync",1,0);assert.equal(store.has(dest),false);
+ const win=await call("throw",2,before.state.revision,{target:"boss",fruitId:1});assert.equal(win.state.bossesDefeated,50);assert.ok(win.rewards.includes(GIVING_TREE_TROPHY[0]));assert.ok(store.has(dest));assert.equal(store.has(user+"/axolotls/"+GIVING_TREE_TROPHY[0]),false);
+ const again=await call("throw",2,before.state.revision,{target:"boss",fruitId:1});assert.equal(again.wallet,win.wallet);assert.equal(commits,2);
+ const sync=await call("sync",3,win.state.revision);assert.ok(!sync.rewards.includes(GIVING_TREE_TROPHY[0]));
+ // A legacy save already past the milestone gets its trophy on sync.
+ store.delete(dest);const saved=JSON.parse(store.get(path).fields.payload.stringValue);delete saved.state.boss50TrophyAwarded;saved.state.bossesDefeated=51;store.get(path).fields.payload.stringValue=JSON.stringify(saved);
+ const backfill=await call("sync",4,saved.state.revision);assert.ok(backfill.rewards.includes(GIVING_TREE_TROPHY[0]));assert.ok(store.has(dest));
 });

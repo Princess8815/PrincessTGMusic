@@ -1,7 +1,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import {WIDTH,GROUND,initialOrange,layout,freshLevel,simulateShot,applyOrange,validShot,fruiterChance,tangieChance,FEATURES,featureProgress,DESIGN_NAMES,bouncePad} from "../../../script/orange-knock-down-core.mjs";
+import {ORANGE_TROPHY,hasOrangeMastery,WIDTH,GROUND,initialOrange,layout,freshLevel,simulateShot,applyOrange,validShot,fruiterChance,tangieChance,FEATURES,featureProgress,DESIGN_NAMES,bouncePad} from "../../../script/orange-knock-down-core.mjs";
 import {orangeWithStorage} from "../orange-knock-down.mjs";
 test("starter pack and increasing orchard",()=>{
  const s=initialOrange(123);assert.deepEqual(s.inventory,{aqualily:3,bulky:3,sploder:3,sniper:3});assert.ok(s.board.marina>=5);assert.ok(layout(30,123).branches.length>layout(1,123).branches.length);assert.ok(layout(30,123).branches.some(b=>b.hp===2));assert.deepEqual(layout(10,123),layout(10,123));
@@ -116,4 +116,21 @@ test("two directional pads chain a bank shot around a barrier",()=>{
  const r=simulateShot(map,{hp:[1,1],remaining:[0]},{type:"marina",angle:0,power:90},true);
  const ids=r.events.filter(e=>e.trampoline).map(e=>e.padId);
  assert.ok(ids.includes(0));assert.ok(ids.includes(1));assert.deepEqual(r.hp,[1,1]);
+});
+
+test("orange mastery requires completing level 1000, not entering it, and awards once",async()=>{
+ const root="documents",uid="orange-trophy",user="users/"+uid,path=user+"/privateGames/orangeKnockDown",dest=user+"/trophies/"+ORANGE_TROPHY[0];
+ const s=initialOrange(123);s.level=1000;s.cleared=999;s.board=freshLevel(1000,s.seed);s.board.remaining=[0];
+ assert.equal(hasOrangeMastery(s),false);
+ const store=new Map([[user,{updateTime:"1",fields:{status:{stringValue:"active"}}}],[path,{updateTime:"2",fields:{payload:{stringValue:JSON.stringify({state:s})}}}]]);let commits=0;
+ const read=async p=>store.get(p)||null,commit=async writes=>{commits++;for(const w of writes)if(w.update)store.set(w.update.name.slice(root.length+1),{updateTime:String(commits+2),fields:w.update.fields});return true;};
+ const call=(kind,n,revision,extra={})=>orangeWithStorage({read,commit,root,uid,input:{kind,requestId:"00000000-0000-4000-8000-"+String(n).padStart(12,"0"),revision,...extra},clock:()=>1700000000000,rng:()=>.99});
+ await call("state",1,0);assert.equal(store.has(dest),false);
+ const win=await call("shot",2,0,{shot:{type:"sniper",target:0}});assert.equal(win.state.cleared,1000);assert.equal(win.coins,10);assert.ok(win.rewards.includes(ORANGE_TROPHY[0]));assert.ok(store.has(dest));assert.equal(store.has(user+"/axolotls/"+ORANGE_TROPHY[0]),false);
+ const again=await call("shot",2,0,{shot:{type:"sniper",target:0}});assert.equal(again.wallet,win.wallet);assert.equal(commits,1);
+ const next=await call("next",3,win.state.revision);assert.ok(!next.rewards.includes(ORANGE_TROPHY[0]));
+ // Existing qualifying saves can backfill without changing their action revision.
+ store.delete(dest);const saved=JSON.parse(store.get(path).fields.payload.stringValue);delete saved.state.level1000TrophyAwarded;store.get(path).fields.payload.stringValue=JSON.stringify(saved);
+ const backfill=await call("state",4,saved.state.revision);assert.ok(backfill.rewards.includes(ORANGE_TROPHY[0]));assert.equal(backfill.state.revision,saved.state.revision);assert.ok(store.has(dest));
+ const repeat=await call("state",5,saved.state.revision);assert.equal(repeat.rewards.length,0);assert.equal(commits,3);
 });

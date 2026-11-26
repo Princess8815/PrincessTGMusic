@@ -134,7 +134,7 @@ async function send(kind,extras={},retry=false){
   saved=data.state;wallet=data.wallet;offset=data.serverNow-Date.now();lastSync=Date.now();failed=null;busy=false;
   // render reconciles selection against the newly projected inventory.
   const fx=data.effects||{};
-  for(const id of data.rewards||[])if(!seen.has(id)){seen.add(id);showToast(id==="pearlie"?"You found Pearlie in your pear garden!":"You found Fruiter!");}
+  for(const id of data.rewards||[])if(!seen.has(id)){seen.add(id);showToast(id==="giving-tree-mastery"?"Trophy earned: Giving Tree Mastery!":id==="pearlie"?"You found Pearlie in your pear garden!":"You found Fruiter!");}
   if(fx.coins)showToast("Your garden earned "+fmt(fx.coins)+" Star Coin"+(fx.coins===1?"":"s")+"!");
   status(data.message||(fx.fruits?"Collected "+fmt(fx.fruits)+" pears.":"Garden saved. Growth continues offline."));render();
  }catch(e){if(current!==epoch)return;busy=false;failed=action;status(e.message+" Retry save to recover the same action.");render();}

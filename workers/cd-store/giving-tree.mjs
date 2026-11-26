@@ -1,6 +1,6 @@
 
 import {accessToken,verifyFirebaseIdentity} from "./rewards.js";
-import {initialGarden,gardenAction} from "../../script/giving-tree-core.mjs";
+import {initialGarden,gardenAction,GIVING_TREE_TROPHY,hasGivingTreeMastery} from "../../script/giving-tree-core.mjs";
 const fail=(message,status=400)=>{throw Object.assign(Error(message),{status});};
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const str=v=>({stringValue:v}),integer=v=>({integerValue:String(v)});
@@ -24,6 +24,10 @@ export async function gardenWithStorage({read,commit,root,uid,input,clock=Date.n
   if(input.kind!=="sync"&&input.revision!==state.revision)return {state,serverNow:now,wallet,conflict:true,applied:false,message:"Your garden changed in another tab. Review it and retry.",effects:{coins:0,spent:0,fruits:0,enemies:0,bosses:0},rewards:[]};
   const result=gardenAction(state,input,now,wallet,rng),next=result.state,fx=result.effects,rewards=[];
   for(const id of fx.rewards)if(!await read(user+"/axolotls/"+id))rewards.push(id);
+  if(hasGivingTreeMastery(next)&&!next.boss50TrophyAwarded){
+   if(!await read(user+"/trophies/"+GIVING_TREE_TROPHY[0]))rewards.push(GIVING_TREE_TROPHY[0]);
+   next.boss50TrophyAwarded=true;
+  }
   next.revision=state.revision+1;
   const balance=wallet+fx.coins-fx.spent;
   if(!Number.isSafeInteger(balance)||balance<0)fail("Wallet balance exceeds the supported range.",409);
@@ -33,7 +37,7 @@ export async function gardenWithStorage({read,commit,root,uid,input,clock=Date.n
    {update:{name:root+"/"+path,fields:{payload:str(JSON.stringify({state:next,lastRequest:input.requestId,response}))}},currentDocument:stored?{updateTime:stored.updateTime}:{exists:false}}
   ];
   if(fx.coins||fx.spent)writes.push({update:{name:root+"/"+walletPath,fields:{currency:str("starCoins"),balance:integer(balance)}},updateMask:{fieldPaths:["currency","balance"]},currentDocument:walletDoc?{updateTime:walletDoc.updateTime}:{exists:false}});
-  for(const id of rewards)writes.push({update:{name:root+"/"+user+"/axolotls/"+id,fields:{source:str("giving-tree"),foundAt:{timestampValue:new Date(now).toISOString()}}},currentDocument:{exists:false}});
+  for(const id of rewards)writes.push({update:{name:root+"/"+user+"/"+(id===GIVING_TREE_TROPHY[0]?"trophies":"axolotls")+"/"+id,fields:{source:str("giving-tree"),foundAt:{timestampValue:new Date(now).toISOString()}}},currentDocument:{exists:false}});
   if(await commit(writes))return response;
  }
  fail("Your garden changed while saving. Retry.",409);

@@ -3,6 +3,8 @@ export const PLOTS=4,INVENTORY_CAP=40,INVENTORY_STEP=10,INVENTORY_MAX=1000,WATER
 export const inventoryCapacity=s=>Math.max(INVENTORY_CAP,s?.inventoryCapacity||INVENTORY_CAP,s?.inventory?.length||0);
 export const inventoryUpgradeCost=s=>25+15*Math.floor((inventoryCapacity(s)-INVENTORY_CAP)/INVENTORY_STEP);
 export const PEAR_AXOLOTLS=[["pearlie","Pearlie","#d9ef9c","#89b75d","pear"]];
+export const GIVING_TREE_TROPHY=["giving-tree-mastery","Giving Tree Mastery","Defeat boss #50 in The Giving Tree."];
+export const hasGivingTreeMastery=s=>s.bossesDefeated>=50;
 export const PEARLIE_CHANCE=.01;
 export const fruiterChance=bosses=>Math.min(1,(1+.25*bosses)/10000);
 export const growthWork=t=>Math.ceil(180000*(1+.12*(t.attack+t.defense-2)));
