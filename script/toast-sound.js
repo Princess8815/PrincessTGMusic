@@ -15,13 +15,13 @@ function inspect(node){
  const nodes=[...(node.matches(selector)?[node]:[]),...node.querySelectorAll(selector)];
  for(const el of nodes){
   const message=el.textContent.trim(),visible=!!message&&!el.hidden&&el.getAttribute("aria-hidden")!=="true"&&el.getClientRects().length>0&&getComputedStyle(el).visibility!=="hidden"&&getComputedStyle(el).opacity!=="0";
-  const previous=seen.get(el);if(visible&&(!previous?.visible||previous.message!==message))playToastSound();seen.set(el,{visible,message});
+  const previous=seen.get(el);if(visible&&el.dataset.ptgSilent!=="true"&&(!previous?.visible||previous.message!==message))playToastSound();seen.set(el,{visible,message});
  }
 }
-export function showToast(message){
+export function showToast(message,{silent=false}={}){
  let stack=document.getElementById("ptg-toast-stack");
  if(!stack){stack=document.createElement("div");stack.id="ptg-toast-stack";stack.className="ptg-toast-stack";stack.setAttribute("aria-live","polite");(document.fullscreenElement||document.querySelector(".ac-expanded,.ce-expanded,.pp-expanded,.gt-expanded,.ok-expanded")||document.body).append(stack);}
- const node=document.createElement("div");node.className="ptg-toast";node.textContent=message;stack.append(node);setTimeout(()=>node.remove(),6500);
+ const node=document.createElement("div");node.className="ptg-toast";if(silent)node.dataset.ptgSilent="true";node.textContent=message;stack.append(node);setTimeout(()=>node.remove(),6500);
 }
 if(typeof document!=="undefined"){
  document.addEventListener("pointerdown",unlock,{passive:true});document.addEventListener("keydown",unlock);

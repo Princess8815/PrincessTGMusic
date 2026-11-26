@@ -2,8 +2,11 @@
 import {auth,usingLocalFirebaseEmulators} from "./firebase.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {WIDTH,HEIGHT,GROUND,SLING,PRICE,TYPES,AXOLOTLS,MATERIALS,FEATURES,featureProgress,featureSchedule,levelIntro,stateMap,sceneMap,designMap,initialOrange,boardFromMap,practiceOrange,starRating,velocity,simulateShot,orangeGameOver} from "./orange-knock-down-core.mjs";
-import {showToast} from "./toast-sound.js";
+import {showToast as siteToast} from "./toast-sound.js";
+import {createOrangeAudio} from "./orange-audio.mjs";
 const $=id=>document.getElementById(id),area=$("ok-area"),canvas=$("ok-canvas"),ctx=canvas.getContext("2d");
+const audio=createOrangeAudio();
+const showToast=message=>siteToast(message,{silent:true});
 const endpoint="https://princesstg-cd-store-live.transgirl1991.workers.dev/games/orange-knock-down";
 const testMode=new URLSearchParams(location.search).get("test")==="1";
 let testMap=null;
@@ -170,7 +173,8 @@ window.addEventListener("blur",()=>{if(drag){drag=null;render();}});
 async function request(action,uid){const user=auth.currentUser;if(!eligible()||user.uid!==uid)throw Error("Sign in with a verified account.");const idToken=await user.getIdToken();if(auth.currentUser?.uid!==uid)throw Error("Account changed.");const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({idToken,...action})});const data=await r.json();if(!r.ok)throw Error(data.error||"Game unavailable.");return data;}
 function accept(data,notify){const previous=state?.cleared;state=data.state;wallet=data.wallet;confirmUntil=0;if(!count(type))type=count("marina")?"marina":type;status(data.message||"Ready.");if((data.rewards||[]).includes("orange-knock-down-mastery")&&!data.conflict)showToast("Trophy earned: Orange Knock Down Mastery!");if(notify){if(state.board.won&&previous!==undefined&&state.cleared>previous){for(const f of featureSchedule(state.milestones))if(!arenaMode()&&f.level>1&&previous<f.level-1&&state.cleared>=f.level-1)showToast("New feature unlocked: "+f.name+"!");}if(data.coins>0)showToast("Level cleared! +"+data.coins+" Star Coins");for(const id of data.rewards||[])if(id!=="orange-knock-down-mastery")showToast(id==="tangie"?"You found Tangie!":"You found Fruiter!");}}
 function animate(trace,current){
- return new Promise(resolve=>{anim={trace,start:performance.now(),duration:Math.max(trace.frames.length,trace.worldFrames?.length||0,...trace.events.map(e=>e.t+(trace.worldFrames?.length?12:50)),1)};function step(now){if(current!==epoch||!anim){resolve();return;}draw(now);if(now-anim.start>=anim.duration*16){resolve();return;}frame=requestAnimationFrame(step);}frame=requestAnimationFrame(step);});
+ audio.effect("launch");let played=0;const ordered=[...trace.events].sort((a,b)=>a.t-b.t);
+ return new Promise(resolve=>{anim={trace,start:performance.now(),duration:Math.max(trace.frames.length,trace.worldFrames?.length||0,...trace.events.map(e=>e.t+(trace.worldFrames?.length?12:50)),1)};function step(now){if(current!==epoch||!anim){resolve();return;}const tick=Math.floor((now-anim.start)/16);while(played<ordered.length&&ordered[played].t<=tick){const event=ordered[played++];audio.event(event,stateMap(state).branches[event.id]?.material);}draw(now);if(now-anim.start>=anim.duration*16){resolve();return;}frame=requestAnimationFrame(step);}frame=requestAnimationFrame(step);});
 }
 function startTest(){
  if(!testMap)return;
@@ -183,7 +187,7 @@ async function send(kind,extra={},retry=false,trace=null){
   if(kind!=="shot"||!canShoot())return;
   busy=true;render();if(trace)await animate(trace,epoch);anim=null;
   const result=practiceOrange(state,{kind,...extra});
-  state=result.state;busy=false;if(!count(type)&&count("marina"))type="marina";status(state.board.won?"Practice complete. No rewards.":result.message);render();return;
+  state=result.state;busy=false;if(state.board.won)audio.effect("win");else if(orangeGameOver(state.board))audio.effect("lose");if(!count(type)&&count("marina"))type="marina";status(state.board.won?"Practice complete. No rewards.":result.message);render();return;
  }
  if(!eligible()||busy||(!retry&&failed)||kind!=="state"&&!state&&!retry)return;
  const uid=auth.currentUser.uid,current=epoch,action=retry?failed:kind==="state"?{kind}:{kind,requestId:crypto.randomUUID(),revision:state.revision,...extra};if(action.kind!=="state")stash(uid,action);
@@ -192,7 +196,7 @@ async function send(kind,extra={},retry=false,trace=null){
   const net=request(action,uid).then(data=>({data}),error=>({error}));
   const [result]=await Promise.all([net,trace?animate(trace,current):Promise.resolve()]);
   if(current!==epoch)return;if(result.error)throw result.error;
-  anim=null;busy=false;forget(uid);if(["retry","resetCampaign"].includes(action.kind)&&result.data.applied&&!result.data.conflict)type="marina";accept(result.data,action.kind!=="state"&&!result.data.conflict);render();
+  anim=null;busy=false;forget(uid);if(["retry","resetCampaign"].includes(action.kind)&&result.data.applied&&!result.data.conflict)type="marina";accept(result.data,action.kind!=="state"&&!result.data.conflict);if(action.kind==="shot"&&result.data.applied&&!result.data.conflict){if(state.board.won)audio.effect("win");else if(orangeGameOver(state.board))audio.effect("lose");}render();
  }catch(e){if(current!==epoch)return;anim=null;busy=false;failed=action;status(e.message+" Retry save to recover the same action.");render();}
 }
 async function launch(){if(!canShoot())return;const shot=shotFromControls();let trace;try{trace=simulateShot(stateMap(state),state.board,shot,true);}catch(e){status(e.message);return;}await send("shot",{shot},false,trace);}
