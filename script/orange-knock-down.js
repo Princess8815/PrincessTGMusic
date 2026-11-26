@@ -27,7 +27,7 @@ function featureIcon(id,locked=false){
  else if(id==="wall"||id==="stone"){for(let y=12;y<56;y+=13)for(let x=6+(y%2)*7;x<52;x+=17)art+=block(x,y,15,11);}
  else if(id==="reflector"||id==="angled"){art=block(26,5,12,54,id==="angled"?'transform="rotate(38 32 32)"':"");if(!locked)art+='<path d="M13 13l13 16-13 13" fill="none" stroke="#f6e9ff" stroke-width="3"/>';}
  else if(id==="spring"){art=block(6,43,52,10)+block(8,10,48,10)+'<path d="M13 20l38 6-38 6 38 6-38 5" stroke="'+edge+'" stroke-width="6" fill="none"/>';}
- else if(id==="trampoline"){art=block(5,20,54,9)+block(9,28,7,22)+block(48,28,7,22);if(!locked)art+='<path d="M10 21q22-9 44 0M23 11l9-7 9 7" fill="none" stroke="#fff4d2" stroke-width="3"/>';}
+ else if(id==="trampoline"){art='<g transform="rotate(-28 32 32)">'+block(5,23,54,9)+block(9,32,7,16)+block(48,32,7,16)+'</g>';if(!locked)art+='<path d="M9 10l14 11 13-17" fill="none" stroke="#946135" stroke-width="3" stroke-linejoin="round"/>';}
  else if(id==="crate"){art=block(10,11,44,44);if(!locked)art+='<path d="m32 17 5 11 12-1-9 9 3 12-11-7-11 7 3-12-9-9 12 1z" fill="#fff1a4"/>';}
  else{art=block(8,23,48,18,'transform="rotate(-25 32 32)"');if(!locked)art+='<path d="M14 32h36" stroke="#eff6f9" stroke-width="2" transform="rotate(-25 32 32)"/>';}
  return '<svg viewBox="0 0 64 64" aria-hidden="true">'+art+'</svg>';
@@ -86,7 +86,7 @@ function draw(now=performance.now()){
   ctx.save();ctx.translate(b.x1,b.y1+dy);const dx=b.x2-b.x1,by=b.y2-b.y1,len=Math.hypot(dx,by);ctx.rotate(Math.atan2(by,dx));
   ctx.fillStyle=material.color;ctx.strokeStyle=material.edge;ctx.lineWidth=2;ctx.fillRect(0,-w/2,len,w);ctx.strokeRect(0,-w/2,len,w);
   if(b.material==="wall"||b.material==="stone"){for(let x=18;x<len;x+=23)line(x,-w/2,x,w/2,material.edge,1.3);line(0,0,len,0,material.edge,1);}
-  else if(b.trampoline){ctx.fillStyle="#584339";ctx.fillRect(8,w/2,7,25);ctx.fillRect(len-15,w/2,7,25);line(3,-w/2+2,len-3,-w/2+2,"#fff2ac",3);for(let x=9;x<len-6;x+=12)line(x,-2,x+5,3,"#d99b3d",1);}
+  else if(b.trampoline){ctx.fillStyle="#584339";ctx.fillRect(8,w/2,7,b.directional?12:25);ctx.fillRect(len-15,w/2,7,b.directional?12:25);line(3,-w/2+2,len-3,-w/2+2,"#fff2ac",3);for(let x=9;x<len-6;x+=12)line(x,-2,x+5,3,"#d99b3d",1);if(b.directional){line(3,w/2-2,len-3,w/2-2,"#fff2ac",2);for(const x of [len*.3,len*.7]){line(x-5,-1,x,-4,"#946135",1.5);line(x,-4,x+5,-1,"#946135",1.5);}}}
   else if(b.spring){for(let x=6;x<len-5;x+=12)line(x,-w/2+2,x+6,w/2-2,"#e2ffe4",3);}
   else if(b.reflect){for(let x=8;x<len-5;x+=18)line(x,-w/2+2,x+8,w/2-2,"#f4eaff",2);}
   else if(b.burst){ctx.fillStyle="#fff0a5";ctx.font="bold 18px system-ui";ctx.textAlign="center";ctx.fillText("✦",len/2,6);}
