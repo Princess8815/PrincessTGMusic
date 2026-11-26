@@ -8,7 +8,8 @@ const endpoint="https://princesstg-cd-store-live.transgirl1991.workers.dev/games
 const eligible=()=>!!auth.currentUser?.emailVerified&&!usingLocalFirebaseEmulators;
 let state=null,wallet=0,type="marina",busy=false,failed=null,epoch=0,drag=null,anim=null,frame=0,expanded=false,oldOverflow="",confirmUntil=0;
 let featureSignature="",featureAccount=null;
-const nodes=new Map(),status=m=>$("ok-status").textContent=m;
+const quickNodes=new Map();
+const nodes=new Map(),status=m=>{$("ok-status").textContent=m;$("ok-rail-status").textContent=m;};
 const key=uid=>"ptg-orange-pending-v1:"+uid;
 const stash=(uid,action)=>{try{localStorage.setItem(key(uid),JSON.stringify(action));}catch{}};
 const forget=uid=>{try{localStorage.removeItem(key(uid));}catch{}};
@@ -18,7 +19,7 @@ const ready=()=>eligible()&&!!state&&!busy&&!failed;
 const canShoot=()=>ready()&&!state.board.won&&count(type)>0;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function portrait(t){const a=AXOLOTLS[t];return '<svg viewBox="0 0 70 55" aria-hidden="true"><g fill="'+a.gill+'"><path d="M19 25 2 7 16 10 24 22 1 23 6 36 24 32M51 25 68 7 54 10 46 22 69 23 64 36 46 32"/></g><ellipse cx="35" cy="30" rx="23" ry="19" fill="'+a.color+'" stroke="#4e4857" stroke-width="2"/><circle cx="27" cy="28" r="2.7" fill="#303244"/><circle cx="43" cy="28" r="2.7" fill="#303244"/><path d="M31 35q4 5 8 0" fill="none" stroke="#60455c" stroke-width="2"/></svg>';}
-function build(){for(const t of TYPES){const card=document.createElement("div");card.className="ok-type";const b=document.createElement("button");b.type="button";b.className="ok-select ptg-theme-exempt";b.innerHTML=portrait(t);const label=document.createElement("span");b.append(label);b.onclick=()=>{type=t;confirmUntil=0;render();};card.append(b);let buy=null;if(t!=="marina"){buy=document.createElement("button");buy.className="ptg-theme-exempt";buy.type="button";buy.textContent="100 ★";buy.title="Buy one "+AXOLOTLS[t].name+" throw";buy.onclick=()=>void send("buy",{type:t});card.append(buy);}const hint=document.createElement("small");hint.textContent=AXOLOTLS[t].description;card.append(hint);$("ok-types").append(card);nodes.set(t,{b,label,buy});}}
+function build(){for(const t of TYPES){const quick=document.createElement("button");quick.type="button";quick.className="ptg-theme-exempt ok-quick";quick.innerHTML=portrait(t);const qlabel=document.createElement("span");quick.append(qlabel);quick.onclick=()=>{type=t;confirmUntil=0;render();};$("ok-quick-team").append(quick);quickNodes.set(t,{b:quick,label:qlabel});const card=document.createElement("div");card.className="ok-type";const b=document.createElement("button");b.type="button";b.className="ok-select ptg-theme-exempt";b.innerHTML=portrait(t);const label=document.createElement("span");b.append(label);b.onclick=()=>{type=t;confirmUntil=0;render();};card.append(b);let buy=null;if(t!=="marina"){buy=document.createElement("button");buy.className="ptg-theme-exempt";buy.type="button";buy.textContent="100 ★";buy.title="Buy one "+AXOLOTLS[t].name+" throw";buy.onclick=()=>void send("buy",{type:t});card.append(buy);}const hint=document.createElement("small");hint.textContent=AXOLOTLS[t].description;card.append(hint);$("ok-types").append(card);nodes.set(t,{b,label,buy});}}
 function featureIcon(id,locked=false){
  const m=MATERIALS[id==="angled"?"reflector":id]||MATERIALS.wood,fill=locked?"#373a4c":m.color,edge=locked?"#373a4c":m.edge;
  const block=(x,y,w,h,extra="")=>'<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="2" fill="'+fill+'" stroke="'+edge+'" stroke-width="2" '+extra+'/>';
@@ -59,6 +60,8 @@ function controls(){
  $("ok-resend").hidden=!failed||busy;$("ok-reset").disabled=!ready()||won;$("ok-next").hidden=!won;$("ok-next").disabled=!ready();$("ok-mechanic").textContent=state?((layout(state.level,state.seed,state.layoutVersion||1).design||"Classic orchard")+" · "+levelIntro(state.level,state.layoutVersion||1)):"";renderFeatures();
  if(confirmUntil&&Date.now()>=confirmUntil)confirmUntil=0;$("ok-reset").textContent=confirmUntil?"Are you sure?":"Retry level";$("ok-reset").classList.toggle("ok-confirm",!!confirmUntil);
  for(const [t,n] of nodes){n.label.textContent=AXOLOTLS[t].name+" ×"+count(t);n.b.setAttribute("aria-pressed",String(type===t));n.b.disabled=!ready()||won||count(t)<=0;if(n.buy)n.buy.disabled=!ready()||wallet<PRICE||count(t)>=9999;}
+ for(const [t,n] of quickNodes){n.label.textContent=AXOLOTLS[t].name+" ×"+count(t);n.b.setAttribute("aria-pressed",String(type===t));n.b.setAttribute("aria-label",AXOLOTLS[t].name+", "+count(t)+" throws");n.b.disabled=!ready()||won||count(t)<=0;}
+ $("ok-quick-info").textContent=AXOLOTLS[type].description;
  $("ok-angle-label").textContent=$("ok-angle").value+"°";$("ok-power-label").textContent=$("ok-power").value+"%";
  $("ok-angle").disabled=!canShoot()||type==="sniper";$("ok-power").disabled=!canShoot()||type==="sniper";
  $("ok-target-label").hidden=type!=="sniper";$("ok-target").disabled=!canShoot();$("ok-fire").disabled=!canShoot();$("ok-fire").textContent="Launch "+AXOLOTLS[type].name;
@@ -108,13 +111,45 @@ function draw(now=performance.now()){
  if(canShoot()&&type!=="sniper"){const v=velocity(Number($("ok-angle").value),Number($("ok-power").value));for(let i=5;i<=55;i+=5){const x=SLING.x+v.vx*i,y=SLING.y+v.vy*i+.17*i*(i+1);if(x>WIDTH||y>GROUND)break;circle(x,y,2.4,"#fff9e8","#9d875c");}}
 }
 function render(){controls();draw();}
-function point(e){const r=canvas.getBoundingClientRect(),scale=Math.min(r.width/WIDTH,r.height/HEIGHT),x0=r.left+(r.width-WIDTH*scale)/2,y0=r.top+(r.height-HEIGHT*scale)/2;return {x:(e.clientX-x0)/scale,y:(e.clientY-y0)/scale};}
-function aim(p){const dx=Math.max(0,SLING.x-p.x),dy=p.y-SLING.y,length=Math.hypot(dx,dy),angle=clamp(Math.round(Math.atan2(dy,dx)*180/Math.PI),-20,80),power=clamp(Math.round(length/105*100),1,100);$("ok-angle").value=angle;$("ok-power").value=power;const r=Math.min(105,length),rad=angle*Math.PI/180;drag.point={x:SLING.x-Math.cos(rad)*r,y:SLING.y+Math.sin(rad)*r};render();}
+function boardGeometry(){const r=canvas.getBoundingClientRect(),scale=Math.min(r.width/WIDTH,r.height/HEIGHT);return {scale,x0:r.left+(r.width-WIDTH*scale)/2,y0:r.top+(r.height-HEIGHT*scale)/2};}
+function point(e){const {scale,x0,y0}=boardGeometry();return {x:(e.clientX-x0)/scale,y:(e.clientY-y0)/scale};}
+function aim(e){
+ const p=point(e);
+ // Relative touch dragging avoids jumps when the finger begins beside Marina.
+ // A short physical pull on a narrow phone can still reach maximum power.
+ const dx=Math.max(0,drag.touch?(drag.startX-e.clientX)*drag.gain:SLING.x-p.x);
+ const dy=drag.touch?(e.clientY-drag.startY)*drag.gain:p.y-SLING.y;
+ const length=Math.hypot(dx,dy),angle=clamp(Math.round(Math.atan2(dy,dx)*180/Math.PI),-20,80),power=clamp(Math.round(length/105*100),1,100);
+ $("ok-angle").value=angle;$("ok-power").value=power;
+ const r=Math.min(105,length),rad=angle*Math.PI/180;drag.point={x:SLING.x-Math.cos(rad)*r,y:SLING.y+Math.sin(rad)*r};
+ render();
+}
 function shotFromControls(){return type==="sniper"?{type,target:Number($("ok-target").value)}:{type,angle:Number($("ok-angle").value),power:Number($("ok-power").value)};}
-canvas.addEventListener("pointerdown",e=>{if(!canShoot())return;const p=point(e);if(type==="sniper"){const target=layout(state.level,state.seed,state.layoutVersion||1).oranges.filter(o=>state.board.remaining.includes(o.id)).sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y))[0];if(target&&Math.hypot(target.x-p.x,target.y-p.y)<40){$("ok-target").value=target.id;void launch();}return;}if(Math.hypot(p.x-SLING.x,p.y-SLING.y)>65)return;drag={id:e.pointerId,point:{...SLING}};canvas.setPointerCapture(e.pointerId);aim(p);});
-canvas.addEventListener("pointermove",e=>{if(drag?.id===e.pointerId)aim(point(e));});
-canvas.addEventListener("pointerup",e=>{if(drag?.id!==e.pointerId)return;const p=point(e),dist=Math.hypot(p.x-SLING.x,p.y-SLING.y);aim(p);drag=null;if(dist>=12)void launch();else render();});
-canvas.addEventListener("pointercancel",()=>{drag=null;render();});
+canvas.addEventListener("pointerdown",e=>{
+ if(!canShoot()||drag||!e.isPrimary||e.button!==0)return;
+ const p=point(e),scale=boardGeometry().scale,touch=e.pointerType==="touch"||e.pointerType==="pen";
+ if(p.x<0||p.x>WIDTH||p.y<0||p.y>HEIGHT)return;
+ if(type==="sniper"){
+  const target=layout(state.level,state.seed,state.layoutVersion||1).oranges.filter(o=>state.board.remaining.includes(o.id)).sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y))[0];
+  if(target&&Math.hypot(target.x-p.x,target.y-p.y)<(touch?Math.max(40,24/scale):40)){$("ok-target").value=target.id;void launch();}
+  return;
+ }
+ if(touch?p.x>WIDTH*.30||Math.abs(p.y-SLING.y)>Math.max(125,40/scale):Math.hypot(p.x-SLING.x,p.y-SLING.y)>65)return;
+ e.preventDefault();drag={id:e.pointerId,touch,startX:e.clientX,startY:e.clientY,gain:Math.max(1/scale,105/50),point:{...SLING}};
+ try{canvas.setPointerCapture(e.pointerId);}catch{}
+ if(!touch)aim(e);else draw();
+});
+canvas.addEventListener("pointermove",e=>{if(drag?.id===e.pointerId){e.preventDefault();aim(e);}});
+canvas.addEventListener("pointerup",e=>{
+ if(drag?.id!==e.pointerId)return;e.preventDefault();
+ const p=point(e),dist=drag.touch?Math.hypot(e.clientX-drag.startX,e.clientY-drag.startY):Math.hypot(p.x-SLING.x,p.y-SLING.y),threshold=drag.touch?7:12;
+ const valid=canShoot()&&dist>=threshold;
+ if(valid)aim(e);
+ drag=null;if(valid)void launch();else render();
+});
+function cancelDrag(e){if(drag?.id===e.pointerId){drag=null;render();}}
+canvas.addEventListener("pointercancel",cancelDrag);canvas.addEventListener("lostpointercapture",cancelDrag);
+window.addEventListener("blur",()=>{if(drag){drag=null;render();}});
 async function request(action,uid){const user=auth.currentUser;if(!eligible()||user.uid!==uid)throw Error("Sign in with a verified account.");const idToken=await user.getIdToken();if(auth.currentUser?.uid!==uid)throw Error("Account changed.");const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({idToken,...action})});const data=await r.json();if(!r.ok)throw Error(data.error||"Game unavailable.");return data;}
 function accept(data,notify){const previous=state?.cleared;state=data.state;wallet=data.wallet;confirmUntil=0;if(!count(type))type=TYPES.find(t=>count(t)>0)||"marina";status(data.message||"Ready.");if((data.rewards||[]).includes("orange-knock-down-mastery")&&!data.conflict)showToast("Trophy earned: Orange Knock Down Mastery!");if(notify){if(data.coins>0&&previous!==undefined){for(const f of FEATURES)if(f.level>1&&previous<f.level-1&&state.cleared>=f.level-1)showToast("New feature unlocked: "+f.name+"!");}if(data.coins>0)showToast("Level cleared! +"+data.coins+" Star Coins");for(const id of data.rewards||[])if(id!=="orange-knock-down-mastery")showToast(id==="tangie"?"You found Tangie!":"You found Fruiter!");}}
 function animate(trace,current){
@@ -132,10 +167,10 @@ async function send(kind,extra={},retry=false,trace=null){
  }catch(e){if(current!==epoch)return;anim=null;busy=false;failed=action;status(e.message+" Retry save to recover the same action.");render();}
 }
 async function launch(){if(!canShoot())return;const shot=shotFromControls();let trace;try{trace=simulateShot(layout(state.level,state.seed,state.layoutVersion||1),state.board,shot,true);}catch(e){status(e.message);return;}await send("shot",{shot},false,trace);}
-$("ok-fire").onclick=()=>void launch();$("ok-angle").oninput=render;$("ok-power").oninput=render;$("ok-target").onchange=render;
+$("ok-fire").onclick=()=>{if(!drag)void launch();};$("ok-angle").oninput=render;$("ok-power").oninput=render;$("ok-target").onchange=render;
 $("ok-reset").onclick=()=>{if(!ready())return;if(confirmUntil>Date.now())void send("retry");else{confirmUntil=Date.now()+8000;render();}};
 $("ok-next").onclick=()=>void send("next");$("ok-refresh").onclick=()=>void send("state");$("ok-resend").onclick=()=>{if(failed)void send(failed.kind,{},true);};
-function fullRefresh(){const active=expanded||document.fullscreenElement===area;$("ok-full").textContent=active?"⛶ Exit fullscreen":"⛶ Fullscreen";$("ok-full").setAttribute("aria-pressed",String(active));const stack=$("ptg-toast-stack");if(stack)(active?area:document.body).append(stack);render();}
+function fullRefresh(){drag=null;const active=expanded||document.fullscreenElement===area;$("ok-full").textContent=active?"⛶ Exit fullscreen":"⛶ Fullscreen";$("ok-full").setAttribute("aria-pressed",String(active));const stack=$("ptg-toast-stack");if(stack)(active?area:document.body).append(stack);render();}
 async function exitFull(){if(expanded){expanded=false;area.classList.remove("ok-expanded");document.body.style.overflow=oldOverflow;fullRefresh();}else if(document.fullscreenElement===area)await document.exitFullscreen().catch(()=>{});}
 $("ok-full").onclick=async()=>{if(expanded||document.fullscreenElement===area)return exitFull();try{if(!area.requestFullscreen)throw Error("Unavailable");await area.requestFullscreen();}catch{oldOverflow=document.body.style.overflow;document.body.style.overflow="hidden";expanded=true;area.classList.add("ok-expanded");fullRefresh();}};
 document.addEventListener("fullscreenchange",fullRefresh);document.addEventListener("keydown",e=>{if(e.key==="Escape"&&expanded)void exitFull();});$("ok-login").onclick=async()=>{await exitFull();$("auth-open")?.click();};
