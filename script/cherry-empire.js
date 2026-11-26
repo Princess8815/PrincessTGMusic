@@ -41,7 +41,7 @@ function render(){
  for(const t of s.trees){
   const c=cards.get(t.id)||makeCard(t),growing=time<t.matureAt,cap=caps(t),interval=fruitInterval(t);
   c.badge.textContent="Prestige "+t.prestige;c.art.dataset.growing=String(growing);
-  c.fruit.textContent=fmt(t.fruit)+" ripe fruit · "+fmt(t.pendingCherries)+" 🍒";
+  c.fruit.textContent=fmt(t.fruit)+" ripe fruit · "+fmt(t.pendingCherries)+" 🍒"+(t.pendingStars?" · "+fmt(t.pendingStars)+" ★":"");
   c.yieldText.textContent=yieldPerFruit(t)+" 🍒 / fruit";
   c.fill.style.width=(growing?0:100*Math.max(0,Math.min(1,1-(t.nextFruitAt-time)/interval)))+"%";
   c.timer.textContent=growing?"Growing · "+duration(t.matureAt-time)+" remaining":"Next fruit in "+duration(t.nextFruitAt-time)+(t.auto?" · auto harvest in "+duration(t.nextAutoAt-time):" · manual harvest");

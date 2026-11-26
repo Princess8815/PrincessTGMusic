@@ -1,6 +1,6 @@
 
 export const MAX_TREES=12,MAX_PRESTIGE=20,STAR_CAP=10;
-export const CHERRY_AXOLOTLS=[["cheribelle","Cheribelle","#ffc0d0","#c83962","bow"]];
+export const CHERRY_AXOLOTLS=[["cheribelle","Cheribelle","#ffc0d0","#c83962","cherries"]];
 export const FRUITER_CHANCE=1/20000,CHERIBELLE_CHANCE=1/100;
 const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
 export const caps=t=>({speed:5+2*t.prestige,yield:5+2*t.prestige,auto:3+t.prestige,star:STAR_CAP});
