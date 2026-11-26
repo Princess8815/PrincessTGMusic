@@ -14,6 +14,7 @@ export const REEF_CLUES=Object.freeze({
  fruiter:"???",
  cheribelle:"One crown is lonely. When a second takes root, the harvest may bring company.",
  peachiboo:"Among the blushing fruit, seek the one that wears the sky.",
+ tangie:"Beyond ten fallen orchards, listen for a little citrus-colored splash.",
  pearlie:"The first mighty crown must fall before the branches can bear my secret.",
  pip:"Where melodies welcome you home, a little face awaits your attention.",
  hex:"Temptation wears a warning. Obedience will never set me free.",

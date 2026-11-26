@@ -1,0 +1,97 @@
+
+import {auth,usingLocalFirebaseEmulators} from "./firebase.js";
+import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+import {WIDTH,HEIGHT,GROUND,SLING,PRICE,TYPES,AXOLOTLS,layout,velocity,simulateShot} from "./orange-knock-down-core.mjs";
+import {showToast} from "./toast-sound.js";
+const $=id=>document.getElementById(id),area=$("ok-area"),canvas=$("ok-canvas"),ctx=canvas.getContext("2d");
+const endpoint="https://princesstg-cd-store-live.transgirl1991.workers.dev/games/orange-knock-down";
+const eligible=()=>!!auth.currentUser?.emailVerified&&!usingLocalFirebaseEmulators;
+let state=null,wallet=0,type="marina",busy=false,failed=null,epoch=0,drag=null,anim=null,frame=0,expanded=false,oldOverflow="",confirmUntil=0;
+const nodes=new Map(),status=m=>$("ok-status").textContent=m;
+const key=uid=>"ptg-orange-pending-v1:"+uid;
+const stash=(uid,action)=>{try{localStorage.setItem(key(uid),JSON.stringify(action));}catch{}};
+const forget=uid=>{try{localStorage.removeItem(key(uid));}catch{}};
+function restore(uid){try{return JSON.parse(localStorage.getItem(key(uid))||"null");}catch{return null;}}
+const count=t=>t==="marina"?state?.board.marina||0:state?.inventory[t]||0;
+const ready=()=>eligible()&&!!state&&!busy&&!failed;
+const canShoot=()=>ready()&&!state.board.won&&count(type)>0;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function portrait(t){const a=AXOLOTLS[t];return '<svg viewBox="0 0 70 55" aria-hidden="true"><g fill="'+a.gill+'"><path d="M19 25 2 7 16 10 24 22 1 23 6 36 24 32M51 25 68 7 54 10 46 22 69 23 64 36 46 32"/></g><ellipse cx="35" cy="30" rx="23" ry="19" fill="'+a.color+'" stroke="#4e4857" stroke-width="2"/><circle cx="27" cy="28" r="2.7" fill="#303244"/><circle cx="43" cy="28" r="2.7" fill="#303244"/><path d="M31 35q4 5 8 0" fill="none" stroke="#60455c" stroke-width="2"/></svg>';}
+function build(){for(const t of TYPES){const card=document.createElement("div");card.className="ok-type";const b=document.createElement("button");b.type="button";b.className="ok-select ptg-theme-exempt";b.innerHTML=portrait(t);const label=document.createElement("span");b.append(label);b.onclick=()=>{type=t;confirmUntil=0;render();};card.append(b);let buy=null;if(t!=="marina"){buy=document.createElement("button");buy.className="ptg-theme-exempt";buy.type="button";buy.textContent="100 ★";buy.title="Buy one "+AXOLOTLS[t].name+" throw";buy.onclick=()=>void send("buy",{type:t});card.append(buy);}const hint=document.createElement("small");hint.textContent=AXOLOTLS[t].description;card.append(hint);$("ok-types").append(card);nodes.set(t,{b,label,buy});}}
+function controls(){
+ const board=state?.board,won=!!board?.won,shots=TYPES.some(t=>count(t)>0);
+ $("ok-level").textContent=state?.level||1;$("ok-left").textContent=board?.remaining.length||0;$("ok-shots").textContent=board?.marina||0;$("ok-wallet").textContent=wallet.toLocaleString();
+ $("ok-login").hidden=!!auth.currentUser||usingLocalFirebaseEmulators;$("ok-refresh").disabled=busy||!eligible()||!!failed;
+ $("ok-resend").hidden=!failed||busy;$("ok-reset").disabled=!ready()||won;$("ok-next").hidden=!won;$("ok-next").disabled=!ready();
+ if(confirmUntil&&Date.now()>=confirmUntil)confirmUntil=0;$("ok-reset").textContent=confirmUntil?"Are you sure?":"Retry level";$("ok-reset").classList.toggle("ok-confirm",!!confirmUntil);
+ for(const [t,n] of nodes){n.label.textContent=AXOLOTLS[t].name+" ×"+count(t);n.b.setAttribute("aria-pressed",String(type===t));n.b.disabled=!ready()||won||count(t)<=0;if(n.buy)n.buy.disabled=!ready()||wallet<PRICE||count(t)>=9999;}
+ $("ok-angle-label").textContent=$("ok-angle").value+"°";$("ok-power-label").textContent=$("ok-power").value+"%";
+ $("ok-angle").disabled=!canShoot()||type==="sniper";$("ok-power").disabled=!canShoot()||type==="sniper";
+ $("ok-target-label").hidden=type!=="sniper";$("ok-target").disabled=!canShoot();$("ok-fire").disabled=!canShoot();$("ok-fire").textContent="Launch "+AXOLOTLS[type].name;
+ const sel=$("ok-target"),signature=(board?.remaining||[]).join(",");
+ if(sel.dataset.ids!==signature){const prev=sel.value;sel.replaceChildren();for(const id of board?.remaining||[]){const o=document.createElement("option");o.value=id;o.textContent="Orange "+(id+1);sel.append(o);}if([...sel.options].some(o=>o.value===prev))sel.value=prev;sel.dataset.ids=signature;}
+ $("ok-overlay").hidden=busy||!state||(!won&&shots);$("ok-result").textContent=won?"Level cleared!":"Out of throws";$("ok-result-detail").textContent=won?"10 Star Coins earned. Next level awaits.":"Retry for free or buy another special throw.";
+}
+function line(x1,y1,x2,y2,color,width){ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap="round";ctx.stroke();}
+function circle(x,y,r,color,stroke){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1.5;ctx.stroke();}}
+function axo(x,y,t,r){const a=AXOLOTLS[t];ctx.save();ctx.translate(x,y);ctx.scale(r/15,r/15);ctx.fillStyle=a.color;ctx.beginPath();ctx.moveTo(-14,6);ctx.quadraticCurveTo(-27,4,-32,15);ctx.quadraticCurveTo(-14,19,-7,10);ctx.fill();ctx.fillStyle=a.gill;for(const s of [-1,1]){ctx.beginPath();ctx.moveTo(s*10,0);ctx.lineTo(s*24,-14);ctx.lineTo(s*16,-12);ctx.lineTo(s*25,0);ctx.lineTo(s*14,5);ctx.lineTo(s*22,11);ctx.lineTo(s*9,8);ctx.fill();}ctx.beginPath();ctx.ellipse(0,2,16,12,0,0,Math.PI*2);ctx.fillStyle=a.color;ctx.fill();ctx.strokeStyle="#5d4a58";ctx.lineWidth=1;ctx.stroke();circle(-5,0,2,"#343141");circle(5,0,2,"#343141");ctx.beginPath();ctx.arc(0,3,4,0,Math.PI);ctx.stroke();ctx.restore();}
+function orange(x,y){circle(x,y,14,"#f6a12d","#bb6b21");circle(x-4,y-4,3,"#ffda87");line(x,y-14,x+3,y-20,"#6d5535",2);ctx.fillStyle="#57914b";ctx.beginPath();ctx.ellipse(x+6,y-16,6,3,-.6,0,Math.PI*2);ctx.fill();}
+function draw(now=performance.now()){
+ ctx.clearRect(0,0,WIDTH,HEIGHT);const sky=ctx.createLinearGradient(0,0,0,GROUND);sky.addColorStop(0,"#a9dbea");sky.addColorStop(1,"#eaf2c7");ctx.fillStyle=sky;ctx.fillRect(0,0,WIDTH,HEIGHT);
+ circle(95,80,38,"#fff2b0");for(const [x,y] of [[215,72],[590,48],[825,82]]){circle(x,y,25,"#f9fbec");circle(x+26,y+5,23,"#f9fbec");circle(x-25,y+8,20,"#f9fbec");}
+ ctx.fillStyle="#a5c787";ctx.beginPath();ctx.moveTo(0,GROUND);ctx.quadraticCurveTo(220,350,460,GROUND);ctx.quadraticCurveTo(720,310,960,GROUND);ctx.fill();ctx.fillStyle="#77a45d";ctx.fillRect(0,GROUND,WIDTH,HEIGHT-GROUND);ctx.fillStyle="#527f47";ctx.fillRect(0,GROUND,WIDTH,5);
+ line(SLING.x-17,GROUND,SLING.x-17,SLING.y-22,"#895937",12);line(SLING.x-17,GROUND,SLING.x+17,SLING.y-22,"#895937",12);
+ if(!state)return;
+ const map=layout(state.level,state.seed),board=state.board;
+ const tick=anim?Math.min(anim.duration,Math.max(0,Math.floor((now-anim.start)/16))):0;
+ const events=anim?.trace.events||[],fallen=new Map(events.filter(e=>e.t<=tick&&e.kind==="orange").map(e=>[e.id,e])),broken=new Map(events.filter(e=>e.t<=tick&&e.kind==="branch").map(e=>[e.id,e])),damage=new Map(events.filter(e=>e.t<=tick&&e.kind==="damage").map(e=>[e.id,e.hp]));
+ for(const b of map.branches){
+  if(!board.hp[b.id])continue;
+  const e=broken.get(b.id);let dy=0;if(e){const dt=tick-e.t;dy=.31*dt*dt;if(b.y1+dy>GROUND+20)continue;}
+  if(!e){ctx.globalAlpha=.32;line(b.x2,b.y2,Math.min(940,b.x2+35),GROUND,"#936b45",8);ctx.globalAlpha=1;}
+  line(b.x1,b.y1+dy,b.x2,b.y2+dy,"#725139",(damage.get(b.id)??board.hp[b.id])>1?13:9);line(b.x1,b.y1+dy-3,b.x2,b.y2+dy-3,"#a98256",3);
+  if(!e)for(const u of [.06,.94]){ctx.fillStyle="#75a656";ctx.beginPath();ctx.ellipse(b.x1+(b.x2-b.x1)*u,b.y1+(b.y2-b.y1)*u-10,18,8,-.4,0,Math.PI*2);ctx.fill();}
+ }
+ for(const o of map.oranges){if(!board.remaining.includes(o.id))continue;const e=fallen.get(o.id),dt=e?tick-e.t:0,y=e?Math.min(GROUND-14,o.y+.32*dt*dt):o.y;
+  if(e&&dt>48)continue;if(!e)line(o.x,o.y-20,o.x,o.y-12,"#6e5737",2);orange(o.x,y);
+  if(!anim&&type==="sniper"){ctx.font="bold 10px system-ui";ctx.textAlign="center";ctx.fillStyle="#522b14";ctx.fillText(String(o.id+1),o.x,o.y+4);if(Number($("ok-target").value)===o.id){ctx.beginPath();ctx.arc(o.x,o.y,22,0,Math.PI*2);ctx.strokeStyle="#7438be";ctx.lineWidth=3;ctx.stroke();}}
+ }
+ if(anim){for(const p of anim.trace.frames[tick]||[])axo(p.x,p.y,p.type,p.r);for(const e of events)if(e.kind==="blast"&&tick>=e.t&&tick-e.t<15){ctx.globalAlpha=1-(tick-e.t)/15;circle(e.x,e.y,20+(tick-e.t)*7,"#fff2aa","#f2a329");ctx.globalAlpha=1;}return;}
+ const pull=drag?drag.point:SLING;line(SLING.x-17,SLING.y-22,pull.x,pull.y,"#573a2b",4);line(SLING.x+17,SLING.y-22,pull.x,pull.y,"#573a2b",4);
+ if(count(type)>0&&!board.won)axo(pull.x,pull.y,type,type==="bulky"?23:15);
+ if(canShoot()&&type!=="sniper"){const v=velocity(Number($("ok-angle").value),Number($("ok-power").value));for(let i=5;i<=55;i+=5){const x=SLING.x+v.vx*i,y=SLING.y+v.vy*i+.17*i*(i+1);if(x>WIDTH||y>GROUND)break;circle(x,y,2.4,"#fff9e8","#9d875c");}}
+}
+function render(){controls();draw();}
+function point(e){const r=canvas.getBoundingClientRect(),scale=Math.min(r.width/WIDTH,r.height/HEIGHT),x0=r.left+(r.width-WIDTH*scale)/2,y0=r.top+(r.height-HEIGHT*scale)/2;return {x:(e.clientX-x0)/scale,y:(e.clientY-y0)/scale};}
+function aim(p){const dx=Math.max(0,SLING.x-p.x),dy=p.y-SLING.y,length=Math.hypot(dx,dy),angle=clamp(Math.round(Math.atan2(dy,dx)*180/Math.PI),-20,80),power=clamp(Math.round(length/105*100),1,100);$("ok-angle").value=angle;$("ok-power").value=power;const r=Math.min(105,length),rad=angle*Math.PI/180;drag.point={x:SLING.x-Math.cos(rad)*r,y:SLING.y+Math.sin(rad)*r};render();}
+function shotFromControls(){return type==="sniper"?{type,target:Number($("ok-target").value)}:{type,angle:Number($("ok-angle").value),power:Number($("ok-power").value)};}
+canvas.addEventListener("pointerdown",e=>{if(!canShoot())return;const p=point(e);if(type==="sniper"){const target=layout(state.level,state.seed).oranges.filter(o=>state.board.remaining.includes(o.id)).sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y))[0];if(target&&Math.hypot(target.x-p.x,target.y-p.y)<40){$("ok-target").value=target.id;void launch();}return;}if(Math.hypot(p.x-SLING.x,p.y-SLING.y)>65)return;drag={id:e.pointerId,point:{...SLING}};canvas.setPointerCapture(e.pointerId);aim(p);});
+canvas.addEventListener("pointermove",e=>{if(drag?.id===e.pointerId)aim(point(e));});
+canvas.addEventListener("pointerup",e=>{if(drag?.id!==e.pointerId)return;const p=point(e),dist=Math.hypot(p.x-SLING.x,p.y-SLING.y);aim(p);drag=null;if(dist>=12)void launch();else render();});
+canvas.addEventListener("pointercancel",()=>{drag=null;render();});
+async function request(action,uid){const user=auth.currentUser;if(!eligible()||user.uid!==uid)throw Error("Sign in with a verified account.");const idToken=await user.getIdToken();if(auth.currentUser?.uid!==uid)throw Error("Account changed.");const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({idToken,...action})});const data=await r.json();if(!r.ok)throw Error(data.error||"Game unavailable.");return data;}
+function accept(data,notify){state=data.state;wallet=data.wallet;confirmUntil=0;if(!count(type))type=TYPES.find(t=>count(t)>0)||"marina";status(data.message||"Ready.");if(notify){if(data.coins>0)showToast("Level cleared! +"+data.coins+" Star Coins");for(const id of data.rewards||[])showToast(id==="tangie"?"You found Tangie!":"You found Fruiter!");}}
+function animate(trace,current){
+ return new Promise(resolve=>{anim={trace,start:performance.now(),duration:Math.max(trace.frames.length,...trace.events.map(e=>e.t+50),1)};function step(now){if(current!==epoch||!anim){resolve();return;}draw(now);if(now-anim.start>=anim.duration*16){resolve();return;}frame=requestAnimationFrame(step);}frame=requestAnimationFrame(step);});
+}
+async function send(kind,extra={},retry=false,trace=null){
+ if(!eligible()||busy||(!retry&&failed)||kind!=="state"&&!state&&!retry)return;
+ const uid=auth.currentUser.uid,current=epoch,action=retry?failed:kind==="state"?{kind}:{kind,requestId:crypto.randomUUID(),revision:state.revision,...extra};if(action.kind!=="state")stash(uid,action);
+ busy=true;failed=null;confirmUntil=0;status(kind==="shot"?"Launching…":"Saving…");render();
+ try{
+  const net=request(action,uid).then(data=>({data}),error=>({error}));
+  const [result]=await Promise.all([net,trace?animate(trace,current):Promise.resolve()]);
+  if(current!==epoch)return;if(result.error)throw result.error;
+  anim=null;busy=false;forget(uid);accept(result.data,action.kind!=="state"&&!result.data.conflict);render();
+ }catch(e){if(current!==epoch)return;anim=null;busy=false;failed=action;status(e.message+" Retry save to recover the same action.");render();}
+}
+async function launch(){if(!canShoot())return;const shot=shotFromControls();let trace;try{trace=simulateShot(layout(state.level,state.seed),state.board,shot,true);}catch(e){status(e.message);return;}await send("shot",{shot},false,trace);}
+$("ok-fire").onclick=()=>void launch();$("ok-angle").oninput=render;$("ok-power").oninput=render;$("ok-target").onchange=render;
+$("ok-reset").onclick=()=>{if(!ready())return;if(confirmUntil>Date.now())void send("retry");else{confirmUntil=Date.now()+8000;render();}};
+$("ok-next").onclick=()=>void send("next");$("ok-refresh").onclick=()=>void send("state");$("ok-resend").onclick=()=>{if(failed)void send(failed.kind,{},true);};
+function fullRefresh(){const active=expanded||document.fullscreenElement===area;$("ok-full").textContent=active?"⛶ Exit fullscreen":"⛶ Fullscreen";$("ok-full").setAttribute("aria-pressed",String(active));const stack=$("ptg-toast-stack");if(stack)(active?area:document.body).append(stack);render();}
+async function exitFull(){if(expanded){expanded=false;area.classList.remove("ok-expanded");document.body.style.overflow=oldOverflow;fullRefresh();}else if(document.fullscreenElement===area)await document.exitFullscreen().catch(()=>{});}
+$("ok-full").onclick=async()=>{if(expanded||document.fullscreenElement===area)return exitFull();try{if(!area.requestFullscreen)throw Error("Unavailable");await area.requestFullscreen();}catch{oldOverflow=document.body.style.overflow;document.body.style.overflow="hidden";expanded=true;area.classList.add("ok-expanded");fullRefresh();}};
+document.addEventListener("fullscreenchange",fullRefresh);document.addEventListener("keydown",e=>{if(e.key==="Escape"&&expanded)void exitFull();});$("ok-login").onclick=async()=>{await exitFull();$("auth-open")?.click();};
+build();render();onAuthStateChanged(auth,user=>{++epoch;cancelAnimationFrame(frame);anim=null;state=null;wallet=0;type="marina";busy=false;failed=null;drag=null;confirmUntil=0;render();if(!eligible()){status(!user?"Sign in to play.":usingLocalFirebaseEmulators?"Select Live Firebase in Settings.":"Verify your email to play.");return;}const pending=restore(user.uid);if(pending){failed=pending;void send(pending.kind,{},true);}else void send("state");});
+setInterval(()=>{if(confirmUntil&&Date.now()>=confirmUntil){confirmUntil=0;controls();}},500);
