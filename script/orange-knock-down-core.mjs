@@ -13,7 +13,7 @@ const clamp=(x,lo,hi)=>Math.max(lo,Math.min(hi,x));
 function layoutRandom(seed){let x=seed>>>0;return ()=>{x=(x+0x6d2b79f5)>>>0;let t=x;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;};}
 export const fruiterChance=level=>Math.min(1,(1+.25*(level-1))/10000);
 export const tangieChance=level=>level>10?.01:0;
-export function layout(level,seed){
+function legacyLayout(level,seed){
  const rng=layoutRandom((seed^Math.imul(level,0x9e3779b1))>>>0),count=Math.min(8,3+Math.floor((level-1)/3)),branches=[],oranges=[];
  const slots=[{x:420,y:320},{x:680,y:225},{x:510,y:125},{x:780,y:365},{x:370,y:215},{x:750,y:105},{x:540,y:415},{x:615,y:295}];
  for(let i=0;i<count;i++){
@@ -25,21 +25,100 @@ export function layout(level,seed){
  }
  return {branches,oranges,shots:branches.reduce((n,b)=>n+b.hp,0)+2};
 }
-export function freshLevel(level,seed){const map=layout(level,seed);return {hp:map.branches.map(b=>b.hp),remaining:map.oranges.map(o=>o.id),marina:map.shots,won:false};}
-export function initialOrange(seed){return {version:1,revision:0,seed:seed>>>0,level:1,cleared:0,inventory:Object.fromEntries(SPECIALS.map(t=>[t,3])),board:freshLevel(1,seed)};}
+export const MATERIALS=Object.freeze({
+ wood:{hp:1,width:12,color:"#976039",edge:"#633c27",label:"Wood"},
+ glass:{hp:1,width:10,color:"#a2e4ed",edge:"#438b9e",label:"Glass"},
+ stone:{hp:2,width:17,color:"#a7a5a1",edge:"#666c75",label:"Stone"},
+ steel:{hp:3,width:18,color:"#718da4",edge:"#3c5266",label:"Steel"},
+ wall:{hp:2,width:26,color:"#c17b59",edge:"#79412d",label:"Brick wall"},
+ reflector:{hp:1,width:15,color:"#b59bf0",edge:"#6448a0",label:"Reflector"}
+});
+export function layout(level,seed,version=2){
+ if(version===1)return legacyLayout(level,seed);
+ const rng=layoutRandom((seed^Math.imul(level,0x9e3779b1))>>>0),branches=[],oranges=[];
+ const pick=n=>Math.floor(rng()*n);
+ function add(x1,y1,x2,y2,material="wood",supports=[]){
+  const m=MATERIALS[material],id=branches.length;
+  branches.push({id,x1,y1,x2,y2,hp:m.hp,material,width:m.width,supports,reflect:material==="reflector"});return id;
+ }
+ function fruit(shelf,x,y){oranges.push({id:oranges.length,branch:shelf,x,y});}
+ const mat=(floor,side)=>level>=16&&(floor+side)%3===0?"steel":level>=8&&(floor+side)%2===0?"stone":level>=3&&(floor+side)%2===1?"glass":"wood";
+ // Two compact, connected towers with genuine load-bearing beams.
+ // The orange shelves fall when either supporting column gives way.
+ const tower=(x,w,floors,baseY,side)=>{
+  let lower=null;
+  if(baseY<base-10){lower=add(x-12,baseY,x+w+12,baseY,"wood");add(x,base,x,baseY,"wood");add(x+w,base,x+w,baseY,"wood");const b=branches[lower];b.supports=[lower+1,lower+2];}
+  for(let i=0;i<floors;i++){
+   const bottom=baseY-i*70,top=bottom-70;
+   const left=add(x,bottom,x,top,mat(i,side),lower===null?[]:[lower]);
+   const right=add(x+w,bottom,x+w,top,mat(i,side+1),lower===null?[]:[lower]);
+   const shelf=add(x-10,top,x+w+10,top,mat(i,side),[left,right]);
+   fruit(shelf,x+w*.30,top-21);fruit(shelf,x+w*.70,top-21);
+   lower=shelf;
+   // Upper floors sit directly above the previous shelf, with a short
+   // visible space occupied by oranges. Columns remain outside the fruit.
+  }
+  return lower;
+ };
+ const offset=pick(25)-12,base=GROUND-5;
+ const floors=level<4?1:level<13?2:3;
+ if(level===1){
+  tower(475+offset,142,1,base,0);tower(745-offset,120,1,base-105,1);
+ }else{
+  tower(510+offset,134,floors,base,0);
+  tower(740-offset,120,level<7?1:level<19?2:3,base-35-pick(16),1);
+ }
+ // Low brick barricade teaches a high arc. From level 10 onward it grows.
+ if(level>=5){const height=level<10?104:level<20?142:174;add(355+pick(15),base,355+pick(15),base-height,"wall");}
+ // Backstop reflectors bank shots back through the orchard. Angled panels
+ // arrive later and redirect a descending shot rather than absorb damage.
+ if(level>=12)add(922,base-35,922,base-265,"reflector");
+ if(level>=20)add(430+pick(20),base-160,490+pick(20),base-225,"reflector");
+ const durability=branches.reduce((n,b)=>n+(b.reflect?0:b.hp),0);
+ // Enough for repeated structural hits, plus a limited miss allowance.
+ return {branches,oranges,shots:Math.max(5,Math.ceil(durability*.45)+2)};
+}
+export function levelIntro(level,version=2){
+ if(version===1)return "Classic orchard";
+ if(level<3)return "Wooden towers · Break supports to topple shelves";
+ if(level<5)return "Glass beams · Fragile structures";
+ if(level<8)return "Brick walls · Two hits or shoot over";
+ if(level<12)return "Stone supports · Two hits";
+ if(level<16)return "Reflective backstops · Bank your shots";
+ if(level<20)return "Steel supports · Three hits";
+ return "Mixed fortresses · Angled reflectors and taller walls";
+}
+export function freshLevel(level,seed,version=2){const map=layout(level,seed,version);return {hp:map.branches.map(b=>b.hp),remaining:map.oranges.map(o=>o.id),marina:map.shots,won:false};}
+export function initialOrange(seed){return {version:2,layoutVersion:2,revision:0,seed:seed>>>0,level:1,cleared:0,inventory:Object.fromEntries(SPECIALS.map(t=>[t,3])),board:freshLevel(1,seed)};}
 export function validShot(shot){
  if(!shot||!TYPES.includes(shot.type))return false;
  if(shot.type==="sniper")return Number.isInteger(shot.target)&&shot.target>=0&&shot.target<32;
  return Number.isInteger(shot.angle)&&shot.angle>=-20&&shot.angle<=80&&Number.isInteger(shot.power)&&shot.power>=1&&shot.power<=100;
 }
 export function velocity(angle,power){const rad=angle*Math.PI/180,speed=5+power*.19;return {vx:Math.cos(rad)*speed,vy:-Math.sin(rad)*speed};}
-function distanceSegment(x,y,b){const dx=b.x2-b.x1,dy=b.y2-b.y1,u=clamp(((x-b.x1)*dx+(y-b.y1)*dy)/(dx*dx+dy*dy),0,1);return Math.hypot(x-b.x1-u*dx,y-b.y1-u*dy);}
+function nearest(x,y,b){const dx=b.x2-b.x1,dy=b.y2-b.y1,u=clamp(((x-b.x1)*dx+(y-b.y1)*dy)/(dx*dx+dy*dy),0,1);return {x:b.x1+u*dx,y:b.y1+u*dy};}
+function distanceSegment(x,y,b){const q=nearest(x,y,b);return Math.hypot(x-q.x,y-q.y);}
+function reflectParticle(p,b,loss){
+ const q=nearest(p.x,p.y,b);let nx=p.x-q.x,ny=p.y-q.y,len=Math.hypot(nx,ny);
+ if(len<.001){nx=-(b.y2-b.y1);ny=b.x2-b.x1;len=Math.hypot(nx,ny);if(p.vx*nx+p.vy*ny>0){nx=-nx;ny=-ny;}}
+ nx/=len;ny/=len;
+ const dot=p.vx*nx+p.vy*ny;
+ if(dot<0){p.vx=(p.vx-2*dot*nx)*loss;p.vy=(p.vy-2*dot*ny)*loss;}
+ const r=p.r+(b.width||12)/2+.2;p.x=q.x+nx*r;p.y=q.y+ny*r;
+}
 export function simulateShot(map,board,shot,trace=false){
  if(!validShot(shot))throw Error("Invalid shot.");
  const hp=[...board.hp],remaining=new Set(board.remaining),events=[],frames=[];
  const drop=(id,t)=>{if(remaining.delete(id))events.push({kind:"orange",id,t});};
- const damageBranch=(id,amount,t)=>{if(!hp[id])return;hp[id]=Math.max(0,hp[id]-amount);events.push({kind:"damage",id,hp:hp[id],t});if(!hp[id]){events.push({kind:"branch",id,t});for(const o of map.oranges)if(o.branch===id)drop(o.id,t);}};
- const blast=(x,y,t)=>{events.push({kind:"blast",x,y,t});for(const b of map.branches)if(hp[b.id]&&distanceSegment(x,y,b)<115)damageBranch(b.id,2,t);for(const o of map.oranges)if(remaining.has(o.id)&&Math.hypot(x-o.x,y-o.y)<130)drop(o.id,t);};
+ const damageBranch=(id,amount,t)=>{
+  if(!hp[id]||map.branches[id].reflect)return;
+  hp[id]=Math.max(0,hp[id]-amount);events.push({kind:"damage",id,hp:hp[id],t});
+  if(!hp[id]){
+   events.push({kind:"branch",id,t});for(const o of map.oranges)if(o.branch===id)drop(o.id,t);
+   for(const b of map.branches)if(hp[b.id]&&b.supports?.includes(id))damageBranch(b.id,hp[b.id],t);
+  }
+ };
+ const blast=(x,y,t)=>{events.push({kind:"blast",x,y,t});for(const b of map.branches)if(hp[b.id]&&!b.reflect&&distanceSegment(x,y,b)<115)damageBranch(b.id,2,t);for(const o of map.oranges)if(remaining.has(o.id)&&Math.hypot(x-o.x,y-o.y)<130)drop(o.id,t);};
  if(shot.type==="sniper"){
   const o=map.oranges.find(o=>o.id===shot.target&&remaining.has(o.id));if(!o)throw Error("Choose a remaining orange.");
   if(trace)for(let t=0;t<=28;t++){const u=t/28;frames.push([{x:SLING.x+(o.x-SLING.x)*u,y:SLING.y+(o.y-SLING.y)*u-80*Math.sin(Math.PI*u),type:"sniper",r:15}]);}
@@ -52,9 +131,19 @@ export function simulateShot(map,board,shot,trace=false){
     for(let step=0;step<4&&p.active;step++){
      p.x+=p.vx/4;p.y+=p.vy/4;
      if(p.x>WIDTH+50||p.x<-50||p.y>GROUND-p.r||p.y<-360){if(p.type==="sploder"&&p.y>=GROUND-p.r)blast(p.x,p.y,t);p.active=false;break;}
-     for(const o of map.oranges){if(!remaining.has(o.id)||Math.hypot(p.x-o.x,p.y-o.y)>p.r+15)continue;drop(o.id,t);if(p.type==="sploder"){blast(p.x,p.y,t);p.active=false;break;}p.vx*=.88;p.vy*=.88;}
+     // Resolve solid material before touching fruit behind it.
+     for(const b of map.branches){
+      if(!hp[b.id]||distanceSegment(p.x,p.y,b)>p.r+(b.width||12)/2)continue;
+      if(b.reflect){reflectParticle(p,b,.88);events.push({kind:"bounce",x:p.x,y:p.y,t});continue;}
+      if(!p.hit.has(b.id)){
+       p.hit.add(b.id);
+       if(p.type==="sploder"){blast(p.x,p.y,t);p.active=false;break;}
+       damageBranch(b.id,p.type==="bulky"?3:1,t);
+      }
+      if(hp[b.id])reflectParticle(p,b,.40);else{p.vx*=.76;p.vy*=.76;}
+     }
      if(!p.active)break;
-     for(const b of map.branches){if(!hp[b.id]||p.hit.has(b.id)||distanceSegment(p.x,p.y,b)>p.r+6)continue;p.hit.add(b.id);if(p.type==="sploder"){blast(p.x,p.y,t);p.active=false;break;}damageBranch(b.id,p.type==="bulky"?3:1,t);if(hp[b.id]){p.vx*=.38;p.vy=-Math.abs(p.vy)*.4-1;}else{p.vx*=.76;p.vy*=.76;}}
+     for(const o of map.oranges){if(!remaining.has(o.id)||Math.hypot(p.x-o.x,p.y-o.y)>p.r+15)continue;drop(o.id,t);if(p.type==="sploder"){blast(p.x,p.y,t);p.active=false;break;}p.vx*=.88;p.vy*=.88;}
     }
    }
   }
@@ -65,12 +154,12 @@ export function applyOrange(state,action,rng=Math.random){
  const s={...state,inventory:{...state.inventory},board:{...state.board,hp:[...state.board.hp],remaining:[...state.board.remaining]}};
  const done=(applied,message,coins=0,rewards=[])=>({state:s,applied,message,coins,rewards});
  if(action.kind==="buy"){if(!SPECIALS.includes(action.type))return done(false,"Choose a power-up.");if(s.inventory[action.type]>=9999)return done(false,"Power-up storage is full.");s.inventory[action.type]++;return done(true,AXOLOTLS[action.type].name+" added.",-PRICE);}
- if(action.kind==="retry"){if(s.board.won)return done(false,"This level is already complete.");s.board=freshLevel(s.level,s.seed);return done(true,"Level reset. Used power-ups are not refunded.");}
- if(action.kind==="next"){if(!s.board.won)return done(false,"Clear all the oranges first.");if(s.level>=1000000)return done(false,"Maximum supported level reached.");s.level++;s.board=freshLevel(s.level,s.seed);return done(true,"Level "+s.level+" ready.");}
+ if(action.kind==="retry"){if(s.board.won)return done(false,"This level is already complete.");s.board=freshLevel(s.level,s.seed,s.layoutVersion||1);return done(true,"Level reset. Used power-ups are not refunded.");}
+ if(action.kind==="next"){if(!s.board.won)return done(false,"Clear all the oranges first.");if(s.level>=1000000)return done(false,"Maximum supported level reached.");s.level++;s.version=2;s.layoutVersion=2;s.board=freshLevel(s.level,s.seed,2);return done(true,"Level "+s.level+" ready.");}
  if(action.kind!=="shot"||!validShot(action.shot))return done(false,"Invalid shot.");
  if(s.board.won)return done(false,"Level already complete.");
  const shot=action.shot,type=shot.type;if(type==="marina"?s.board.marina<=0:s.inventory[type]<=0)return done(false,"No "+AXOLOTLS[type].name+" throws left.");
- let result;try{result=simulateShot(layout(s.level,s.seed),s.board,shot);}catch(e){return done(false,e.message);}
+ let result;try{result=simulateShot(layout(s.level,s.seed,s.layoutVersion||1),s.board,shot);}catch(e){return done(false,e.message);}
  if(type==="marina")s.board.marina--;else s.inventory[type]--;
  s.board.hp=result.hp;s.board.remaining=result.remaining;
  if(!result.remaining.length){s.board.won=true;s.cleared=Math.max(s.cleared,s.level);const rewards=[];if(rng()<fruiterChance(s.level))rewards.push("fruiter");if(s.level>10&&rng()<tangieChance(s.level))rewards.push("tangie");return done(true,"Level "+s.level+" cleared! +10 Star Coins.",WIN_COINS,rewards);}
