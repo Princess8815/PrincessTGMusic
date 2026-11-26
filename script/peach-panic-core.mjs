@@ -33,7 +33,7 @@ export function replayPeaches(seed,picks){
   if(!p||seen.has(id)||at<previous||at<p.born||at>=p.expires||at>=ROUND_MS)throw Error("Invalid peach timing.");
   seen.add(id);previous=at;
   const points=peachPoints(p,at);score+=points;
-  if(points>0&&p.blue)blue++;
+  if(p.blue)blue++;
   if(Math.abs(at-p.born-p.ripen)<=150)perfect++;
  }
  return {score,blue,perfect,picked:picks.length};

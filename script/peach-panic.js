@@ -93,7 +93,7 @@ function accept(data,notify=false){
 async function load(){
  if(!eligible()||busy)return;
  const current=epoch;busy=true;failed=null;controls();status("Loading Peach Panic…");
- try{const data=await request("state");if(current!==epoch)return;busy=false;loaded=true;accept(data);}
+ try{const data=await request("state");if(current!==epoch)return;busy=false;loaded=true;const pending=!!data.runId&&data.closed&&restore(data.runId).length>0;accept(data,pending);}
  catch(e){if(current===epoch){busy=false;loaded=false;status(e.message);controls();}}
 }
 async function start(retryId){

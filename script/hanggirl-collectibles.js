@@ -2,6 +2,7 @@
 import {auth,db} from "./firebase.js";
 import {TROPHY} from "./apple-catcher-core.mjs";
 import {CHERRY_TROPHY} from "./cherry-empire-core.mjs";
+import {PEACH_TROPHY} from "./peach-panic-core.mjs";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {collection,onSnapshot} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 export const GAME_AXOLOTLS=[
@@ -14,7 +15,7 @@ export const GAME_AXOLOTLS=[
 export const GAME_TROPHIES=[
  ["hang-girl-mastery","Hang Girl Mastery","Win 1,000 Hanggirl games on any difficulty."],
  ["hang-girl-god","Hang Girl God","Win 100 Hard games in a row."],
- TROPHY,CHERRY_TROPHY
+ TROPHY,CHERRY_TROPHY,PEACH_TROPHY
 ];
 const grid=document.getElementById("trophy-grid"),status=document.getElementById("trophy-status");
 if(grid&&status){
@@ -27,6 +28,7 @@ if(grid&&status){
    art.innerHTML='<svg viewBox="0 0 100 100" width="100" height="100"><g fill="'+(id==="hang-girl-god"?"#bca7ff":"#f7ce65")+'" stroke="#74562d" stroke-width="2"><path d="M28 15H72V38Q72 60 50 64Q28 60 28 38Z"/><path d="M28 22H13V31Q13 49 33 49M72 22H87V31Q87 49 67 49" fill="none" stroke-width="6"/><path d="M45 62H55V80H72V89H28V80H45Z"/><path d="m50 23 5 11 12 1-9 8 3 12-11-7-11 7 3-12-9-8 12-1z" fill="#fff3c8"/></g></svg>';
    if(id==="apple-tree-basket")art.innerHTML='<svg viewBox="0 0 100 100" width="100" height="100"><g stroke="#77512e" stroke-width="2" stroke-linejoin="round"><path d="M46 72L44 31H55L54 72Z" fill="#a66a3a"/><path d="M48 50L32 32M51 48L69 28" fill="none" stroke-width="5"/><g fill="#76b754" stroke="#3b7136"><circle cx="30" cy="32" r="19"/><circle cx="53" cy="21" r="19"/><circle cx="70" cy="35" r="18"/><circle cx="49" cy="43" r="20"/></g><g fill="#e74c50" stroke="#992e32"><circle cx="26" cy="32" r="5"/><circle cx="49" cy="17" r="5"/><circle cx="68" cy="36" r="5"/><circle cx="49" cy="43" r="5"/></g><path d="M23 67H77L69 92H31Z" fill="#e7b06c"/><path d="M29 75H71M32 83H68M39 69L42 91M50 69V92M61 69L58 91" stroke="#a87339" fill="none"/><rect x="20" y="64" width="60" height="7" rx="3" fill="#f8cc83"/></g></svg>';
    if(id==="cherry-garden-mastery")art.innerHTML='<svg viewBox="0 0 100 100" width="100" height="100"><g stroke="#8c622d" stroke-width="2" stroke-linejoin="round"><path d="M12 75Q50 64 88 75L81 87H19Z" fill="#f7cd70"/><path d="M32 87H68L75 96H25Z" fill="#d5a34d"/><path d="M21 75V47M50 73V32M79 75V47" stroke="#985c39" stroke-width="5"/><g fill="#76b754" stroke="#3d7545"><circle cx="15" cy="46" r="12"/><circle cx="27" cy="44" r="13"/><circle cx="50" cy="30" r="19"/><circle cx="72" cy="45" r="13"/><circle cx="85" cy="46" r="12"/></g><g stroke="#426d38"><path d="M19 41L13 52M19 41L25 52M49 24L40 38M49 24L58 38M79 41L73 52M79 41L85 52" fill="none"/></g><g fill="#d83757" stroke="#8f2947"><circle cx="13" cy="52" r="4"/><circle cx="25" cy="52" r="4"/><circle cx="40" cy="38" r="5"/><circle cx="58" cy="38" r="5"/><circle cx="73" cy="52" r="4"/><circle cx="85" cy="52" r="4"/></g><path d="m50 4 3 7 8 1-6 5 2 8-7-4-7 4 2-8-6-5 8-1z" fill="#ffe7a1"/><path d="M38 80H62" stroke="#fff0bd" stroke-width="3"/></g></svg>';
+   if(id==="peach-panic-mastery")art.innerHTML='<svg viewBox="0 0 100 100" width="100" height="100"><g stroke="#8e6332" stroke-width="2" stroke-linejoin="round"><circle cx="50" cy="42" r="35" fill="#f8d67d"/><circle cx="50" cy="42" r="29" fill="#fff0ba"/><path d="M36 69H64L60 82H71V92H29V82H40Z" fill="#d5a14f"/><path d="M50 26Q46 12 53 8" stroke="#895b40" fill="none" stroke-width="4"/><path d="M51 21Q62 7 77 15Q68 26 51 21Z" fill="#82b968" stroke="#477747"/><path d="M50 29C35 18 20 31 24 46Q27 63 50 69Q72 63 76 46C80 30 65 18 50 29Z" fill="#ffb27e" stroke="#c66f57"/><path d="M50 30Q44 47 50 63" fill="none" stroke="#d48169"/><ellipse cx="36" cy="39" rx="6" ry="9" fill="#ffe5c0" stroke="none"/><path d="M50 13V7M79 41H85M21 41H15" stroke="#9a6b39" stroke-width="3"/><path d="M43 86H57" stroke="#ffedba" stroke-width="3"/></g></svg>';
    if(!found.has(id))art.style.opacity=".35";
    const title=document.createElement("h3");title.textContent=name;
    const hint=document.createElement("p");hint.textContent=requirement;
