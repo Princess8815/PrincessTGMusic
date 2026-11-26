@@ -1,7 +1,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import {initialGarden,makeTree,stage,growthWork,advanceGarden,gardenAction,damage,dropQuarters,dropCoins,makeOpponent,fruiterChance,INVENTORY_CAP,INVENTORY_MAX,inventoryCapacity,inventoryUpgradeCost,WATER_MS,FERT_MS,FERT_COST,FRUIT_WORK} from "../../../script/giving-tree-core.mjs";
+import {initialGarden,makeTree,stage,growthWork,advanceGarden,gardenAction,damage,dropQuarters,dropCoins,makeOpponent,fruiterChance,sortedPears,INVENTORY_CAP,INVENTORY_MAX,inventoryCapacity,inventoryUpgradeCost,WATER_MS,FERT_MS,FERT_COST,FRUIT_WORK} from "../../../script/giving-tree-core.mjs";
 import {gardenWithStorage} from "../giving-tree.mjs";
 const NOW=1700000000000,mid=()=>.5;
 function planted(pear={attack:1,defense:1}){const s=initialGarden(NOW);s.inventory[0]={id:1,...pear};return gardenAction(s,{kind:"plant",plot:0,fruitId:1},NOW,0,mid).state;}
@@ -105,4 +105,38 @@ test("inventory purchase is atomically debited once even when the same request i
  const input={kind:"upgradeInventory",requestId:"00000000-0000-4000-8000-000000000001",revision:0};
  const call=()=>gardenWithStorage({read,commit,root,uid,input,clock:()=>NOW,rng:mid});
  const a=await call(),b=await call();assert.equal(a.wallet,75);assert.equal(b.wallet,75);assert.equal(a.state.inventoryCapacity,50);assert.equal(b.state.inventoryCapacity,50);assert.equal(commits,1);
+});
+
+test("sorting is descending, stable by newest tie, and does not mutate stored fruit",()=>{
+ const pears=[{id:1,attack:4.2,defense:1},{id:2,attack:2,defense:5},{id:3,attack:3,defense:4},{id:4,attack:4.2,defense:1.1}];
+ assert.deepEqual(sortedPears(pears,"attack").map(p=>p.id),[4,1,3,2]);
+ assert.deepEqual(sortedPears(pears,"defense").map(p=>p.id),[2,3,4,1]);
+ assert.deepEqual(sortedPears(pears,"total").map(p=>p.id),[3,2,4,1]);
+ assert.deepEqual(sortedPears(pears,"newest").map(p=>p.id),[4,3,2,1]);
+ assert.deepEqual(pears.map(p=>p.id),[1,2,3,4]);
+});
+test("bulk discard validates exact IDs and leaves trees, other fruit and earned coins intact",()=>{
+ const s=mature(planted({attack:3,defense:3}));s.inventory=[{id:2,attack:3,defense:3},{id:3,attack:3.2,defense:2.9},{id:4,attack:3.4,defense:3}];s.nextFruitId=5;
+ for(const fruitIds of [[2,2],[2,99],[],["2"]]){
+  const bad=gardenAction(s,{kind:"discardMany",fruitIds},NOW,0,mid);assert.equal(bad.applied,false);assert.equal(bad.state.inventory.length,3);
+ }
+ const r=gardenAction(s,{kind:"discardMany",fruitIds:[2,4]},NOW,0,mid);assert.equal(r.applied,true);assert.deepEqual(r.state.inventory.map(p=>p.id),[3]);assert.equal(r.effects.coins,0);assert.equal(r.state.plots[0].attack,3);
+ const refused=gardenAction(s,{kind:"clearInventory",fruitIds:[2]},NOW,0,mid);assert.equal(refused.applied,false);
+ const clear=gardenAction(s,{kind:"clearInventory",fruitIds:[2,3,4]},NOW+FRUIT_WORK,0,mid);assert.equal(clear.applied,true);assert.deepEqual(clear.state.inventory.map(p=>p.id),[5]);assert.equal(clear.effects.coins,1);
+});
+test("clear all never softlocks a garden and combat still rejects bulk fruit IDs",()=>{
+ const s=initialGarden(NOW),r=gardenAction(s,{kind:"clearInventory",fruitIds:[1]},NOW,0,mid);
+ assert.equal(r.applied,true);assert.equal(r.state.inventory.length,1);assert.equal(r.state.inventory[0].attack,1);assert.equal(r.effects.coins,0);
+ const b=mature(planted({attack:5,defense:5}));b.inventory=[{id:2,attack:5,defense:5},{id:3,attack:5,defense:5}];
+ const blocked=gardenAction(b,{kind:"throw",target:"enemy",fruitId:2,fruitIds:[2,3]},NOW,0,mid);assert.equal(blocked.applied,false);assert.equal(blocked.state.inventory.length,2);
+ const hit=gardenAction(b,{kind:"throw",target:"enemy",fruitId:2},NOW,0,mid);assert.equal(hit.applied,true);assert.equal(hit.state.inventory.length,1);assert.equal(hit.state.enemy.hp,1);
+});
+test("bulk discard is atomic, saved and idempotent on server retries",async()=>{
+ const root="documents",uid="bulk-test",user="users/"+uid,path=user+"/privateGames/givingTree";
+ const s=mature(planted({attack:3,defense:3}));s.inventory=[{id:2,attack:3,defense:3},{id:3,attack:3.2,defense:3},{id:4,attack:3,defense:3.4}];s.nextFruitId=5;
+ const store=new Map([[user,{updateTime:"1",fields:{status:{stringValue:"active"}}}],[path,{updateTime:"2",fields:{payload:{stringValue:JSON.stringify({state:s})}}}]]);let commits=0;
+ const read=async p=>store.get(p)||null,commit=async writes=>{commits++;for(const w of writes)if(w.update)store.set(w.update.name.slice(root.length+1),{updateTime:String(commits+2),fields:w.update.fields});return true;};
+ const input={kind:"discardMany",fruitIds:[2,4],requestId:"00000000-0000-4000-8000-000000000001",revision:s.revision};
+ const call=()=>gardenWithStorage({read,commit,root,uid,input,clock:()=>NOW,rng:mid});
+ const a=await call(),b=await call();assert.deepEqual(a.state.inventory.map(p=>p.id),[3]);assert.deepEqual(a.state,b.state);assert.equal(commits,1);
 });

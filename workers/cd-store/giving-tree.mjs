@@ -6,7 +6,7 @@ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
 const str=v=>({stringValue:v}),integer=v=>({integerValue:String(v)});
 const random=()=>(crypto.getRandomValues(new Uint32Array(1))[0]+.5)/4294967296;
 function validate(input){
- if(!input||!uuid.test(input.requestId||"")||!["sync","plant","water","fertilize","cut","discard","throw","upgradeInventory"].includes(input.kind))fail("Invalid garden action.");
+ if(!input||!uuid.test(input.requestId||"")||!["sync","plant","water","fertilize","cut","discard","discardMany","clearInventory","throw","upgradeInventory"].includes(input.kind))fail("Invalid garden action.");
  if(input.kind!=="sync"&&(!Number.isSafeInteger(input.revision)||input.revision<0))fail("Refresh your garden first.");
 }
 export async function gardenWithStorage({read,commit,root,uid,input,clock=Date.now,rng=random}){

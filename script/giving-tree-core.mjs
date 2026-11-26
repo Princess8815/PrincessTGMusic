@@ -84,6 +84,10 @@ export function advanceGarden(state,now,rng=Math.random){
  }
  s.lastAt=now;heal(s,now);unlock(s);return {state:s,effects:fx};
 }
+export function sortedPears(inventory,sort="newest"){
+ const stat=p=>sort==="attack"?p.attack:sort==="defense"?p.defense:p.attack+p.defense;
+ return [...inventory].sort((a,b)=>sort==="newest"?b.id-a.id:stat(b)-stat(a)||b.id-a.id);
+}
 export function damage(pear,opponent){
  return pear.defense<opponent.attack||pear.attack<=opponent.defense?0:Math.max(0,Math.round(pear.attack*100)-Math.round(opponent.defense*100))/100;
 }
@@ -129,14 +133,23 @@ export function gardenAction(state,action,now,wallet=0,rng=Math.random){
   if(!t||stage(t)!==3)return bad("Only fully grown trees can be cut down.");
   s.plots[idx]=null;ensureSeed(s);return done(true,"Tree removed. Its plot is ready for a new pear.");
  }
- if(action.kind==="discard"){
-  if(!pear)return bad("Select a pear first.");
-  s.inventory.splice(pi,1);ensureSeed(s);return done(true,"Pear discarded.");
+ if(action.kind==="discard"||action.kind==="discardMany"||action.kind==="clearInventory"){
+  // Use IDs from the confirmed view, not the newly generated inventory.
+  // Fruit generated during the request survives a bulk clear.
+  const ids=action.kind==="discard"?[action.fruitId]:action.fruitIds;
+  if(!Array.isArray(ids)||!ids.length||ids.length>INVENTORY_MAX||ids.some(id=>!Number.isSafeInteger(id)||id<1))return bad("Invalid pear selection.");
+  const targets=new Set(ids);
+  if(targets.size!==ids.length)return bad("Duplicate pear selection.");
+  const known=new Set(state.inventory.map(p=>p.id));
+  if(ids.some(id=>!known.has(id)))return bad("Your inventory changed. Select pears again.");
+  if(action.kind==="clearInventory"&&ids.length!==known.size)return bad("Review the full inventory before clearing.");
+  s.inventory=s.inventory.filter(p=>!targets.has(p.id));ensureSeed(s);
+  return done(true,targets.size.toLocaleString()+" pear"+(targets.size===1?"":"s")+" discarded.");
  }
  if(action.kind==="throw"){
   const kind=action.target;
   if(!["enemy","boss"].includes(kind)||!s[kind==="enemy"?"enemiesUnlocked":"bossesUnlocked"])return bad("That battle is not unlocked.");
-  if(!pear)return bad("Select a pear to throw.");
+  if(!pear||action.fruitIds!==undefined)return bad("Select exactly one pear to throw.");
   const op=s[kind],hit=damage(pear,op);
   s.inventory.splice(pi,1);
   if(kind==="boss"&&!op.deadline)op.deadline=s.lastAt+30000;

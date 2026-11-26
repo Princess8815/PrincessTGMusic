@@ -89,3 +89,5 @@
  background:#b91c1c!important;color:#fff!important;border:1px solid #fca5a5!important;
  font-weight:700;
 }
+
+.gt-inventory-tools{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:4px 0;flex:none;font-size:.78rem}.gt-inventory-tools select{min-width:0;max-width:100%;border:1px solid #9cb772!important;background:#edf3d4!important;color:#293a20!important;border-radius:6px;padding:4px;font:inherit}.gt-main:is(:fullscreen,.gt-expanded) .gt-inventory-tools{margin:2px 0}.gt-main .gt-pear[aria-pressed=true]{position:relative}.gt-main .gt-pear[aria-pressed=true]::after{content:'✓';position:absolute;top:1px;right:3px;color:#49320d;font-size:.65rem;font-weight:800}.gt-main:is(:fullscreen,.gt-expanded) .gt-inventory{grid-template-columns:repeat(auto-fill,minmax(78px,1fr))}

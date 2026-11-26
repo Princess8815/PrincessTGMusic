@@ -1,13 +1,17 @@
 
 import {auth,usingLocalFirebaseEmulators} from "./firebase.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-import {PLOTS,INVENTORY_STEP,INVENTORY_MAX,inventoryCapacity,inventoryUpgradeCost,WATER_MS,FERT_MS,FERT_COST,FRUIT_WORK,growthWork,stage,stageNames,damage,dropCoins,advanceGarden} from "./giving-tree-core.mjs";
+import {PLOTS,INVENTORY_STEP,INVENTORY_MAX,inventoryCapacity,inventoryUpgradeCost,WATER_MS,FERT_MS,FERT_COST,FRUIT_WORK,growthWork,stage,stageNames,damage,dropCoins,advanceGarden,sortedPears} from "./giving-tree-core.mjs";
 import {showToast} from "./toast-sound.js";
 const $=id=>document.getElementById(id),area=$("gt-area"),endpoint="https://princesstg-cd-store-live.transgirl1991.workers.dev/games/giving-tree";
 const eligible=()=>!!auth.currentUser?.emailVerified&&!usingLocalFirebaseEmulators,fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:2}),time=ms=>{let s=Math.max(0,Math.ceil(ms/1000));return s>=3600?Math.floor(s/3600)+"h "+Math.floor(s/60)%60+"m":s>=60?Math.floor(s/60)+"m "+s%60+"s":s+"s";};
-let saved=null,wallet=0,selected=null,offset=0,busy=false,failed=null,epoch=0,lastSync=0,seen=new Set(),expanded=false,oldOverflow="",inventorySignature="";
+let saved=null,wallet=0,selected=new Set(),offset=0,busy=false,failed=null,epoch=0,lastSync=0,seen=new Set(),expanded=false,oldOverflow="",inventorySignature="";
 const plots=[],opponents={};
-let armed=null;
+let armed=null,sortMode="newest";
+const selectedIds=()=>[...selected].sort((a,b)=>a-b);
+const singleId=()=>selected.size===1?selected.values().next().value:null;
+const allIds=()=>saved?.inventory.map(p=>p.id).sort((a,b)=>a-b)||[];
+const selectionKey=ids=>ids.join(",");
 function isArmed(kind,id){return armed?.kind===kind&&armed.id===id&&Date.now()<armed.until;}
 function confirmAction(kind,id,extras){
  if(busy||failed||!saved||!eligible())return;
@@ -35,7 +39,7 @@ function build(){
  for(let i=0;i<PLOTS;i++){
   const card=el(grid,"article","gt-plot"),head=el(card,"header"),title=el(head,"h3"),stats=el(head,"span","gt-stats");title.textContent="Plot "+(i+1);
   const art=el(card,"div","gt-plot-art"),picture=el(art,"div");picture.style.cssText="width:100%;height:100%;position:absolute;inset:0";
-  const plant=btn(art,"Plant selected pear",()=>send("plant",{plot:i,fruitId:selected}));
+  const plant=btn(art,"Plant selected pear",()=>send("plant",{plot:i,fruitId:singleId()}));
   const panel=el(card,"div","gt-care"),state=el(panel,"p","gt-small"),growth=meter(panel,"Growth / fruit"),water=meter(panel,"Water","gt-blue"),fert=meter(panel,"Fertilizer","gt-gold");
   const controls=el(panel,"div","gt-plot-controls"),w=btn(controls,"Water",()=>send("water",{plot:i}),"gt-water");
   const qty=el(controls,"input");qty.type="number";qty.min="1";qty.step="1";qty.value="1";qty.setAttribute("aria-label","Fertilizer packs for plot "+(i+1));qty.oninput=render;
@@ -45,13 +49,13 @@ function build(){
  }
  for(const kind of ["enemy","boss"]){
   const card=el($("gt-opponents"),"article","gt-opponent"),title=el(card,"h3"),art=el(card,"div","gt-opponent-art");art.innerHTML=monsterArt(kind);
-  const detail=el(card,"div","gt-small"),hp=meter(card,"Health","gt-hp"),timer=el(card,"div","gt-small"),reward=el(card,"div","gt-small"),thrower=btn(card,"Throw selected pear",()=>send("throw",{target:kind,fruitId:selected}));
+  const detail=el(card,"div","gt-small"),hp=meter(card,"Health","gt-hp"),timer=el(card,"div","gt-small"),reward=el(card,"div","gt-small"),thrower=btn(card,"Throw selected pear",()=>send("throw",{target:kind,fruitId:singleId()}));
   opponents[kind]={card,title,detail,hp,timer,reward,thrower};
  }
 }
 function render(){
  if(armed&&Date.now()>=armed.until)armed=null;
- const enabled=eligible()&&!!saved&&!busy&&!failed,pear=saved?.inventory.find(p=>p.id===selected);
+ const enabled=eligible()&&!!saved&&!busy&&!failed,pear=saved?.inventory.find(p=>p.id===singleId());
  $("gt-login").hidden=!!auth.currentUser||usingLocalFirebaseEmulators;$("gt-retry").hidden=!failed||busy;$("gt-sync").disabled=!enabled;
  $("gt-wallet").textContent=fmt(wallet);$("gt-count").textContent=fmt(saved?.inventory.length||0)+" / "+fmt(inventoryCapacity(saved));$("gt-enemies").textContent=fmt(saved?.enemiesDefeated||0);$("gt-bosses").textContent=fmt(saved?.bossesDefeated||0);
  const now=Math.max(saved?.lastAt||0,Date.now()+offset);
@@ -84,18 +88,21 @@ function render(){
   c.thrower.textContent=pear&&unlocked?"Throw pear · "+fmt(damage(pear,op))+" damage":"Throw selected pear";
   c.thrower.disabled=!enabled||!pear||!unlocked;
  }
- $("gt-selected").textContent=pear?"Selected pear: ATK "+fmt(pear.attack)+" · DEF "+fmt(pear.defense)+". Click an empty patch or throw at an opponent.":"Select a pear to plant or throw.";
- $("gt-discard").disabled=!enabled||!pear;confirmationButton($("gt-discard"),!!pear&&isArmed("discard",pear.id),"Discard");
+ $("gt-selected").textContent=pear?"Selected pear: ATK "+fmt(pear.attack)+" · DEF "+fmt(pear.defense):selected.size>1?fmt(selected.size)+" selected · Discard only; select one to plant or throw.":"Select one pear to plant or throw, or several to discard.";
+ $("gt-discard").disabled=!enabled||!selected.size;confirmationButton($("gt-discard"),isArmed("discardMany",selectionKey(selectedIds())),"Discard ("+selected.size+")");
+ const ids=allIds();$("gt-clear-inventory").disabled=!enabled||!ids.length;confirmationButton($("gt-clear-inventory"),isArmed("clearInventory",selectionKey(ids)),"Clear all");
+ $("gt-clear-selection").disabled=!selected.size;
+ $("gt-sort").disabled=!saved;
  const cap=inventoryCapacity(saved),price=inventoryUpgradeCost(saved),full=cap>=INVENTORY_MAX;
  $("gt-upgrade-inventory").textContent=full?"Inventory max":"+"+Math.min(INVENTORY_STEP,INVENTORY_MAX-cap)+" slots · "+fmt(price)+" ★";
  $("gt-upgrade-inventory").disabled=!enabled||full||wallet<price;
  $("gt-upgrade-inventory").title=full?"Storage safety limit reached":"Permanently expand pear inventory for "+fmt(price)+" Star Coins.";
- const signature=JSON.stringify([saved?.inventory||[],selected,enabled]);
+ const signature=JSON.stringify([saved?.inventory||[],selectedIds(),enabled,sortMode]);
  if(signature!==inventorySignature){
   inventorySignature=signature;const inv=$("gt-inventory");inv.replaceChildren();
-  for(const p of saved?.inventory||[]){
-   const b=btn(inv,"",()=>{armed=null;selected=selected===p.id?null:p.id;render();},"gt-pear");b.innerHTML=pearArt;
-   const text=el(b,"small","gt-pear-stats");const attack=el(text,"span"),defense=el(text,"span");attack.textContent="ATK "+fmt(p.attack);defense.textContent="DEF "+fmt(p.defense);b.setAttribute("aria-pressed",String(selected===p.id));b.setAttribute("aria-label","Pear attack "+p.attack+", defense "+p.defense);b.disabled=!enabled;
+  for(const p of sortedPears(saved?.inventory||[],sortMode)){
+   const b=btn(inv,"",()=>{armed=null;if(selected.has(p.id))selected.delete(p.id);else selected.add(p.id);render();},"gt-pear");b.innerHTML=pearArt;
+   const text=el(b,"small","gt-pear-stats");const attack=el(text,"span"),defense=el(text,"span");attack.textContent="ATK "+fmt(p.attack);defense.textContent="DEF "+fmt(p.defense);b.setAttribute("aria-pressed",String(selected.has(p.id)));b.setAttribute("aria-label","Pear attack "+p.attack+", defense "+p.defense);b.disabled=!enabled;
   }
  }
 }
@@ -114,7 +121,9 @@ async function send(kind,extras={},retry=false){
   const data=await request(action);if(current!==epoch)return;
   if(data.conflict)armed=null;
   saved=data.state;wallet=data.wallet;offset=data.serverNow-Date.now();lastSync=Date.now();failed=null;busy=false;
-  if(!saved.inventory.some(p=>p.id===selected))selected=null;
+  const available=new Set(saved.inventory.map(p=>p.id));for(const id of selected)if(!available.has(id))selected.delete(id);
+  if(armed?.kind==="clearInventory"&&armed.id!==selectionKey(allIds()))armed=null;
+  if(armed?.kind==="discardMany"&&armed.id!==selectionKey(selectedIds()))armed=null;
   const fx=data.effects||{};
   for(const id of data.rewards||[])if(!seen.has(id)){seen.add(id);showToast(id==="pearlie"?"You found Pearlie in your pear garden!":"You found Fruiter!");}
   if(fx.coins)showToast("Your garden earned "+fmt(fx.coins)+" Star Coin"+(fx.coins===1?"":"s")+"!");
@@ -129,8 +138,11 @@ document.addEventListener("fullscreenchange",fullRefresh);document.addEventListe
 $("gt-login").onclick=async()=>{await exitFullscreen();$("auth-open")?.click();};
 $("gt-sync").onclick=()=>send("sync");$("gt-retry").onclick=()=>{if(failed)send(failed.kind,{},true);};
 $("gt-upgrade-inventory").onclick=()=>send("upgradeInventory");
-$("gt-discard").onclick=()=>{if(selected!==null)confirmAction("discard",selected,{fruitId:selected});};
+$("gt-discard").onclick=()=>{const ids=selectedIds();if(ids.length)confirmAction("discardMany",selectionKey(ids),{fruitIds:ids});};
+$("gt-clear-inventory").onclick=()=>{const ids=allIds();if(ids.length)confirmAction("clearInventory",selectionKey(ids),{fruitIds:ids});};
+$("gt-clear-selection").onclick=()=>{armed=null;selected.clear();render();};
+$("gt-sort").onchange=()=>{sortMode=$("gt-sort").value;render();};
 build();render();
-onAuthStateChanged(auth,user=>{++epoch;armed=null;saved=null;wallet=0;selected=null;busy=false;failed=null;offset=0;lastSync=0;seen=new Set();render();if(!eligible()){status(usingLocalFirebaseEmulators?"Choose Live Firebase in Settings to play.":!user?"Sign in to grow your pear garden.":"Verify your email to play.");return;}void send("sync");});
+onAuthStateChanged(auth,user=>{++epoch;armed=null;saved=null;wallet=0;selected.clear();busy=false;failed=null;offset=0;lastSync=0;seen=new Set();render();if(!eligible()){status(usingLocalFirebaseEmulators?"Choose Live Firebase in Settings to play.":!user?"Sign in to grow your pear garden.":"Verify your email to play.");return;}void send("sync");});
 setInterval(()=>{if(document.hidden)return;render();if(eligible()&&saved&&!busy&&!failed&&Date.now()-lastSync>=30000)void send("sync");},1000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&eligible()&&!busy&&!failed&&Date.now()-lastSync>=30000)void send("sync");});
