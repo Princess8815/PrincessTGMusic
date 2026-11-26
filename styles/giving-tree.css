@@ -80,3 +80,5 @@
  .gt-main:is(:fullscreen,.gt-expanded) .gt-summary>div{display:block}
  .gt-main:is(:fullscreen,.gt-expanded) .gt-inventory button.gt-pear{min-height:44px}
 }
+
+.gt-inventory-actions{display:flex;gap:4px;flex-wrap:wrap;align-items:center}.gt-main button#gt-upgrade-inventory:not(:disabled){background:#ffe2ab!important;color:#593710!important;border-color:#ca9f59!important}.gt-main:is(:fullscreen,.gt-expanded) .gt-inventory-panel>header{gap:3px}.gt-main:is(:fullscreen,.gt-expanded) .gt-inventory-actions{gap:3px}

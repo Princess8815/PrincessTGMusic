@@ -1,10 +1,10 @@
 
 import {auth,usingLocalFirebaseEmulators} from "./firebase.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-import {PLOTS,INVENTORY_CAP,WATER_MS,FERT_MS,FERT_COST,FRUIT_WORK,growthWork,stage,stageNames,damage,dropCoins,advanceGarden} from "./giving-tree-core.mjs";
+import {PLOTS,INVENTORY_STEP,INVENTORY_MAX,inventoryCapacity,inventoryUpgradeCost,WATER_MS,FERT_MS,FERT_COST,FRUIT_WORK,growthWork,stage,stageNames,damage,dropCoins,advanceGarden} from "./giving-tree-core.mjs";
 import {showToast} from "./toast-sound.js";
 const $=id=>document.getElementById(id),area=$("gt-area"),endpoint="https://princesstg-cd-store-live.transgirl1991.workers.dev/games/giving-tree";
-const eligible=()=>!!auth.currentUser?.emailVerified&&!usingLocalFirebaseEmulators,fmt=n=>Number(n).toLocaleString(),time=ms=>{let s=Math.max(0,Math.ceil(ms/1000));return s>=3600?Math.floor(s/3600)+"h "+Math.floor(s/60)%60+"m":s>=60?Math.floor(s/60)+"m "+s%60+"s":s+"s";};
+const eligible=()=>!!auth.currentUser?.emailVerified&&!usingLocalFirebaseEmulators,fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:2}),time=ms=>{let s=Math.max(0,Math.ceil(ms/1000));return s>=3600?Math.floor(s/3600)+"h "+Math.floor(s/60)%60+"m":s>=60?Math.floor(s/60)+"m "+s%60+"s":s+"s";};
 let saved=null,wallet=0,selected=null,offset=0,busy=false,failed=null,epoch=0,lastSync=0,seen=new Set(),expanded=false,oldOverflow="",inventorySignature="";
 const plots=[],opponents={};
 const pearArt='<svg viewBox="0 0 70 80" aria-hidden="true"><path d="M35 20Q31 11 37 4" stroke="#835a39" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M37 15Q44 1 58 8Q53 20 37 15Z" fill="#69a74e" stroke="#416f37" stroke-width="2"/><path d="M35 19C21 19 24 36 15 47C-2 70 22 79 35 77C52 79 71 66 55 47C46 35 50 19 35 19Z" fill="#b7d568" stroke="#628d40" stroke-width="2.5"/><ellipse cx="24" cy="48" rx="7" ry="14" transform="rotate(18 24 48)" fill="#f6f5c5" opacity=".65"/><path d="M48 55q6 7 0 13" stroke="#86ad4c" stroke-width="2" fill="none"/></svg>';
@@ -40,7 +40,7 @@ function build(){
 function render(){
  const enabled=eligible()&&!!saved&&!busy&&!failed,pear=saved?.inventory.find(p=>p.id===selected);
  $("gt-login").hidden=!!auth.currentUser||usingLocalFirebaseEmulators;$("gt-retry").hidden=!failed||busy;$("gt-sync").disabled=!enabled;
- $("gt-wallet").textContent=fmt(wallet);$("gt-count").textContent=(saved?.inventory.length||0)+" / "+INVENTORY_CAP;$("gt-enemies").textContent=fmt(saved?.enemiesDefeated||0);$("gt-bosses").textContent=fmt(saved?.bossesDefeated||0);
+ $("gt-wallet").textContent=fmt(wallet);$("gt-count").textContent=fmt(saved?.inventory.length||0)+" / "+fmt(inventoryCapacity(saved));$("gt-enemies").textContent=fmt(saved?.enemiesDefeated||0);$("gt-bosses").textContent=fmt(saved?.bossesDefeated||0);
  const now=Math.max(saved?.lastAt||0,Date.now()+offset);
  // Project care bars and stage locally; inventory and coin awards only appear
  // after a confirmed server sync. Constant deterministic RNG avoids UI rolls.
@@ -51,7 +51,7 @@ function render(){
   c.stats.textContent=t?"ATK "+fmt(t.attack)+" · DEF "+fmt(t.defense):"Empty";
   c.art.classList.toggle("gt-empty",!t);c.plant.hidden=!!t;c.plant.disabled=!enabled||!pear;c.panel.hidden=!t;
   if(!t)continue;
-  c.state.textContent=stageNames[st]+(t.water===0?" · Needs water":st===3&&saved.inventory.length>=INVENTORY_CAP?" · Inventory full":"");
+  c.state.textContent=stageNames[st]+(t.water===0?" · Needs water":st===3&&projected.inventory.length>=inventoryCapacity(saved)?" · Inventory full":"");
   setMeter(c.growth,st===3?t.fruitWork/FRUIT_WORK:t.growth/growthWork(t),st===3?"Next pear":Math.floor(100*t.growth/growthWork(t))+"%");
   setMeter(c.water,t.water/WATER_MS,time(t.water));
   setMeter(c.fert,t.fertilizer/FERT_MS,t.fertilizer?time(t.fertilizer)+" boost":"None");
@@ -73,6 +73,10 @@ function render(){
  }
  $("gt-selected").textContent=pear?"Selected pear: ATK "+fmt(pear.attack)+" · DEF "+fmt(pear.defense)+". Click an empty patch or throw at an opponent.":"Select a pear to plant or throw.";
  $("gt-discard").disabled=!enabled||!pear;
+ const cap=inventoryCapacity(saved),price=inventoryUpgradeCost(saved),full=cap>=INVENTORY_MAX;
+ $("gt-upgrade-inventory").textContent=full?"Inventory max":"+"+Math.min(INVENTORY_STEP,INVENTORY_MAX-cap)+" slots · "+fmt(price)+" ★";
+ $("gt-upgrade-inventory").disabled=!enabled||full||wallet<price;
+ $("gt-upgrade-inventory").title=full?"Storage safety limit reached":"Permanently expand pear inventory for "+fmt(price)+" Star Coins.";
  const signature=JSON.stringify([saved?.inventory||[],selected,enabled]);
  if(signature!==inventorySignature){
   inventorySignature=signature;const inv=$("gt-inventory");inv.replaceChildren();
@@ -109,6 +113,7 @@ $("gt-fullscreen").onclick=async()=>{if(expanded||document.fullscreenElement===a
 document.addEventListener("fullscreenchange",fullRefresh);document.addEventListener("keydown",e=>{if(e.key==="Escape"&&expanded)exitExpanded();});
 $("gt-login").onclick=async()=>{await exitFullscreen();$("auth-open")?.click();};
 $("gt-sync").onclick=()=>send("sync");$("gt-retry").onclick=()=>{if(failed)send(failed.kind,{},true);};
+$("gt-upgrade-inventory").onclick=()=>send("upgradeInventory");
 $("gt-discard").onclick=()=>{if(selected!==null&&confirm("Discard this pear?"))send("discard",{fruitId:selected});};
 build();render();
 onAuthStateChanged(auth,user=>{++epoch;saved=null;wallet=0;selected=null;busy=false;failed=null;offset=0;lastSync=0;seen=new Set();render();if(!eligible()){status(usingLocalFirebaseEmulators?"Choose Live Firebase in Settings to play.":!user?"Sign in to grow your pear garden.":"Verify your email to play.");return;}void send("sync");});

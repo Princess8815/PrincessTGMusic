@@ -1,5 +1,7 @@
 
-export const PLOTS=4,INVENTORY_CAP=40,WATER_MS=600000,FERT_MS=300000,FERT_COST=5,FERT_SPEED=4,FRUIT_WORK=45000;
+export const PLOTS=4,INVENTORY_CAP=40,INVENTORY_STEP=10,INVENTORY_MAX=1000,WATER_MS=600000,FERT_MS=300000,FERT_COST=5,FERT_SPEED=4,FRUIT_WORK=45000;
+export const inventoryCapacity=s=>Math.max(INVENTORY_CAP,s?.inventoryCapacity||INVENTORY_CAP,s?.inventory?.length||0);
+export const inventoryUpgradeCost=s=>25+15*Math.floor((inventoryCapacity(s)-INVENTORY_CAP)/INVENTORY_STEP);
 export const PEAR_AXOLOTLS=[["pearlie","Pearlie","#d9ef9c","#89b75d","pear"]];
 export const PEARLIE_CHANCE=.01;
 export const fruiterChance=bosses=>Math.min(1,(1+.25*bosses)/10000);
@@ -15,9 +17,9 @@ export function makeOpponent(kind,index){
  return {kind,index,attack,defense,maxHp,hp:maxHp,deadline:0};
 }
 export function initialGarden(now){
- return {version:1,revision:0,lastAt:now,plots:[null,null,null,null],inventory:[{id:1,attack:1,defense:1}],nextFruitId:2,enemiesUnlocked:false,bossesUnlocked:false,enemiesDefeated:0,bossesDefeated:0,enemy:makeOpponent("enemy",0),boss:makeOpponent("boss",0),totalFruit:0,totalCoins:0,coinQuarters:0};
+ return {version:2,revision:0,lastAt:now,inventoryCapacity:INVENTORY_CAP,plots:[null,null,null,null],inventory:[{id:1,attack:1,defense:1}],nextFruitId:2,enemiesUnlocked:false,bossesUnlocked:false,enemiesDefeated:0,bossesDefeated:0,enemy:makeOpponent("enemy",0),boss:makeOpponent("boss",0),totalFruit:0,totalCoins:0,coinQuarters:0};
 }
-const copy=s=>({...s,plots:s.plots.map(t=>t?{...t}:null),inventory:s.inventory.map(p=>({...p})),enemy:{...s.enemy},boss:{...s.boss}});
+const copy=s=>({...s,version:2,inventoryCapacity:inventoryCapacity(s),plots:s.plots.map(t=>t?{...t}:null),inventory:s.inventory.map(p=>({...p})),enemy:{...s.enemy},boss:{...s.boss}});
 const effects=()=>({coins:0,spent:0,fruits:0,rewards:[],enemies:0,bosses:0});
 function credit(s,fx,quarters){
  const units=s.coinQuarters+quarters,whole=Math.floor(units/4);
@@ -28,8 +30,10 @@ function unlock(s){
  if(s.plots.some(t=>t&&Math.max(t.attack,t.defense)>=5))s.bossesUnlocked=true;
 }
 function variant(stat,rng){
- const r=rng(),delta=r<.15?-1:r<.7?0:r<.98?1:2;
- return Math.max(1,Math.min(Number.MAX_SAFE_INTEGER-1,stat+delta));
+ // Uniform independent hundredth-point changes from -0.50 to +0.50.
+ // Integer hundredths avoid floating-point drift over generations.
+ const delta=Math.max(-50,Math.min(50,Math.floor(rng()*101)-50));
+ return Math.max(100,Math.min(Number.MAX_SAFE_INTEGER-100,Math.round(stat*100)+delta))/100;
 }
 function fruit(s,t,fx,rng){
  s.inventory.push({id:s.nextFruitId++,attack:variant(t.attack,rng),defense:variant(t.defense,rng)});
@@ -62,14 +66,14 @@ export function advanceGarden(state,now,rng=Math.random){
  // At most four maturity events plus available inventory slots. Work is
  // integrated in timestamp chunks, never one loop per second offline.
  for(;;){
-  const space=s.inventory.length<INVENTORY_CAP;
+  const space=s.inventory.length<inventoryCapacity(s);
   let dt=Math.min(now-at,...s.plots.map(t=>timeToEvent(t,space)));
   if(!Number.isFinite(dt)||dt<0)throw Error("Invalid garden time.");
   for(const t of s.plots)if(t)progress(t,dt,space);
   at+=dt;
   let emitted=false;
   for(const t of s.plots){
-   if(t&&stage(t)===3&&t.fruitWork>=FRUIT_WORK&&s.inventory.length<INVENTORY_CAP){
+   if(t&&stage(t)===3&&t.fruitWork>=FRUIT_WORK&&s.inventory.length<inventoryCapacity(s)){
     t.fruitWork-=FRUIT_WORK;fruit(s,t,fx,rng);emitted=true;
    }
   }
@@ -81,7 +85,7 @@ export function advanceGarden(state,now,rng=Math.random){
  s.lastAt=now;heal(s,now);unlock(s);return {state:s,effects:fx};
 }
 export function damage(pear,opponent){
- return pear.defense<opponent.attack||pear.attack<=opponent.defense?0:pear.attack-opponent.defense;
+ return pear.defense<opponent.attack||pear.attack<=opponent.defense?0:Math.max(0,Math.round(pear.attack*100)-Math.round(opponent.defense*100))/100;
 }
 export function dropQuarters(opponent){
  return opponent.kind==="boss"?40+2*(opponent.attack+opponent.defense):20+opponent.attack+opponent.defense;
@@ -97,6 +101,13 @@ export function gardenAction(state,action,now,wallet=0,rng=Math.random){
  const idx=Number.isInteger(action.plot)&&action.plot>=0&&action.plot<PLOTS?action.plot:-1,t=s.plots[idx];
  const pi=s.inventory.findIndex(p=>p.id===action.fruitId),pear=s.inventory[pi];
  if(action.kind==="sync")return done(true,"");
+ if(action.kind==="upgradeInventory"){
+  const current=inventoryCapacity(s),cost=inventoryUpgradeCost(s);
+  if(current>=INVENTORY_MAX)return bad("Inventory has reached its storage limit.");
+  if(wallet+fx.coins<cost)return bad("Not enough Star Coins to expand inventory.");
+  s.inventoryCapacity=Math.min(INVENTORY_MAX,current+INVENTORY_STEP);fx.spent=cost;
+  return done(true,"Inventory expanded to "+s.inventoryCapacity.toLocaleString()+" pear slots.");
+ }
  if(action.kind==="plant"){
   if(idx<0||t||!pear)return bad("Select a pear and an empty plot.");
   s.plots[idx]=makeTree(pear);s.inventory.splice(pi,1);unlock(s);
@@ -130,7 +141,7 @@ export function gardenAction(state,action,now,wallet=0,rng=Math.random){
   s.inventory.splice(pi,1);
   if(kind==="boss"&&!op.deadline)op.deadline=s.lastAt+30000;
   if(hit===0){ensureSeed(s);return done(true,"The pear was blocked! It dealt no damage.");}
-  op.hp=Math.max(0,op.hp-hit);
+  op.hp=Math.max(0,Math.round(op.hp*100)-Math.round(hit*100))/100;
   if(op.hp===0){
    const earned=credit(s,fx,dropQuarters(op));
    if(kind==="boss"){s.bossesDefeated++;fx.bosses++;s.boss=makeOpponent(kind,s.bossesDefeated);}

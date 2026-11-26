@@ -1,7 +1,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import {initialGarden,makeTree,stage,growthWork,advanceGarden,gardenAction,damage,dropQuarters,dropCoins,makeOpponent,fruiterChance,INVENTORY_CAP,WATER_MS,FERT_MS,FERT_COST,FRUIT_WORK} from "../../../script/giving-tree-core.mjs";
+import {initialGarden,makeTree,stage,growthWork,advanceGarden,gardenAction,damage,dropQuarters,dropCoins,makeOpponent,fruiterChance,INVENTORY_CAP,INVENTORY_MAX,inventoryCapacity,inventoryUpgradeCost,WATER_MS,FERT_MS,FERT_COST,FRUIT_WORK} from "../../../script/giving-tree-core.mjs";
 import {gardenWithStorage} from "../giving-tree.mjs";
 const NOW=1700000000000,mid=()=>.5;
 function planted(pear={attack:1,defense:1}){const s=initialGarden(NOW);s.inventory[0]={id:1,...pear};return gardenAction(s,{kind:"plant",plot:0,fruitId:1},NOW,0,mid).state;}
@@ -26,9 +26,9 @@ test("paid stackable fertilizer works four times faster with no gameplay pack ca
 });
 test("inventory limit, fruit generation payouts and both mutation directions",()=>{
  const s=mature(planted({attack:4,defense:4}));s.plots[0].fertilizer=2*FERT_MS;
- const r=advanceGarden(s,NOW+600000,()=>.99);assert.equal(r.state.inventory.length,INVENTORY_CAP);assert.equal(r.effects.coins,INVENTORY_CAP);assert.equal(r.state.inventory[0].attack,6);assert.equal(r.state.inventory[0].defense,6);
+ const r=advanceGarden(s,NOW+600000,()=>.99);assert.equal(r.state.inventory.length,INVENTORY_CAP);assert.equal(r.effects.coins,INVENTORY_CAP);assert.equal(r.state.inventory[0].attack,4.49);assert.equal(r.state.inventory[0].defense,4.49);
  assert.equal(advanceGarden(r.state,NOW+86400000,mid).effects.coins,0);
- const lower=advanceGarden(mature(planted({attack:4,defense:4})),NOW+FRUIT_WORK,()=>.01);assert.equal(lower.state.inventory[0].attack,3);assert.equal(lower.state.inventory[0].defense,3);
+ const lower=advanceGarden(mature(planted({attack:4,defense:4})),NOW+FRUIT_WORK,()=>.01);assert.equal(lower.state.inventory[0].attack,3.51);assert.equal(lower.state.inventory[0].defense,3.51);
  assert.equal(advanceGarden(mature(planted()),NOW+FRUIT_WORK,()=>.01).state.inventory[0].attack,1);
 });
 test("offline timestamp integration equals incremental updates",()=>{
@@ -75,4 +75,34 @@ test("atomic wallet, fertilizer purchases, stale revision and duplicate request 
  const stale=await call("fertilize",5,v,{plot:0,quantity:1});assert.equal(stale.conflict,true);assert.equal(commits,4);
  clock=NOW+56250;const grown=await call("sync",6,b.state.revision);assert.equal(grown.effects.fruits,1);assert.equal(grown.wallet,6);assert.ok(store.has(user+"/axolotls/fruiter"));assert.ok(store.has(path));
  const retry=await call("sync",6,b.state.revision);assert.equal(retry.wallet,6);assert.equal(commits,5);
+});
+
+test("inventory upgrades migrate old saves, debit correct costs and raise offline production limits",()=>{
+ let s=mature(planted());s.version=1;delete s.inventoryCapacity;
+ s.inventory=Array.from({length:40},(_,i)=>({id:i+2,attack:1,defense:1}));s.nextFruitId=42;
+ assert.equal(inventoryCapacity(s),40);assert.equal(inventoryUpgradeCost(s),25);
+ const denied=gardenAction(s,{kind:"upgradeInventory"},NOW,24,mid);assert.equal(denied.applied,false);assert.equal(denied.effects.spent,0);
+ const a=gardenAction(s,{kind:"upgradeInventory"},NOW,25,mid);assert.equal(a.applied,true);assert.equal(a.effects.spent,25);assert.equal(inventoryCapacity(a.state),50);assert.equal(a.state.inventory.length,40);
+ const r=advanceGarden(a.state,NOW+600000,mid);assert.equal(r.state.inventory.length,50);assert.equal(r.effects.coins,10);assert.equal(r.state.inventoryCapacity,50);
+ const b=gardenAction(r.state,{kind:"upgradeInventory"},r.state.lastAt,40,mid);assert.equal(b.effects.spent,40);assert.equal(inventoryCapacity(b.state),60);
+ b.state.inventoryCapacity=INVENTORY_MAX;assert.equal(gardenAction(b.state,{kind:"upgradeInventory"},b.state.lastAt,99999,mid).applied,false);
+});
+test("independent decimal mutations stay within half a point and preserve fractional seed and combat stats",()=>{
+ const s=mature(planted({attack:3.27,defense:2.13}));let n=0;const rng=()=>[0,.999999,.5][n++%3];
+ const r=advanceGarden(s,NOW+FRUIT_WORK,rng);const p=r.state.inventory[0];
+ assert.equal(p.attack,2.77);assert.equal(p.defense,2.63);
+ const a=gardenAction(r.state,{kind:"plant",plot:1,fruitId:p.id},r.state.lastAt,0,mid);assert.equal(a.state.plots[1].attack,2.77);assert.equal(a.state.plots[1].defense,2.63);
+ assert.equal(damage({attack:2.01,defense:2},{attack:2,defense:2}),.01);
+ assert.equal(damage({attack:3.5,defense:1.99},{attack:2,defense:2}),0);
+ let b=mature(planted({attack:3.27,defense:2.13}));b.enemy.hp=.03;b.inventory=[{id:2,attack:2.01,defense:2},{id:3,attack:2.02,defense:2}];
+ b=gardenAction(b,{kind:"throw",target:"enemy",fruitId:2},NOW,0,mid).state;assert.equal(b.enemy.hp,.02);
+ const k=gardenAction(b,{kind:"throw",target:"enemy",fruitId:3},NOW,0,mid);assert.equal(k.state.enemiesDefeated,1);assert.equal(k.effects.coins,6);
+});
+test("inventory purchase is atomically debited once even when the same request is retried",async()=>{
+ const root="documents",uid="capacity-test",user="users/"+uid,wp=user+"/wallets/starCoins";
+ const store=new Map([[user,{updateTime:"1",fields:{status:{stringValue:"active"}}}],[wp,{updateTime:"2",fields:{balance:{integerValue:"100"}}}]]);
+ let commits=0;const read=async p=>store.get(p)||null,commit=async writes=>{commits++;for(const w of writes)if(w.update)store.set(w.update.name.slice(root.length+1),{updateTime:String(commits+2),fields:w.update.fields});return true;};
+ const input={kind:"upgradeInventory",requestId:"00000000-0000-4000-8000-000000000001",revision:0};
+ const call=()=>gardenWithStorage({read,commit,root,uid,input,clock:()=>NOW,rng:mid});
+ const a=await call(),b=await call();assert.equal(a.wallet,75);assert.equal(b.wallet,75);assert.equal(a.state.inventoryCapacity,50);assert.equal(b.state.inventoryCapacity,50);assert.equal(commits,1);
 });
