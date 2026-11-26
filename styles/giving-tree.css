@@ -82,3 +82,10 @@
 }
 
 .gt-inventory-actions{display:flex;gap:4px;flex-wrap:wrap;align-items:center}.gt-main button#gt-upgrade-inventory:not(:disabled){background:#ffe2ab!important;color:#593710!important;border-color:#ca9f59!important}.gt-main:is(:fullscreen,.gt-expanded) .gt-inventory-panel>header{gap:3px}.gt-main:is(:fullscreen,.gt-expanded) .gt-inventory-actions{gap:3px}
+
+/* Confirm in place without a native browser modal. */
+.gt-main button.ptg-theme-exempt.gt-confirm:not(:disabled),
+.gt-main button.ptg-theme-exempt.gt-confirm:not(:disabled):hover{
+ background:#b91c1c!important;color:#fff!important;border:1px solid #fca5a5!important;
+ font-weight:700;
+}

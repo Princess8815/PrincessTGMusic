@@ -7,6 +7,18 @@ const $=id=>document.getElementById(id),area=$("gt-area"),endpoint="https://prin
 const eligible=()=>!!auth.currentUser?.emailVerified&&!usingLocalFirebaseEmulators,fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:2}),time=ms=>{let s=Math.max(0,Math.ceil(ms/1000));return s>=3600?Math.floor(s/3600)+"h "+Math.floor(s/60)%60+"m":s>=60?Math.floor(s/60)+"m "+s%60+"s":s+"s";};
 let saved=null,wallet=0,selected=null,offset=0,busy=false,failed=null,epoch=0,lastSync=0,seen=new Set(),expanded=false,oldOverflow="",inventorySignature="";
 const plots=[],opponents={};
+let armed=null;
+function isArmed(kind,id){return armed?.kind===kind&&armed.id===id&&Date.now()<armed.until;}
+function confirmAction(kind,id,extras){
+ if(busy||failed||!saved||!eligible())return;
+ if(isArmed(kind,id)){armed=null;void send(kind,extras);return;}
+ armed={kind,id,until:Date.now()+8000};render();
+}
+function confirmationButton(b,active,label){
+ b.textContent=active?"Are you sure?":label;
+ b.classList.toggle("gt-confirm",active);
+ b.setAttribute("aria-label",active?"Are you sure? Click again to "+label.toLowerCase():label);
+}
 const pearArt='<svg viewBox="0 0 70 80" aria-hidden="true"><path d="M35 20Q31 11 37 4" stroke="#835a39" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M37 15Q44 1 58 8Q53 20 37 15Z" fill="#69a74e" stroke="#416f37" stroke-width="2"/><path d="M35 19C21 19 24 36 15 47C-2 70 22 79 35 77C52 79 71 66 55 47C46 35 50 19 35 19Z" fill="#b7d568" stroke="#628d40" stroke-width="2.5"/><ellipse cx="24" cy="48" rx="7" ry="14" transform="rotate(18 24 48)" fill="#f6f5c5" opacity=".65"/><path d="M48 55q6 7 0 13" stroke="#86ad4c" stroke-width="2" fill="none"/></svg>';
 function treeArt(st){
  const sizes=[.26,.5,.75,1],scale=sizes[st]||0;
@@ -28,7 +40,7 @@ function build(){
   const controls=el(panel,"div","gt-plot-controls"),w=btn(controls,"Water",()=>send("water",{plot:i}),"gt-water");
   const qty=el(controls,"input");qty.type="number";qty.min="1";qty.step="1";qty.value="1";qty.setAttribute("aria-label","Fertilizer packs for plot "+(i+1));qty.oninput=render;
   const buy=btn(controls,"Fertilize",()=>send("fertilize",{plot:i,quantity:Number(qty.value)}),"gt-fert");
-  const cut=btn(panel,"Cut tree",()=>{if(confirm("Cut down this tree permanently? Its fertilizer and future fruit will be lost."))send("cut",{plot:i});},"gt-cut");
+  const cut=btn(panel,"Cut tree",()=>confirmAction("cut",i,{plot:i}),"gt-cut");
   plots.push({card,title,stats,art,picture,plant,panel,state,growth,water,fert,w,qty,buy,cut,stage:-2});
  }
  for(const kind of ["enemy","boss"]){
@@ -38,6 +50,7 @@ function build(){
  }
 }
 function render(){
+ if(armed&&Date.now()>=armed.until)armed=null;
  const enabled=eligible()&&!!saved&&!busy&&!failed,pear=saved?.inventory.find(p=>p.id===selected);
  $("gt-login").hidden=!!auth.currentUser||usingLocalFirebaseEmulators;$("gt-retry").hidden=!failed||busy;$("gt-sync").disabled=!enabled;
  $("gt-wallet").textContent=fmt(wallet);$("gt-count").textContent=fmt(saved?.inventory.length||0)+" / "+fmt(inventoryCapacity(saved));$("gt-enemies").textContent=fmt(saved?.enemiesDefeated||0);$("gt-bosses").textContent=fmt(saved?.bossesDefeated||0);
@@ -50,7 +63,7 @@ function render(){
   if(c.stage!==st){c.picture.innerHTML=treeArt(st);c.stage=st;}
   c.stats.textContent=t?"ATK "+fmt(t.attack)+" · DEF "+fmt(t.defense):"Empty";
   c.art.classList.toggle("gt-empty",!t);c.plant.hidden=!!t;c.plant.disabled=!enabled||!pear;c.panel.hidden=!t;
-  if(!t)continue;
+  if(!t){if(isArmed("cut",i))armed=null;continue;}
   c.state.textContent=stageNames[st]+(t.water===0?" · Needs water":st===3&&projected.inventory.length>=inventoryCapacity(saved)?" · Inventory full":"");
   setMeter(c.growth,st===3?t.fruitWork/FRUIT_WORK:t.growth/growthWork(t),st===3?"Next pear":Math.floor(100*t.growth/growthWork(t))+"%");
   setMeter(c.water,t.water/WATER_MS,time(t.water));
@@ -58,7 +71,7 @@ function render(){
   c.w.disabled=!enabled||actual.water===WATER_MS&&t.water===WATER_MS;
   const q=Number(c.qty.value),valid=Number.isSafeInteger(q)&&q>0&&Number.isSafeInteger(q*FERT_COST)&&Number.isSafeInteger(actual.fertilizer+q*FERT_MS);
   c.buy.textContent="Fertilize · "+(valid?fmt(q*FERT_COST):"?")+" ★";c.buy.disabled=!enabled||!valid||wallet<q*FERT_COST;
-  c.cut.hidden=st!==3;c.cut.disabled=!enabled||st!==3;
+  c.cut.hidden=st!==3;c.cut.disabled=!enabled||st!==3;confirmationButton(c.cut,isArmed("cut",i)&&st===3,"Cut tree");
  }
  for(const kind of ["enemy","boss"]){
   const c=opponents[kind],op=projected?.[kind],unlocked=!!saved?.[kind==="enemy"?"enemiesUnlocked":"bossesUnlocked"];
@@ -72,7 +85,7 @@ function render(){
   c.thrower.disabled=!enabled||!pear||!unlocked;
  }
  $("gt-selected").textContent=pear?"Selected pear: ATK "+fmt(pear.attack)+" · DEF "+fmt(pear.defense)+". Click an empty patch or throw at an opponent.":"Select a pear to plant or throw.";
- $("gt-discard").disabled=!enabled||!pear;
+ $("gt-discard").disabled=!enabled||!pear;confirmationButton($("gt-discard"),!!pear&&isArmed("discard",pear.id),"Discard");
  const cap=inventoryCapacity(saved),price=inventoryUpgradeCost(saved),full=cap>=INVENTORY_MAX;
  $("gt-upgrade-inventory").textContent=full?"Inventory max":"+"+Math.min(INVENTORY_STEP,INVENTORY_MAX-cap)+" slots · "+fmt(price)+" ★";
  $("gt-upgrade-inventory").disabled=!enabled||full||wallet<price;
@@ -81,7 +94,7 @@ function render(){
  if(signature!==inventorySignature){
   inventorySignature=signature;const inv=$("gt-inventory");inv.replaceChildren();
   for(const p of saved?.inventory||[]){
-   const b=btn(inv,"",()=>{selected=selected===p.id?null:p.id;render();},"gt-pear");b.innerHTML=pearArt;
+   const b=btn(inv,"",()=>{armed=null;selected=selected===p.id?null:p.id;render();},"gt-pear");b.innerHTML=pearArt;
    const text=el(b,"small","gt-pear-stats");const attack=el(text,"span"),defense=el(text,"span");attack.textContent="ATK "+fmt(p.attack);defense.textContent="DEF "+fmt(p.defense);b.setAttribute("aria-pressed",String(selected===p.id));b.setAttribute("aria-label","Pear attack "+p.attack+", defense "+p.defense);b.disabled=!enabled;
   }
  }
@@ -94,10 +107,12 @@ async function request(action){
 }
 async function send(kind,extras={},retry=false){
  if(!eligible()||busy||(!retry&&failed)||(!saved&&kind!=="sync"&&!retry))return;
+ if(kind!=="sync")armed=null;
  const action=retry?failed:{kind,requestId:crypto.randomUUID(),revision:saved?.revision||0,...extras};
  const current=epoch;busy=true;render();status("Saving garden…");
  try{
   const data=await request(action);if(current!==epoch)return;
+  if(data.conflict)armed=null;
   saved=data.state;wallet=data.wallet;offset=data.serverNow-Date.now();lastSync=Date.now();failed=null;busy=false;
   if(!saved.inventory.some(p=>p.id===selected))selected=null;
   const fx=data.effects||{};
@@ -110,12 +125,12 @@ function fullRefresh(){const active=expanded||document.fullscreenElement===area,
 function exitExpanded(){if(!expanded)return;expanded=false;area.classList.remove("gt-expanded");document.body.style.overflow=oldOverflow;fullRefresh();}
 async function exitFullscreen(){if(expanded)exitExpanded();else if(document.fullscreenElement===area)await document.exitFullscreen().catch(()=>{});}
 $("gt-fullscreen").onclick=async()=>{if(expanded||document.fullscreenElement===area){await exitFullscreen();return;}try{if(!area.requestFullscreen)throw Error("Unsupported");await area.requestFullscreen();}catch{oldOverflow=document.body.style.overflow;document.body.style.overflow="hidden";expanded=true;area.classList.add("gt-expanded");fullRefresh();}};
-document.addEventListener("fullscreenchange",fullRefresh);document.addEventListener("keydown",e=>{if(e.key==="Escape"&&expanded)exitExpanded();});
+document.addEventListener("fullscreenchange",fullRefresh);document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(armed){armed=null;render();}if(expanded)exitExpanded();}});
 $("gt-login").onclick=async()=>{await exitFullscreen();$("auth-open")?.click();};
 $("gt-sync").onclick=()=>send("sync");$("gt-retry").onclick=()=>{if(failed)send(failed.kind,{},true);};
 $("gt-upgrade-inventory").onclick=()=>send("upgradeInventory");
-$("gt-discard").onclick=()=>{if(selected!==null&&confirm("Discard this pear?"))send("discard",{fruitId:selected});};
+$("gt-discard").onclick=()=>{if(selected!==null)confirmAction("discard",selected,{fruitId:selected});};
 build();render();
-onAuthStateChanged(auth,user=>{++epoch;saved=null;wallet=0;selected=null;busy=false;failed=null;offset=0;lastSync=0;seen=new Set();render();if(!eligible()){status(usingLocalFirebaseEmulators?"Choose Live Firebase in Settings to play.":!user?"Sign in to grow your pear garden.":"Verify your email to play.");return;}void send("sync");});
+onAuthStateChanged(auth,user=>{++epoch;armed=null;saved=null;wallet=0;selected=null;busy=false;failed=null;offset=0;lastSync=0;seen=new Set();render();if(!eligible()){status(usingLocalFirebaseEmulators?"Choose Live Firebase in Settings to play.":!user?"Sign in to grow your pear garden.":"Verify your email to play.");return;}void send("sync");});
 setInterval(()=>{if(document.hidden)return;render();if(eligible()&&saved&&!busy&&!failed&&Date.now()-lastSync>=30000)void send("sync");},1000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&eligible()&&!busy&&!failed&&Date.now()-lastSync>=30000)void send("sync");});

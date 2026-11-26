@@ -11,3 +11,5 @@ Fourth Fruity Paradice game, based on main after Peach Panic. Also hides Cherry 
 - Run `node --test workers/cd-store/tests/giving-tree.test.mjs`; deploy existing Worker `cd workers/cd-store && npx wrangler deploy --config wrangler.live.toml`. Browser, actual Firestore and production quota testing pending.
 
 - Fullscreen compact layout: garden, battle grove and inventory occupy three adjacent columns on desktop, with a compact header, smaller tree/monster art and small pear tiles. Fullscreen panels fit the viewport; exceptionally short windows or unusually large stats can scroll within a panel. Narrow screens place inventory first and allow normal vertical scrolling. No backend changes.
+
+- Cut tree and discard pear use red two-click confirmation buttons with eight-second expiration instead of native dialogs, preserving fullscreen. Decimal genetics and formatting are unchanged.
