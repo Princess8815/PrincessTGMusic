@@ -86,17 +86,17 @@ function towerLayout(level,seed,version=2){
  return {branches,oranges,shots:Math.max(5,Math.ceil(durability*.45)+2)};
 }
 export const FEATURES=Object.freeze([
- {id:"wood",level:1,name:"Timber frames",description:"Break a support and watch connected shelves collapse."},
+ {id:"wood",level:1,name:"Timber frames",description:"Timber takes two solid hits in the rebuilt campaign. Aim at supporting joints."},
  {id:"glass",level:5,name:"Glass beams",description:"Fragile blue beams shatter with one hit."},
- {id:"wall",level:5,name:"Brick barricades",description:"Break them with two ordinary hits or arc over the top."},
- {id:"stone",level:8,name:"Stone structures",description:"Stone needs two hits. Aim for its weaker connections."},
- {id:"reflector",level:12,name:"Ricochet panels",description:"Unbreakable purple panels reflect your shot."},
- {id:"steel",level:16,name:"Steel beams",description:"Three hits to break. Bulky can smash one in a single shot."},
- {id:"angled",level:20,name:"Angled reflectors",description:"Slanted panels send shots in surprising directions."},
- {id:"spring",level:24,name:"Spring bumpers",description:"Green bumpers bounce shots back with extra speed."},
- {id:"trampoline",level:27,name:"Trampolines",description:"Golden pads can face any angle. Bank shots off their surfaces and chain bounces around obstacles."},
- {id:"reinforced",level:30,name:"Reinforced alloy",description:"Four hits to break. Find a weak point instead."},
- {id:"crate",level:36,name:"Chain-reaction crates",description:"Hit an orange burst crate to damage nearby pieces and shake fruit loose."}
+ {id:"wall",level:10,name:"Brick barricades",description:"Brick resists three solid hits. Arc over the barrier."},
+ {id:"stone",level:15,name:"Stone structures",description:"Stone resists three solid hits. Aim for weaker connections."},
+ {id:"reflector",level:20,name:"Ricochet panels",description:"Unbreakable purple panels reflect your shot."},
+ {id:"steel",level:30,name:"Steel beams",description:"Steel resists four solid hits. Bulky deals heavy damage."},
+ {id:"angled",level:40,name:"Angled reflectors",description:"Slanted panels send shots in surprising directions."},
+ {id:"spring",level:50,name:"Spring bumpers",description:"Green bumpers bounce shots back with extra speed."},
+ {id:"trampoline",level:75,name:"Trampolines",description:"Golden pads can face any angle. Bank shots off their surfaces and chain bounces around obstacles."},
+ {id:"reinforced",level:100,name:"Reinforced alloy",description:"Reinforced alloy resists five solid hits. Find a weak point instead."},
+ {id:"crate",level:200,name:"Chain-reaction crates",description:"Hit an orange burst crate to damage nearby pieces and shake fruit loose."}
 ]);
 export function featureProgress(cleared=0,milestones){
  const configured=featureSchedule(milestones);
@@ -196,7 +196,7 @@ export function layout(level,seed,version=5){
  }
  // Guaranteed introduction of each material at its milestone, even if the
  // selected family happens not to use that material's index naturally.
- for(const feature of FEATURES.filter(f=>f.level<=level&&["glass","stone","steel","reinforced"].includes(f.id))){
+ for(const feature of FEATURES.filter(f=>({glass:5,stone:8,steel:16,reinforced:30}[f.id]??Infinity)<=level)){
   if(!branches.some(b=>b.material===feature.id)){
    const b=branches.find(b=>b.material==="wood");if(b){Object.assign(b,{material:feature.id,hp:MATERIALS[feature.id].hp,width:MATERIALS[feature.id].width});}
   }
@@ -260,7 +260,7 @@ export function validateDesign(raw){
  function visit(i){if(visiting.has(i))throw Error("Circular supports are not allowed.");if(done.has(i))return;visiting.add(i);for(const x of pieces[i].supports)visit(x);visiting.delete(i);done.add(i);}
  pieces.forEach((_,i)=>visit(i));
  const oranges=raw.oranges.map((o,i)=>{if(!o||!exactInt(o.x,180,940)||!exactInt(o.y,20,480)||o.x%EDIT_GRID||o.y%EDIT_GRID||!exactInt(o.branch,-1,pieces.length-1))throw Error("Invalid orange "+(i+1));return {x:o.x,y:o.y,branch:o.branch};});
- return {title:raw.title.trim(),shots:raw.shots,two:raw.two,three:raw.three,pieces,oranges,...(raw.gravity===true?{gravity:true}:{})};
+ return {title:raw.title.trim(),shots:raw.shots,two:raw.two,three:raw.three,pieces,oranges,...(raw.gravity===true?{gravity:true}:{}),...(raw.physics===2?{physics:2}:{}),...(["normal","hard","super-hard"].includes(raw.difficulty)?{difficulty:raw.difficulty}:{})};
 }
 export function designFeature(piece){
  if(piece.material==="reflector"&&piece.angle%90!==0)return "angled";
@@ -273,332 +273,65 @@ export function checkDesignUnlocks(design,level,milestones){
 }
 export function designMap(raw){
  const d=validateDesign(raw);
- return {design:d.title,shots:d.shots,two:d.two,three:d.three,...(d.gravity?{gravity:true}:{}),branches:d.pieces.map((p,id)=>{const a=p.angle*Math.PI/180,dx=Math.cos(a)*p.length/2,dy=Math.sin(a)*p.length/2,m=MATERIALS[p.material];return {id,material:p.material,x1:p.x-dx,y1:p.y-dy,x2:p.x+dx,y2:p.y+dy,hp:m.hp,width:m.width,supports:p.supports,reflect:["reflector","spring","trampoline"].includes(p.material),spring:p.material==="spring",trampoline:p.material==="trampoline",directional:p.material==="trampoline",burst:p.material==="crate"};}),oranges:d.oranges.map((o,id)=>({...o,id}))};
+ return {design:d.title,shots:d.shots,two:d.two,three:d.three,...(d.gravity?{gravity:true}:{}),...(d.physics===2?{physics:2}:{}),...(d.difficulty?{difficulty:d.difficulty}:{}),branches:d.pieces.map((p,id)=>{const a=p.angle*Math.PI/180,dx=Math.cos(a)*p.length/2,dy=Math.sin(a)*p.length/2,m=MATERIALS[p.material];return {id,material:p.material,x1:p.x-dx,y1:p.y-dy,x2:p.x+dx,y2:p.y+dy,hp:m.hp+(d.physics===2&&["wood","wall","stone","steel","reinforced"].includes(p.material)?1:0),width:m.width,supports:p.supports,reflect:["reflector","spring","trampoline"].includes(p.material),spring:p.material==="spring",trampoline:p.material==="trampoline",directional:p.material==="trampoline",burst:p.material==="crate"};}),oranges:d.oranges.map((o,id)=>({...o,id}))};
 }
-// Authored campaign defaults. Staff-published versions take precedence.
-const STARTER_LEVELS={
- "2": {
-  "title": "Twin Timber Towers",
-  "shots": 4,
-  "two": 1,
-  "three": 2,
-  "gravity": true,
-  "pieces": [
-   {
-    "material": "wood",
-    "x": 480,
-    "y": 440,
-    "angle": 90,
-    "length": 100,
-    "supports": []
-   },
-   {
-    "material": "wood",
-    "x": 600,
-    "y": 440,
-    "angle": 90,
-    "length": 100,
-    "supports": []
-   },
-   {
-    "material": "wood",
-    "x": 540,
-    "y": 360,
-    "angle": 0,
-    "length": 160,
-    "supports": []
-   },
-   {
-    "material": "wood",
-    "x": 740,
-    "y": 400,
-    "angle": 90,
-    "length": 180,
-    "supports": []
-   },
-   {
-    "material": "wood",
-    "x": 860,
-    "y": 400,
-    "angle": 90,
-    "length": 180,
-    "supports": []
-   },
-   {
-    "material": "wood",
-    "x": 800,
-    "y": 280,
-    "angle": 0,
-    "length": 160,
-    "supports": []
-   }
-  ],
-  "oranges": [
-   {
-    "x": 520,
-    "y": 320,
-    "branch": -1
-   },
-   {
-    "x": 560,
-    "y": 320,
-    "branch": -1
-   },
-   {
-    "x": 780,
-    "y": 240,
-    "branch": -1
-   },
-   {
-    "x": 820,
-    "y": 240,
-    "branch": -1
-   }
-  ]
- },
- "3": {
-  "title": "Orchard Staircase",
-  "shots": 5,
-  "two": 1,
-  "three": 2,
-  "gravity": true,
-  "pieces": [
-   {
-    "material": "wood",
-    "x": 440,
-    "y": 460,
-    "angle": 90,
-    "length": 60,
-    "supports": []
-   },
-   {
-    "material": "wood",
-    "x": 540,
-    "y": 460,
-    "angle": 90,
-    "length": 60,
-    "supports": []
-   },
-   {
-    "material": "wood",
-    "x": 500,
-    "y": 400,
-    "angle": 0,
-    "length": 160,
-    "supports": []
-   },
-   {
-    "material": "wood",
-    "x": 620,
-    "y": 420,
-    "angle": 90,
-    "length": 140,
-    "supports": []
-   },
-   {
-    "material": "wood",
-    "x": 740,
-    "y": 420,
-    "angle": 90,
-    "length": 140,
-    "supports": []
-   },
-   {
-    "material": "wood",
-    "x": 680,
-    "y": 320,
-    "angle": 0,
-    "length": 160,
-    "supports": []
-   },
-   {
-    "material": "wood",
-    "x": 800,
-    "y": 380,
-    "angle": 90,
-    "length": 220,
-    "supports": []
-   },
-   {
-    "material": "wood",
-    "x": 900,
-    "y": 380,
-    "angle": 90,
-    "length": 220,
-    "supports": []
-   },
-   {
-    "material": "wood",
-    "x": 840,
-    "y": 240,
-    "angle": 0,
-    "length": 140,
-    "supports": []
-   }
-  ],
-  "oranges": [
-   {
-    "x": 460,
-    "y": 360,
-    "branch": -1
-   },
-   {
-    "x": 520,
-    "y": 360,
-    "branch": -1
-   },
-   {
-    "x": 640,
-    "y": 280,
-    "branch": -1
-   },
-   {
-    "x": 700,
-    "y": 280,
-    "branch": -1
-   },
-   {
-    "x": 820,
-    "y": 200,
-    "branch": -1
-   },
-   {
-    "x": 880,
-    "y": 200,
-    "branch": -1
-   }
-  ]
- },
- "4": {
-  "title": "Timber Fortress",
-  "shots": 6,
-  "two": 1,
-  "three": 2,
-  "gravity": true,
-  "pieces": [
-   {
-    "material": "wood",
-    "x": 360,
-    "y": 440,
-    "angle": 90,
-    "length": 100,
-    "supports": []
-   },
-   {
-    "material": "wood",
-    "x": 500,
-    "y": 420,
-    "angle": 90,
-    "length": 140,
-    "supports": []
-   },
-   {
-    "material": "wood",
-    "x": 660,
-    "y": 420,
-    "angle": 90,
-    "length": 140,
-    "supports": []
-   },
-   {
-    "material": "wood",
-    "x": 580,
-    "y": 320,
-    "angle": 0,
-    "length": 200,
-    "supports": []
-   },
-   {
-    "material": "wood",
-    "x": 540,
-    "y": 260,
-    "angle": 90,
-    "length": 100,
-    "supports": []
-   },
-   {
-    "material": "wood",
-    "x": 620,
-    "y": 260,
-    "angle": 90,
-    "length": 100,
-    "supports": []
-   },
-   {
-    "material": "wood",
-    "x": 580,
-    "y": 180,
-    "angle": 0,
-    "length": 120,
-    "supports": []
-   },
-   {
-    "material": "wood",
-    "x": 760,
-    "y": 440,
-    "angle": 90,
-    "length": 100,
-    "supports": []
-   },
-   {
-    "material": "wood",
-    "x": 900,
-    "y": 440,
-    "angle": 90,
-    "length": 100,
-    "supports": []
-   },
-   {
-    "material": "wood",
-    "x": 840,
-    "y": 360,
-    "angle": 0,
-    "length": 180,
-    "supports": []
-   }
-  ],
-  "oranges": [
-   {
-    "x": 560,
-    "y": 280,
-    "branch": -1
-   },
-   {
-    "x": 600,
-    "y": 280,
-    "branch": -1
-   },
-   {
-    "x": 560,
-    "y": 140,
-    "branch": -1
-   },
-   {
-    "x": 600,
-    "y": 140,
-    "branch": -1
-   },
-   {
-    "x": 800,
-    "y": 320,
-    "branch": -1
-   },
-   {
-    "x": 860,
-    "y": 320,
-    "branch": -1
-   }
-  ]
- }
-};
-Object.assign(STARTER_LEVELS,{"5":{"title":"Glasshouse Gate","shots":4,"two":1,"three":2,"gravity":true,"pieces":[{"material":"wood","x":480,"y":420,"angle":90,"length":140,"supports":[]},{"material":"glass","x":620,"y":420,"angle":90,"length":140,"supports":[]},{"material":"wood","x":540,"y":320,"angle":0,"length":200,"supports":[]},{"material":"glass","x":780,"y":440,"angle":90,"length":100,"supports":[]},{"material":"wood","x":880,"y":440,"angle":90,"length":100,"supports":[]},{"material":"glass","x":820,"y":360,"angle":0,"length":160,"supports":[]}],"oranges":[{"x":500,"y":280,"branch":-1},{"x":580,"y":280,"branch":-1},{"x":780,"y":320,"branch":-1},{"x":860,"y":320,"branch":-1}]},"6":{"title":"Crystal Bridge","shots":5,"two":1,"three":2,"gravity":true,"pieces":[{"material":"glass","x":460,"y":440,"angle":90,"length":100,"supports":[]},{"material":"wood","x":640,"y":440,"angle":90,"length":100,"supports":[]},{"material":"glass","x":540,"y":360,"angle":0,"length":220,"supports":[]},{"material":"wood","x":760,"y":400,"angle":90,"length":180,"supports":[]},{"material":"glass","x":880,"y":400,"angle":90,"length":180,"supports":[]},{"material":"wood","x":820,"y":280,"angle":0,"length":160,"supports":[]},{"material":"glass","x":540,"y":300,"angle":90,"length":80,"supports":[]},{"material":"wood","x":540,"y":220,"angle":0,"length":100,"supports":[]}],"oranges":[{"x":500,"y":320,"branch":-1},{"x":600,"y":320,"branch":-1},{"x":540,"y":180,"branch":-1},{"x":780,"y":240,"branch":-1},{"x":860,"y":240,"branch":-1}]},"7":{"title":"Shattered Pyramid","shots":5,"two":1,"three":2,"gravity":true,"pieces":[{"material":"wood","x":440,"y":460,"angle":90,"length":60,"supports":[]},{"material":"glass","x":540,"y":460,"angle":90,"length":60,"supports":[]},{"material":"wood","x":500,"y":400,"angle":0,"length":160,"supports":[]},{"material":"glass","x":620,"y":440,"angle":90,"length":100,"supports":[]},{"material":"wood","x":740,"y":440,"angle":90,"length":100,"supports":[]},{"material":"glass","x":680,"y":360,"angle":0,"length":160,"supports":[]},{"material":"wood","x":640,"y":300,"angle":90,"length":100,"supports":[]},{"material":"glass","x":720,"y":300,"angle":90,"length":100,"supports":[]},{"material":"wood","x":680,"y":220,"angle":0,"length":140,"supports":[]},{"material":"glass","x":860,"y":440,"angle":90,"length":100,"supports":[]},{"material":"wood","x":860,"y":340,"angle":0,"length":100,"supports":[]}],"oranges":[{"x":460,"y":360,"branch":-1},{"x":520,"y":360,"branch":-1},{"x":640,"y":320,"branch":-1},{"x":720,"y":320,"branch":-1},{"x":680,"y":180,"branch":-1},{"x":860,"y":300,"branch":-1}]},"8":{"title":"Citrus Conservatory","shots":6,"two":1,"three":3,"gravity":true,"pieces":[{"material":"wood","x":420,"y":420,"angle":90,"length":140,"supports":[]},{"material":"glass","x":580,"y":420,"angle":90,"length":140,"supports":[]},{"material":"glass","x":500,"y":320,"angle":0,"length":200,"supports":[]},{"material":"glass","x":460,"y":260,"angle":90,"length":100,"supports":[]},{"material":"wood","x":540,"y":260,"angle":90,"length":100,"supports":[]},{"material":"wood","x":500,"y":180,"angle":0,"length":140,"supports":[]},{"material":"glass","x":720,"y":440,"angle":90,"length":100,"supports":[]},{"material":"wood","x":900,"y":440,"angle":90,"length":100,"supports":[]},{"material":"wood","x":800,"y":360,"angle":0,"length":220,"supports":[]},{"material":"glass","x":760,"y":300,"angle":90,"length":80,"supports":[]},{"material":"glass","x":840,"y":300,"angle":90,"length":80,"supports":[]},{"material":"wood","x":800,"y":220,"angle":0,"length":140,"supports":[]}],"oranges":[{"x":460,"y":280,"branch":-1},{"x":540,"y":280,"branch":-1},{"x":500,"y":140,"branch":-1},{"x":740,"y":320,"branch":-1},{"x":860,"y":320,"branch":-1},{"x":780,"y":180,"branch":-1},{"x":820,"y":180,"branch":-1}]},"9":{"title":"Crystal Citadel","shots":7,"two":1,"three":4,"gravity":true,"pieces":[{"material":"glass","x":380,"y":440,"angle":90,"length":100,"supports":[]},{"material":"wood","x":480,"y":440,"angle":90,"length":100,"supports":[]},{"material":"glass","x":420,"y":360,"angle":0,"length":140,"supports":[]},{"material":"wood","x":580,"y":420,"angle":90,"length":140,"supports":[]},{"material":"glass","x":740,"y":420,"angle":90,"length":140,"supports":[]},{"material":"wood","x":660,"y":320,"angle":0,"length":200,"supports":[]},{"material":"glass","x":620,"y":260,"angle":90,"length":100,"supports":[]},{"material":"wood","x":700,"y":260,"angle":90,"length":100,"supports":[]},{"material":"glass","x":660,"y":180,"angle":0,"length":140,"supports":[]},{"material":"wood","x":840,"y":440,"angle":90,"length":100,"supports":[]},{"material":"glass","x":920,"y":440,"angle":90,"length":100,"supports":[]},{"material":"wood","x":880,"y":360,"angle":0,"length":120,"supports":[]},{"material":"glass","x":880,"y":300,"angle":90,"length":80,"supports":[]},{"material":"wood","x":880,"y":220,"angle":0,"length":100,"supports":[]}],"oranges":[{"x":400,"y":320,"branch":-1},{"x":440,"y":320,"branch":-1},{"x":620,"y":280,"branch":-1},{"x":700,"y":280,"branch":-1},{"x":640,"y":140,"branch":-1},{"x":680,"y":140,"branch":-1},{"x":860,"y":320,"branch":-1},{"x":900,"y":180,"branch":-1}]}});
+// Fixed per-level geometry; every layout is editable in the official editor.
+export function campaignDifficulty(level){
+ return level>=29&&level%10===9?"super-hard":level>=24&&level%10===4?"hard":"normal";
+}
+const FAMILY_NAMES=["Timber terraces","Twin orchards","Citrus stronghold","Stepped rafters","Orange pavilion","Crossbeam garden","Split-level orchard","Harvest bastion","Crown towers","Orchard arcade"];
 export function builtInOrangeDesign(level,milestones=null){
- const raw=Object.hasOwn(STARTER_LEVELS,level)?STARTER_LEVELS[level]:null;
- if(!raw)return null;
- const schedule=Object.fromEntries(featureSchedule(milestones).map(f=>[f.id,f.level]));
- return validateDesign({...raw,pieces:raw.pieces.map(p=>schedule[designFeature(p)]>level?{...p,material:"wood"}:p)});
+ if(!Number.isInteger(level)||level<1||level>250)return null;
+ const difficulty=campaignDifficulty(level),hard=difficulty==="hard",superHard=difficulty==="super-hard",rng=layoutRandom(Math.imul(level,0x9e3779b1)^0x6f72616e);
+ const pick=n=>Math.floor(rng()*n),family=(level-1)%FAMILY_NAMES.length,schedule=Object.fromEntries(featureSchedule(milestones).map(f=>[f.id,f.level]));
+ const allowed=id=>schedule[id]<=level,pieces=[],oranges=[],solid=["wood","glass","wall","stone","steel","reinforced"].filter(allowed);
+ function material(role){
+  if(solid.length===1)return "wood";
+  if(role==="weak")return allowed("glass")&&pick(3)===0?"glass":"wood";
+  if(role==="roof"&&allowed("glass")&&pick(4)===0)return "glass";
+  const pool=solid.filter(id=>id!=="glass"),n=pool.length;
+  return pool[Math.max(pick(n),hard||superHard?pick(n):0)];
+ }
+ function add(m,x,y,angle,length){pieces.push({material:m,x,y,angle,length,supports:[]});}
+ function fruit(x,y){oranges.push({x,y,branch:-1});}
+ const bays=level===1?1:level<20?2:3;
+ const centers=bays===1?[540]:bays===2?[460,800]:[420,640,860];
+ for(let bay=0;bay<bays;bay++){
+  const cx=centers[bay]+(bay===0&&level>1?20*pick(2):0);
+  const half=bays===3?40:40+20*pick(2),L=cx-half,R=cx+half;
+  const floors=level<5?1:Math.min(3,1+(level>=12&&(bay+family)%2===0?1:0)+(superHard&&bay===1?1:0)+(hard&&bay===2?1:0));
+  let floorY=480;
+  for(let floor=0;floor<floors;floor++){
+   const h=80+40*pick(floors>=3?1:2),post=floorY-h/2,deck=floorY-h-20;
+   add(material("weak"),L,post,90,h);
+   add(material("post"),R,post,90,h);
+   add(material("roof"),cx,deck,0,half*2+40);
+   if(floor===floors-1||family%3===0){fruit(cx-20,deck-40);if(level>1)fruit(cx+20,deck-40);}
+   if((hard||superHard)&&floor===0&&bay%2===0)add(material("post"),cx,post,90,h);
+   if(level>=15&&floor===0&&family===7)add(material("post"),L-20,post,90,60);
+   // A few upper bays have a narrow side shield or angled wooden brace.
+   if(level>=12&&floor===floors-1&&family===5)add(material("weak"),cx,deck-60,45,60);
+   if(level>=12&&floor===floors-1&&family===6)add(material("post"),R,deck-60,90,60);
+   floorY=deck-20;
+  }
+ }
+ const introduced=Object.keys(schedule).filter(id=>schedule[id]===level);
+ for(const id of introduced)if(["glass","wall","stone","steel","reinforced"].includes(id)){
+  const candidate=pieces.find(p=>p.material==="wood")||pieces[0];candidate.material=id;
+ }
+ if(allowed("glass")&&level<10&&!pieces.some(p=>p.material==="glass"))pieces[0].material="glass";
+ if(allowed("wall")&&(hard||superHard||level%3===0||introduced.includes("wall")))add("wall",260,420,90,100);
+ if(allowed("reflector")&&(level%4===0||superHard||introduced.includes("reflector")))add("reflector",920,220,90,120);
+ if(allowed("reflector")&&allowed("angled")&&(level%5===0||superHard||introduced.includes("angled")))add("reflector",320,180,45,80);
+ if(allowed("spring")&&(level%4===1||introduced.includes("spring")))add("spring",240,440,0,60);
+ if(allowed("trampoline")&&(level%3===1||superHard||introduced.includes("trampoline")))add("trampoline",340,460,15,60);
+ if(allowed("crate")&&(level%2===0||superHard||introduced.includes("crate")))add("crate",300,460,0,40);
+ const shots=Math.min(50,level===1?5:Math.max(7,Math.ceil(pieces.filter(p=>!["reflector","spring","trampoline"].includes(p.material)).reduce((n,p)=>n+MATERIALS[p.material].hp+1,0)*.65)+oranges.length+(superHard?2:hard?1:3)));
+ const two=Math.max(1,Math.ceil(shots*.15)),three=Math.max(two,Math.ceil(shots*(superHard?.42:hard?.4:.35)));
+ return validateDesign({title:"Level "+level+" · "+FAMILY_NAMES[family],shots,two,three,gravity:true,physics:2,difficulty,pieces,oranges});
 }
 export function campaignMap(level,seed,milestones){
+ const authored=builtInOrangeDesign(level,milestones);if(authored)return designMap(authored);
  const map=layout(level,seed),schedule=Object.fromEntries(featureSchedule(milestones).map(f=>[f.id,f.level]));
  // Preserve structure references by replacing locked pieces rather than deleting them.
  for(const b of map.branches){
@@ -756,11 +489,12 @@ export function bouncePad(p,b){
 // initial vertical settling stays unchanged; moving bodies now collide and
 // rotate throughout the shot rather than being teleported after it.
 function gravityShot(base,board,shot,trace){
- const scene=sceneMap(base,board),hp=[...board.hp],remaining=new Set(board.remaining),events=[],frames=[],worldFrames=[];
+ const tuned=base.physics===2,scene=sceneMap(base,board),hp=[...board.hp],remaining=new Set(board.remaining),events=[],frames=[],worldFrames=[];
  const round=n=>Math.round(n*1000)/1000;
  const blocks=[],fruit=[],debris=[],all=[];
  function make(kind,id,x,y,a,hw,hh,anchor=false,material="wood"){
-  const mass=kind==="fruit"?.65:Math.max(.8,hw*hh/260),inv=anchor?0:1/mass;
+  const density=tuned?({glass:.8,wood:1.4,wall:2.2,stone:2.4,steel:3,reinforced:3.5,crate:1}[material]||1):1;
+  const mass=kind==="fruit"?.65:Math.max(.8,hw*hh/260)*density,inv=anchor?0:1/mass;
   return {kind,id,x,y,a,hw,hh,inv,ii:inv*3/(hw*hw+hh*hh),vx:0,vy:0,w:0,ox:x,oy:y,oa:a,alive:true,active:false,ground:0,touched:false,material};
  }
  for(const b of scene.branches)if(hp[b.id]>0){const a=make("block",b.id,(b.x1+b.x2)/2,(b.y1+b.y2)/2,Math.atan2(b.y2-b.y1,b.x2-b.x1),Math.hypot(b.x2-b.x1,b.y2-b.y1)/2,(b.width||12)/2,!!b.reflect,b.material);blocks.push(a);all.push(a);}
@@ -827,7 +561,7 @@ function gravityShot(base,board,shot,trace){
   for(let k=0;k<count;k++){
    const side=(2*k+1-count)/count,offset=b.hw*side;
    const part=make("debris",debris.length,b.x+a.x*offset,b.y+a.y*offset,b.a,b.hw/count,b.hh,false,b.material);
-   part.vx=b.vx+ix*(glass?.35:.65)+side*a.x*(glass?4:3.4);
+   part.vx=b.vx+ix*(tuned?.18:glass?.35:.65)+side*a.x*(glass?4:3.4);
    part.vy=b.vy+iy*.4-(glass?2+Math.abs(side)*2:1);
    part.w=b.w+side*(glass?.22:.11);part.touched=true;part.active=true;debris.push(part);all.push(part);
   }
@@ -839,15 +573,15 @@ function gravityShot(base,board,shot,trace){
  }
  function worldStep(dt,t){
   if(!awake)return;
-  for(const b of all){if(!b.alive||!b.inv||!b.active)continue;b.vy+=.38*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;b.a+=b.w*dt;b.vx*=.993;b.w*=.987;}
-  for(let iter=0;iter<3;iter++){
-   for(const b of all){if(!b.alive||!b.inv||!b.active)continue;const e=extent(b);if(b.y+e.y>GROUND){const p=supportPoint(b,0,1);b.y=GROUND-e.y;const downward=b.vy+b.w*(p.x-b.x);if(downward>0){blockSound(b,t,downward);const den=b.inv+(p.x-b.x)**2*b.ii;impulse(b,0,-downward*(downward>2?1.18:1)/den,p.x,GROUND);}b.vx*=.86;b.w*=.76;}if(b.x-e.x<160){b.x=160+e.x;b.vx=Math.abs(b.vx)*.28;}if(b.x+e.x>WIDTH){b.x=WIDTH-e.x;b.vx=-Math.abs(b.vx)*.28;}}
+  for(const b of all){if(!b.alive||!b.inv||!b.active)continue;b.vy+=.38*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;b.a+=b.w*dt;b.vx*=tuned?.989:.993;b.w*=tuned?.981:.987;}
+  for(let iter=0;iter<(tuned?4:3);iter++){
+   for(const b of all){if(!b.alive||!b.inv||!b.active)continue;const e=extent(b);if(b.y+e.y>GROUND){const p=supportPoint(b,0,1);b.y=GROUND-e.y;const downward=b.vy+b.w*(p.x-b.x);if(downward>0){blockSound(b,t,downward);const den=b.inv+(p.x-b.x)**2*b.ii;impulse(b,0,-downward*(downward>2?1.18:1)/den,p.x,GROUND);}b.vx*=tuned?.80:.86;b.w*=tuned?.70:.76;}if(b.x-e.x<160){b.x=160+e.x;b.vx=Math.abs(b.vx)*.28;}if(b.x+e.x>WIDTH){b.x=WIDTH-e.x;b.vx=-Math.abs(b.vx)*.28;}}
    for(let i=0;i<all.length;i++){const a=all[i];if(!a.alive)continue;for(let k=i+1;k<all.length;k++){const b=all[k];if(!b.alive||!a.inv&&!b.inv||!a.active&&!b.active)continue;const q=contact(a,b);if(q){wake(a);wake(b);resolve(a,b,q,t);}}}
   }
   for(const b of all){if(!b.alive||!b.inv||!b.active)continue;const e=extent(b),onGround=b.y+e.y>=GROUND-1.2,shift=Math.hypot(b.x-b.ox,b.y-b.oy),rot=Math.abs(b.a-b.oa);b.ground=onGround?b.ground+dt:0;
    if(b.kind==="fruit"){if(onGround&&(b.touched||shift>8)&&b.ground>=5)removeFruit(b,t);}
    else if(b.kind==="debris"){if(b.ground>=9)b.alive=false;}
-   else if(b.ground>=9&&(shift>14||rot>.20||b.touched&&hp[b.id]<scene.branches[b.id].hp||b.oy+extent({...b,a:b.oa}).y<GROUND-3&&b.y>b.oy+3)){b.alive=false;hp[b.id]=0;events.push({kind:"branch",id:b.id,t,ground:true,material:b.material,x:b.x,y:b.y});}
+   else if(b.ground>=(tuned?14:9)&&(tuned?(rot>.45||shift>55||b.oy+extent({...b,a:b.oa}).y<GROUND-6&&b.y>b.oy+6): (shift>14||rot>.20||b.touched&&hp[b.id]<scene.branches[b.id].hp||b.oy+extent({...b,a:b.oa}).y<GROUND-3&&b.y>b.oy+3))){b.alive=false;hp[b.id]=0;events.push({kind:"branch",id:b.id,t,ground:true,material:b.material,x:b.x,y:b.y});}
   }
  }
  const projectiles=shot.type==="sniper"?[]:(shot.type==="aqualily"?[-9,0,9]:[0]).map(a=>({...velocity(shot.angle+a,shot.power),x:SLING.x,y:SLING.y,type:shot.type,r:shot.type==="bulky"?23:shot.type==="aqualily"?11:15,active:true,hit:new Set(),fruitHits:new Set()}));
@@ -871,14 +605,14 @@ function gravityShot(base,board,shot,trace){
      if(dot>=0){p.x+=q.nx*(q.depth+.2);p.y+=q.ny*(q.depth+.2);continue;}
      wake(b);p.hit.add(b.id);b.touched=true;
      if(p.type==="sploder"){blast(p.x,p.y,t);p.active=false;break;}
-     const before=hp[b.id],damaged=before<original.hp,damage=p.type==="bulky"?3:1;
+     const before=hp[b.id],damaged=before<original.hp,damage=p.type==="bulky"?3:tuned&&-dot<3.5?0:1;
      hp[b.id]=Math.max(0,before-damage);events.push({kind:"damage",id:b.id,hp:hp[b.id],t,material:b.material,x:b.x,y:b.y});
-     const impact=clamp(-dot*.65,1.5,13),ix=-q.nx*impact,iy=-q.ny*impact;
-     impulse(b,ix/b.inv,iy/b.inv,q.x,q.y);
+     const impact=clamp(-dot*(tuned?.48:.65),1.5,tuned?10:13),ix=-q.nx*impact,iy=-q.ny*impact;
+     impulse(b,tuned?ix*1.1:ix/b.inv,tuned?iy*1.1:iy/b.inv,q.x,q.y);
      if(!hp[b.id]){breakBlock(b,t,ix,iy);if(original.burst)blast(b.x,b.y,t);}
      // A fresh solid surface always rebounds Marina, even if it cracks.
      // Only an already-weakened piece and enough incoming momentum allow a push-through.
-     if(damaged&&speed>8&&(!hp[b.id]||impact>6)){if(b.alive){b.x+=ix*1.6;b.y+=iy*1.6;}p.vx*=.58;p.vy*=.58;events.push({kind:"pushThrough",id:b.id,t});}
+     if(damaged&&speed>(tuned?12:8)&&(!hp[b.id]||impact>(tuned?8:6))){if(b.alive&&!tuned){b.x+=ix*1.6;b.y+=iy*1.6;}p.vx*=.58;p.vy*=.58;events.push({kind:"pushThrough",id:b.id,t});}
      else{p.x+=q.nx*(q.depth+.5);p.y+=q.ny*(q.depth+.5);p.vx=(p.vx-2*dot*q.nx)*.58;p.vy=(p.vy-2*dot*q.ny)*.58;events.push({kind:"impactBounce",id:b.id,material:b.material,x:p.x,y:p.y,t,vx:round(p.vx),vy:round(p.vy)});}
      break;
     }
@@ -887,7 +621,7 @@ function gravityShot(base,board,shot,trace){
     for(const b of fruit){if(!b.alive)continue;const dx=b.x-p.x,dy=b.y-p.y,dist=Math.hypot(dx,dy);if(dist>p.r+14||p.fruitHits.has(b.id))continue;wake(b);p.fruitHits.add(b.id);b.touched=true;const nx=dist>.001?dx/dist:1,ny=dist>.001?dy/dist:0,speed=clamp(Math.hypot(p.vx,p.vy)*.9,4,19);b.vx+=nx*speed;b.vy+=ny*speed-2;events.push({kind:"fruitImpact",id:b.id,t,x:b.x,y:b.y});p.vx*=.72;p.vy*=.72;if(p.type==="sploder"){blast(p.x,p.y,t);p.active=false;break;}}
    }
    // Two world substeps per projectile frame keep costs bounded.
-   if(sub%2===1)worldStep(.5,t);
+   if(tuned)worldStep(.25,t);else if(sub%2===1)worldStep(.5,t);
   }
   if(!projectiles.some(p=>p.active)&&(!target||t>=80)){
    const moving=all.some(b=>b.alive&&b.inv&&b.active&&(Math.abs(b.vx)+Math.abs(b.vy)+Math.abs(b.w)*b.hw>1.1));

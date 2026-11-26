@@ -5,7 +5,7 @@ import {doc,getDocFromServer} from "https://www.gstatic.com/firebasejs/13.2.0/fi
 import {WIDTH,HEIGHT,GROUND,SLING,MATERIALS,EDIT_GRID,MAX_PIECES,MAX_ORANGES,validateDesign,designMap,boardFromMap,sceneMap} from "./orange-knock-down-core.mjs";
 import {editorRequest} from "./orange-editor-api.js";
 const $=id=>document.getElementById(id),grid=$("oe-grid"),status=m=>$("oe-status").textContent=m,ns="http://www.w3.org/2000/svg";
-const blank=()=>({title:"My orchard",shots:5,two:1,three:3,gravity:true,pieces:[],oranges:[]});
+const blank=()=>({title:"My orchard",shots:5,two:1,three:3,gravity:true,physics:2,pieces:[],oranges:[]});
 let design=blank(),selected=null,id=null,staff=false,busy=false,cursor=null,undo=[],redo=[],pointer=null,ghost=null,ghostKey="",displayed=null,editingOfficial=null;
 const draftKey="ptg-orange-editor-draft-v1";
 const clone=x=>JSON.parse(JSON.stringify(x)),number=id=>Number($(id).value),snap=(v,lo,hi)=>Math.max(lo,Math.min(hi,Math.round(v/EDIT_GRID)*EDIT_GRID));
@@ -136,7 +136,7 @@ function history(from,to){if(busy||!from.length)return;readMeta();to.push(clone(
 $("oe-undo").onclick=()=>history(undo,redo);$("oe-redo").onclick=()=>history(redo,undo);
 for(const k of ["title","shots","two","three"])$("oe-"+k).addEventListener("input",persist);
 function validated(){readMeta();return validateDesign({...design,gravity:true,pieces:design.pieces.map(p=>({...p,supports:[]})),oranges:design.oranges.map(o=>({...o,branch:-1}))});}
-function loadDesign(d,newId=null,officialLevel=null){design={...validateDesign(d),gravity:true};id=newId;editingOfficial=officialLevel;selected=null;undo=[];redo=[];writeMeta();if(editingOfficial)$("oe-level").value=editingOfficial;render();$("oe-id").value=id||"";status("Level loaded.");}
+function loadDesign(d,newId=null,officialLevel=null){design={...validateDesign(d),gravity:true,physics:2};id=newId;editingOfficial=officialLevel;selected=null;undo=[];redo=[];writeMeta();if(editingOfficial)$("oe-level").value=editingOfficial;render();$("oe-id").value=id||"";status("Level loaded.");}
 $("oe-new").onclick=()=>{if(busy||!confirm("Start a new level? Unsaved changes will be replaced."))return;design=blank();id=null;editingOfficial=null;selected=null;undo=[];redo=[];writeMeta();render();$("oe-id").value="";$("oe-share").textContent="";};
 $("oe-test").onclick=()=>{if(busy)return;try{const d=validated();persist();sessionStorage.setItem("ptg-orange-test",JSON.stringify(d));location.href="orange-knock-down.html?test=1";}catch(e){status(e.message);}};
 async function perform(fn){if(busy)return;busy=true;try{await fn();}catch(e){status(e.message);}finally{busy=false;render();}}
@@ -151,5 +151,5 @@ $("oe-official-load").onclick=()=>openOfficial(number("oe-level"));
 for(const b of document.querySelectorAll("[data-oe-official]"))b.onclick=()=>openOfficial(Number(b.dataset.oeOfficial));
 $("oe-publish").onclick=()=>perform(async()=>{if(!staff)throw Error("Staff only.");const level=number("oe-level"),d=validated();if(!confirm("Save official level "+level+"? Future attempts entering this level will use this layout."))return;await editorRequest("publish",{level,design:d},true);editingOfficial=level;id=null;$("oe-id").value="";status("Official level "+level+" saved.");});
 onAuthStateChanged(auth,async user=>{staff=false;$("oe-official").hidden=true;if(!user||usingLocalFirebaseEmulators)return;try{const s=await getDocFromServer(doc(db,"users",user.uid));if(auth.currentUser?.uid!==user.uid)return;const a=s.data();staff=!!a&&["owner","admin"].includes(a.role)&&(a.status||"active")==="active";$("oe-official").hidden=!staff;if(staff&&new URLSearchParams(location.search).has("official"))$("oe-official").scrollIntoView({block:"nearest"});}catch{}});
-try{const saved=JSON.parse(localStorage.getItem(draftKey)||"null");if(saved?.design&&Array.isArray(saved.design.pieces)&&Array.isArray(saved.design.oranges)){design={...saved.design,gravity:true};id=saved.id||null;editingOfficial=Number.isInteger(saved.editingOfficial)?saved.editingOfficial:null;}}catch{}
+try{const saved=JSON.parse(localStorage.getItem(draftKey)||"null");if(saved?.design&&Array.isArray(saved.design.pieces)&&Array.isArray(saved.design.oranges)){design={...saved.design,gravity:true,physics:2};id=saved.id||null;editingOfficial=Number.isInteger(saved.editingOfficial)?saved.editingOfficial:null;}}catch{}
 writeMeta();render();$("oe-id").value=id||"";const shared=new URLSearchParams(location.search).get("level");if(shared){$("oe-id").value=shared;void perform(async()=>{const r=await editorRequest("load",{id:shared});loadDesign(r.design,r.id);});}
