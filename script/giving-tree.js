@@ -7,10 +7,10 @@ const $=id=>document.getElementById(id),area=$("gt-area"),endpoint="https://prin
 const eligible=()=>!!auth.currentUser?.emailVerified&&!usingLocalFirebaseEmulators,fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:2}),time=ms=>{let s=Math.max(0,Math.ceil(ms/1000));return s>=3600?Math.floor(s/3600)+"h "+Math.floor(s/60)%60+"m":s>=60?Math.floor(s/60)+"m "+s%60+"s":s+"s";};
 let saved=null,wallet=0,selected=new Set(),offset=0,busy=false,failed=null,epoch=0,lastSync=0,seen=new Set(),expanded=false,oldOverflow="",inventorySignature="";
 const plots=[],opponents={};
-let armed=null,sortMode="newest";
+let armed=null,sortMode="newest",visibleInventory=[];
 const selectedIds=()=>[...selected].sort((a,b)=>a-b);
 const singleId=()=>selected.size===1?selected.values().next().value:null;
-const allIds=()=>saved?.inventory.map(p=>p.id).sort((a,b)=>a-b)||[];
+const allIds=()=>visibleInventory.map(p=>p.id).sort((a,b)=>a-b);
 const selectionKey=ids=>ids.join(",");
 function isArmed(kind,id){return armed?.kind===kind&&armed.id===id&&Date.now()<armed.until;}
 function confirmAction(kind,id,extras){
@@ -55,13 +55,22 @@ function build(){
 }
 function render(){
  if(armed&&Date.now()>=armed.until)armed=null;
- const enabled=eligible()&&!!saved&&!busy&&!failed,pear=saved?.inventory.find(p=>p.id===singleId());
- $("gt-login").hidden=!!auth.currentUser||usingLocalFirebaseEmulators;$("gt-retry").hidden=!failed||busy;$("gt-sync").disabled=!enabled;
- $("gt-wallet").textContent=fmt(wallet);$("gt-count").textContent=fmt(saved?.inventory.length||0)+" / "+fmt(inventoryCapacity(saved));$("gt-enemies").textContent=fmt(saved?.enemiesDefeated||0);$("gt-bosses").textContent=fmt(saved?.bossesDefeated||0);
  const now=Math.max(saved?.lastAt||0,Date.now()+offset);
- // Project care bars and stage locally; inventory and coin awards only appear
- // after a confirmed server sync. Constant deterministic RNG avoids UI rolls.
+ // With a server-issued genetics seed, project the exact fruit IDs and stats
+ // using the same timestamp integration as the server. Older Workers fall
+ // back to confirmed inventory rather than inventing mismatched fruit.
  const projected=saved?advanceGarden(saved,now,()=>.5).state:null;
+ visibleInventory=Number.isInteger(saved?.geneticsSeed)?projected.inventory:saved?.inventory||[];
+ const available=new Set(visibleInventory.map(p=>p.id));
+ for(const id of selected)if(!available.has(id))selected.delete(id);
+ if(armed?.kind==="clearInventory"&&armed.id!==selectionKey(allIds()))armed=null;
+ if(armed?.kind==="discardMany"&&armed.id!==selectionKey(selectedIds()))armed=null;
+ const enabled=eligible()&&!!saved&&!busy&&!failed,pear=visibleInventory.find(p=>p.id===singleId());
+ $("gt-login").hidden=!!auth.currentUser||usingLocalFirebaseEmulators;$("gt-retry").hidden=!failed||busy;$("gt-sync").disabled=!enabled;
+ $("gt-wallet").textContent=fmt(wallet);$("gt-count").textContent=fmt(visibleInventory.length)+" / "+fmt(inventoryCapacity(saved));$("gt-enemies").textContent=fmt(saved?.enemiesDefeated||0);$("gt-bosses").textContent=fmt(saved?.bossesDefeated||0);
+ const pending=visibleInventory.length-(saved?.inventory.length||0);
+ $("gt-pending").textContent=pending>0?fmt(pending)+" pear"+(pending===1?"":"s")+" grown · saving shortly":"";
+ $("gt-pending").hidden=pending<=0;
  for(let i=0;i<PLOTS;i++){
   const c=plots[i],actual=saved?.plots[i],t=projected?.plots[i],st=t?stage(t):-1;
   if(c.stage!==st){c.picture.innerHTML=treeArt(st);c.stage=st;}
@@ -97,11 +106,11 @@ function render(){
  $("gt-upgrade-inventory").textContent=full?"Inventory max":"+"+Math.min(INVENTORY_STEP,INVENTORY_MAX-cap)+" slots · "+fmt(price)+" ★";
  $("gt-upgrade-inventory").disabled=!enabled||full||wallet<price;
  $("gt-upgrade-inventory").title=full?"Storage safety limit reached":"Permanently expand pear inventory for "+fmt(price)+" Star Coins.";
- const signature=JSON.stringify([saved?.inventory||[],selectedIds(),enabled,sortMode]);
+ const signature=JSON.stringify([visibleInventory,selectedIds(),enabled,sortMode]);
  if(signature!==inventorySignature){
   inventorySignature=signature;const inv=$("gt-inventory"),scroller=$("gt-inventory-scroll"),scrollTop=scroller.scrollTop;inv.replaceChildren();
-  if(!saved?.inventory.length){const empty=el(inv,"p","gt-empty-inventory");empty.textContent=saved?"No pears yet. Water your trees to grow more.":"Loading your pear inventory…";}
-  for(const p of sortedPears(saved?.inventory||[],sortMode)){
+  if(!visibleInventory.length){const empty=el(inv,"p","gt-empty-inventory");empty.textContent=saved?"No pears yet. Water your trees to grow more.":"Loading your pear inventory…";}
+  for(const p of sortedPears(visibleInventory,sortMode)){
    const b=btn(inv,"",()=>{armed=null;if(selected.has(p.id))selected.delete(p.id);else selected.add(p.id);render();},"gt-pear");b.innerHTML=pearArt;
    const text=el(b,"small","gt-pear-stats");const attack=el(text,"span"),defense=el(text,"span");attack.textContent="ATK "+fmt(p.attack);defense.textContent="DEF "+fmt(p.defense);b.setAttribute("aria-pressed",String(selected.has(p.id)));b.setAttribute("aria-label","Pear attack "+p.attack+", defense "+p.defense);b.title="ATK "+fmt(p.attack)+" · DEF "+fmt(p.defense);b.disabled=!enabled;
   }
@@ -123,9 +132,7 @@ async function send(kind,extras={},retry=false){
   const data=await request(action);if(current!==epoch)return;
   if(data.conflict)armed=null;
   saved=data.state;wallet=data.wallet;offset=data.serverNow-Date.now();lastSync=Date.now();failed=null;busy=false;
-  const available=new Set(saved.inventory.map(p=>p.id));for(const id of selected)if(!available.has(id))selected.delete(id);
-  if(armed?.kind==="clearInventory"&&armed.id!==selectionKey(allIds()))armed=null;
-  if(armed?.kind==="discardMany"&&armed.id!==selectionKey(selectedIds()))armed=null;
+  // render reconciles selection against the newly projected inventory.
   const fx=data.effects||{};
   for(const id of data.rewards||[])if(!seen.has(id)){seen.add(id);showToast(id==="pearlie"?"You found Pearlie in your pear garden!":"You found Fruiter!");}
   if(fx.coins)showToast("Your garden earned "+fmt(fx.coins)+" Star Coin"+(fx.coins===1?"":"s")+"!");

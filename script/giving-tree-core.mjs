@@ -35,8 +35,17 @@ function variant(stat,rng){
  const delta=Math.max(-50,Math.min(50,Math.floor(rng()*101)-50));
  return Math.max(100,Math.min(Number.MAX_SAFE_INTEGER-100,Math.round(stat*100)+delta))/100;
 }
+// Only genetics are deterministic. Collectible rolls remain private server RNG.
+export function geneticsRandom(seed,id,axis){
+ let x=(seed^Math.imul(id,0x9e3779b1)^Math.imul(axis+1,0x85ebca6b))>>>0;
+ x=Math.imul(x^(x>>>16),0x7feb352d);
+ x=Math.imul(x^(x>>>15),0x846ca68b);
+ return ((x^(x>>>16))>>>0)/4294967296;
+}
 function fruit(s,t,fx,rng){
- s.inventory.push({id:s.nextFruitId++,attack:variant(t.attack,rng),defense:variant(t.defense,rng)});
+ const id=s.nextFruitId++;
+ const statRng=axis=>Number.isInteger(s.geneticsSeed)?()=>geneticsRandom(s.geneticsSeed,id,axis):rng;
+ s.inventory.push({id,attack:variant(t.attack,statRng(0)),defense:variant(t.defense,statRng(1))});
  s.totalFruit++;fx.fruits++;credit(s,fx,4);
  if(s.bossesDefeated>0&&rng()<PEARLIE_CHANCE&&!fx.rewards.includes("pearlie"))fx.rewards.push("pearlie");
  if(rng()<fruiterChance(s.bossesDefeated)&&!fx.rewards.includes("fruiter"))fx.rewards.push("fruiter");
@@ -140,9 +149,9 @@ export function gardenAction(state,action,now,wallet=0,rng=Math.random){
   if(!Array.isArray(ids)||!ids.length||ids.length>INVENTORY_MAX||ids.some(id=>!Number.isSafeInteger(id)||id<1))return bad("Invalid pear selection.");
   const targets=new Set(ids);
   if(targets.size!==ids.length)return bad("Duplicate pear selection.");
-  const known=new Set(state.inventory.map(p=>p.id));
+  const known=new Set(s.inventory.map(p=>p.id));
   if(ids.some(id=>!known.has(id)))return bad("Your inventory changed. Select pears again.");
-  if(action.kind==="clearInventory"&&ids.length!==known.size)return bad("Review the full inventory before clearing.");
+  if(action.kind==="clearInventory"&&state.inventory.some(p=>!targets.has(p.id)))return bad("Review the full inventory before clearing.");
   s.inventory=s.inventory.filter(p=>!targets.has(p.id));ensureSeed(s);
   return done(true,targets.size.toLocaleString()+" pear"+(targets.size===1?"":"s")+" discarded.");
  }

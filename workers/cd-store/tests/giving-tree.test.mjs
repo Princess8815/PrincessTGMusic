@@ -1,7 +1,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import {initialGarden,makeTree,stage,growthWork,advanceGarden,gardenAction,damage,dropQuarters,dropCoins,makeOpponent,fruiterChance,sortedPears,INVENTORY_CAP,INVENTORY_MAX,inventoryCapacity,inventoryUpgradeCost,WATER_MS,FERT_MS,FERT_COST,FRUIT_WORK} from "../../../script/giving-tree-core.mjs";
+import {initialGarden,makeTree,stage,growthWork,advanceGarden,gardenAction,damage,dropQuarters,dropCoins,makeOpponent,fruiterChance,sortedPears,geneticsRandom,INVENTORY_CAP,INVENTORY_MAX,inventoryCapacity,inventoryUpgradeCost,WATER_MS,FERT_MS,FERT_COST,FRUIT_WORK} from "../../../script/giving-tree-core.mjs";
 import {gardenWithStorage} from "../giving-tree.mjs";
 const NOW=1700000000000,mid=()=>.5;
 function planted(pear={attack:1,defense:1}){const s=initialGarden(NOW);s.inventory[0]={id:1,...pear};return gardenAction(s,{kind:"plant",plot:0,fruitId:1},NOW,0,mid).state;}
@@ -139,4 +139,38 @@ test("bulk discard is atomic, saved and idempotent on server retries",async()=>{
  const input={kind:"discardMany",fruitIds:[2,4],requestId:"00000000-0000-4000-8000-000000000001",revision:s.revision};
  const call=()=>gardenWithStorage({read,commit,root,uid,input,clock:()=>NOW,rng:mid});
  const a=await call(),b=await call();assert.deepEqual(a.state.inventory.map(p=>p.id),[3]);assert.deepEqual(a.state,b.state);assert.equal(commits,1);
+});
+
+test("seeded genetics match across live projection, batched settlement and different reward RNG",()=>{
+ let s=initialGarden(NOW);s.inventory=[];s.geneticsSeed=123456789;
+ for(let i=0;i<4;i++){const t=makeTree({attack:2.31+i,defense:1.8+i});t.growth=growthWork(t);t.water=WATER_MS;t.fertilizer=i*50000;t.fruitWork=i*8000;s.plots[i]=t;}
+ const at=NOW+200000,server=advanceGarden(s,at,()=>.000001),preview=advanceGarden(s,at,()=>.5);
+ assert.deepEqual(preview.state.inventory,server.state.inventory);
+ assert.ok(server.effects.rewards.includes("fruiter"));assert.deepEqual(preview.effects.rewards,[]);
+ let incremental=s;for(let t=NOW+1000;t<=at;t+=1000)incremental=advanceGarden(incremental,t,()=>.5).state;
+ assert.deepEqual(incremental.inventory,server.state.inventory);assert.equal(incremental.totalFruit,server.state.totalFruit);
+ assert.ok(geneticsRandom(s.geneticsSeed,1,0)!==geneticsRandom(s.geneticsSeed,1,1));
+});
+test("newly projected pears can be planted, thrown or bulk discarded before periodic save",()=>{
+ const s=mature(planted({attack:5,defense:5}));s.geneticsSeed=42;
+ const at=NOW+FRUIT_WORK*2,p=advanceGarden(s,at,mid).state.inventory;
+ assert.equal(p.length,2);
+ const plant=gardenAction(s,{kind:"plant",plot:1,fruitId:p[0].id},at,0,mid);assert.equal(plant.applied,true);assert.equal(plant.state.plots[1].attack,p[0].attack);
+ const hit=gardenAction(s,{kind:"throw",target:"enemy",fruitId:p[0].id},at,0,mid);assert.equal(hit.applied,true);assert.equal(hit.state.inventory.length,1);
+ const clear=gardenAction(s,{kind:"clearInventory",fruitIds:p.map(x=>x.id)},at+FRUIT_WORK,0,mid);assert.equal(clear.applied,true);assert.equal(clear.state.inventory.length,1);assert.equal(clear.effects.coins,3);
+ const discard=gardenAction(s,{kind:"discardMany",fruitIds:[p[0].id]},at,0,mid);assert.equal(discard.applied,true);assert.deepEqual(discard.state.inventory,[p[1]]);
+});
+test("server migrates a legacy garden to a stable genetics seed and settles projected fruit exactly once",async()=>{
+ const root="documents",uid="live-preview",user="users/"+uid,path=user+"/privateGames/givingTree";
+ const old=mature(planted({attack:2.7,defense:3.1}));
+ const store=new Map([[user,{updateTime:"1",fields:{status:{stringValue:"active"}}}],[path,{updateTime:"2",fields:{payload:{stringValue:JSON.stringify({state:old})}}}]]);let commits=0,clock=NOW;
+ const read=async p=>store.get(p)||null,commit=async writes=>{commits++;for(const w of writes)if(w.update)store.set(w.update.name.slice(root.length+1),{updateTime:String(commits+2),fields:w.update.fields});return true;};
+ const id=n=>"00000000-0000-4000-8000-"+String(n).padStart(12,"0");
+ const call=(kind,n,revision,extra={})=>gardenWithStorage({read,commit,root,uid,input:{kind,requestId:id(n),revision,...extra},clock:()=>clock,rng:()=>.125});
+ const a=await call("sync",1,0);assert.ok(Number.isInteger(a.state.geneticsSeed));
+ clock+=FRUIT_WORK;
+ const expected=advanceGarden(a.state,clock,mid).state.inventory[0];
+ const b=await call("plant",2,a.state.revision,{plot:1,fruitId:expected.id});
+ assert.equal(b.applied,true);assert.equal(b.state.plots[1].attack,expected.attack);assert.equal(b.state.plots[1].defense,expected.defense);assert.equal(b.wallet,1);
+ const retry=await call("plant",2,a.state.revision,{plot:1,fruitId:expected.id});assert.equal(retry.wallet,1);assert.equal(commits,2);assert.equal(b.state.geneticsSeed,a.state.geneticsSeed);
 });

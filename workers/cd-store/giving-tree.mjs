@@ -18,6 +18,9 @@ export async function gardenWithStorage({read,commit,root,uid,input,clock=Date.n
   if(!Number.isSafeInteger(wallet)||wallet<0)fail("Wallet unavailable.",503);
   if(record?.lastRequest===input.requestId)return {...record.response,serverNow:now,wallet};
   const state=record?.state||initialGarden(now);
+  // Migrate existing saves once. The seed is server-issued and committed with
+  // the state, never supplied by the client. Already harvested pears stay intact.
+  if(!Number.isInteger(state.geneticsSeed))state.geneticsSeed=Math.floor(rng()*4294967296)>>>0;
   if(input.kind!=="sync"&&input.revision!==state.revision)return {state,serverNow:now,wallet,conflict:true,applied:false,message:"Your garden changed in another tab. Review it and retry.",effects:{coins:0,spent:0,fruits:0,enemies:0,bosses:0},rewards:[]};
   const result=gardenAction(state,input,now,wallet,rng),next=result.state,fx=result.effects,rewards=[];
   for(const id of fx.rewards)if(!await read(user+"/axolotls/"+id))rewards.push(id);
