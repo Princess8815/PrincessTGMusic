@@ -7,8 +7,10 @@ import {collection,doc,runTransaction,serverTimestamp,onSnapshot,getDocsFromServ
 import {HOME_REEF,homeReefPortrait} from "./reef-home-art.js";
 
 import {GAME_AXOLOTLS} from "./hanggirl-collectibles.js";
+import {REEF_REWARDS} from "./apple-catcher-core.mjs";
 const reef=[
  ...GAME_AXOLOTLS,
+ ...REEF_REWARDS,
  ...HOME_REEF,
  ["marina","Marina","#ffa9c3","#fa76a2","bow"],
  ["luna","Luna","#c3b0ff","#9879e8","star"],
@@ -23,7 +25,7 @@ const reef=[
 ];
 const ids=new Set(reef.map(f=>f[0]));
 // Trusted-only rewards cannot be requested by the public discovery function.
-const purchaseOnly=new Set(["tide",...GAME_AXOLOTLS.map(x=>x[0])]);
+const purchaseOnly=new Set(["tide",...GAME_AXOLOTLS.map(x=>x[0]),...REEF_REWARDS.map(x=>x[0])]);
 const encounterIds=[...ids].filter(id=>!purchaseOnly.has(id));
 const prefix="ptg-reef-pending-v1:";
 const pathFor=uid=>collection(db,"users",uid,"axolotls");

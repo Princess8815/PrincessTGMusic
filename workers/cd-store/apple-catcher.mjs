@@ -29,7 +29,7 @@ export async function playAppleCatcher(env,input){
    run={id:input.runId,game:newGame(crypto.getRandomValues(new Uint32Array(1))[0]),best:prev?.best||0,savedAt:Date.now(),closed:false,lastRewards:[]};
   }else{
    if(!prev||prev.id!==input.runId)fail("This run was replaced. Start a new game.",409);
-   if(prev.closed||input.to<=prev.game.tick)return present(prev,prev.lastRewards||[]);
+   if(prev.closed||input.to<prev.game.tick||(input.to===prev.game.tick&&input.action!=="finish"))return present(prev,prev.lastRewards||[]);
    if(!Number.isInteger(input.to)||input.to-prev.game.tick>MAX_BATCH)fail("Invalid checkpoint.");
    if((input.to-prev.game.tick)*TICK_MS>Date.now()-prev.savedAt+1200)fail("Checkpoint arrived too soon. Retry.",409);
    let result;try{result=replay(prev.game,input.to,input.moves);}catch(e){fail(e.message);}

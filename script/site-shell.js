@@ -1,5 +1,6 @@
 // Public navigation renders independently of Firebase; account links attach later.
 import {publicError,errorCode} from "./site-errors.js";
+import "./toast-sound.js";
 const root=new URL("../",import.meta.url);
 const siteUrl=path=>new URL(path,root).href;
 function showUnexpectedError(error){
@@ -174,7 +175,8 @@ const GROUPS=[
     ["Poetry","pages/poems-home.html","poetry"],
     ["Stories","arts/artsLanding.html","stories"]]},
   {title:"Games and More",links:[
-    ["Hanggirl","pages/hanggirl.html","challenges"]]},
+    ["Hanggirl","pages/hanggirl.html","challenges"],
+    ["Fruity Paradice","pages/fruity-paradice.html","challenges"]]},
   {title:"Research & Surveys",links:[
     ["Surveys","pages/research-surveys.html","docs"]]},
   {title:"Productivity",links:[

@@ -121,3 +121,5 @@ body.ptg-shell-ready > main:has(#profile-app) .profile-card {
 .ptg-error-notice a{color:var(--ptg-highlight,#c084fc)}
 .ptg-error-notice button{margin-left:auto;min-width:44px;min-height:44px;background:transparent;color:inherit;border:0;font-size:1.5rem;cursor:pointer}
 .ptg-error-notice :focus-visible{outline:2px solid var(--ptg-highlight,#c084fc);outline-offset:2px}
+
+.ptg-toast-stack{position:fixed;right:16px;bottom:16px;z-index:99999;display:grid;gap:8px;width:min(340px,calc(100vw - 32px));pointer-events:none}.ptg-toast{padding:13px 16px;border-radius:12px;background:var(--ptg-secondary,#1f2937);color:var(--ptg-text,#fff);border:2px solid var(--ptg-highlight,#c084fc);box-shadow:0 6px 24px #0005;pointer-events:auto}

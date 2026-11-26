@@ -60,7 +60,7 @@ async function save(action){
  busy=true;status("Saving your harvest…");controls();
  try{const result=await request(kind,data);if(current!==epoch)return;accept(result);failed=null;busy=false;
   if(result.closed||result.state.done||kind==="finish"){status("Run ended. "+saved+" Star Coins saved.");controls();}
-  else resume();
+  else if(document.hidden){status("Saved. Return to the page to continue.");controls();}else resume();
  }catch(e){if(current===epoch){failed={action:kind,payload:data};busy=false;status(e.message+" Retry save to keep your coins.");controls();}}
 }
 $("ac-start").onclick=async()=>{
@@ -77,7 +77,7 @@ function pointer(e){const r=canvas.getBoundingClientRect();aim(Math.floor((e.cli
 canvas.addEventListener("pointerdown",e=>{canvas.setPointerCapture(e.pointerId);pointer(e);});
 canvas.addEventListener("pointermove",e=>{if(e.pointerType==="mouse"||e.buttons)pointer(e);});
 document.addEventListener("keydown",e=>{if(!playing||e.ctrlKey||e.metaKey||e.altKey||/INPUT|TEXTAREA|SELECT/.test(e.target?.tagName))return;const k=e.key.toLowerCase();if(["arrowleft","a","arrowright","d"].includes(k)){e.preventDefault();aim(target+(["arrowleft","a"].includes(k)?-1:1));}else if(/^[1-5]$/.test(k)){e.preventDefault();aim(Number(k)-1);}});
-document.addEventListener("visibilitychange",()=>{if(document.hidden&&playing)void save("checkpoint");});
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&playing)void save("checkpoint");else if(!document.hidden&&runId&&!game.done&&!busy&&!failed&&!playing&&$("ac-status").textContent.startsWith("Saved. Return"))resume();});
 window.addEventListener("beforeunload",e=>{if(playing||busy||failed){e.preventDefault();e.returnValue="";}});
 onAuthStateChanged(auth,async user=>{
  const current=++epoch;pause();busy=false;failed=null;loaded=false;runId=null;game=newGame(1);saved=0;best=0;seen=new Set();draw();controls();

@@ -1,5 +1,5 @@
 
-let audio=null,lastSound=0,pending=false;
+let audio=null,lastSound=-Infinity,pending=false;
 const seen=new WeakMap();
 const selector=".toast,.ptg-toast,.site-toast,.notification-toast,[data-toast],[data-ptg-toast],[id$='-toast']";
 function unlock(){
