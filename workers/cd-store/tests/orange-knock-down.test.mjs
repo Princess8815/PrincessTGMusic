@@ -204,16 +204,16 @@ test("gravity settles unsupported pieces and fruit without clearing ground fruit
  assert.equal(scene.branches[0].y1,GROUND-6);assert.equal(scene.branches[1].y1,GROUND-18);assert.equal(scene.oranges[0].y,GROUND-38);assert.equal(scene.oranges[1].y,GROUND-14);assert.equal(board.remaining.length,2);
  assert.deepEqual(settleGravity(map,board),{pieceOffsets:board.pieceOffsets,orangeOffsets:board.orangeOffsets});
 });
-test("gravity collapse preserves intact beams, drops debris and persists settled poses",()=>{
+test("gravity impacts rebound, animate falling fragments and persist settled poses",()=>{
  const d={title:"Gravity collapse",gravity:true,shots:5,two:1,three:3,pieces:[{material:"wood",x:400,y:400,angle:90,length:160,supports:[]},{material:"steel",x:400,y:220,angle:0,length:100,supports:[0]}],oranges:[{x:400,y:160,branch:1},{x:700,y:300,branch:-1}]};
  const map=designMap(d),board=boardFromMap(map);let shot,result;
- for(let a=-20;a<=80&&!shot;a+=2)for(let p=25;p<=100&&!shot;p+=5){const q={type:"marina",angle:a,power:p},r=simulateShot(map,board,q);if(r.hp[0]===0&&r.hp[1]>0){shot=q;result=r;}}
- assert.ok(shot);assert.ok(result.events.some(e=>e.kind==="debris"));assert.ok(result.pieceOffsets[1]>board.pieceOffsets[1]);assert.ok(result.hp[1]>0);assert.deepEqual(result,simulateShot(map,board,shot));
- const s=initialOrange(123);s.levelMap=map;s.board=board;const out=applyOrange(s,{kind:"shot",shot},()=>.99);assert.deepEqual(out.state.board.pieceOffsets,result.pieceOffsets);
+ for(let a=-8;a<=52&&!shot;a+=4)for(let p of [65,80,95,100]){const q={type:"marina",angle:a,power:p},r=simulateShot(map,board,q);if(r.hp[0]===0&&r.events.some(e=>e.kind==="impactBounce"&&e.id===0)){shot=q;result=r;break;}}
+ assert.ok(shot);assert.ok(result.events.some(e=>e.kind==="branch"&&e.id===0));assert.ok(result.pieceOffsets[1]>board.pieceOffsets[1]||result.hp[1]===0);assert.deepEqual(result,simulateShot(map,board,shot));
+ const trace=simulateShot(map,board,shot,true);assert.ok(trace.worldFrames.some(f=>f.debris.length>0));assert.deepEqual(trace.piecePoses,result.piecePoses);assert.deepEqual(trace.orangePoses,result.orangePoses);
+ const s=initialOrange(123);s.levelMap=map;s.board=board;const out=applyOrange(s,{kind:"shot",shot},()=>.99);assert.deepEqual(out.state.board.piecePoses,result.piecePoses);assert.deepEqual(out.state.board.debrisPoses,result.debrisPoses);
 });
-
 test("handcrafted wooden levels have fixed geometry, valid gravity, Marina-only solutions and override priority",async()=>{
- const solutions={"2":[{"type":"marina","angle":2,"power":100},{"type":"marina","angle":18,"power":95}],"3":[{"type":"marina","angle":76,"power":90},{"type":"marina","angle":-4,"power":95}],"4":[{"type":"marina","angle":28,"power":90}]};
+ const solutions={"2":[{"type":"marina","angle":22,"power":65}],"3":[{"type":"marina","angle":22,"power":90}],"4":[{"type":"marina","angle":22,"power":80}]};
  for(const level of [2,3,4]){
   const s=initialOrange(123);s.level=level;s.cleared=level-1;
   await configuredOrangeLevel(async()=>null,s);
@@ -222,4 +222,26 @@ test("handcrafted wooden levels have fixed geometry, valid gravity, Marina-only 
   assert.equal(state.board.won,true);assert.ok(state.board.stars>=1);
   const changed={...d,title:"Owner edit"};await configuredOrangeLevel(async path=>path==="orangeOfficialLevels/"+level?{fields:{payload:{stringValue:JSON.stringify(changed)}}}:null,s);assert.equal(s.levelMap.design,"Owner edit");
  }
+});
+
+test("undamaged wood rebounds Marina instead of passing straight through",()=>{
+ const map=designMap({title:"Rebound",gravity:true,shots:5,two:1,three:3,pieces:[{material:"wood",x:320,y:400,angle:90,length:180,supports:[]}],oranges:[{x:800,y:400,branch:-1}]});
+ const r=simulateShot(map,boardFromMap(map),{type:"marina",angle:0,power:100},true);
+ assert.ok(r.events.some(e=>e.kind==="impactBounce"&&e.vx<0));assert.equal(r.hp[0],0);assert.equal(r.events.some(e=>e.kind==="pushThrough"),false);
+});
+test("a damaged steel beam allows a sufficiently strong push-through",()=>{
+ const map=designMap({title:"Damaged steel",gravity:true,shots:5,two:1,three:3,pieces:[{material:"steel",x:320,y:400,angle:90,length:180,supports:[]}],oranges:[{x:800,y:400,branch:-1}]});
+ const b=boardFromMap(map);b.hp[0]=2;
+ const r=simulateShot(map,b,{type:"marina",angle:0,power:100},true);
+ assert.ok(r.events.some(e=>e.kind==="pushThrough"&&e.id===0));assert.ok(r.piecePoses[0].x>320);assert.ok(r.events.some(e=>e.kind==="damage"));
+});
+test("direct orange hit moves the fruit over multiple frames before clearing",()=>{
+ const map=designMap({title:"Rolling orange",gravity:true,shots:5,two:1,three:3,pieces:[{material:"reflector",x:400,y:400,angle:0,length:100,supports:[]}],oranges:[{x:400,y:340,branch:-1}]});
+ const b=boardFromMap(map);let result;
+ for(let a=0;a<=36&&!result;a+=2){const q=simulateShot(map,b,{type:"marina",angle:a,power:95},true);if(q.events.some(e=>e.kind==="fruitImpact"))result=q;}
+ assert.ok(result);const hit=result.events.find(e=>e.kind==="fruitImpact");assert.ok(result.worldFrames[hit.t].oranges.some(o=>o.id===0));assert.ok(result.worldFrames.slice(hit.t+1).some(f=>f.oranges.some(o=>o.id===0&&Math.abs(o.x-400)>2)));const clear=result.events.find(e=>e.kind==="orange");assert.ok(!clear||clear.t>hit.t);
+});
+test("a missed shot leaves sleeping structures in their initial positions",()=>{
+ const map=designMap(builtInOrangeDesign(2)),board=boardFromMap(map),r=simulateShot(map,board,{type:"marina",angle:-20,power:1});
+ assert.deepEqual(r.hp,board.hp);assert.deepEqual(r.remaining,board.remaining);assert.deepEqual(r.pieceOffsets,board.pieceOffsets);assert.deepEqual(r.orangeOffsets,board.orangeOffsets);
 });

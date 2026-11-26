@@ -758,10 +758,11 @@ function gravityShot(base,board,shot,trace){
  const blocks=[],fruit=[],debris=[],all=[];
  function make(kind,id,x,y,a,hw,hh,anchor=false,material="wood"){
   const mass=kind==="fruit"?.65:Math.max(.8,hw*hh/260),inv=anchor?0:1/mass;
-  return {kind,id,x,y,a,hw,hh,inv,ii:inv*3/(hw*hw+hh*hh),vx:0,vy:0,w:0,ox:x,oy:y,oa:a,alive:true,ground:0,touched:false,material};
+  return {kind,id,x,y,a,hw,hh,inv,ii:inv*3/(hw*hw+hh*hh),vx:0,vy:0,w:0,ox:x,oy:y,oa:a,alive:true,active:false,ground:0,touched:false,material};
  }
  for(const b of scene.branches)if(hp[b.id]>0){const a=make("block",b.id,(b.x1+b.x2)/2,(b.y1+b.y2)/2,Math.atan2(b.y2-b.y1,b.x2-b.x1),Math.hypot(b.x2-b.x1,b.y2-b.y1)/2,(b.width||12)/2,!!b.reflect,b.material);blocks.push(a);all.push(a);}
  for(const o of scene.oranges)if(remaining.has(o.id)){const a=make("fruit",o.id,o.x,o.y,0,14,14);fruit.push(a);all.push(a);}
+ for(const b of board.debrisPoses||[]){const part=make("debris",debris.length,b.x,b.y,b.a,b.hw,b.hh,false,b.material);debris.push(part);all.push(part);}
  const getBlock=id=>blocks.find(b=>b.id===id);
  function axes(b){const x=Math.cos(b.a),y=Math.sin(b.a);return {x,y,u:-y,v:x};}
  function extent(b){if(b.kind==="fruit")return {x:14,y:14};const a=axes(b);return {x:Math.abs(a.x)*b.hw+Math.abs(a.u)*b.hh,y:Math.abs(a.y)*b.hw+Math.abs(a.v)*b.hh};}
@@ -805,31 +806,38 @@ function gravityShot(base,board,shot,trace){
   if(Math.abs(vn)>1.5&&(a.touched||b.touched||Math.abs(vn)>4)){a.touched=true;b.touched=true;}
  }
  let awake=false;
+ function wake(b){
+  if(!b.alive||!b.inv||b.active)return;
+  b.active=true;awake=true;const e=extent(b);
+  for(const a of all){if(a===b||!a.alive||!a.inv||a.active)continue;const p=extent(a);
+   if(Math.abs(a.x-b.x)<=p.x+e.x+2&&Math.abs(a.y-b.y)<=p.y+e.y+2)wake(a);
+  }
+ }
  function removeFruit(b,t){if(!b.alive)return;b.alive=false;remaining.delete(b.id);events.push({kind:"orange",id:b.id,t,x:b.x,y:b.y});}
  function breakBlock(b,t,ix,iy){
   if(!b.alive||!b.inv)return;b.alive=false;hp[b.id]=0;events.push({kind:"branch",id:b.id,t});
   const a=axes(b);
   for(const side of [-1,1]){
    const part=make("debris",debris.length,b.x+a.x*b.hw*.5*side,b.y+a.y*b.hw*.5*side,b.a,b.hw*.5,b.hh,false,b.material);
-   part.vx=b.vx+ix*.65+side*a.x*1.7;part.vy=b.vy+iy*.4-1;part.w=side*.055+b.w;part.touched=true;debris.push(part);all.push(part);
+   part.vx=b.vx+ix*.65+side*a.x*1.7;part.vy=b.vy+iy*.4-1;part.w=side*.055+b.w;part.touched=true;part.active=true;debris.push(part);all.push(part);
   }
  }
  function blast(x,y,t){
   awake=true;events.push({kind:"blast",x,y,t});
-  for(const b of blocks){if(!b.alive||!b.inv)continue;const dx=b.x-x,dy=b.y-y,dist=Math.hypot(dx,dy);if(dist>b.hw+115)continue;const old=hp[b.id];hp[b.id]=Math.max(0,old-2);b.touched=true;events.push({kind:"damage",id:b.id,hp:hp[b.id],t});const vx=dx/(dist||1)*9,vy=dy/(dist||1)*9-3;if(!hp[b.id]){breakBlock(b,t,vx,vy);if(scene.branches[b.id].burst&&old)blast(b.x,b.y,t);}else impulse(b,vx/b.inv,vy/b.inv);}
-  for(const b of fruit){if(!b.alive)continue;const dx=b.x-x,dy=b.y-y,dist=Math.hypot(dx,dy);if(dist>130)continue;b.touched=true;b.vx+=dx/(dist||1)*12;b.vy+=dy/(dist||1)*12-5;}
+  for(const b of blocks){if(!b.alive||!b.inv)continue;const dx=b.x-x,dy=b.y-y,dist=Math.hypot(dx,dy);if(dist>b.hw+115)continue;wake(b);const old=hp[b.id];hp[b.id]=Math.max(0,old-2);b.touched=true;events.push({kind:"damage",id:b.id,hp:hp[b.id],t});const vx=dx/(dist||1)*9,vy=dy/(dist||1)*9-3;if(!hp[b.id]){breakBlock(b,t,vx,vy);if(scene.branches[b.id].burst&&old)blast(b.x,b.y,t);}else impulse(b,vx/b.inv,vy/b.inv);}
+  for(const b of fruit){if(!b.alive)continue;const dx=b.x-x,dy=b.y-y,dist=Math.hypot(dx,dy);if(dist>130)continue;wake(b);b.touched=true;b.vx+=dx/(dist||1)*12;b.vy+=dy/(dist||1)*12-5;}
  }
  function worldStep(dt,t){
   if(!awake)return;
-  for(const b of all){if(!b.alive||!b.inv)continue;b.vy+=.38*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;b.a+=b.w*dt;b.vx*=.993;b.w*=.987;}
+  for(const b of all){if(!b.alive||!b.inv||!b.active)continue;b.vy+=.38*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;b.a+=b.w*dt;b.vx*=.993;b.w*=.987;}
   for(let iter=0;iter<3;iter++){
-   for(const b of all){if(!b.alive||!b.inv)continue;const e=extent(b);if(b.y+e.y>GROUND){const p=supportPoint(b,0,1);b.y=GROUND-e.y;const downward=b.vy+b.w*(p.x-b.x);if(downward>0){const den=b.inv+(p.x-b.x)**2*b.ii;impulse(b,0,-downward*(downward>2?1.18:1)/den,p.x,GROUND);}b.vx*=.86;b.w*=.76;}if(b.x-e.x<160){b.x=160+e.x;b.vx=Math.abs(b.vx)*.28;}if(b.x+e.x>WIDTH){b.x=WIDTH-e.x;b.vx=-Math.abs(b.vx)*.28;}}
-   for(let i=0;i<all.length;i++){const a=all[i];if(!a.alive)continue;for(let k=i+1;k<all.length;k++){const b=all[k];if(!b.alive||!a.inv&&!b.inv)continue;const q=contact(a,b);if(q)resolve(a,b,q);}}
+   for(const b of all){if(!b.alive||!b.inv||!b.active)continue;const e=extent(b);if(b.y+e.y>GROUND){const p=supportPoint(b,0,1);b.y=GROUND-e.y;const downward=b.vy+b.w*(p.x-b.x);if(downward>0){const den=b.inv+(p.x-b.x)**2*b.ii;impulse(b,0,-downward*(downward>2?1.18:1)/den,p.x,GROUND);}b.vx*=.86;b.w*=.76;}if(b.x-e.x<160){b.x=160+e.x;b.vx=Math.abs(b.vx)*.28;}if(b.x+e.x>WIDTH){b.x=WIDTH-e.x;b.vx=-Math.abs(b.vx)*.28;}}
+   for(let i=0;i<all.length;i++){const a=all[i];if(!a.alive)continue;for(let k=i+1;k<all.length;k++){const b=all[k];if(!b.alive||!a.inv&&!b.inv||!a.active&&!b.active)continue;const q=contact(a,b);if(q){wake(a);wake(b);resolve(a,b,q);}}}
   }
-  for(const b of all){if(!b.alive||!b.inv)continue;const e=extent(b),onGround=b.y+e.y>=GROUND-1.2,shift=Math.hypot(b.x-b.ox,b.y-b.oy),rot=Math.abs(b.a-b.oa);b.ground=onGround?b.ground+dt:0;
+  for(const b of all){if(!b.alive||!b.inv||!b.active)continue;const e=extent(b),onGround=b.y+e.y>=GROUND-1.2,shift=Math.hypot(b.x-b.ox,b.y-b.oy),rot=Math.abs(b.a-b.oa);b.ground=onGround?b.ground+dt:0;
    if(b.kind==="fruit"){if(onGround&&(b.touched||shift>8)&&b.ground>=5)removeFruit(b,t);}
    else if(b.kind==="debris"){if(b.ground>=9)b.alive=false;}
-   else if(b.ground>=9&&(shift>14||rot>.20||b.touched&&hp[b.id]<scene.branches[b.id].hp)){b.alive=false;hp[b.id]=0;events.push({kind:"branch",id:b.id,t,ground:true});}
+   else if(b.ground>=9&&(shift>14||rot>.20||b.touched&&hp[b.id]<scene.branches[b.id].hp||b.oy+extent({...b,a:b.oa}).y<GROUND-3&&b.y>b.oy+3)){b.alive=false;hp[b.id]=0;events.push({kind:"branch",id:b.id,t,ground:true});}
   }
  }
  const projectiles=shot.type==="sniper"?[]:(shot.type==="aqualily"?[-9,0,9]:[0]).map(a=>({...velocity(shot.angle+a,shot.power),x:SLING.x,y:SLING.y,type:shot.type,r:shot.type==="bulky"?23:shot.type==="aqualily"?11:15,active:true,hit:new Set(),fruitHits:new Set()}));
@@ -839,7 +847,7 @@ function gravityShot(base,board,shot,trace){
  let quiet=0;
  for(let t=0;t<260;t++){
   if(trace){frames.push(target&&t<=28?[{x:SLING.x+(target.x-SLING.x)*t/28,y:SLING.y+(target.y-SLING.y)*t/28-80*Math.sin(Math.PI*t/28),type:"sniper",r:15}]:projectiles.filter(p=>p.active).map(({x,y,type,r})=>({x,y,type,r})));worldFrames.push(snapWorld());}
-  if(target&&t===28){awake=true;target.touched=true;target.vx=12;target.vy=-7;}
+  if(target&&t===28){wake(target);target.touched=true;target.vx=12;target.vy=-7;}
   if(target&&t===80&&target.alive)removeFruit(target,t); // Sniper retains its guaranteed power.
   for(let sub=0;sub<4;sub++){
    for(const p of projectiles){if(!p.active)continue;p.vy+=.34/4;p.x+=p.vx/4;p.y+=p.vy/4;
@@ -851,7 +859,7 @@ function gravityShot(base,board,shot,trace){
      if(p.hit.has(b.id)){p.x+=q.nx*(q.depth+.15);p.y+=q.ny*(q.depth+.15);const dot=p.vx*q.nx+p.vy*q.ny;if(dot<0){p.vx-=dot*q.nx;p.vy-=dot*q.ny;}continue;}
      const dot=p.vx*q.nx+p.vy*q.ny;
      if(dot>=0){p.x+=q.nx*(q.depth+.2);p.y+=q.ny*(q.depth+.2);continue;}
-     awake=true;p.hit.add(b.id);b.touched=true;
+     wake(b);p.hit.add(b.id);b.touched=true;
      if(p.type==="sploder"){blast(p.x,p.y,t);p.active=false;break;}
      const before=hp[b.id],damaged=before<original.hp,damage=p.type==="bulky"?3:1;
      hp[b.id]=Math.max(0,before-damage);events.push({kind:"damage",id:b.id,hp:hp[b.id],t});
@@ -865,13 +873,14 @@ function gravityShot(base,board,shot,trace){
      break;
     }
     if(!p.active)continue;
-    for(const b of fruit){if(!b.alive)continue;const dx=b.x-p.x,dy=b.y-p.y,dist=Math.hypot(dx,dy);if(dist>p.r+14||p.fruitHits.has(b.id))continue;awake=true;p.fruitHits.add(b.id);b.touched=true;const nx=dist>.001?dx/dist:1,ny=dist>.001?dy/dist:0,speed=clamp(Math.hypot(p.vx,p.vy)*.9,4,19);b.vx+=nx*speed;b.vy+=ny*speed-2;events.push({kind:"fruitImpact",id:b.id,t,x:b.x,y:b.y});p.vx*=.72;p.vy*=.72;if(p.type==="sploder"){blast(p.x,p.y,t);p.active=false;break;}}
+    for(const b of debris){if(!b.alive)continue;const q=circleRect(p.x,p.y,p.r,b);if(!q)continue;const dot=p.vx*q.nx+p.vy*q.ny;if(dot>=0)continue;wake(b);const push=Math.min(14,-dot*.65);impulse(b,-q.nx*push/b.inv,-q.ny*push/b.inv,q.x,q.y);b.touched=true;p.vx*=.76;p.vy*=.76;}
+    for(const b of fruit){if(!b.alive)continue;const dx=b.x-p.x,dy=b.y-p.y,dist=Math.hypot(dx,dy);if(dist>p.r+14||p.fruitHits.has(b.id))continue;wake(b);p.fruitHits.add(b.id);b.touched=true;const nx=dist>.001?dx/dist:1,ny=dist>.001?dy/dist:0,speed=clamp(Math.hypot(p.vx,p.vy)*.9,4,19);b.vx+=nx*speed;b.vy+=ny*speed-2;events.push({kind:"fruitImpact",id:b.id,t,x:b.x,y:b.y});p.vx*=.72;p.vy*=.72;if(p.type==="sploder"){blast(p.x,p.y,t);p.active=false;break;}}
    }
    // Two world substeps per projectile frame keep costs bounded.
    if(sub%2===1)worldStep(.5,t);
   }
   if(!projectiles.some(p=>p.active)&&(!target||t>=80)){
-   const moving=all.some(b=>b.alive&&b.inv&&(Math.abs(b.vx)+Math.abs(b.vy)+Math.abs(b.w)*b.hw>1.1));
+   const moving=all.some(b=>b.alive&&b.inv&&b.active&&(Math.abs(b.vx)+Math.abs(b.vy)+Math.abs(b.w)*b.hw>1.1));
    quiet=moving?0:quiet+1;if(!awake||quiet>=12)break;
   }
  }
@@ -879,7 +888,8 @@ function gravityShot(base,board,shot,trace){
  const orangePoses=base.oranges.map(o=>{const b=fruit.find(p=>p.id===o.id);return b?{x:round(b.x),y:round(b.y)}:board.orangePoses?.[o.id]||{x:o.x,y:o.y+(board.orangeOffsets?.[o.id]||0)};});
  const pieceOffsets=piecePoses.map((p,i)=>round(p.y-(base.branches[i].y1+base.branches[i].y2)/2)),orangeOffsets=orangePoses.map((p,i)=>round(p.y-base.oranges[i].y));
  if(trace){worldFrames.push(snapWorld());frames.push([]);}
- return {hp,remaining:[...remaining],events,frames,worldFrames,piecePoses,orangePoses,pieceOffsets,orangeOffsets};
+ const debrisPoses=debris.filter(b=>b.alive).map(b=>({x:round(b.x),y:round(b.y),a:round(b.a),hw:b.hw,hh:b.hh,material:b.material}));
+ return {hp,remaining:[...remaining],events,frames,worldFrames,piecePoses,orangePoses,pieceOffsets,orangeOffsets,debrisPoses};
 }
 export function simulateShot(map,board,shot,trace=false){
  if(!validShot(shot))throw Error("Invalid shot.");
@@ -962,7 +972,7 @@ export function applyOrange(state,action,rng=Math.random){
  if(type==="marina")s.board.marina--;else s.inventory[type]--;
  s.board.hp=result.hp;s.board.remaining=result.remaining;
  if(result.pieceOffsets){s.board.pieceOffsets=result.pieceOffsets;s.board.orangeOffsets=result.orangeOffsets;}
- if(result.piecePoses){s.board.piecePoses=result.piecePoses;s.board.orangePoses=result.orangePoses;}
+ if(result.piecePoses){s.board.piecePoses=result.piecePoses;s.board.orangePoses=result.orangePoses;s.board.debrisPoses=result.debrisPoses;}
  if(!result.remaining.length){
   const first=s.level>highestRewarded(s);
   s.board.won=true;s.board.stars=starRating(stateMap(s),s.board);s.board.rewarded=first;
