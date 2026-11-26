@@ -1,6 +1,6 @@
 import {publicError,withErrorCode} from "./site-errors.js";
 
-import { auth, db } from "./firebase.js";
+import { auth, db, usingLocalFirebaseEmulators } from "./firebase.js";
 
 import {
   collection,
@@ -48,6 +48,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   let managerRole = null;
   let selectedBypass=false;
   let bypassLoading=false;
+  let selectedAuth=null;
+  const revokeLegacy=$("account-verification-revoke-legacy");
+  async function verificationRequest(action,uid,expectedEmail){
+    if(usingLocalFirebaseEmulators)throw Error("Use Live Firebase on the published site.");
+    const user=auth.currentUser;if(!user)throw Error("Sign in as owner.");
+    const idToken=await user.getIdToken(true);if(auth.currentUser?.uid!==user.uid)throw Error("Account changed.");
+    const r=await fetch("https://princesstg-cd-store-live.transgirl1991.workers.dev/owner/email-verification",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,targetUid:uid,expectedEmail,idToken})});
+    const data=await r.json();if(!r.ok)throw Error(data.error||"Verification unavailable.");return data;
+  }
 
   function activateAccountSubtab(which){
     const choices=["roles","verification"];
@@ -76,103 +85,56 @@ document.addEventListener("DOMContentLoaded", async () => {
     $("account-subtab-"+next).focus();
   });
 
+
+  function protectedVerification(uid,target){
+    return managerRole!=="owner"||!target||uid===auth.currentUser?.uid||target.role==="owner"||(target.status||"active")!=="active";
+  }
   async function loadBypass(uid){
-    bypassLoading=true;
-    bypassButton.disabled=true;
-    bypassStatus.textContent="Checking…";
-    verificationStatus.textContent="";
+    bypassLoading=true;selectedAuth=null;selectedBypass=false;bypassButton.disabled=true;revokeLegacy.hidden=true;
+    bypassStatus.textContent="Checking…";authStatus.textContent="Checking Firebase Auth…";verificationStatus.textContent="";
     const target=accounts.find(item=>item.uid===uid);
-    authStatus.textContent=target?.auth?.emailVerified===true
-      ? "Verified in last saved profile" : "Not verified in last saved profile";
+    if(protectedVerification(uid,target)){authStatus.textContent="Protected account";bypassStatus.textContent="Unavailable";bypassLoading=false;return;}
     try{
       const snap=await getDocFromServer(doc(db,"verificationOverrides",uid));
       if(selectedUid!==uid)return;
       selectedBypass=snap.exists()&&snap.data().enabled===true;
-      bypassStatus.textContent=selectedBypass?"Bypass ENABLED":"Bypass disabled";
-      bypassStatus.dataset.enabled=String(selectedBypass);
-      bypassButton.dataset.action=selectedBypass?"revoke":"grant";
-      bypassButton.textContent=selectedBypass
-        ? "Revoke verification bypass" : "Grant verification bypass";
-    }catch(error){
+      bypassStatus.textContent=selectedBypass?"Legacy site exception enabled":"No legacy exception";
+      bypassStatus.dataset.enabled=String(selectedBypass);revokeLegacy.hidden=!selectedBypass;
+      const actual=await verificationRequest("status",uid);
       if(selectedUid!==uid)return;
-      verificationStatus.textContent=publicError(error,"PTG-901");
-      bypassStatus.textContent="Unavailable";
-      selectedBypass=false;
-      bypassButton.disabled=true;
-      return;
-    }finally{
-      if(selectedUid===uid){
-        bypassLoading=false;
-        bypassButton.disabled=managerRole!=="owner"
-          ||uid===auth.currentUser?.uid
-          ||target?.role==="owner"
-          ||target?.status==="archived";
-      }
-    }
-    if(managerRole!=="owner")verificationStatus.textContent=
-      "Only the site owner can grant or revoke verification exceptions.";
+      selectedAuth=actual;authStatus.textContent=actual.emailVerified?"Verified in Firebase Auth":"Unverified in Firebase Auth";
+      bypassButton.textContent=actual.emailVerified?"Email verified":"Grant bypass (mark email verified)";
+    }catch(error){if(selectedUid===uid){authStatus.textContent="Firebase verification unavailable";verificationStatus.textContent=error.message||publicError(error,"PTG-901");}}
+    finally{if(selectedUid===uid){bypassLoading=false;revokeLegacy.disabled=false;bypassButton.disabled=!selectedAuth||selectedAuth.emailVerified||protectedVerification(uid,target);}}
   }
-
   bypassButton.addEventListener("click",async()=>{
-    const uid=selectedUid;
-    if(!uid||bypassLoading)return;
-    bypassLoading=true;bypassButton.disabled=true;
+    const uid=selectedUid,actual=selectedAuth;
+    if(!uid||bypassLoading||!actual||actual.emailVerified)return;
+    bypassLoading=true;bypassButton.disabled=true;revokeLegacy.disabled=true;
     try{
-      const role=await verifyManager();
-      if(role!=="owner")throw Error("Only the active site owner may change verification bypasses.");
-      if(uid===auth.currentUser?.uid)throw Error("You cannot bypass verification on your own account.");
-      const targetRef=doc(db,"users",uid);
-      const snap=await getDocFromServer(targetRef);
-      if(!snap.exists())throw Error("Target account no longer exists.");
-      const target=snap.data();
-      if(target.role==="owner"||target.status==="archived")
-        throw Error("Owner and archived accounts are protected.");
-      const next=!selectedBypass;
-      const label=target.auth?.displayName||target.auth?.email||uid;
-      if(!window.confirm(
-        (next?"GRANT":"REVOKE")+" email verification BYPASS for "+label+"?\n\n"+
-        (next
-          ?"Allow member features without verifying email ownership?"
-          :"Require email verification for member features?")+
-        "\n\nConfirm this owner-only exception change?"
-      ))return;
-      const audit=doc(collection(db,"verificationOverrideAudit"));
-      const override=doc(db,"verificationOverrides",uid);
-      const targetEmail=String(target.auth?.email||"");
-      const batch=writeBatch(db);
-      batch.set(override,{
-        enabled:next,
-        updatedAt:serverTimestamp(),
-        updatedBy:auth.currentUser.uid,
-        targetEmail,
-        auditId:audit.id
-      });
-      batch.set(audit,{
-        targetUid:uid,
-        enabled:next,
-        actorUid:auth.currentUser.uid,
-        targetEmail,
-        createdAt:serverTimestamp()
-      });
-      await batch.commit();
+      if(await verifyManager()!=="owner")throw Error("Only the active site owner can approve verification.");
+      if(!window.confirm("Mark "+actual.email+" fully verified in Firebase Authentication?\n\nThis grants verified-only access but is not proof of email ownership. Only approve independently checked accounts."))return;
+      const result=await verificationRequest("grant",uid,actual.email);
+      if(selectedUid!==uid)return;
       await loadBypass(uid);
-      if(selectedUid===uid){
-        verificationStatus.textContent=
-          next?"Bypass granted. This account may now use verified-only site features."
-              :"Bypass revoked. Genuine email verification is required again.";
-        verificationStatus.style.color="#86efac";
-      }
-    }catch(error){
-      console.error("Owner verification bypass action failed:",error);
-      verificationStatus.textContent="Bypass change failed: "+publicError(error,"PTG-901");
-      verificationStatus.style.color="#fca5a5";
-    }finally{
-      bypassLoading=false;
-      const target=accounts.find(item=>item.uid===uid);
-      bypassButton.disabled=selectedUid!==uid||managerRole!=="owner"
-        ||uid===auth.currentUser?.uid||target?.role==="owner"
-        ||target?.status==="archived";
-    }
+      if(selectedUid===uid&&result.emailVerified){verificationStatus.textContent="Firebase Auth verified. Ask the member to sign out and back in.";verificationStatus.style.color="#86efac";}
+    }catch(error){if(selectedUid===uid){verificationStatus.textContent=error.message||publicError(error,"PTG-901");verificationStatus.style.color="#fca5a5";}}
+    finally{if(selectedUid===uid){bypassLoading=false;revokeLegacy.disabled=false;bypassButton.disabled=!selectedAuth||selectedAuth.emailVerified||protectedVerification(uid,accounts.find(a=>a.uid===uid));}}
+  });
+  revokeLegacy.addEventListener("click",async()=>{
+    const uid=selectedUid;if(!uid||!selectedBypass||bypassLoading)return;
+    bypassLoading=true;revokeLegacy.disabled=true;bypassButton.disabled=true;
+    try{
+      if(await verifyManager()!=="owner")throw Error("Owner required.");
+      const target=await getDocFromServer(doc(db,"users",uid));
+      if(!target.exists()||protectedVerification(uid,target.data()))throw Error("Protected account.");
+      if(!window.confirm("Remove this legacy site exception? This will not undo Firebase Auth verification."))return;
+      const audit=doc(collection(db,"verificationOverrideAudit")),override=doc(db,"verificationOverrides",uid),targetEmail=String(target.data().auth?.email||""),batch=writeBatch(db);
+      batch.set(override,{enabled:false,updatedAt:serverTimestamp(),updatedBy:auth.currentUser.uid,targetEmail,auditId:audit.id});
+      batch.set(audit,{targetUid:uid,enabled:false,actorUid:auth.currentUser.uid,targetEmail,createdAt:serverTimestamp()});
+      await batch.commit();if(selectedUid===uid)await loadBypass(uid);
+    }catch(error){if(selectedUid===uid)verificationStatus.textContent=error.message||publicError(error,"PTG-901");}
+    finally{if(selectedUid===uid){bypassLoading=false;revokeLegacy.disabled=false;bypassButton.disabled=!selectedAuth||selectedAuth.emailVerified||protectedVerification(uid,accounts.find(a=>a.uid===uid));}}
   });
   activateAccountSubtab("roles");
 

@@ -62,19 +62,19 @@ export async function verifyFirebaseIdentity(project,token,requireVerifiedEmail=
   return p.sub;
  }catch(e){if(e.status)throw e;reject("Sign in again before claiming purchase collectibles.");}
 }
-export async function accessToken(env,project=rewardProject(env)){
+export async function accessToken(env,project=rewardProject(env),scope="https://www.googleapis.com/auth/datastore"){
  if(!project)reject("Purchase rewards are disabled in this environment.",503);
- if(oauthCache?.project===project&&oauthCache.exp>Date.now()+60000)return oauthCache.token;
+ if(oauthCache?.project===project&&oauthCache.scope===scope&&oauthCache.exp>Date.now()+60000)return oauthCache.token;
  let sa;try{sa=JSON.parse(env.FIREBASE_REWARD_SERVICE_ACCOUNT||"");}catch{reject("Reward service is not configured.",503);}
  if(sa.project_id!==project||!sa.client_email||!sa.private_key)reject("Reward service account project mismatch.",503);
  const pem=sa.private_key.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s/g,"");
  const key=await crypto.subtle.importKey("pkcs8",decode(pem),{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["sign"]);
  const iat=Math.floor(Date.now()/1000),aud="https://oauth2.googleapis.com/token";
- const jwt=b64url(enc.encode(JSON.stringify({alg:"RS256",typ:"JWT"})))+"."+b64url(enc.encode(JSON.stringify({iss:sa.client_email,scope:"https://www.googleapis.com/auth/datastore",aud,iat,exp:iat+3600})));
+ const jwt=b64url(enc.encode(JSON.stringify({alg:"RS256",typ:"JWT"})))+"."+b64url(enc.encode(JSON.stringify({iss:sa.client_email,scope,aud,iat,exp:iat+3600})));
  const signature=b64url(await crypto.subtle.sign("RSASSA-PKCS1-v1_5",key,enc.encode(jwt)));
  const r=await fetch(aud,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({grant_type:"urn:ietf:params:oauth:grant-type:jwt-bearer",assertion:jwt+"."+signature})});
  const data=await r.json();if(!r.ok||!data.access_token)reject("Reward authorization unavailable.",503);
- oauthCache={project,token:data.access_token,exp:Date.now()+Number(data.expires_in||3600)*1000};return data.access_token;
+ oauthCache={project,scope,token:data.access_token,exp:Date.now()+Number(data.expires_in||3600)*1000};return data.access_token;
 }
 export async function awardPaidOrder(env,row){
  const project=rewardProject(env);

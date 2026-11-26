@@ -512,7 +512,7 @@ $("auth-logout").addEventListener("click", async () => {
   // to know which button to click. Throttle to avoid repeated auth requests.
   async function refreshOnReturn(){
     const user=auth.currentUser;
-    if(!user||hasSiteVerificationAccess(user)||automaticCheckPending)return;
+    if(!user||user.emailVerified||automaticCheckPending)return;
     if(Date.now()-lastAutomaticCheckAt<8000)return;
     lastAutomaticCheckAt=Date.now();
     automaticCheckPending=true;
@@ -563,7 +563,7 @@ $("auth-logout").addEventListener("click", async () => {
       if(version!==authDisplayVersion||auth.currentUser?.uid!==user.uid)return;
       activeAccessCheckUid=user.uid;
       syncAuthBar(user);
-      if(!hasSiteVerificationAccess(user))void refreshOnReturn();
+      if(!user.emailVerified)void refreshOnReturn();
     })();
   });
   window.addEventListener("princesstg:verification-access-changed",event=>{

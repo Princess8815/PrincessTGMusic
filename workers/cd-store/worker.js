@@ -15,6 +15,7 @@ import {playOrangeKnockDown} from "./orange-knock-down.mjs";
 import {buyStarlight,starlightOrigin} from "./starlight.mjs";
 import {publicError,errorCode} from "../../script/site-errors.js";
 import {ownerTools} from "./owner-tools.js";
+import {ownerVerification} from "./owner-verification.mjs";
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status});};
 const str=(v,max,required=true)=>{if(typeof v!=="string"||v.length>max||required&&!v.trim())fail("Please complete the shipping address.");return v.trim();};
 const integer=(v,min,max)=>Number.isInteger(v)&&v>=min&&v<=max;
@@ -294,6 +295,7 @@ export default {
    if(url.pathname==="/games/orange-knock-down")return json(await playOrangeKnockDown(env,b));
    if(url.pathname==="/starlight/buy")return json(await buyStarlight(env,b));
    if(url.pathname==="/owner/terminal-commands")return json(await ownerTools(env,b));
+   if(url.pathname==="/owner/email-verification")return json(await ownerVerification(env,b));
    if(url.pathname==="/shipping-quotes")return json(await shippingQuote(env,b));
    if(url.pathname==="/shipping-admin")return json(await shippingAdmin(env,b));
    if(url.pathname==="/inventory-admin"){if(!await verifiedShippingStaff(env,b.idToken))fail("Administrator access required.",403);if(b.action==="save")await saveInventory(env,b.inventory);else if(b.action==="stage")await orderStage(env,b);else if(b.action!=="list")fail("Unknown inventory action.");return json({mode:env.STORE_MODE,inventory:await inventoryList(env),orders:await fulfillmentOrders(env),products:(await catalog(env,true)).products});}

@@ -1464,21 +1464,19 @@
 
             <section id="account-subpanel-verification" role="tabpanel"
               aria-labelledby="account-subtab-verification" hidden>
-              <h4>Email verification exception</h4>
-              <p class="helper">The owner can allow an account to use
-                member features without proving email ownership. This does
-                <strong>not</strong> verify email ownership.</p>
+              <h4>Owner-approved email verification</h4>
+              <p class="helper">The owner can mark an independently checked account as verified in Firebase Authentication. This grants verified-only access, but does not prove email ownership.</p>
               <p><strong>Email verification:</strong>
                 <span id="account-verification-auth-status">Checking…</span></p>
               <p><strong>Site exception:</strong>
                 <span id="account-verification-bypass-status">Checking…</span></p>
               <p id="account-verification-warning" class="helper">
-                Owner only. A bypassed account can use site mail and
-                other verified-only features without confirming its email.</p>
+                Owner only. Approval applies to Firebase Auth and verified-only features including games. Removing a legacy site exception does not undo Firebase verification.</p>
               <div class="form-actions">
                 <button type="button" id="account-verification-toggle" disabled>
-                  Loading exception…
+                  Loading verification…
                 </button>
+                <button type="button" id="account-verification-revoke-legacy" hidden>Remove legacy site exception</button>
               </div>
               <p id="account-verification-status" role="status"
                 aria-live="polite"></p>
