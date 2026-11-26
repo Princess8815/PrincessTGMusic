@@ -33,6 +33,9 @@ export async function peachWithStorage({read,commit,root,uid,input,clock=Date.no
   }
   const writes=[{verify:root+"/"+user,currentDocument:{updateTime:account.updateTime}},
    {update:{name:root+"/"+path,fields:{payload:str(JSON.stringify(run))}},currentDocument:stored?{updateTime:stored.updateTime}:{exists:false}}];
+  // The verified round result and whole-coin wallet increment are committed
+  // together. A closed run returns before this write, including on retries.
+  if(run.closed&&run.result.coins>0)writes.push({update:{name:root+"/"+user+"/wallets/starCoins",fields:{currency:str("starCoins")}},updateMask:{fieldPaths:["currency"]},updateTransforms:[{fieldPath:"balance",increment:{integerValue:String(run.result.coins)}}]});
   for(const id of run.rewards){
    const dest=user+"/"+(id===PEACH_TROPHY[0]?"trophies":"axolotls")+"/"+id;
    writes.push({update:{name:root+"/"+dest,fields:{source:str("peach-panic"),foundAt:{timestampValue:new Date(now).toISOString()}}},currentDocument:{exists:false}});

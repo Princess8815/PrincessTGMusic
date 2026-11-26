@@ -3,7 +3,7 @@
 .pp-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}.pp-heading h1{margin:0;font-size:clamp(1.2rem,3vw,1.8rem)}
 .pp-heading a,.pp-help{font-size:.85rem}.pp-help{margin:8px 0}
 .pp-area{height:var(--pp-fit,calc(100dvh - 120px));min-height:270px;display:flex;flex-direction:column;gap:5px;min-width:0;padding:8px;border:1px solid var(--ptg-border,#786080);border-radius:14px;background:var(--ptg-secondary,#252334);box-sizing:border-box;overflow:hidden}
-.pp-hud{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;flex:none}.pp-hud>div{border:1px solid var(--ptg-border,#786080);border-radius:9px;padding:3px 7px;display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap}.pp-hud span{font-size:.78rem}.pp-hud strong{font-size:1.25rem;font-variant-numeric:tabular-nums}
+.pp-hud{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;flex:none}.pp-hud>div{border:1px solid var(--ptg-border,#786080);border-radius:9px;padding:3px 7px;display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap}.pp-hud span{font-size:.78rem}.pp-hud strong{font-size:1.25rem;font-variant-numeric:tabular-nums}
 .pp-timebar{height:7px;border-radius:5px;background:#151321;overflow:hidden;flex:none}.pp-timebar span{height:100%;width:100%;display:block;background:linear-gradient(90deg,#ed7772,#f7c574);transition:background .2s}
 .pp-actions{display:flex;flex-wrap:wrap;gap:5px;flex:none}.pp-actions button{min-height:34px;border:1px solid var(--ptg-border,#786080);border-radius:8px;padding:5px 10px;font:inherit;font-size:.88rem;font-weight:650;background:#ffd0a6;color:#352014;border-color:#d48a5b;cursor:pointer}.pp-actions button:disabled{opacity:1;cursor:not-allowed;background:#d7d1cd;color:#51453d;border-color:#93847a}.pp-area [hidden]{display:none!important}
 .pp-area button:focus-visible{outline:3px solid #fff0a5;outline-offset:2px}
@@ -35,3 +35,5 @@
 .pp-area .pp-actions button:focus-visible{outline:3px solid #fff!important;outline-offset:2px;box-shadow:0 0 0 5px #24334d}
 .pp-area .pp-fruit.ptg-theme-exempt,.pp-area .pp-fruit.ptg-theme-exempt:hover,.pp-area .pp-fruit.ptg-theme-exempt:active{background:transparent!important;border:0!important;box-shadow:none}
 @media(forced-colors:active){.pp-area .pp-actions button.ptg-theme-exempt{forced-color-adjust:auto}}
+
+.pp-hud #pp-coins{font:inherit;font-variant-numeric:tabular-nums}.pp-hud strong>span[aria-hidden]{font:inherit;color:#e6ae4e}

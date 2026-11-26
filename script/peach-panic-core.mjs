@@ -24,19 +24,26 @@ export function peachPoints(p,at){
  const points=delta<=150?5:delta<=350?4:delta<=650?3:delta<=1000?2:age>=p.ripen*.45?1:0;
  return points*(p.blue?2:1);
 }
+// Match the visual perfect window and overripe transition exactly.
+export function peachCoins(p,at){
+ const age=at-p.born;
+ if(age<0||at>=p.expires||at>=ROUND_MS)return 0;
+ if(Math.abs(age-p.ripen)<=150)return 2;
+ return age<p.ripen-150?1:0;
+}
 export function replayPeaches(seed,picks){
  if(!Array.isArray(picks)||picks.length>PEACH_COUNT)throw Error("Invalid harvest log.");
- const peaches=orchard(seed),seen=new Set();let score=0,blue=0,perfect=0,previous=-1;
+ const peaches=orchard(seed),seen=new Set();let score=0,coins=0,blue=0,perfect=0,previous=-1;
  for(const pick of picks){
   if(!Array.isArray(pick)||pick.length!==2||!Number.isInteger(pick[0])||!Number.isInteger(pick[1]))throw Error("Invalid peach pick.");
   const [id,at]=pick,p=peaches[id];
   if(!p||seen.has(id)||at<previous||at<p.born||at>=p.expires||at>=ROUND_MS)throw Error("Invalid peach timing.");
   seen.add(id);previous=at;
-  const points=peachPoints(p,at);score+=points;
+  const points=peachPoints(p,at);score+=points;coins+=peachCoins(p,at);
   if(p.blue)blue++;
   if(Math.abs(at-p.born-p.ripen)<=150)perfect++;
  }
- return {score,blue,perfect,picked:picks.length};
+ return {score,coins,blue,perfect,picked:picks.length};
 }
 export const fruiterChance=score=>score>0?Math.min(1,Math.sqrt(score)/10000):0;
 export function peachRewards(result,rng){
