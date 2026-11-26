@@ -9,7 +9,8 @@ export const AXOLOTLS={
  sniper:{name:"Sniper",color:"#c5b2f6",gill:"#8874ce",description:"Choose any remaining orange for a guaranteed hit."}
 };
 export const ORANGE_TROPHY=["orange-knock-down-mastery","Orange Knock Down Mastery","Complete level 1,000 in Orange Knock Down."];
-export const hasOrangeMastery=s=>s.cleared>=1000;
+export const highestRewarded=s=>Math.max(s.rewardedThrough||0,s.cleared||0);
+export const hasOrangeMastery=s=>highestRewarded(s)>=1000;
 export const ORANGE_AXOLOTLS=[["tangie","Tangie","#ffb75d","#ee7943","orange"]];
 const clamp=(x,lo,hi)=>Math.max(lo,Math.min(hi,x));
 function layoutRandom(seed){let x=seed>>>0;return ()=>{x=(x+0x6d2b79f5)>>>0;let t=x;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;};}
@@ -401,6 +402,10 @@ export function applyOrange(state,action,rng=Math.random){
  const s={...state,inventory:{...state.inventory},board:{...state.board,hp:[...state.board.hp],remaining:[...state.board.remaining]}};
  const done=(applied,message,coins=0,rewards=[])=>({state:s,applied,message,coins,rewards});
  if(action.kind==="buy"){if(!SPECIALS.includes(action.type))return done(false,"Choose a power-up.");if(s.inventory[action.type]>=9999)return done(false,"Power-up storage is full.");s.inventory[action.type]++;return done(true,AXOLOTLS[action.type].name+" added.",-PRICE);}
+ if(action.kind==="resetCampaign"){
+  s.rewardedThrough=highestRewarded(s);s.level=1;s.cleared=0;s.version=5;s.layoutVersion=5;delete s.levelMap;delete s.milestones;s.board=freshLevel(1,s.seed,5);
+  return done(true,"Campaign restarted at level 1. Wallet, specials and collectibles kept.");
+ }
  if(action.kind==="retry"){if(s.board.won)return done(false,"This level is already complete.");s.board=boardFromMap(stateMap(s));return done(true,"Level reset. Used power-ups are not refunded.");}
  if(action.kind==="next"){if(!s.board.won)return done(false,"Clear all the oranges first.");if(s.level>=1000000)return done(false,"Maximum supported level reached.");s.level++;s.version=5;s.layoutVersion=5;delete s.levelMap;s.board=freshLevel(s.level,s.seed,5);return done(true,"Level "+s.level+" ready.");}
  if(action.kind!=="shot"||!validShot(action.shot))return done(false,"Invalid shot.");
@@ -410,7 +415,14 @@ export function applyOrange(state,action,rng=Math.random){
  let result;try{result=simulateShot(stateMap(s),s.board,shot);}catch(e){return done(false,e.message);}
  if(type==="marina")s.board.marina--;else s.inventory[type]--;
  s.board.hp=result.hp;s.board.remaining=result.remaining;
- if(!result.remaining.length){s.board.won=true;s.board.stars=starRating(stateMap(s),s.board);s.cleared=Math.max(s.cleared,s.level);const rewards=[];if(rng()<fruiterChance(s.level))rewards.push("fruiter");if(s.level>10&&rng()<tangieChance(s.level))rewards.push("tangie");return done(true,"Level "+s.level+" cleared! +10 Star Coins.",WIN_COINS,rewards);}
+ if(!result.remaining.length){
+  const first=s.level>highestRewarded(s);
+  s.board.won=true;s.board.stars=starRating(stateMap(s),s.board);s.board.rewarded=first;
+  s.cleared=Math.max(s.cleared,s.level);s.rewardedThrough=highestRewarded(s);
+  const rewards=[];
+  if(first){if(rng()<fruiterChance(s.level))rewards.push("fruiter");if(s.level>10&&rng()<tangieChance(s.level))rewards.push("tangie");}
+  return done(true,first?"Level "+s.level+" cleared! +10 Star Coins.":"Level "+s.level+" cleared again. First-clear rewards already claimed.",first?WIN_COINS:0,rewards);
+ }
  return done(true,orangeGameOver(s.board)?"Game over. Retry the level.":result.remaining.length+" oranges left.");
 }
 

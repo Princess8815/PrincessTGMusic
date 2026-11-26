@@ -205,3 +205,5 @@ body #ok-area:is(:fullscreen,.ok-expanded){
 }
 
 #ok-stars{font-size:clamp(1.4rem,4vw,2.4rem);letter-spacing:.12em;color:#ffdb72;text-shadow:0 2px 4px #3d240c}#ok-area:is(:fullscreen,.ok-expanded) #ok-victory-feature:not([hidden]){display:grid!important;gap:3px;max-height:35vh;overflow:auto}#ok-area:is(:fullscreen,.ok-expanded) #ok-overlay{gap:6px;overflow:auto}#ok-area.ok-test-mode .ok-feature-panel,#ok-area.ok-test-mode .ok-note{display:none!important}#ok-area .ok-heading nav{display:flex;flex-wrap:wrap;gap:5px;font-size:.85rem}
+
+#ok-area #ok-campaign-reset:not(:disabled){background:#a83b42!important;color:#fff5ef!important;border-color:#72262c!important}#ok-area #ok-campaign-reset[hidden]{display:none!important}

@@ -176,3 +176,24 @@ test("campaign uses official design from trusted storage only when entering leve
  await configuredOrangeLevel(async path=>docs[path]||null,s);assert.equal(s.levelMap.design,d.title);assert.equal(s.board.marina,5);
  docs["orangeOfficialLevels/27"].fields.payload.stringValue=JSON.stringify({...d,shots:10});const retry=applyOrange(s,{kind:"retry"});assert.equal(retry.state.board.marina,5);
 });
+
+test("campaign reset preserves paid inventory and lifetime reward eligibility but restarts progression",()=>{
+ const s=initialOrange(123);s.level=11;s.cleared=10;s.inventory.sniper=7;s.levelMap=designMap(editorExample());s.board=boardFromMap(s.levelMap);s.milestones={wood:1};const r=applyOrange(s,{kind:"resetCampaign"});
+ assert.equal(r.state.level,1);assert.equal(r.state.cleared,0);assert.equal(r.state.rewardedThrough,10);assert.deepEqual(r.state.inventory,s.inventory);assert.equal(r.state.levelMap,undefined);assert.deepEqual(r.state.board,freshLevel(1,s.seed));assert.equal(r.coins,0);
+ r.state.board.remaining=[0];const win=applyOrange(r.state,{kind:"shot",shot:{type:"sniper",target:0}},()=>0);
+ assert.equal(win.state.board.won,true);assert.equal(win.state.board.rewarded,false);assert.equal(win.state.cleared,1);assert.equal(win.coins,0);assert.deepEqual(win.rewards,[]);
+ assert.equal(applyOrange(win.state,{kind:"resetCampaign"}).state.rewardedThrough,10);
+ const later=applyOrange(win.state,{kind:"next"}).state;later.level=11;later.board=freshLevel(11,s.seed);later.board.remaining=[0];const first=applyOrange(later,{kind:"shot",shot:{type:"sniper",target:0}},()=>0);assert.equal(first.coins,10);assert.equal(first.state.rewardedThrough,11);assert.ok(first.rewards.includes("tangie"));
+});
+test("reset server transaction preserves wallet, loads official level one and is idempotent",async()=>{
+ const root="documents",uid="reset-player",user="users/"+uid,path=user+"/privateGames/orangeKnockDown",wp=user+"/wallets/starCoins";
+ const s=initialOrange(123);s.level=51;s.cleared=50;s.board=freshLevel(51,s.seed);s.inventory.sniper=5;s.revision=8;
+ const design={...editorExample(),pieces:[],oranges:[{x:440,y:360,branch:-1}]};
+ const store=new Map([[user,{updateTime:"1",fields:{status:{stringValue:"active"}}}],[path,{updateTime:"2",fields:{payload:{stringValue:JSON.stringify({state:s})}}}],[wp,{updateTime:"3",fields:{balance:{integerValue:"500"}}}],["orangeOfficialLevels/1",{fields:{payload:{stringValue:JSON.stringify(design)}}}]]);let commits=0;
+ const read=async p=>store.get(p)||null,commit=async writes=>{commits++;for(const w of writes)if(w.update)store.set(w.update.name.slice(root.length+1),{updateTime:String(commits+3),fields:w.update.fields});return true;};
+ const call=(kind,n,revision,extra={})=>orangeWithStorage({read,commit,root,uid,input:{kind,requestId:"00000000-0000-4000-8000-"+String(n).padStart(12,"0"),revision,...extra},configure:configuredOrangeLevel,rng:()=>0});
+ const r=await call("resetCampaign",1,8);assert.equal(r.state.level,1);assert.equal(r.state.rewardedThrough,50);assert.equal(r.state.levelMap.design,design.title);assert.equal(r.wallet,500);assert.equal(r.state.inventory.sniper,5);assert.equal(r.state.revision,9);
+ const repeat=await call("resetCampaign",1,8);assert.equal(repeat.state.revision,9);assert.equal(commits,1);
+ const stale=await call("resetCampaign",2,8);assert.equal(stale.conflict,true);
+ const win=await call("shot",3,9,{shot:{type:"sniper",target:0}});assert.equal(win.state.board.won,true);assert.equal(win.coins,0);assert.equal(win.wallet,500);assert.deepEqual(win.rewards,[]);
+});

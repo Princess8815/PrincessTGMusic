@@ -16,7 +16,7 @@ export async function configuredOrangeLevel(read,state){
  return state;
 }
 export async function orangeWithStorage({read,commit,root,uid,input,clock=Date.now,rng=secureRandom,seed=()=>crypto.getRandomValues(new Uint32Array(1))[0],configure=null}){
- if(!input||!["state","shot","buy","retry","next"].includes(input.kind))fail("Invalid game action.");
+ if(!input||!["state","shot","buy","retry","next","resetCampaign"].includes(input.kind))fail("Invalid game action.");
  if(input.kind!=="state"&&(!uuid.test(input.requestId||"")||!Number.isSafeInteger(input.revision)||input.revision<0))fail("Refresh your game first.");
  if(input.kind==="shot"&&!validShot(input.shot))fail("Invalid shot.");
  if(input.kind==="buy"&&!SPECIALS.includes(input.type))fail("Invalid power-up.");
@@ -43,7 +43,7 @@ export async function orangeWithStorage({read,commit,root,uid,input,clock=Date.n
   const result=input.kind==="state"?{state,applied:true,message:"Ready.",coins:0,rewards:[]}:input.kind==="buy"&&wallet<PRICE?{state,applied:false,message:"Not enough Star Coins.",coins:0,rewards:[]}:applyOrange(state,input,rng);
   if(!result.applied)return {...result,wallet};
   const next=result.state,rewards=[];
-  if(input.kind==="next"&&configure)await configure(read,next);
+  if(["next","resetCampaign"].includes(input.kind)&&configure)await configure(read,next);
   if(input.kind!=="state")next.revision=state.revision+1;
   for(const id of result.rewards)if(!await read(user+"/axolotls/"+id))rewards.push(id);
   if(hasOrangeMastery(next)&&!next.level1000TrophyAwarded){
