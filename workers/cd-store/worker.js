@@ -15,7 +15,7 @@ import {playOrangeKnockDown} from "./orange-knock-down.mjs";
 import {buyStarlight,starlightOrigin} from "./starlight.mjs";
 import {publicError,errorCode} from "../../script/site-errors.js";
 import {ownerTools} from "./owner-tools.js";
-import {ownerVerification} from "./owner-verification.mjs";
+import {ownerVerification,ownerVerificationOrigin} from "./owner-verification.mjs";
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status});};
 const str=(v,max,required=true)=>{if(typeof v!=="string"||v.length>max||required&&!v.trim())fail("Please complete the shipping address.");return v.trim();};
 const integer=(v,min,max)=>Number.isInteger(v)&&v>=min&&v<=max;
@@ -274,7 +274,7 @@ async function status(env,b,ctx){
 async function body(req,max=20000){const raw=await req.text();if(raw.length>max)fail("Request too large.",413);try{return JSON.parse(raw);}catch{fail("Invalid JSON.");}}
 export default {
  async fetch(req,env,ctx){
-  const url=new URL(req.url),origin=req.headers.get("Origin")||"",allowed=(env.ALLOWED_ORIGINS||"").split(",").map(x=>x.trim()).includes(origin)||(["/surveys/submit","/owner/terminal-commands"].includes(url.pathname)&&surveyPreviewOrigin(env,origin))||(["/games/hanggirl","/games/apple-catcher","/games/cherry-empire","/games/peach-panic","/games/giving-tree","/games/orange-knock-down"].includes(url.pathname)&&hanggirlOrigin(env,origin))||(url.pathname==="/starlight/buy"&&starlightOrigin(env,origin));
+  const url=new URL(req.url),origin=req.headers.get("Origin")||"",allowed=(env.ALLOWED_ORIGINS||"").split(",").map(x=>x.trim()).includes(origin)||(["/surveys/submit","/owner/terminal-commands"].includes(url.pathname)&&surveyPreviewOrigin(env,origin))||(["/games/hanggirl","/games/apple-catcher","/games/cherry-empire","/games/peach-panic","/games/giving-tree","/games/orange-knock-down"].includes(url.pathname)&&hanggirlOrigin(env,origin))||(url.pathname==="/starlight/buy"&&starlightOrigin(env,origin))||(url.pathname==="/owner/email-verification"&&ownerVerificationOrigin(env,origin));
   const headers={"Content-Type":"application/json","Cache-Control":"no-store","Vary":"Origin"};
   if(allowed)Object.assign(headers,{"Access-Control-Allow-Origin":origin,"Access-Control-Allow-Methods":"GET, POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type"});
   const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers});

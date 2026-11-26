@@ -51,10 +51,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   let selectedAuth=null;
   const revokeLegacy=$("account-verification-revoke-legacy");
   async function verificationRequest(action,uid,expectedEmail){
-    if(usingLocalFirebaseEmulators)throw Error("Use Live Firebase on the published site.");
+    if(usingLocalFirebaseEmulators)throw Error("Select Live Firebase in Settings before verifying real accounts.");
     const user=auth.currentUser;if(!user)throw Error("Sign in as owner.");
     const idToken=await user.getIdToken(true);if(auth.currentUser?.uid!==user.uid)throw Error("Account changed.");
-    const r=await fetch("https://princesstg-cd-store-live.transgirl1991.workers.dev/owner/email-verification",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,targetUid:uid,expectedEmail,idToken})});
+    let r;try{r=await fetch("https://princesstg-cd-store-live.transgirl1991.workers.dev/owner/email-verification",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,targetUid:uid,expectedEmail,idToken})});}catch{throw Error("Cannot reach verification Worker from "+location.origin+". Check the live Worker deployment and connection, then retry.");}
     const data=await r.json();if(!r.ok)throw Error(data.error||"Verification unavailable.");return data;
   }
 
@@ -91,9 +91,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   async function loadBypass(uid){
     bypassLoading=true;selectedAuth=null;selectedBypass=false;bypassButton.disabled=true;revokeLegacy.hidden=true;
-    bypassStatus.textContent="Checking…";authStatus.textContent="Checking Firebase Auth…";verificationStatus.textContent="";
+    bypassStatus.textContent="Checking…";authStatus.textContent="Checking Firebase Auth…";verificationStatus.textContent="";bypassButton.textContent="Loading verification…";
     const target=accounts.find(item=>item.uid===uid);
-    if(protectedVerification(uid,target)){authStatus.textContent="Protected account";bypassStatus.textContent="Unavailable";bypassLoading=false;return;}
+    if(protectedVerification(uid,target)){authStatus.textContent="Protected account";bypassStatus.textContent="Unavailable";bypassButton.textContent="Unavailable";bypassLoading=false;return;}
     try{
       const snap=await getDocFromServer(doc(db,"verificationOverrides",uid));
       if(selectedUid!==uid)return;
@@ -104,12 +104,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       if(selectedUid!==uid)return;
       selectedAuth=actual;authStatus.textContent=actual.emailVerified?"Verified in Firebase Auth":"Unverified in Firebase Auth";
       bypassButton.textContent=actual.emailVerified?"Email verified":"Grant bypass (mark email verified)";
-    }catch(error){if(selectedUid===uid){authStatus.textContent="Firebase verification unavailable";verificationStatus.textContent=error.message||publicError(error,"PTG-901");}}
-    finally{if(selectedUid===uid){bypassLoading=false;revokeLegacy.disabled=false;bypassButton.disabled=!selectedAuth||selectedAuth.emailVerified||protectedVerification(uid,target);}}
+    }catch(error){if(selectedUid===uid){authStatus.textContent="Firebase verification unavailable";bypassButton.textContent="Retry verification status";verificationStatus.textContent=error.message||publicError(error,"PTG-901");}}
+    finally{if(selectedUid===uid){bypassLoading=false;revokeLegacy.disabled=false;bypassButton.disabled=selectedAuth?.emailVerified===true||protectedVerification(uid,target);}}
   }
   bypassButton.addEventListener("click",async()=>{
     const uid=selectedUid,actual=selectedAuth;
-    if(!uid||bypassLoading||!actual||actual.emailVerified)return;
+    if(!uid||bypassLoading||actual?.emailVerified)return;
+    if(!actual){await loadBypass(uid);return;}
     bypassLoading=true;bypassButton.disabled=true;revokeLegacy.disabled=true;
     try{
       if(await verifyManager()!=="owner")throw Error("Only the active site owner can approve verification.");
@@ -119,7 +120,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       await loadBypass(uid);
       if(selectedUid===uid&&result.emailVerified){verificationStatus.textContent="Firebase Auth verified. Ask the member to sign out and back in.";verificationStatus.style.color="#86efac";}
     }catch(error){if(selectedUid===uid){verificationStatus.textContent=error.message||publicError(error,"PTG-901");verificationStatus.style.color="#fca5a5";}}
-    finally{if(selectedUid===uid){bypassLoading=false;revokeLegacy.disabled=false;bypassButton.disabled=!selectedAuth||selectedAuth.emailVerified||protectedVerification(uid,accounts.find(a=>a.uid===uid));}}
+    finally{if(selectedUid===uid){bypassLoading=false;revokeLegacy.disabled=false;bypassButton.disabled=selectedAuth?.emailVerified===true||protectedVerification(uid,accounts.find(a=>a.uid===uid));}}
   });
   revokeLegacy.addEventListener("click",async()=>{
     const uid=selectedUid;if(!uid||!selectedBypass||bypassLoading)return;
@@ -134,7 +135,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       batch.set(audit,{targetUid:uid,enabled:false,actorUid:auth.currentUser.uid,targetEmail,createdAt:serverTimestamp()});
       await batch.commit();if(selectedUid===uid)await loadBypass(uid);
     }catch(error){if(selectedUid===uid)verificationStatus.textContent=error.message||publicError(error,"PTG-901");}
-    finally{if(selectedUid===uid){bypassLoading=false;revokeLegacy.disabled=false;bypassButton.disabled=!selectedAuth||selectedAuth.emailVerified||protectedVerification(uid,accounts.find(a=>a.uid===uid));}}
+    finally{if(selectedUid===uid){bypassLoading=false;revokeLegacy.disabled=false;bypassButton.disabled=selectedAuth?.emailVerified===true||protectedVerification(uid,accounts.find(a=>a.uid===uid));}}
   });
   activateAccountSubtab("roles");
 

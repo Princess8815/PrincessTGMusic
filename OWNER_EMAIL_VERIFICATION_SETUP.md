@@ -3,6 +3,6 @@ The owner-only admin verification tab marks Firebase Authentication emailVerifie
 ## Setup
 1. In Google Cloud IAM for music-and-poetry grant the existing Worker service account (client_email in FIREBASE_REWARD_SERVICE_ACCOUNT) a custom role with firebaseauth.users.get and firebaseauth.users.update, in addition to existing Firestore permissions. Enable Identity Toolkit API if needed. Do not grant broad project Owner/Admin permissions.
 2. Deploy the live Worker: cd workers/cd-store && npx wrangler deploy --config wrangler.live.toml
-3. Merge/deploy website. Live published origin only; local emulator and preview origins not supported.
+3. Merge/deploy website. Published site and HTTP localhost/127.0.0.1 Live Server origins (any port) supported. Select Live Firebase in Settings when testing locally. Emulator accounts and other preview origins are not supported. Redeploy the live Worker after this origin change.
 4. Admin > Accounts > Verification Bypass > select active non-owner account > Grant bypass (mark email verified). Member signs out and in to refresh token and sync profile.
 No new Firestore rules or Blaze Functions. The server checks verified owner token, active owner and target, actual email and expected email; audit intent precedes mutation and completion follows confirmed Auth lookup. Auth and Firestore writes are not atomic; interrupted audit may remain pending. Review actual Auth status before retrying. No live Auth users or IAM settings were modified during development.

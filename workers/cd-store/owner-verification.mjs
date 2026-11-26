@@ -24,6 +24,11 @@ export async function approveVerification({actorUid,input,read,lookup,markVerifi
  await finish(id,{status:str("verified"),completedAt:{timestampValue:new Date(clock()).toISOString()}});
  return {email:verified.email,emailVerified:true};
 }
+// Only loopback Live Server origins, not arbitrary previews or domains.
+export function ownerVerificationOrigin(env,origin){
+ if(env.STORE_MODE!=="live"||typeof origin!=="string")return false;
+ return /^http:\/\/(?:localhost|127\.0\.0\.1)(?::[0-9]{1,5})?$/.test(origin);
+}
 export async function ownerVerification(env,input){
  if(env.STORE_MODE!=="live"||!env.FIREBASE_PROJECT||env.REWARD_FIREBASE_PROJECT!==env.FIREBASE_PROJECT)fail("Live verification unavailable.",503);
  const project=env.FIREBASE_PROJECT,actorUid=await verifyFirebaseIdentity(project,input?.idToken,true);
