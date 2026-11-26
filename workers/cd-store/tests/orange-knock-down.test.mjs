@@ -1,8 +1,8 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import {orangeGameOver,ORANGE_TROPHY,hasOrangeMastery,WIDTH,GROUND,initialOrange,layout,freshLevel,simulateShot,applyOrange,validShot,fruiterChance,tangieChance,FEATURES,featureProgress,DESIGN_NAMES,bouncePad} from "../../../script/orange-knock-down-core.mjs";
-import {orangeWithStorage} from "../orange-knock-down.mjs";
+import {validateDesign,designMap,boardFromMap,stateMap,starRating,validateMilestones,checkDesignUnlocks,campaignMap,practiceOrange,orangeGameOver,ORANGE_TROPHY,hasOrangeMastery,WIDTH,GROUND,initialOrange,layout,freshLevel,simulateShot,applyOrange,validShot,fruiterChance,tangieChance,FEATURES,featureProgress,DESIGN_NAMES,bouncePad} from "../../../script/orange-knock-down-core.mjs";
+import {orangeWithStorage,configuredOrangeLevel} from "../orange-knock-down.mjs";
 test("starter pack and increasing orchard",()=>{
  const s=initialOrange(123);assert.deepEqual(s.inventory,{aqualily:3,bulky:3,sploder:3,sniper:3});assert.ok(s.board.marina>=5);assert.ok(layout(30,123).branches.length>layout(1,123).branches.length);assert.ok(layout(30,123).branches.some(b=>b.hp===2));assert.deepEqual(layout(10,123),layout(10,123));
 });
@@ -151,4 +151,28 @@ test("clearing the orchard on the last Marina shot is a victory, not game over",
  assert.ok(shot);
  const win=applyOrange(s,{kind:"shot",shot},()=>.99);assert.equal(win.state.board.marina,0);assert.equal(win.state.board.won,true);assert.equal(orangeGameOver(win.state.board),false);assert.equal(win.coins,10);
  assert.equal(applyOrange(win.state,{kind:"next"}).state.level,2);
+});
+
+const editorExample=()=>({title:"Bank shot",shots:5,two:1,three:3,pieces:[{material:"wood",x:400,y:360,angle:90,length:100,supports:[]},{material:"trampoline",x:600,y:320,angle:37,length:100,supports:[0]}],oranges:[{x:440,y:360,branch:0}]});
+test("editor grid validation, arbitrary pad angle and support validation",()=>{
+ const d=editorExample(),map=designMap(d);assert.equal(map.branches[1].directional,true);assert.equal(map.shots,5);assert.ok(map.branches[1].x1!==map.branches[1].x2&&map.branches[1].y1!==map.branches[1].y2);
+ for(const corrupt of [d=>d.pieces[0].x=401,d=>d.pieces[0].length=0,d=>d.pieces[0].supports=[1],d=>d.oranges[0].branch=9,d=>d.three=5,d=>d.pieces[0].material="fake"]){const d=editorExample();corrupt(d);assert.throws(()=>validateDesign(d));}
+});
+test("official map snapshot survives retry and practice awards no rewards",()=>{
+ const s=initialOrange(123);s.levelMap=designMap(editorExample());s.board=boardFromMap(s.levelMap);
+ const miss=applyOrange(s,{kind:"shot",shot:{type:"marina",angle:-20,power:1}});assert.equal(miss.state.board.marina,4);
+ const again=applyOrange(miss.state,{kind:"retry"});assert.deepEqual(again.state.board,s.board);assert.deepEqual(stateMap(again.state),s.levelMap);
+ const win=practiceOrange(s,{kind:"shot",shot:{type:"sniper",target:0}});assert.equal(win.state.board.won,true);assert.equal(win.state.board.stars,3);assert.equal(win.coins,0);assert.deepEqual(win.rewards,[]);
+ assert.equal(starRating(s.levelMap,{won:true,marina:2}),2);assert.equal(starRating(s.levelMap,{won:true,marina:0}),1);
+});
+test("custom feature schedule changes progress and generated availability",()=>{
+ const config=Object.fromEntries(FEATURES.map(f=>[f.id,f.level]));config.trampoline=2;config.glass=100;validateMilestones(config);
+ assert.equal(featureProgress(0,config).next.id,"trampoline");assert.equal(featureProgress(1,config).latest.id,"trampoline");assert.ok(campaignMap(2,123,config).branches.some(b=>b.trampoline));assert.ok(!campaignMap(30,123,config).branches.some(b=>b.material==="glass"));assert.throws(()=>checkDesignUnlocks(editorExample(),1,config));assert.ok(checkDesignUnlocks(editorExample(),2,config));
+});
+test("campaign uses official design from trusted storage only when entering level",async()=>{
+ const s=initialOrange(123);s.level=27;
+ const config=Object.fromEntries(FEATURES.map(f=>[f.id,f.level]));const d=editorExample();
+ const docs={"orangeConfig/milestones":{fields:{payload:{stringValue:JSON.stringify(config)}}},"orangeOfficialLevels/27":{fields:{payload:{stringValue:JSON.stringify(d)}}}};
+ await configuredOrangeLevel(async path=>docs[path]||null,s);assert.equal(s.levelMap.design,d.title);assert.equal(s.board.marina,5);
+ docs["orangeOfficialLevels/27"].fields.payload.stringValue=JSON.stringify({...d,shots:10});const retry=applyOrange(s,{kind:"retry"});assert.equal(retry.state.board.marina,5);
 });

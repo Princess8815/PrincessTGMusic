@@ -1,7 +1,7 @@
 
 import {auth,usingLocalFirebaseEmulators} from "./firebase.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-import {WIDTH,HEIGHT,GROUND,SLING,PRICE,TYPES,AXOLOTLS,MATERIALS,FEATURES,featureProgress,featureSchedule,levelIntro,stateMap,designMap,initialOrange,boardFromMap,applyOrange,starRating,velocity,simulateShot,orangeGameOver} from "./orange-knock-down-core.mjs";
+import {WIDTH,HEIGHT,GROUND,SLING,PRICE,TYPES,AXOLOTLS,MATERIALS,FEATURES,featureProgress,featureSchedule,levelIntro,stateMap,designMap,initialOrange,boardFromMap,practiceOrange,starRating,velocity,simulateShot,orangeGameOver} from "./orange-knock-down-core.mjs";
 import {showToast} from "./toast-sound.js";
 const $=id=>document.getElementById(id),area=$("ok-area"),canvas=$("ok-canvas"),ctx=canvas.getContext("2d");
 const endpoint="https://princesstg-cd-store-live.transgirl1991.workers.dev/games/orange-knock-down";
@@ -64,7 +64,7 @@ function renderFeatures(){
 }
 function controls(){
  const board=state?.board,won=!!board?.won,lost=orangeGameOver(board);
- $("ok-arena-hud").textContent=state?"Lv "+state.level+" · "+board.remaining.length+" 🍊 · Marina ×"+board.marina+(type!=="marina"?" · "+AXOLOTLS[type].name+" ×"+count(type):""):"Orange Knock Down";
+ $("ok-arena-hud").textContent=state?(testMode?"Test":"Lv "+state.level)+" · "+board.remaining.length+" 🍊 · Marina ×"+board.marina+(type!=="marina"?" · "+AXOLOTLS[type].name+" ×"+count(type):""):"Orange Knock Down";
  $("ok-arena-notice").hidden=!!state&&!failed;
  $("ok-level").textContent=testMode?"Test":state?.level||1;$("ok-left").textContent=board?.remaining.length||0;$("ok-shots").textContent=board?.marina||0;$("ok-wallet").textContent=testMode?"Practice":wallet.toLocaleString();
  $("ok-login").hidden=testMode||!!auth.currentUser||usingLocalFirebaseEmulators;$("ok-refresh").disabled=busy||!eligible()||!!failed;
@@ -178,7 +178,7 @@ async function send(kind,extra={},retry=false,trace=null){
   if(kind==="retry"||kind==="next"||kind==="state"){startTest();return;}
   if(kind!=="shot"||!canShoot())return;
   busy=true;render();if(trace)await animate(trace,epoch);anim=null;
-  const result=applyOrange(state,{kind,...extra},()=>1);
+  const result=practiceOrange(state,{kind,...extra});
   state=result.state;busy=false;if(!count(type)&&count("marina"))type="marina";status(state.board.won?"Practice complete. No rewards.":result.message);render();return;
  }
  if(!eligible()||busy||(!retry&&failed)||kind!=="state"&&!state&&!retry)return;

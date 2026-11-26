@@ -281,6 +281,21 @@ export function campaignMap(level,seed,milestones){
   const angled=b.material==="reflector"&&b.x1!==b.x2&&b.y1!==b.y2;
   if(schedule[angled?"angled":b.material]>level){Object.assign(b,{material:"wood",hp:1,width:MATERIALS.wood.width,reflect:false,spring:false,trampoline:false,directional:false,burst:false});}
  }
+ // Custom schedules can introduce a feature before its original milestone.
+ // Only add missing pieces for modified schedules; default maps stay identical.
+ for(const feature of featureSchedule(milestones)){
+  if(feature.id==="wood"||feature.level>level||feature.level===FEATURES.find(f=>f.id===feature.id).level)continue;
+  const has=map.branches.some(b=>feature.id==="angled"?b.material==="reflector"&&b.x1!==b.x2&&b.y1!==b.y2:b.material===feature.id);
+  if(has)continue;
+  const material=feature.id==="angled"?"reflector":feature.id,m=MATERIALS[material];
+  if(["glass","stone","steel","reinforced"].includes(material)){
+   const b=map.branches.find(b=>b.material==="wood"&&!b.reflect);
+   if(b){Object.assign(b,{material,hp:m.hp,width:m.width});continue;}
+  }
+  const coords={wall:[345,485,345,405],reflector:[922,460,922,245],angled:[435,225,490,170],spring:[880,480,920,446],trampoline:[250,450,330,430],crate:[415,462,415,482],glass:[850,50,900,50],stone:[850,80,900,80],steel:[850,110,900,110],reinforced:[850,140,900,140]};
+  const [x1,y1,x2,y2]=coords[feature.id];
+  map.branches.push({id:map.branches.length,x1,y1,x2,y2,material,hp:m.hp,width:m.width,supports:[],reflect:["reflector","spring","trampoline"].includes(material),spring:material==="spring",trampoline:material==="trampoline",directional:material==="trampoline",burst:material==="crate"});
+ }
  map.shots=Math.max(5,Math.ceil(map.branches.reduce((n,b)=>n+(b.reflect?0:b.hp),0)*.42)+3);
  return map;
 }
@@ -398,3 +413,6 @@ export function applyOrange(state,action,rng=Math.random){
  if(!result.remaining.length){s.board.won=true;s.board.stars=starRating(stateMap(s),s.board);s.cleared=Math.max(s.cleared,s.level);const rewards=[];if(rng()<fruiterChance(s.level))rewards.push("fruiter");if(s.level>10&&rng()<tangieChance(s.level))rewards.push("tangie");return done(true,"Level "+s.level+" cleared! +10 Star Coins.",WIN_COINS,rewards);}
  return done(true,orangeGameOver(s.board)?"Game over. Retry the level.":result.remaining.length+" oranges left.");
 }
+
+// Practice has no economic effects and never creates a campaign record.
+export function practiceOrange(state,action){const result=applyOrange(state,action,()=>1);return {...result,coins:0,rewards:[]};}

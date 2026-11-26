@@ -4,7 +4,7 @@ const fail=(m,status=400)=>{throw Object.assign(Error(m),{status});};
 const str=stringValue=>({stringValue});
 const value=(d,k)=>d?.fields?.[k]?.stringValue;
 const parse=d=>JSON.parse(value(d,"payload"));
-const idOK=id=>typeof id==="string"&&/^[a-f0-9-]{36}$/.test(id);
+const idOK=id=>typeof id==="string"&&/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(id);
 const levelOK=n=>Number.isInteger(n)&&n>=1&&n<=1000000;
 export async function editorAction({input,uid,read,commit,list,root,clock=Date.now,makeId=()=>crypto.randomUUID()}){
  const action=input?.action;
@@ -33,7 +33,7 @@ export async function editorAction({input,uid,read,commit,list,root,clock=Date.n
    path="orangeConfig/milestones";fields={payload:str(JSON.stringify(validateMilestones(input.milestones)))};
   }else if(action==="publish"){
    if(!levelOK(input.level))fail("Choose an official level number.");
-   const d=checkDesignUnlocks(validateDesign(input.design),input.level,await config());
+   const d=validateDesign(input.design);
    path="orangeOfficialLevels/"+input.level;fields={title:str(d.title),payload:str(JSON.stringify(d)),authorUid:str(uid)};
    // Make sure a concurrent milestone edit cannot invalidate this publication.
    const cfg=await read("orangeConfig/milestones");const actual=cfg?validateMilestones(parse(cfg)):null;checkDesignUnlocks(d,input.level,actual);
@@ -55,7 +55,7 @@ export async function editorAction({input,uid,read,commit,list,root,clock=Date.n
 }
 export async function orangeEditor(env,input){
  if(env.STORE_MODE!=="live"||!env.FIREBASE_PROJECT||env.REWARD_FIREBASE_PROJECT!==env.FIREBASE_PROJECT)fail("Editor unavailable.",503);
- const uid=["config","load","official","browse"].includes(input?.action)?null:await verifyFirebaseIdentity(env.FIREBASE_PROJECT,input?.idToken);
+ const uid=["config","load","official","browse"].includes(input?.action)?null:await verifyFirebaseIdentity(env.FIREBASE_PROJECT,input?.idToken,["publish","milestones"].includes(input?.action));
  const token=await accessToken(env,env.FIREBASE_PROJECT),root="projects/"+env.FIREBASE_PROJECT+"/databases/(default)/documents",url="https://firestore.googleapis.com/v1/"+root,headers={Authorization:"Bearer "+token,"Content-Type":"application/json"};
  const read=async p=>{const r=await fetch(url+"/"+p,{headers});if(r.status===404)return null;if(!r.ok)fail("Level storage unavailable.",503);return r.json();};
  const list=async(p,cursor)=>{const q=new URLSearchParams({pageSize:"20","mask.fieldPaths":"title"});if(cursor)q.set("pageToken",cursor);const r=await fetch(url+"/"+p+"?"+q,{headers});if(!r.ok)fail("Level list unavailable.",503);const d=await r.json();return {...d,documents:d.documents||[]};};
