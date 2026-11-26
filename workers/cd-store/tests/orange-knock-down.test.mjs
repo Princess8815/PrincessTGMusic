@@ -245,3 +245,21 @@ test("a missed shot leaves sleeping structures in their initial positions",()=>{
  const map=designMap(builtInOrangeDesign(2)),board=boardFromMap(map),r=simulateShot(map,board,{type:"marina",angle:-20,power:1});
  assert.deepEqual(r.hp,board.hp);assert.deepEqual(r.remaining,board.remaining);assert.deepEqual(r.pieceOffsets,board.pieceOffsets);assert.deepEqual(r.orangeOffsets,board.orangeOffsets);
 });
+
+test("levels 5–9 have editable glass-and-wood layouts, honor milestone overrides and clear with Marina",async()=>{
+ const solutions={"5":[{"type":"marina","angle":14,"power":100}],"6":[{"type":"marina","angle":6,"power":90}],"7":[{"type":"marina","angle":14,"power":65}],"8":[{"type":"marina","angle":22,"power":65}],"9":[{"type":"marina","angle":30,"power":65}]};
+ for(const level of [5,6,7,8,9]){
+  const s=initialOrange(456);s.level=level;s.cleared=level-1;await configuredOrangeLevel(async()=>null,s);
+  assert.ok(s.levelMap.branches.some(b=>b.material==="glass"));assert.ok(s.levelMap.branches.every(b=>["wood","glass"].includes(b.material)));
+  let state=s;for(const shot of solutions[level])state=applyOrange(state,{kind:"shot",shot},()=>.99).state;
+  assert.equal(state.board.won,true);
+  const config=Object.fromEntries(FEATURES.map(f=>[f.id,f.level]));config.glass=10;
+  const doc={fields:{payload:{stringValue:JSON.stringify(config)}}};await configuredOrangeLevel(async p=>p==="orangeConfig/milestones"?doc:null,s);
+  assert.deepEqual(s.milestones,config);assert.ok(s.levelMap.branches.every(b=>b.material==="wood"));
+ }
+});
+test("glass shatters into multiple physical shards and rebounds Marina",()=>{
+ const map=designMap({title:"Glass shatter",gravity:true,shots:5,two:1,three:2,pieces:[{material:"glass",x:320,y:400,angle:90,length:180,supports:[]}],oranges:[{x:800,y:400,branch:-1}]});
+ const board=boardFromMap(map),shot={type:"marina",angle:0,power:100},r=simulateShot(map,board,shot,true);
+ const event=r.events.find(e=>e.kind==="glassShatter");assert.ok(event&&event.count>=3);assert.ok(r.worldFrames.some(f=>f.debris.filter(b=>b.material==="glass").length>=3));assert.ok(r.events.some(e=>e.kind==="impactBounce"&&e.vx<0));assert.deepEqual(r.piecePoses,simulateShot(map,board,shot).piecePoses);
+});

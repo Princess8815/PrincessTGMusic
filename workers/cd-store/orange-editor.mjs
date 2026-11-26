@@ -24,7 +24,7 @@ export async function editorAction({input,uid,read,commit,list,root,clock=Date.n
  if(action==="load"||action==="official"){
   if(action==="load"?!idOK(input.id):!levelOK(input.level))fail("Invalid level identifier.");
   const d=await read(action==="load"?"orangeCommunityLevels/"+input.id:"orangeOfficialLevels/"+input.level);
-  if(!d){const preset=action==="official"?builtInOrangeDesign(input.level):null;if(preset)return {design:preset,id:null,level:input.level,builtIn:true};fail("Level not found. Create a design and publish it to this number.",404);}
+  if(!d){const preset=action==="official"?builtInOrangeDesign(input.level,await config()):null;if(preset)return {design:preset,id:null,level:input.level,builtIn:true};fail("Level not found. Create a design and publish it to this number.",404);}
   return {design:validateDesign(parse(d)),id:input.id||null,level:input.level||null,builtIn:false};
  }
  let path,fields,previous,del=false,extra=[];

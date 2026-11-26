@@ -11,7 +11,7 @@ export async function configuredOrangeLevel(read,state){
  state.milestones=milestones;
  let map;
  if(official){try{const d=checkDesignUnlocks(validateDesign(JSON.parse(official.fields.payload.stringValue)),state.level,milestones);map=designMap(d);}catch(e){console.warn("Official orange level incompatible with milestones",state.level);}}
- const builtIn=builtInOrangeDesign(state.level);
+ const builtIn=builtInOrangeDesign(state.level,milestones);
  state.levelMap=map||(builtIn?designMap(builtIn):campaignMap(state.level,state.seed,milestones));
  state.board=boardFromMap(state.levelMap);
  return state;

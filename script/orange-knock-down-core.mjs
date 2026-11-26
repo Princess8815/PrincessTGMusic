@@ -276,7 +276,7 @@ export function designMap(raw){
  return {design:d.title,shots:d.shots,two:d.two,three:d.three,...(d.gravity?{gravity:true}:{}),branches:d.pieces.map((p,id)=>{const a=p.angle*Math.PI/180,dx=Math.cos(a)*p.length/2,dy=Math.sin(a)*p.length/2,m=MATERIALS[p.material];return {id,material:p.material,x1:p.x-dx,y1:p.y-dy,x2:p.x+dx,y2:p.y+dy,hp:m.hp,width:m.width,supports:p.supports,reflect:["reflector","spring","trampoline"].includes(p.material),spring:p.material==="spring",trampoline:p.material==="trampoline",directional:p.material==="trampoline",burst:p.material==="crate"};}),oranges:d.oranges.map((o,id)=>({...o,id}))};
 }
 // Authored campaign defaults. Staff-published versions take precedence.
-const WOODEN_LEVELS={
+const STARTER_LEVELS={
  "2": {
   "title": "Twin Timber Towers",
   "shots": 4,
@@ -591,9 +591,12 @@ const WOODEN_LEVELS={
   ]
  }
 };
-export function builtInOrangeDesign(level){
- const raw=Object.hasOwn(WOODEN_LEVELS,level)?WOODEN_LEVELS[level]:null;
- return raw?validateDesign(raw):null;
+Object.assign(STARTER_LEVELS,{"5":{"title":"Glasshouse Gate","shots":4,"two":1,"three":2,"gravity":true,"pieces":[{"material":"wood","x":480,"y":420,"angle":90,"length":140,"supports":[]},{"material":"glass","x":620,"y":420,"angle":90,"length":140,"supports":[]},{"material":"wood","x":540,"y":320,"angle":0,"length":200,"supports":[]},{"material":"glass","x":780,"y":440,"angle":90,"length":100,"supports":[]},{"material":"wood","x":880,"y":440,"angle":90,"length":100,"supports":[]},{"material":"glass","x":820,"y":360,"angle":0,"length":160,"supports":[]}],"oranges":[{"x":500,"y":280,"branch":-1},{"x":580,"y":280,"branch":-1},{"x":780,"y":320,"branch":-1},{"x":860,"y":320,"branch":-1}]},"6":{"title":"Crystal Bridge","shots":5,"two":1,"three":2,"gravity":true,"pieces":[{"material":"glass","x":460,"y":440,"angle":90,"length":100,"supports":[]},{"material":"wood","x":640,"y":440,"angle":90,"length":100,"supports":[]},{"material":"glass","x":540,"y":360,"angle":0,"length":220,"supports":[]},{"material":"wood","x":760,"y":400,"angle":90,"length":180,"supports":[]},{"material":"glass","x":880,"y":400,"angle":90,"length":180,"supports":[]},{"material":"wood","x":820,"y":280,"angle":0,"length":160,"supports":[]},{"material":"glass","x":540,"y":300,"angle":90,"length":80,"supports":[]},{"material":"wood","x":540,"y":220,"angle":0,"length":100,"supports":[]}],"oranges":[{"x":500,"y":320,"branch":-1},{"x":600,"y":320,"branch":-1},{"x":540,"y":180,"branch":-1},{"x":780,"y":240,"branch":-1},{"x":860,"y":240,"branch":-1}]},"7":{"title":"Shattered Pyramid","shots":5,"two":1,"three":2,"gravity":true,"pieces":[{"material":"wood","x":440,"y":460,"angle":90,"length":60,"supports":[]},{"material":"glass","x":540,"y":460,"angle":90,"length":60,"supports":[]},{"material":"wood","x":500,"y":400,"angle":0,"length":160,"supports":[]},{"material":"glass","x":620,"y":440,"angle":90,"length":100,"supports":[]},{"material":"wood","x":740,"y":440,"angle":90,"length":100,"supports":[]},{"material":"glass","x":680,"y":360,"angle":0,"length":160,"supports":[]},{"material":"wood","x":640,"y":300,"angle":90,"length":100,"supports":[]},{"material":"glass","x":720,"y":300,"angle":90,"length":100,"supports":[]},{"material":"wood","x":680,"y":220,"angle":0,"length":140,"supports":[]},{"material":"glass","x":860,"y":440,"angle":90,"length":100,"supports":[]},{"material":"wood","x":860,"y":340,"angle":0,"length":100,"supports":[]}],"oranges":[{"x":460,"y":360,"branch":-1},{"x":520,"y":360,"branch":-1},{"x":640,"y":320,"branch":-1},{"x":720,"y":320,"branch":-1},{"x":680,"y":180,"branch":-1},{"x":860,"y":300,"branch":-1}]},"8":{"title":"Citrus Conservatory","shots":6,"two":1,"three":3,"gravity":true,"pieces":[{"material":"wood","x":420,"y":420,"angle":90,"length":140,"supports":[]},{"material":"glass","x":580,"y":420,"angle":90,"length":140,"supports":[]},{"material":"glass","x":500,"y":320,"angle":0,"length":200,"supports":[]},{"material":"glass","x":460,"y":260,"angle":90,"length":100,"supports":[]},{"material":"wood","x":540,"y":260,"angle":90,"length":100,"supports":[]},{"material":"wood","x":500,"y":180,"angle":0,"length":140,"supports":[]},{"material":"glass","x":720,"y":440,"angle":90,"length":100,"supports":[]},{"material":"wood","x":900,"y":440,"angle":90,"length":100,"supports":[]},{"material":"wood","x":800,"y":360,"angle":0,"length":220,"supports":[]},{"material":"glass","x":760,"y":300,"angle":90,"length":80,"supports":[]},{"material":"glass","x":840,"y":300,"angle":90,"length":80,"supports":[]},{"material":"wood","x":800,"y":220,"angle":0,"length":140,"supports":[]}],"oranges":[{"x":460,"y":280,"branch":-1},{"x":540,"y":280,"branch":-1},{"x":500,"y":140,"branch":-1},{"x":740,"y":320,"branch":-1},{"x":860,"y":320,"branch":-1},{"x":780,"y":180,"branch":-1},{"x":820,"y":180,"branch":-1}]},"9":{"title":"Crystal Citadel","shots":7,"two":1,"three":4,"gravity":true,"pieces":[{"material":"glass","x":380,"y":440,"angle":90,"length":100,"supports":[]},{"material":"wood","x":480,"y":440,"angle":90,"length":100,"supports":[]},{"material":"glass","x":420,"y":360,"angle":0,"length":140,"supports":[]},{"material":"wood","x":580,"y":420,"angle":90,"length":140,"supports":[]},{"material":"glass","x":740,"y":420,"angle":90,"length":140,"supports":[]},{"material":"wood","x":660,"y":320,"angle":0,"length":200,"supports":[]},{"material":"glass","x":620,"y":260,"angle":90,"length":100,"supports":[]},{"material":"wood","x":700,"y":260,"angle":90,"length":100,"supports":[]},{"material":"glass","x":660,"y":180,"angle":0,"length":140,"supports":[]},{"material":"wood","x":840,"y":440,"angle":90,"length":100,"supports":[]},{"material":"glass","x":920,"y":440,"angle":90,"length":100,"supports":[]},{"material":"wood","x":880,"y":360,"angle":0,"length":120,"supports":[]},{"material":"glass","x":880,"y":300,"angle":90,"length":80,"supports":[]},{"material":"wood","x":880,"y":220,"angle":0,"length":100,"supports":[]}],"oranges":[{"x":400,"y":320,"branch":-1},{"x":440,"y":320,"branch":-1},{"x":620,"y":280,"branch":-1},{"x":700,"y":280,"branch":-1},{"x":640,"y":140,"branch":-1},{"x":680,"y":140,"branch":-1},{"x":860,"y":320,"branch":-1},{"x":900,"y":180,"branch":-1}]}});
+export function builtInOrangeDesign(level,milestones=null){
+ const raw=Object.hasOwn(STARTER_LEVELS,level)?STARTER_LEVELS[level]:null;
+ if(!raw)return null;
+ const schedule=Object.fromEntries(featureSchedule(milestones).map(f=>[f.id,f.level]));
+ return validateDesign({...raw,pieces:raw.pieces.map(p=>schedule[designFeature(p)]>level?{...p,material:"wood"}:p)});
 }
 export function campaignMap(level,seed,milestones){
  const map=layout(level,seed),schedule=Object.fromEntries(featureSchedule(milestones).map(f=>[f.id,f.level]));
@@ -816,10 +819,14 @@ function gravityShot(base,board,shot,trace){
  function removeFruit(b,t){if(!b.alive)return;b.alive=false;remaining.delete(b.id);events.push({kind:"orange",id:b.id,t,x:b.x,y:b.y});}
  function breakBlock(b,t,ix,iy){
   if(!b.alive||!b.inv)return;b.alive=false;hp[b.id]=0;events.push({kind:"branch",id:b.id,t});
-  const a=axes(b);
-  for(const side of [-1,1]){
-   const part=make("debris",debris.length,b.x+a.x*b.hw*.5*side,b.y+a.y*b.hw*.5*side,b.a,b.hw*.5,b.hh,false,b.material);
-   part.vx=b.vx+ix*.65+side*a.x*1.7;part.vy=b.vy+iy*.4-1;part.w=side*.055+b.w;part.touched=true;part.active=true;debris.push(part);all.push(part);
+  const a=axes(b),glass=b.material==="glass",count=glass?Math.min(5,Math.max(3,Math.ceil(b.hw/22))):2;
+  if(glass)events.push({kind:"glassShatter",id:b.id,t,x:b.x,y:b.y,count});
+  for(let k=0;k<count;k++){
+   const side=(2*k+1-count)/count,offset=b.hw*side;
+   const part=make("debris",debris.length,b.x+a.x*offset,b.y+a.y*offset,b.a,b.hw/count,b.hh,false,b.material);
+   part.vx=b.vx+ix*(glass?.35:.65)+side*a.x*(glass?4:3.4);
+   part.vy=b.vy+iy*.4-(glass?2+Math.abs(side)*2:1);
+   part.w=b.w+side*(glass?.22:.11);part.touched=true;part.active=true;debris.push(part);all.push(part);
   }
  }
  function blast(x,y,t){

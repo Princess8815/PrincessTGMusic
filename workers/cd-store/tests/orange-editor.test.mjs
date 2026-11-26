@@ -12,3 +12,5 @@ test("built-in official levels load in editor and staff edits take precedence",a
  const f=fixture();
  for(const level of [2,3,4]){const r=await f.call(null,{action:"official",level});assert.equal(r.builtIn,true);assert.ok(r.design.pieces.every(p=>p.material==="wood"));const edited={...r.design,title:"Edited "+level};await assert.rejects(()=>f.call("a",{action:"publish",level,design:edited}));await f.call("admin",{action:"publish",level,design:edited});const loaded=await f.call(null,{action:"official",level});assert.equal(loaded.builtIn,false);assert.equal(loaded.design.title,edited.title);}
 });
+
+test("glass starter levels are loadable and editable by staff",async()=>{const f=fixture();for(const level of [5,6,7,8,9]){const r=await f.call(null,{action:"official",level});assert.ok(r.design.pieces.some(p=>p.material==="glass"));await f.call("admin",{action:"publish",level,design:{...r.design,title:"Edited glass "+level}});assert.equal((await f.call(null,{action:"official",level})).design.title,"Edited glass "+level);}});
