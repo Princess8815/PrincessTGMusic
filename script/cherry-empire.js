@@ -1,7 +1,7 @@
 
 import {auth,usingLocalFirebaseEmulators} from "./firebase.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-import {advance,caps,fruitInterval,autoInterval,yieldPerFruit,starChance,treePrice,prestigePrice,upgradePrice,MAX_TREES,MAX_PRESTIGE,growDuration,treeCapacity,prestigeReady,masteryCount,CHERRY_TROPHY} from "./cherry-empire-core.mjs";
+import {advance,caps,fruitInterval,autoInterval,yieldPerFruit,starChance,treePrice,prestigePrice,upgradePrice,MAX_TREES,MAX_PRESTIGE,growDuration,treeCapacity,prestigeReady,masteryCount,CHERRY_TROPHY,slotsPerGrowth,prestigeMultiplier} from "./cherry-empire-core.mjs";
 import {showToast} from "./toast-sound.js";
 const $=id=>document.getElementById(id),grid=$("ce-orchard"),endpoint="https://princesstg-cd-store-live.transgirl1991.workers.dev/games/cherry-empire";
 const fmt=n=>Math.floor(n).toLocaleString(),eligible=()=>!!auth.currentUser?.emailVerified&&!usingLocalFirebaseEmulators;
@@ -41,14 +41,14 @@ function render(){
  for(const t of s.trees){
   const c=cards.get(t.id)||makeCard(t),growing=time<t.matureAt,cap=caps(t),interval=fruitInterval(t);
   c.badge.textContent="Prestige "+t.prestige;c.art.dataset.growing=String(growing);
-  c.fruit.textContent=fmt(t.fruit)+"/"+fmt(treeCapacity(t))+" ripe fruit · "+fmt(t.pendingCherries)+" 🍒"+(t.pendingStars?" · "+fmt(t.pendingStars)+" ★":"");
-  c.yieldText.textContent=yieldPerFruit(t)+" 🍒 / fruit";
+  c.fruit.textContent=fmt(t.fruit)+"/"+fmt(treeCapacity(t))+" fruit slots · "+fmt(t.pendingCherries)+" 🍒"+(t.pendingStars?" · "+fmt(t.pendingStars)+" ★":"");
+  c.yieldText.textContent=slotsPerGrowth(t)+" fruit / growth · ×"+prestigeMultiplier(t)+" cherries";
   c.fill.style.width=(growing?0:t.fruit>=treeCapacity(t)?100:100*Math.max(0,Math.min(1,1-(t.nextFruitAt-time)/interval)))+"%";
   c.timer.textContent=growing?"Growing · "+duration(t.matureAt-time)+" remaining":(t.fruit>=treeCapacity(t)?"Tree full · harvest to make room":"Next fruit in "+duration(t.nextFruitAt-time))+(t.auto?" · auto harvest in "+duration(t.nextAutoAt-time):" · manual harvest");
   c.harvest.textContent="Harvest "+fmt(t.pendingCherries)+" 🍒";c.harvest.disabled=!active||!t.fruit;
   for(const k of Object.keys(c.up)){
    const {b,detail}=c.up[k],max=t[k]>=cap[k],price=upgradePrice(t,k);
-   const stat=k==="speed"?duration(interval)+" / fruit":k==="yield"?yieldPerFruit(t)+" 🍒 / fruit":k==="auto"?(t.auto?"Every "+duration(autoInterval(t)):"Off"):k==="capacity"?treeCapacity(t)+" fruit maximum":(starChance(t)*100).toFixed(2)+"% · permanent";
+   const stat=k==="speed"?duration(interval)+" / fruit":k==="yield"?slotsPerGrowth(t)+" fruit / growth · "+yieldPerFruit(t)+" 🍒":k==="auto"?(t.auto?"Every "+duration(autoInterval(t)):"Off"):k==="capacity"?treeCapacity(t)+" fruit maximum":(starChance(t)*100).toFixed(2)+"% · permanent";
    detail.textContent=t[k]+"/"+cap[k]+" · "+stat+(max?" · MAX":" · "+fmt(price)+" 🍒");
    b.disabled=!active||max||s.cherries<price;
   }

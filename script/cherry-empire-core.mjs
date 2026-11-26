@@ -9,7 +9,9 @@ const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
 export const caps=t=>({speed:5+2*t.prestige,yield:5+2*t.prestige,auto:3+t.prestige,capacity:5+2*t.prestige,star:STAR_CAP});
 export const fruitInterval=t=>Math.max(5000,Math.round(30000*(1+.4*t.prestige)/(1+.22*t.speed)));
 export const autoInterval=t=>Math.max(fruitInterval(t),Math.round(120000/(1+.65*Math.max(0,t.auto-1))));
-export const yieldPerFruit=t=>(1+2*t.prestige)*(1+t.yield);
+export const slotsPerGrowth=t=>1+t.yield;
+export const prestigeMultiplier=t=>1+2*t.prestige;
+export const yieldPerFruit=t=>prestigeMultiplier(t)*slotsPerGrowth(t);
 export const treeCapacity=t=>10+5*t.prestige+10*(t.capacity||0);
 export const prestigeReady=t=>t.prestige<MAX_PRESTIGE&&["speed","yield","auto","capacity"].every(k=>(t[k]||0)>=caps(t)[k]);
 export const starChance=t=>.001+.0015*t.star;
@@ -21,7 +23,7 @@ export function makeTree(id,now,delay=0,prestige=0,star=0){
  const t={id,prestige,star,speed:0,yield:0,auto:0,capacity:0,matureAt:now+delay,fruit:0,pendingCherries:0,pendingStars:0,nextFruitAt:0,nextAutoAt:0};
  t.nextFruitAt=t.matureAt+fruitInterval(t);return t;
 }
-export function initialEmpire(now){return {version:2,revision:0,cherries:0,trees:[makeTree(1,now)],totalHarvests:0,totalCherries:0,totalStars:0,lastAt:now};}
+export function initialEmpire(now){return {version:3,revision:0,cherries:0,trees:[makeTree(1,now)],totalHarvests:0,totalCherries:0,totalStars:0,lastAt:now};}
 export const countDue=(first,interval,now)=>first>0&&first<=now?Math.floor((now-first)/interval)+1:0;
 export function chanceAtLeastOne(n,p){return n<=0?0:p>=1?1:-Math.expm1(n*Math.log1p(-p));}
 // Exact binomial sampling via beta order-statistic splitting: large offline
@@ -37,7 +39,13 @@ export function binomial(n,p,rng){
  const a=Math.floor(n/2)+1,b=n-a+1,x=gamma(a,rng),y=gamma(b,rng),v=x/(x+y);
  return v>=p?binomial(a-1,clamp(p/v,0,1),rng):a+binomial(b-1,clamp((p-v)/(1-v),0,1),rng);
 }
-const copy=s=>({...s,version:2,trees:s.trees.map(t=>({capacity:0,...t}))});
+const copy=s=>({...s,version:3,trees:s.trees.map(t=>{
+ const next={capacity:0,...t};
+ // Previously fruit counted growth cycles, not the actual fruit occupying slots.
+ // Preserve all existing ripe value and stars, including over-cap legacy crops.
+ if((s.version||1)<3)next.fruit=Math.max(next.fruit,Math.ceil(next.pendingCherries/prestigeMultiplier(next)));
+ return next;
+})});
 const emptyEffects=()=>({cherries:0,coins:0,harvests:0,eligibleHarvests:0});
 function credit(s,t,fx,count){
  if(!t.fruit||count<=0)return;
@@ -46,18 +54,24 @@ function credit(s,t,fx,count){
  if(s.trees.length>=2)fx.eligibleHarvests+=count;
  t.fruit=0;t.pendingCherries=0;t.pendingStars=0;
 }
-function addFruit(t,n,sample){
- if(n<=0)return;
- t.fruit+=n;t.pendingCherries+=n*yieldPerFruit(t);t.pendingStars+=sample(n,starChance(t));
+function addFruit(t,slots,cycles,sample){
+ if(slots<=0)return;
+ t.fruit+=slots;t.pendingCherries+=slots*prestigeMultiplier(t);
+ // Keep the existing Star Coin probability per successful growth cycle.
+ t.pendingStars+=sample(cycles,starChance(t));
 }
 function grow(t,until,sample){
  const interval=fruitInterval(t),n=countDue(t.nextFruitAt,interval,until);
- if(n){addFruit(t,Math.min(n,Math.max(0,treeCapacity(t)-t.fruit)),sample);t.nextFruitAt+=n*interval;}
+ if(n){
+  const slots=Math.min(n*slotsPerGrowth(t),Math.max(0,treeCapacity(t)-t.fruit));
+  addFruit(t,slots,Math.ceil(slots/slotsPerGrowth(t)),sample);
+  t.nextFruitAt+=n*interval;
+ }
 }
 // Process the first auto harvest separately (it may contain existing fruit).
-// Later harvest intervals contain floor or ceil(autoInterval/fruitInterval)
-// fruit. For an integer capacity, either all arrivals fit or every interval
-// fills its capacity. This preserves the exact capacity limit in O(1) time.
+// Later intervals contain either floor or ceil(autoInterval/fruitInterval)
+// growth cycles. Count both kinds, applying the capacity independently to each.
+// This is exact even when a yield upgrade only partly fits the remaining slots.
 export function advance(state,now,sample=()=>0){
  const s=copy(state),fx=emptyEffects();now=Math.max(s.lastAt,Math.floor(now));
  for(const t of s.trees){
@@ -68,8 +82,13 @@ export function advance(state,now,sample=()=>0){
     grow(t,first,sample);credit(s,t,fx,1);
     if(n>1){
      const arrivals=countDue(t.nextFruitAt,fruitInterval(t),last);
-     const accepted=Math.min(arrivals,(n-1)*treeCapacity(t));
-     addFruit(t,accepted,sample);
+     const periods=n-1,low=Math.floor(interval/fruitInterval(t));
+     const highCount=arrivals-periods*low,lowCount=periods-highCount;
+     const per=slotsPerGrowth(t),cap=treeCapacity(t);
+     const lowSlots=Math.min(cap,low*per),highSlots=Math.min(cap,(low+1)*per);
+     const slots=lowCount*lowSlots+highCount*highSlots;
+     const cycles=lowCount*Math.ceil(lowSlots/per)+highCount*Math.ceil(highSlots/per);
+     addFruit(t,slots,cycles,sample);
      t.nextFruitAt+=arrivals*fruitInterval(t);
      credit(s,t,fx,n-1);
     }

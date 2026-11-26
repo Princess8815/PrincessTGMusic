@@ -1,7 +1,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import {initialEmpire,makeTree,advance,applyAction,fruitInterval,autoInterval,starChance,caps,yieldPerFruit,treePrice,treeCapacity,prestigeReady,hasMastery,CHERRY_TROPHY,chanceAtLeastOne,rewardCandidates,binomial,FRUITER_CHANCE} from "../../../script/cherry-empire-core.mjs";
+import {initialEmpire,makeTree,advance,applyAction,fruitInterval,autoInterval,starChance,caps,yieldPerFruit,treePrice,treeCapacity,slotsPerGrowth,prestigeMultiplier,prestigeReady,hasMastery,CHERRY_TROPHY,chanceAtLeastOne,rewardCandidates,binomial,FRUITER_CHANCE} from "../../../script/cherry-empire-core.mjs";
 import {orchardWithStorage} from "../cherry-empire.mjs";
 const NOW=1700000000000;
 test("manual fruit accumulates offline; harvesting many fruits counts as one harvest",()=>{
@@ -83,7 +83,7 @@ test("tree capacity caps manual growth, increases with upgrades and preserves le
 });
 test("capped automatic growth matches incremental timestamp simulation",()=>{
  for(let p=0;p<=4;p++)for(let speed=0;speed<=5+2*p;speed++)for(let auto=1;auto<=3+p;auto++){
- const s=initialEmpire(NOW),t=makeTree(1,NOW,0,p);s.trees=[t];t.speed=speed;t.auto=auto;t.nextFruitAt=NOW+fruitInterval(t);t.nextAutoAt=NOW+autoInterval(t);
+ const s=initialEmpire(NOW),t=makeTree(1,NOW,0,p);s.trees=[t];t.speed=speed;t.auto=auto;t.yield=(speed+auto)%(caps(t).yield+1);t.nextFruitAt=NOW+fruitInterval(t);t.nextAutoAt=NOW+autoInterval(t);
  const until=NOW+9876543,fast=advance(s,until).state;let slow=s;
  for(let at=NOW+10000;at<until;at+=10000)slow=advance(slow,at).state;slow=advance(slow,until).state;
  assert.deepEqual(fast,slow);
@@ -110,4 +110,40 @@ test("mastery is awarded atomically only when every one of twelve trees reaches 
  const award=await call("prestige",1,0);assert.ok(hasMastery(award.state));assert.deepEqual(award.rewards,[CHERRY_TROPHY[0]]);assert.ok(store.has(trophy));assert.equal(trophyWrites,1);
  const retry=await call("prestige",1,0);assert.deepEqual(retry.rewards,award.rewards);assert.equal(trophyWrites,1);
  const sync=await call("sync",2,1);assert.deepEqual(sync.rewards,[]);assert.equal(trophyWrites,1);
+});
+
+test("yield fills slots while prestige multiplies payout only",()=>{
+ const s=initialEmpire(NOW),t=makeTree(1,NOW,0,2);s.trees=[t];t.yield=3;
+ const interval=fruitInterval(t),first=advance(s,NOW+interval);
+ assert.equal(slotsPerGrowth(t),4);assert.equal(prestigeMultiplier(t),5);
+ assert.equal(first.state.trees[0].fruit,4);assert.equal(first.state.trees[0].pendingCherries,20);
+ const full=advance(first.state,NOW+interval*100);
+ assert.equal(full.state.trees[0].fruit,20);assert.equal(full.state.trees[0].pendingCherries,100);
+ const harvested=applyAction(full.state,{kind:"harvest",treeId:1},NOW+interval*100);
+ assert.equal(harvested.effects.cherries,100);assert.equal(harvested.effects.harvests,1);
+});
+test("partial growth fills remaining capacity, without extra prestige or star slots",()=>{
+ const s=initialEmpire(NOW),t=s.trees[0];t.yield=3;let attempts=0;
+ const a=advance(s,NOW+90000,(n,p)=>{attempts+=n;return n;});
+ assert.equal(a.state.trees[0].fruit,10);assert.equal(a.state.trees[0].pendingCherries,10);
+ assert.equal(a.state.trees[0].pendingStars,3);assert.equal(attempts,3);
+ const b=advance(a.state,NOW+180000,()=>{throw Error("Full tree cannot grow");});
+ assert.equal(b.state.trees[0].fruit,10);
+});
+test("version 2 ripe harvests preserve value when migrated to slot occupancy",()=>{
+ const s=initialEmpire(NOW),t=makeTree(1,NOW,0,1);s.version=2;s.trees=[t];
+ t.fruit=4;t.yield=2;t.pendingCherries=30;t.pendingStars=2;
+ const a=advance(s,NOW);
+ assert.equal(a.state.version,3);assert.equal(a.state.trees[0].fruit,10);
+ assert.equal(a.state.trees[0].pendingCherries,30);assert.equal(a.state.trees[0].pendingStars,2);
+ assert.deepEqual(advance(a.state,NOW).state,a.state);
+});
+test("offline capped auto harvesting agrees with exact event-by-event growth even with partial cycles",()=>{
+ for(let p=0;p<5;p++)for(let y=0;y<=5+2*p;y++)for(let c=0;c<3;c++){
+  const s=initialEmpire(NOW),t=makeTree(1,NOW,0,p);s.trees=[t];t.yield=y;t.capacity=c;t.speed=5+2*p;t.auto=1;
+  t.nextFruitAt=NOW+fruitInterval(t);t.nextAutoAt=NOW+autoInterval(t);
+  const until=NOW+1234567,fast=advance(s,until,n=>n).state;let slow=s;
+  while(slow.lastAt<until){const tree=slow.trees[0];slow=advance(slow,Math.min(until,tree.nextFruitAt,tree.nextAutoAt),n=>n).state;}
+  assert.deepEqual(fast,slow);
+ }
 });
