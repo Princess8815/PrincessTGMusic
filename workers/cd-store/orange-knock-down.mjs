@@ -1,6 +1,6 @@
 
 import {accessToken,verifyFirebaseIdentity} from "./rewards.js";
-import {initialOrange,applyOrange,PRICE,SPECIALS,validShot,ORANGE_TROPHY,hasOrangeMastery,validateDesign,checkDesignUnlocks,validateMilestones,designMap,campaignMap,boardFromMap} from "../../script/orange-knock-down-core.mjs";
+import {initialOrange,applyOrange,PRICE,SPECIALS,validShot,ORANGE_TROPHY,hasOrangeMastery,validateDesign,checkDesignUnlocks,validateMilestones,designMap,campaignMap,boardFromMap,builtInOrangeDesign} from "../../script/orange-knock-down-core.mjs";
 const fail=(message,status=400)=>{throw Object.assign(Error(message),{status});};
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const secureRandom=()=>(crypto.getRandomValues(new Uint32Array(1))[0]+.5)/4294967296;
@@ -11,7 +11,8 @@ export async function configuredOrangeLevel(read,state){
  state.milestones=milestones;
  let map;
  if(official){try{const d=checkDesignUnlocks(validateDesign(JSON.parse(official.fields.payload.stringValue)),state.level,milestones);map=designMap(d);}catch(e){console.warn("Official orange level incompatible with milestones",state.level);}}
- state.levelMap=map||campaignMap(state.level,state.seed,milestones);
+ const builtIn=builtInOrangeDesign(state.level);
+ state.levelMap=map||(builtIn?designMap(builtIn):campaignMap(state.level,state.seed,milestones));
  state.board=boardFromMap(state.levelMap);
  return state;
 }

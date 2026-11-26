@@ -87,7 +87,7 @@ function towerLayout(level,seed,version=2){
 }
 export const FEATURES=Object.freeze([
  {id:"wood",level:1,name:"Timber frames",description:"Break a support and watch connected shelves collapse."},
- {id:"glass",level:3,name:"Glass beams",description:"Fragile blue beams shatter with one hit."},
+ {id:"glass",level:5,name:"Glass beams",description:"Fragile blue beams shatter with one hit."},
  {id:"wall",level:5,name:"Brick barricades",description:"Break them with two ordinary hits or arc over the top."},
  {id:"stone",level:8,name:"Stone structures",description:"Stone needs two hits. Aim for its weaker connections."},
  {id:"reflector",level:12,name:"Ricochet panels",description:"Unbreakable purple panels reflect your shot."},
@@ -274,6 +274,326 @@ export function checkDesignUnlocks(design,level,milestones){
 export function designMap(raw){
  const d=validateDesign(raw);
  return {design:d.title,shots:d.shots,two:d.two,three:d.three,...(d.gravity?{gravity:true}:{}),branches:d.pieces.map((p,id)=>{const a=p.angle*Math.PI/180,dx=Math.cos(a)*p.length/2,dy=Math.sin(a)*p.length/2,m=MATERIALS[p.material];return {id,material:p.material,x1:p.x-dx,y1:p.y-dy,x2:p.x+dx,y2:p.y+dy,hp:m.hp,width:m.width,supports:p.supports,reflect:["reflector","spring","trampoline"].includes(p.material),spring:p.material==="spring",trampoline:p.material==="trampoline",directional:p.material==="trampoline",burst:p.material==="crate"};}),oranges:d.oranges.map((o,id)=>({...o,id}))};
+}
+// Authored campaign defaults. Staff-published versions take precedence.
+const WOODEN_LEVELS={
+ "2": {
+  "title": "Twin Timber Towers",
+  "shots": 4,
+  "two": 1,
+  "three": 2,
+  "gravity": true,
+  "pieces": [
+   {
+    "material": "wood",
+    "x": 480,
+    "y": 440,
+    "angle": 90,
+    "length": 100,
+    "supports": []
+   },
+   {
+    "material": "wood",
+    "x": 600,
+    "y": 440,
+    "angle": 90,
+    "length": 100,
+    "supports": []
+   },
+   {
+    "material": "wood",
+    "x": 540,
+    "y": 360,
+    "angle": 0,
+    "length": 160,
+    "supports": []
+   },
+   {
+    "material": "wood",
+    "x": 740,
+    "y": 400,
+    "angle": 90,
+    "length": 180,
+    "supports": []
+   },
+   {
+    "material": "wood",
+    "x": 860,
+    "y": 400,
+    "angle": 90,
+    "length": 180,
+    "supports": []
+   },
+   {
+    "material": "wood",
+    "x": 800,
+    "y": 280,
+    "angle": 0,
+    "length": 160,
+    "supports": []
+   }
+  ],
+  "oranges": [
+   {
+    "x": 520,
+    "y": 320,
+    "branch": -1
+   },
+   {
+    "x": 560,
+    "y": 320,
+    "branch": -1
+   },
+   {
+    "x": 780,
+    "y": 240,
+    "branch": -1
+   },
+   {
+    "x": 820,
+    "y": 240,
+    "branch": -1
+   }
+  ]
+ },
+ "3": {
+  "title": "Orchard Staircase",
+  "shots": 5,
+  "two": 1,
+  "three": 2,
+  "gravity": true,
+  "pieces": [
+   {
+    "material": "wood",
+    "x": 440,
+    "y": 460,
+    "angle": 90,
+    "length": 60,
+    "supports": []
+   },
+   {
+    "material": "wood",
+    "x": 540,
+    "y": 460,
+    "angle": 90,
+    "length": 60,
+    "supports": []
+   },
+   {
+    "material": "wood",
+    "x": 500,
+    "y": 400,
+    "angle": 0,
+    "length": 160,
+    "supports": []
+   },
+   {
+    "material": "wood",
+    "x": 620,
+    "y": 420,
+    "angle": 90,
+    "length": 140,
+    "supports": []
+   },
+   {
+    "material": "wood",
+    "x": 740,
+    "y": 420,
+    "angle": 90,
+    "length": 140,
+    "supports": []
+   },
+   {
+    "material": "wood",
+    "x": 680,
+    "y": 320,
+    "angle": 0,
+    "length": 160,
+    "supports": []
+   },
+   {
+    "material": "wood",
+    "x": 800,
+    "y": 380,
+    "angle": 90,
+    "length": 220,
+    "supports": []
+   },
+   {
+    "material": "wood",
+    "x": 900,
+    "y": 380,
+    "angle": 90,
+    "length": 220,
+    "supports": []
+   },
+   {
+    "material": "wood",
+    "x": 840,
+    "y": 240,
+    "angle": 0,
+    "length": 140,
+    "supports": []
+   }
+  ],
+  "oranges": [
+   {
+    "x": 460,
+    "y": 360,
+    "branch": -1
+   },
+   {
+    "x": 520,
+    "y": 360,
+    "branch": -1
+   },
+   {
+    "x": 640,
+    "y": 280,
+    "branch": -1
+   },
+   {
+    "x": 700,
+    "y": 280,
+    "branch": -1
+   },
+   {
+    "x": 820,
+    "y": 200,
+    "branch": -1
+   },
+   {
+    "x": 880,
+    "y": 200,
+    "branch": -1
+   }
+  ]
+ },
+ "4": {
+  "title": "Timber Fortress",
+  "shots": 6,
+  "two": 1,
+  "three": 2,
+  "gravity": true,
+  "pieces": [
+   {
+    "material": "wood",
+    "x": 360,
+    "y": 440,
+    "angle": 90,
+    "length": 100,
+    "supports": []
+   },
+   {
+    "material": "wood",
+    "x": 500,
+    "y": 420,
+    "angle": 90,
+    "length": 140,
+    "supports": []
+   },
+   {
+    "material": "wood",
+    "x": 660,
+    "y": 420,
+    "angle": 90,
+    "length": 140,
+    "supports": []
+   },
+   {
+    "material": "wood",
+    "x": 580,
+    "y": 320,
+    "angle": 0,
+    "length": 200,
+    "supports": []
+   },
+   {
+    "material": "wood",
+    "x": 540,
+    "y": 260,
+    "angle": 90,
+    "length": 100,
+    "supports": []
+   },
+   {
+    "material": "wood",
+    "x": 620,
+    "y": 260,
+    "angle": 90,
+    "length": 100,
+    "supports": []
+   },
+   {
+    "material": "wood",
+    "x": 580,
+    "y": 180,
+    "angle": 0,
+    "length": 120,
+    "supports": []
+   },
+   {
+    "material": "wood",
+    "x": 760,
+    "y": 440,
+    "angle": 90,
+    "length": 100,
+    "supports": []
+   },
+   {
+    "material": "wood",
+    "x": 900,
+    "y": 440,
+    "angle": 90,
+    "length": 100,
+    "supports": []
+   },
+   {
+    "material": "wood",
+    "x": 840,
+    "y": 360,
+    "angle": 0,
+    "length": 180,
+    "supports": []
+   }
+  ],
+  "oranges": [
+   {
+    "x": 560,
+    "y": 280,
+    "branch": -1
+   },
+   {
+    "x": 600,
+    "y": 280,
+    "branch": -1
+   },
+   {
+    "x": 560,
+    "y": 140,
+    "branch": -1
+   },
+   {
+    "x": 600,
+    "y": 140,
+    "branch": -1
+   },
+   {
+    "x": 800,
+    "y": 320,
+    "branch": -1
+   },
+   {
+    "x": 860,
+    "y": 320,
+    "branch": -1
+   }
+  ]
+ }
+};
+export function builtInOrangeDesign(level){
+ const raw=Object.hasOwn(WOODEN_LEVELS,level)?WOODEN_LEVELS[level]:null;
+ return raw?validateDesign(raw):null;
 }
 export function campaignMap(level,seed,milestones){
  const map=layout(level,seed),schedule=Object.fromEntries(featureSchedule(milestones).map(f=>[f.id,f.level]));

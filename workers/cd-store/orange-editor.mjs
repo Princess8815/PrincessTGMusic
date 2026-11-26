@@ -1,5 +1,5 @@
 import {accessToken,verifyFirebaseIdentity} from "./rewards.js";
-import {FEATURES,validateDesign,validateMilestones,checkDesignUnlocks} from "../../script/orange-knock-down-core.mjs";
+import {FEATURES,validateDesign,validateMilestones,checkDesignUnlocks,builtInOrangeDesign} from "../../script/orange-knock-down-core.mjs";
 const fail=(m,status=400)=>{throw Object.assign(Error(m),{status});};
 const str=stringValue=>({stringValue});
 const value=(d,k)=>d?.fields?.[k]?.stringValue;
@@ -24,8 +24,8 @@ export async function editorAction({input,uid,read,commit,list,root,clock=Date.n
  if(action==="load"||action==="official"){
   if(action==="load"?!idOK(input.id):!levelOK(input.level))fail("Invalid level identifier.");
   const d=await read(action==="load"?"orangeCommunityLevels/"+input.id:"orangeOfficialLevels/"+input.level);
-  if(!d)fail("Level not found.",404);
-  return {design:validateDesign(parse(d)),id:input.id||null,level:input.level||null};
+  if(!d){const preset=action==="official"?builtInOrangeDesign(input.level):null;if(preset)return {design:preset,id:null,level:input.level,builtIn:true};fail("Level not found. Create a design and publish it to this number.",404);}
+  return {design:validateDesign(parse(d)),id:input.id||null,level:input.level||null,builtIn:false};
  }
  let path,fields,previous,del=false,extra=[];
  try{

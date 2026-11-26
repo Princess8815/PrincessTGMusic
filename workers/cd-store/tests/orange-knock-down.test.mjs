@@ -1,7 +1,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import {settleGravity,sceneMap,validateDesign,designMap,boardFromMap,stateMap,starRating,validateMilestones,checkDesignUnlocks,campaignMap,practiceOrange,orangeGameOver,ORANGE_TROPHY,hasOrangeMastery,WIDTH,GROUND,initialOrange,layout,freshLevel,simulateShot,applyOrange,validShot,fruiterChance,tangieChance,FEATURES,featureProgress,DESIGN_NAMES,bouncePad} from "../../../script/orange-knock-down-core.mjs";
+import {builtInOrangeDesign,settleGravity,sceneMap,validateDesign,designMap,boardFromMap,stateMap,starRating,validateMilestones,checkDesignUnlocks,campaignMap,practiceOrange,orangeGameOver,ORANGE_TROPHY,hasOrangeMastery,WIDTH,GROUND,initialOrange,layout,freshLevel,simulateShot,applyOrange,validShot,fruiterChance,tangieChance,FEATURES,featureProgress,DESIGN_NAMES,bouncePad} from "../../../script/orange-knock-down-core.mjs";
 import {orangeWithStorage,configuredOrangeLevel} from "../orange-knock-down.mjs";
 test("starter pack and increasing orchard",()=>{
  const s=initialOrange(123);assert.deepEqual(s.inventory,{aqualily:3,bulky:3,sploder:3,sniper:3});assert.ok(s.board.marina>=5);assert.ok(layout(30,123).branches.length>layout(1,123).branches.length);assert.ok(layout(30,123).branches.some(b=>b.hp===2));assert.deepEqual(layout(10,123),layout(10,123));
@@ -64,7 +64,7 @@ test("two-hit walls stop direct shots, reflectors reverse motion and resist blas
 
 test("feature progress is interval-based, reaches 100% only at milestone, and reveals in order",()=>{
  const a=featureProgress(0);assert.equal(a.latest.id,"wood");assert.equal(a.next.id,"glass");assert.equal(a.next.percent,0);
- assert.equal(featureProgress(1).next.percent,50);assert.equal(featureProgress(2).latest.id,"glass");assert.equal(featureProgress(3).next.percent,50);
+ assert.equal(featureProgress(1).next.percent,25);assert.equal(featureProgress(3).next.percent,75);assert.ok(featureProgress(4).features.find(f=>f.id==="glass").unlocked);assert.equal(featureProgress(4).next.id,"stone");
  assert.equal(featureProgress(35).latest.id,"crate");assert.equal(featureProgress(35).next,null);
 });
 test("varied puzzle families, valid structures, deterministic maps and old-layout compatibility",()=>{
@@ -210,4 +210,16 @@ test("gravity collapse preserves intact beams, drops debris and persists settled
  for(let a=-20;a<=80&&!shot;a+=2)for(let p=25;p<=100&&!shot;p+=5){const q={type:"marina",angle:a,power:p},r=simulateShot(map,board,q);if(r.hp[0]===0&&r.hp[1]>0){shot=q;result=r;}}
  assert.ok(shot);assert.ok(result.events.some(e=>e.kind==="debris"));assert.ok(result.pieceOffsets[1]>board.pieceOffsets[1]);assert.ok(result.hp[1]>0);assert.deepEqual(result,simulateShot(map,board,shot));
  const s=initialOrange(123);s.levelMap=map;s.board=board;const out=applyOrange(s,{kind:"shot",shot},()=>.99);assert.deepEqual(out.state.board.pieceOffsets,result.pieceOffsets);
+});
+
+test("handcrafted wooden levels have fixed geometry, valid gravity, Marina-only solutions and override priority",async()=>{
+ const solutions={"2":[{"type":"marina","angle":2,"power":100},{"type":"marina","angle":18,"power":95}],"3":[{"type":"marina","angle":76,"power":90},{"type":"marina","angle":-4,"power":95}],"4":[{"type":"marina","angle":28,"power":90}]};
+ for(const level of [2,3,4]){
+  const s=initialOrange(123);s.level=level;s.cleared=level-1;
+  await configuredOrangeLevel(async()=>null,s);
+  const d=builtInOrangeDesign(level);assert.deepEqual(s.levelMap,designMap(d));assert.ok(s.levelMap.branches.every(b=>b.material==="wood"));assert.equal(s.board.remaining.length,d.oranges.length);
+  let state=s;for(const shot of solutions[level]){const result=applyOrange(state,{kind:"shot",shot},()=>.99);assert.equal(result.applied,true);state=result.state;}
+  assert.equal(state.board.won,true);assert.ok(state.board.stars>=1);
+  const changed={...d,title:"Owner edit"};await configuredOrangeLevel(async path=>path==="orangeOfficialLevels/"+level?{fields:{payload:{stringValue:JSON.stringify(changed)}}}:null,s);assert.equal(s.levelMap.design,"Owner edit");
+ }
 });

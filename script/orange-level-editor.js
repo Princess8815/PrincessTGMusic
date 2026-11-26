@@ -6,7 +6,7 @@ import {WIDTH,HEIGHT,GROUND,SLING,MATERIALS,EDIT_GRID,MAX_PIECES,MAX_ORANGES,val
 import {editorRequest} from "./orange-editor-api.js";
 const $=id=>document.getElementById(id),grid=$("oe-grid"),status=m=>$("oe-status").textContent=m,ns="http://www.w3.org/2000/svg";
 const blank=()=>({title:"My orchard",shots:5,two:1,three:3,gravity:true,pieces:[],oranges:[]});
-let design=blank(),selected=null,id=null,staff=false,busy=false,cursor=null,undo=[],redo=[],pointer=null,ghost=null,ghostKey="",displayed=null;
+let design=blank(),selected=null,id=null,staff=false,busy=false,cursor=null,undo=[],redo=[],pointer=null,ghost=null,ghostKey="",displayed=null,editingOfficial=null;
 const draftKey="ptg-orange-editor-draft-v1";
 const clone=x=>JSON.parse(JSON.stringify(x)),number=id=>Number($(id).value),snap=(v,lo,hi)=>Math.max(lo,Math.min(hi,Math.round(v/EDIT_GRID)*EDIT_GRID));
 function option(parent,value,label){const o=document.createElement("option");o.value=value;o.textContent=label;parent.append(o);return o;}
@@ -28,7 +28,7 @@ $("oe-tool").onchange=()=>{clearGhost();renderPalette();};
 function readMeta(){design.title=$("oe-title").value;design.shots=number("oe-shots");design.two=number("oe-two");design.three=number("oe-three");}
 function writeMeta(){for(const k of ["title","shots","two","three"])$("oe-"+k).value=design[k];}
 function remember(){readMeta();undo.push(clone(design));if(undo.length>60)undo.shift();redo=[];}
-function persist(){readMeta();try{localStorage.setItem(draftKey,JSON.stringify({design,id}));}catch{}}
+function persist(){readMeta();try{localStorage.setItem(draftKey,JSON.stringify({design,id,editingOfficial}));}catch{}}
 function svg(tag,attrs,parent=grid){const e=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,String(v));parent.append(e);return e;}
 // A preview uses the same solver as official and test levels. Temporary
 // metadata/dummy fruit permit an unfinished empty draft to be previewed.
@@ -39,6 +39,7 @@ function preview(d){
 }
 function clearGhost(){ghost?.remove();ghost=null;ghostKey="";}
 function render(){
+ $("oe-official-editing").textContent=editingOfficial?"Editing official level "+editingOfficial+" · Save official level to update it.":"Choose a level to edit.";
  clearGhost();displayed=preview(design);renderPalette();
  grid.replaceChildren();svg("rect",{width:WIDTH,height:HEIGHT,fill:"#d5e9e6"});svg("rect",{x:0,y:GROUND,width:WIDTH,height:HEIGHT-GROUND,fill:"#77a45d"});svg("rect",{x:0,y:0,width:160,height:GROUND,fill:"#b4c8cb",opacity:.65});
  for(let x=160;x<=WIDTH;x+=EDIT_GRID)svg("line",{x1:x,y1:0,x2:x,y2:GROUND,stroke:"#aac5c0","stroke-width":.7});
@@ -135,18 +136,20 @@ function history(from,to){if(busy||!from.length)return;readMeta();to.push(clone(
 $("oe-undo").onclick=()=>history(undo,redo);$("oe-redo").onclick=()=>history(redo,undo);
 for(const k of ["title","shots","two","three"])$("oe-"+k).addEventListener("input",persist);
 function validated(){readMeta();return validateDesign({...design,gravity:true,pieces:design.pieces.map(p=>({...p,supports:[]})),oranges:design.oranges.map(o=>({...o,branch:-1}))});}
-function loadDesign(d,newId=null){design={...validateDesign(d),gravity:true};id=newId;selected=null;undo=[];redo=[];writeMeta();render();$("oe-id").value=id||"";status("Level loaded.");}
-$("oe-new").onclick=()=>{if(busy||!confirm("Start a new level? Unsaved changes will be replaced."))return;design=blank();id=null;selected=null;undo=[];redo=[];writeMeta();render();$("oe-id").value="";$("oe-share").textContent="";};
+function loadDesign(d,newId=null,officialLevel=null){design={...validateDesign(d),gravity:true};id=newId;editingOfficial=officialLevel;selected=null;undo=[];redo=[];writeMeta();if(editingOfficial)$("oe-level").value=editingOfficial;render();$("oe-id").value=id||"";status("Level loaded.");}
+$("oe-new").onclick=()=>{if(busy||!confirm("Start a new level? Unsaved changes will be replaced."))return;design=blank();id=null;editingOfficial=null;selected=null;undo=[];redo=[];writeMeta();render();$("oe-id").value="";$("oe-share").textContent="";};
 $("oe-test").onclick=()=>{if(busy)return;try{const d=validated();persist();sessionStorage.setItem("ptg-orange-test",JSON.stringify(d));location.href="orange-knock-down.html?test=1";}catch(e){status(e.message);}};
 async function perform(fn){if(busy)return;busy=true;try{await fn();}catch(e){status(e.message);}finally{busy=false;render();}}
-function save(copy=false){return perform(async()=>{const d=validated();const result=await editorRequest("save",{id:copy?undefined:id||undefined,design:d},true);id=result.id;$("oe-id").value=id;const link=new URL(location.href);link.search="";link.searchParams.set("level",id);$("oe-share").textContent="Share this link: "+link.href;status("Community level saved.");});}
+function save(copy=false){return perform(async()=>{const d=validated();const result=await editorRequest("save",{id:copy?undefined:id||undefined,design:d},true);id=result.id;editingOfficial=null;$("oe-id").value=id;const link=new URL(location.href);link.search="";link.searchParams.set("level",id);$("oe-share").textContent="Share this link: "+link.href;status("Community level saved.");});}
 $("oe-save").onclick=()=>save();$("oe-copy").onclick=()=>save(true);
 $("oe-load").onclick=()=>perform(async()=>{const r=await editorRequest("load",{id:$("oe-id").value.trim()});loadDesign(r.design,r.id);});
 $("oe-remove").onclick=()=>perform(async()=>{if(!id||!confirm("Delete this community level?"))return;await editorRequest("delete",{id},true);id=null;$("oe-id").value="";$("oe-share").textContent="";status("Community level removed.");});
 async function browse(reset){if(reset){cursor=null;$("oe-list").replaceChildren();}const r=await editorRequest("browse",{cursor});cursor=r.cursor;for(const item of r.levels){const b=document.createElement("button");b.textContent=item.title;b.onclick=()=>perform(async()=>{const d=await editorRequest("load",{id:item.id});loadDesign(d.design,d.id);});$("oe-list").append(b);}$("oe-more").hidden=!cursor;status(r.levels.length?"Community levels loaded.":"No more levels.");}
 $("oe-browse").onclick=()=>perform(()=>browse(true));$("oe-more").onclick=()=>perform(()=>browse(false));
-$("oe-official-load").onclick=()=>perform(async()=>{if(!staff)throw Error("Staff only.");const r=await editorRequest("official",{level:number("oe-level")});loadDesign(r.design);});
-$("oe-publish").onclick=()=>perform(async()=>{if(!staff)throw Error("Staff only.");const level=number("oe-level"),d=validated();if(!confirm("Publish official level "+level+"? Future attempts entering this level will use this layout."))return;await editorRequest("publish",{level,design:d},true);status("Official level "+level+" published.");});
+function openOfficial(level){return perform(async()=>{if(!staff)throw Error("Staff only.");const r=await editorRequest("official",{level});$("oe-level").value=level;loadDesign(r.design,null,level);status("Editing official level "+level+(r.builtIn?" (starter design).":" (published design)."));});}
+$("oe-official-load").onclick=()=>openOfficial(number("oe-level"));
+for(const b of document.querySelectorAll("[data-oe-official]"))b.onclick=()=>openOfficial(Number(b.dataset.oeOfficial));
+$("oe-publish").onclick=()=>perform(async()=>{if(!staff)throw Error("Staff only.");const level=number("oe-level"),d=validated();if(!confirm("Save official level "+level+"? Future attempts entering this level will use this layout."))return;await editorRequest("publish",{level,design:d},true);editingOfficial=level;id=null;$("oe-id").value="";status("Official level "+level+" saved.");});
 onAuthStateChanged(auth,async user=>{staff=false;$("oe-official").hidden=true;if(!user||usingLocalFirebaseEmulators)return;try{const s=await getDocFromServer(doc(db,"users",user.uid));if(auth.currentUser?.uid!==user.uid)return;const a=s.data();staff=!!a&&["owner","admin"].includes(a.role)&&(a.status||"active")==="active";$("oe-official").hidden=!staff;if(staff&&new URLSearchParams(location.search).has("official"))$("oe-official").scrollIntoView({block:"nearest"});}catch{}});
-try{const saved=JSON.parse(localStorage.getItem(draftKey)||"null");if(saved?.design&&Array.isArray(saved.design.pieces)&&Array.isArray(saved.design.oranges)){design={...saved.design,gravity:true};id=saved.id||null;}}catch{}
+try{const saved=JSON.parse(localStorage.getItem(draftKey)||"null");if(saved?.design&&Array.isArray(saved.design.pieces)&&Array.isArray(saved.design.oranges)){design={...saved.design,gravity:true};id=saved.id||null;editingOfficial=Number.isInteger(saved.editingOfficial)?saved.editingOfficial:null;}}catch{}
 writeMeta();render();$("oe-id").value=id||"";const shared=new URLSearchParams(location.search).get("level");if(shared){$("oe-id").value=shared;void perform(async()=>{const r=await editorRequest("load",{id:shared});loadDesign(r.design,r.id);});}
