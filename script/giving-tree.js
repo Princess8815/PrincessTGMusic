@@ -6,8 +6,8 @@ import {showToast} from "./toast-sound.js";
 const $=id=>document.getElementById(id),area=$("gt-area"),endpoint="https://princesstg-cd-store-live.transgirl1991.workers.dev/games/giving-tree";
 const eligible=()=>!!auth.currentUser?.emailVerified&&!usingLocalFirebaseEmulators,fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:2}),time=ms=>{let s=Math.max(0,Math.ceil(ms/1000));return s>=3600?Math.floor(s/3600)+"h "+Math.floor(s/60)%60+"m":s>=60?Math.floor(s/60)+"m "+s%60+"s":s+"s";};
 let saved=null,wallet=0,selected=new Set(),offset=0,busy=false,failed=null,epoch=0,lastSync=0,seen=new Set(),expanded=false,oldOverflow="",inventorySignature="";
-const plots=[],opponents={};
-let armed=null,sortMode="newest",visibleInventory=[],mobileView="orchard";
+const plots=[],opponents={},hubOpponents={};
+let armed=null,sortMode="newest",visibleInventory=[],mobileView="orchard",firstPear=null,hubPear=null;
 const selectedIds=()=>[...selected].sort((a,b)=>a-b);
 const singleId=()=>selected.size===1?selected.values().next().value:null;
 const allIds=()=>visibleInventory.map(p=>p.id).sort((a,b)=>a-b);
@@ -34,23 +34,39 @@ function btn(p,label,fn,cls=""){const b=el(p,"button","ptg-theme-exempt "+cls);b
 function meter(p,name,cls=""){const row=el(p,"div","gt-meter-label"),a=el(row,"span"),v=el(row,"span");a.textContent=name;const bar=el(p,"div","gt-meter "+cls),fill=el(bar,"i");return {v,fill};}
 function setMeter(m,f,label){m.v.textContent=label;m.fill.style.width=(100*Math.max(0,Math.min(1,f)))+"%";}
 function status(s){$("gt-status").textContent=s;}
+// Use the exact displayed pear ID and existing single-pear save path.
+function useQuickPear(kind,extra,source="first"){
+ const p=source==="hub"?hubPear:firstPear;
+ if(!p||busy||failed||!saved||!eligible())return;
+ if(source==="hub"&&selected.size>1)return;
+ if(kind==="plant"&&(!Number.isInteger(extra.plot)||extra.plot<0||extra.plot>=PLOTS||saved.plots[extra.plot]))return;
+ if(kind==="throw"&&!saved[extra.target==="boss"?"bossesUnlocked":"enemiesUnlocked"])return;
+ void send(kind,{...extra,fruitId:p.id});
+}
 function build(){
+ for(const kind of ["enemy","boss"]){
+  const card=el($("gt-hub-battles"),"article","gt-hub-opponent"),title=el(card,"h3"),stats=el(card,"p","gt-small"),hp=meter(card,"HP","gt-hp"),timer=el(card,"p","gt-small"),hit=btn(card,"Throw pear",()=>useQuickPear("throw",{target:kind},"hub"));
+  hubOpponents[kind]={card,title,stats,hp,timer,hit};
+ }
+ $("gt-hub-plant").onclick=()=>{const value=$("gt-hub-plot").value;if(value!=="")useQuickPear("plant",{plot:Number(value)},"hub");};
  const grid=$("gt-plots");
  for(let i=0;i<PLOTS;i++){
   const card=el(grid,"article","gt-plot"),head=el(card,"header"),title=el(head,"h3"),stats=el(head,"span","gt-stats");title.textContent="Plot "+(i+1);
   const art=el(card,"div","gt-plot-art"),picture=el(art,"div");picture.style.cssText="width:100%;height:100%;position:absolute;inset:0";
   const plant=btn(art,"Plant selected pear",()=>send("plant",{plot:i,fruitId:singleId()}));
+  const firstPlant=btn(card,"Plant first pear",()=>useQuickPear("plant",{plot:i}),"gt-mobile-only gt-first-action");
   const panel=el(card,"div","gt-care"),state=el(panel,"p","gt-small"),growth=meter(panel,"Growth / fruit"),water=meter(panel,"Water","gt-blue"),fert=meter(panel,"Fertilizer","gt-gold");
   const controls=el(panel,"div","gt-plot-controls"),w=btn(controls,"Water",()=>send("water",{plot:i}),"gt-water");
   const qty=el(controls,"input");qty.type="number";qty.inputMode="numeric";qty.min="1";qty.step="1";qty.value="1";qty.setAttribute("aria-label","Fertilizer packs for plot "+(i+1));qty.oninput=render;
   const buy=btn(controls,"Fertilize",()=>send("fertilize",{plot:i,quantity:Number(qty.value)}),"gt-fert");
   const cut=btn(panel,"Cut tree",()=>confirmAction("cut",i,{plot:i}),"gt-cut");
-  plots.push({card,title,stats,art,picture,plant,panel,state,growth,water,fert,w,qty,buy,cut,stage:-2});
+  plots.push({card,title,stats,art,picture,plant,firstPlant,panel,state,growth,water,fert,w,qty,buy,cut,stage:-2});
  }
  for(const kind of ["enemy","boss"]){
   const card=el($("gt-opponents"),"article","gt-opponent"),title=el(card,"h3"),art=el(card,"div","gt-opponent-art");art.innerHTML=monsterArt(kind);
   const detail=el(card,"div","gt-small"),hp=meter(card,"Health","gt-hp"),timer=el(card,"div","gt-small"),reward=el(card,"div","gt-small"),thrower=btn(card,"Throw selected pear",()=>send("throw",{target:kind,fruitId:singleId()}));
-  opponents[kind]={card,title,detail,hp,timer,reward,thrower};
+  const firstThrow=btn(card,"Throw first pear",()=>useQuickPear("throw",{target:kind}),"gt-mobile-only gt-first-action");
+  opponents[kind]={card,title,detail,hp,timer,reward,thrower,firstThrow};
  }
 }
 const mobileGarden=matchMedia("(max-width: 850px), (pointer: coarse) and (max-width: 1100px)");
@@ -79,6 +95,14 @@ function render(){
  if(armed?.kind==="clearInventory"&&armed.id!==selectionKey(allIds()))armed=null;
  if(armed?.kind==="discardMany"&&armed.id!==selectionKey(selectedIds()))armed=null;
  const enabled=eligible()&&!!saved&&!busy&&!failed,pear=visibleInventory.find(p=>p.id===singleId());
+ const sorted=sortedPears(visibleInventory,sortMode);firstPear=sorted[0]||null;hubPear=selected.size>1?null:pear||firstPear;
+ const describe=p=>"ATK "+fmt(p.attack)+" · DEF "+fmt(p.defense);
+ $("gt-hub-pear").textContent=selected.size>1?"Multiple pears selected. Select one or clear selection to plant or attack.":hubPear?(pear?"Selected pear: ":"First pear: ")+describe(hubPear):"No pears available.";
+ const emptyPlots=projected?projected.plots.flatMap((t,i)=>t?[]:[i]):[],plotSelect=$("gt-hub-plot"),plotSignature=emptyPlots.join(",");
+ if(plotSelect.dataset.plots!==plotSignature){const old=plotSelect.value;plotSelect.replaceChildren();for(const i of emptyPlots){const opt=el(plotSelect,"option");opt.value=String(i);opt.textContent="Plot "+(i+1);}if(emptyPlots.includes(Number(old))&&old!=="")plotSelect.value=old;else if(!emptyPlots.length){const opt=el(plotSelect,"option");opt.value="";opt.textContent="No empty plots";}plotSelect.dataset.plots=plotSignature;}
+ plotSelect.disabled=!enabled||!emptyPlots.length;
+ $("gt-hub-plant").disabled=!enabled||!hubPear||!emptyPlots.length;
+ $("gt-hub-plant").textContent=pear?"Plant selected":"Plant first pear";
  $("gt-login").hidden=!!auth.currentUser||usingLocalFirebaseEmulators;$("gt-retry").hidden=!failed||busy;$("gt-sync").disabled=!enabled;
  $("gt-wallet").textContent=fmt(wallet);$("gt-count").textContent=fmt(visibleInventory.length)+" / "+fmt(inventoryCapacity(saved));$("gt-enemies").textContent=fmt(saved?.enemiesDefeated||0);$("gt-bosses").textContent=fmt(saved?.bossesDefeated||0);
  const pending=visibleInventory.length-(saved?.inventory.length||0);
@@ -89,6 +113,7 @@ function render(){
   if(c.stage!==st){c.picture.innerHTML=treeArt(st);c.stage=st;}
   c.stats.textContent=t?"ATK "+fmt(t.attack)+" · DEF "+fmt(t.defense):"Empty";
   c.art.classList.toggle("gt-empty",!t);c.plant.hidden=!!t;c.plant.disabled=!enabled||!pear;c.panel.hidden=!t;
+  c.firstPlant.hidden=!!t;c.firstPlant.disabled=!enabled||!firstPear||!!t;c.firstPlant.textContent="Plant first pear";c.firstPlant.title=firstPear?describe(firstPear):"No pears";
   if(!t){if(isArmed("cut",i))armed=null;continue;}
   c.state.textContent=stageNames[st]+(t.water===0?" · Needs water":st===3&&projected.inventory.length>=inventoryCapacity(saved)?" · Inventory full":"");
   setMeter(c.growth,st===3?t.fruitWork/FRUIT_WORK:t.growth/growthWork(t),st===3?"Next pear":Math.floor(100*t.growth/growthWork(t))+"%");
@@ -109,6 +134,17 @@ function render(){
   c.reward.textContent=unlocked?"Victory reward: "+fmt(Math.floor(dropCoins(op)))+"+ ★":"";
   c.thrower.textContent=pear&&unlocked?"Throw pear · "+fmt(damage(pear,op))+" damage":"Throw selected pear";
   c.thrower.disabled=!enabled||!pear||!unlocked;
+  c.firstThrow.disabled=!enabled||!firstPear||!unlocked;
+  c.firstThrow.textContent=firstPear&&unlocked?"Throw first pear · "+fmt(damage(firstPear,op))+" dmg":"Throw first pear";
+  c.firstThrow.title=firstPear?describe(firstPear):"No pears";
+  const hub=hubOpponents[kind];
+  hub.title.textContent=c.title.textContent;
+  hub.stats.textContent=unlocked?c.detail.textContent:"Unlock at tree stat "+(kind==="boss"?5:2);
+  setMeter(hub.hp,unlocked?op.hp/op.maxHp:0,unlocked?fmt(op.hp)+" / "+fmt(op.maxHp):"Locked");
+  hub.timer.textContent=unlocked&&kind==="boss"?op.deadline?"Heal in "+time(op.deadline-now):"30s battle":"";
+  hub.timer.hidden=!hub.timer.textContent;
+  hub.hit.disabled=!enabled||!hubPear||!unlocked;
+  hub.hit.textContent=(pear?"Hit selected":"Hit first")+(hubPear&&unlocked?" · "+fmt(damage(hubPear,op))+" dmg":"");
  }
  $("gt-selected").textContent=pear?"Selected pear: ATK "+fmt(pear.attack)+" · DEF "+fmt(pear.defense):selected.size>1?fmt(selected.size)+" selected · Discard only; select one to plant or throw.":"Select one pear to plant or throw, or several to discard.";
  $("gt-discard").disabled=!enabled||!selected.size;confirmationButton($("gt-discard"),isArmed("discardMany",selectionKey(selectedIds())),"Discard ("+selected.size+")");
@@ -126,8 +162,8 @@ function render(){
  if(signature!==inventorySignature){
   inventorySignature=signature;const inv=$("gt-inventory"),scroller=$("gt-inventory-scroll"),scrollTop=scroller.scrollTop,focusId=inv.contains(document.activeElement)?document.activeElement.dataset.pearId:null;inv.replaceChildren();
   if(!visibleInventory.length){const empty=el(inv,"p","gt-empty-inventory");empty.textContent=saved?"No pears yet. Water your trees to grow more.":"Loading your pear inventory…";}
-  for(const p of sortedPears(visibleInventory,sortMode)){
-   const b=btn(inv,"",()=>{armed=null;if(selected.has(p.id))selected.delete(p.id);else selected.add(p.id);render();},"gt-pear");b.dataset.pearId=String(p.id);b.innerHTML=pearArt;
+  for(const p of sorted){
+   const b=btn(inv,"",()=>{armed=null;if(selected.has(p.id))selected.delete(p.id);else selected.add(p.id);render();},"gt-pear");b.dataset.pearId=String(p.id);b.classList.toggle("gt-first-pear",p.id===firstPear?.id);b.innerHTML=pearArt;
    const text=el(b,"small","gt-pear-stats");const attack=el(text,"span"),defense=el(text,"span");attack.textContent="ATK "+fmt(p.attack);defense.textContent="DEF "+fmt(p.defense);b.setAttribute("aria-pressed",String(selected.has(p.id)));b.setAttribute("aria-label","Pear attack "+p.attack+", defense "+p.defense);b.title="ATK "+fmt(p.attack)+" · DEF "+fmt(p.defense);b.disabled=!enabled;
   }
   scroller.scrollTop=scrollTop;

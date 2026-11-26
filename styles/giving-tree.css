@@ -186,3 +186,25 @@ body #gt-area.gt-expanded{position:fixed;inset:0}
  #gt-area .gt-plots{grid-template-columns:repeat(4,minmax(0,1fr))}
  #gt-area .gt-plot-art{height:80px}
 }
+
+/* One-tap inventory actions on phones. Desktop keeps its original layout. */
+.gt-mobile-only{display:none}
+@media(max-width:850px),(pointer:coarse) and (max-width:1100px){
+ #gt-area .gt-mobile-only:not([hidden]){display:block}
+ #gt-area .gt-pear-hub{border:1px solid #8da66e;border-radius:10px;padding:7px;background:var(--ptg-tertiary,#191d28);margin-bottom:8px}
+ #gt-area .gt-pear-hub h2{margin:0 0 3px}
+ #gt-area #gt-hub-pear{overflow-wrap:anywhere;margin:3px 0 6px}
+ #gt-area #gt-hub-battles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+ #gt-area .gt-hub-opponent{display:grid;align-content:start;gap:3px;padding:5px;border:1px solid var(--ptg-border,#81768b);border-radius:8px;min-width:0}
+ #gt-area .gt-hub-opponent h3{font-size:.86rem;margin:0;overflow-wrap:anywhere}
+ #gt-area .gt-hub-opponent p{font-size:.71rem;margin:0;overflow-wrap:anywhere}
+ #gt-area .gt-hub-opponent .gt-meter-label{font-size:.69rem}
+ #gt-area .gt-hub-opponent button{width:100%;margin-top:3px;font-size:.77rem}
+ #gt-area .gt-hub-plant{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:5px;align-items:center;margin-top:6px}
+ #gt-area .gt-hub-plant label{grid-column:1/-1;font-size:.73rem}
+ #gt-area .gt-hub-plant select{min-height:44px;width:100%;font-size:16px;background:#edf3d4;color:#293a20;border:1px solid #9cb772;border-radius:7px}
+ #gt-area .gt-first-action{width:100%}
+ #gt-area #gt-inventory .gt-first-pear{position:relative}
+ #gt-area #gt-inventory .gt-first-pear::before{content:"1st";position:absolute;top:2px;left:3px;color:#395125;font-size:.62rem;font-weight:800}
+ #gt-area #gt-inventory .gt-first-pear{padding-top:14px}
+}
