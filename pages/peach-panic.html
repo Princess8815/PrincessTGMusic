@@ -1,0 +1,13 @@
+
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Peach Panic | Fruity Paradice</title>
+<link rel="stylesheet" href="../styles/site-shell.css" data-ptg-shell-style="1"><link rel="stylesheet" href="../styles/auth.css"><link rel="stylesheet" href="../styles/peach-panic.css">
+<script type="module" src="../script/site-shell.js"></script><script type="module" src="../script/auth.js"></script><script type="module" src="../script/peach-panic.js"></script></head>
+<body><div id="auth-container"></div><main class="pp-main"><header class="pp-heading"><h1>Peach Panic</h1><a href="fruity-paradice.html">← Fruity Paradice</a></header>
+<section id="pp-play-area" class="pp-area" aria-label="Peach Panic game">
+<div class="pp-hud"><div><span>Score</span><strong id="pp-score">0</strong></div><div><span>Time</span><strong id="pp-time">30.0</strong></div><div><span>Best</span><strong id="pp-best">0</strong></div><div><span>Perfect picks</span><strong id="pp-perfect">0</strong></div></div>
+<div class="pp-timebar"><span id="pp-time-fill"></span></div>
+<div class="pp-actions"><button id="pp-start" disabled>Start 30-second round</button><button id="pp-fullscreen" aria-pressed="false" aria-label="Enter fullscreen">⛶ Fullscreen</button><button id="pp-login" hidden>Sign in</button><button id="pp-retry" hidden>Retry save</button><button id="pp-refresh" hidden>Refresh round</button></div>
+<p id="pp-status" role="status" aria-live="polite">Checking account…</p>
+<div class="pp-board-wrap"><div id="pp-board" class="pp-board"><img src="../images/games/peach-panic-orchard.svg" alt="" draggable="false"><div id="pp-fruits" class="pp-fruits"></div><div id="pp-popups" class="pp-popups" aria-hidden="true"></div><div id="pp-overlay" class="pp-overlay"><strong>Peach Panic</strong><span>Pick at the golden ring for perfect points!</span></div></div></div>
+<div class="pp-legend"><span><i class="pp-dot pp-unripe"></i> Growing</span><span><i class="pp-dot pp-ripe"></i> Perfect</span><span><i class="pp-dot pp-late"></i> Overripe</span><span><i class="pp-dot pp-blue"></i> Blue ×2</span></div>
+</section><details class="pp-help"><summary>How to play</summary><p>Click or tap peaches as they ripen. The circular meter fills while they grow. Pick when the ring turns gold for 5 points; close timing gives 1–4 points. Picking too early gives zero and removes the fruit. Overripe peaches eventually disappear. Blue peaches double their points. You have 30 seconds. Peach Panic Mastery requires 240 points in one round. Your result saves to your account at the end.</p></details></main></body></html>

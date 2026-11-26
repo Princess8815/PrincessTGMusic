@@ -1,0 +1,36 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600" role="img" aria-label="Illustrated peach orchard with a broad green tree, warm sunlight, mountains and wildflowers">
+<defs>
+ <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#8ccedc"/><stop offset="1" stop-color="#fff4d1"/></linearGradient>
+ <linearGradient id="grass" x2="0" y2="1"><stop stop-color="#a7cf75"/><stop offset="1" stop-color="#4c985c"/></linearGradient>
+ <linearGradient id="bark"><stop stop-color="#6c3d39"/><stop offset=".42" stop-color="#b77c55"/><stop offset=".7" stop-color="#925b42"/><stop offset="1" stop-color="#633d37"/></linearGradient>
+ <radialGradient id="leaf"><stop stop-color="#a2c66d"/><stop offset=".55" stop-color="#6ca75c"/><stop offset="1" stop-color="#3f8051"/></radialGradient>
+ <radialGradient id="shade"><stop stop-color="#476f40" stop-opacity=".45"/><stop offset="1" stop-color="#476f40" stop-opacity="0"/></radialGradient>
+ <g id="sprig"><path d="M0 0Q-14-24-36-18Q-32 1 0 0Q9-26 31-29Q39-9 0 0Z" fill="#c2d889" opacity=".6"/><path d="M0 0Q-19-10-30-15M0 0Q17-12 27-24" fill="none" stroke="#759954" stroke-width="1.5"/></g>
+ <g id="flower"><path d="M0 8V-4" stroke="#477c45" stroke-width="2"/><g fill="#fff2d4"><circle cx="-3" cy="-4" r="4"/><circle cx="3" cy="-4" r="4"/><circle cy="-9" r="4"/></g><circle cy="-5" r="2.5" fill="#e6a55c"/></g>
+</defs>
+<rect width="900" height="600" fill="url(#sky)"/>
+<circle cx="765" cy="90" r="54" fill="#fff4c5" opacity=".92"/>
+<g fill="#fff9e9" opacity=".72"><path d="M35 115Q43 83 78 94Q103 52 147 89Q178 80 192 110Z"/><path d="M643 155Q664 123 693 139Q719 106 748 144Q780 128 808 155Z"/></g>
+<path d="M0 341Q135 167 296 336Q410 210 535 340Q699 171 900 314V600H0Z" fill="#82b6a0"/>
+<path d="M0 398Q192 271 355 391Q533 275 692 367Q808 290 900 350V600H0Z" fill="#9bc899"/>
+<path d="M0 450Q220 391 450 445Q670 391 900 440V600H0Z" fill="url(#grass)"/>
+<ellipse cx="454" cy="538" rx="295" ry="46" fill="url(#shade)"/>
+<g fill="none" stroke="#74a66b" stroke-width="4" opacity=".75"><path d="M35 563l-8-17m8 17 10-20M105 505l-10-13m10 13 8-17M790 555l-9-17m9 17 11-20M865 500l-7-15m7 15 8-13M260 574l-6-16m6 16 10-13"/></g>
+<g fill="url(#bark)" stroke="#6c4138" stroke-width="5" stroke-linejoin="round">
+ <path d="M382 534Q417 499 413 421L421 307Q376 267 333 214L354 190Q416 241 451 271Q465 210 508 154L535 171Q490 240 485 300L504 404Q490 482 533 535Q498 544 463 526Q428 546 382 534Z"/>
+ <path d="M439 399Q390 338 286 306Q246 280 215 247L230 228Q302 276 416 312L450 345Z"/>
+ <path d="M481 364Q545 296 636 277L684 230L702 247Q671 285 642 309Q567 334 491 410Z"/>
+</g>
+<g fill="none" stroke="#d59c6c" stroke-width="4" stroke-linecap="round" opacity=".62"><path d="M446 506Q428 434 450 364L450 299"/><path d="M466 496Q481 448 467 408"/><path d="M294 300Q365 315 419 351"/><path d="M508 354Q565 310 626 299"/></g>
+<g fill="url(#leaf)" stroke="#497f4a" stroke-width="4">
+ <path d="M85 280Q47 229 87 182Q83 129 145 107Q177 59 251 91Q294 39 358 76Q418 23 477 72Q546 31 600 85Q683 48 716 109Q803 78 827 153Q883 182 852 249Q886 304 830 345Q851 406 778 424Q721 465 668 422Q608 457 555 413Q505 454 452 414Q386 456 334 417Q279 466 224 418Q151 450 119 393Q57 372 85 280Z"/>
+ <ellipse cx="173" cy="229" rx="101" ry="88"/><ellipse cx="337" cy="174" rx="114" ry="100"/><ellipse cx="503" cy="151" rx="120" ry="96"/><ellipse cx="684" cy="198" rx="119" ry="96"/>
+ <ellipse cx="150" cy="334" rx="96" ry="73"/><ellipse cx="315" cy="300" rx="116" ry="105"/><ellipse cx="467" cy="284" rx="113" ry="96"/><ellipse cx="635" cy="306" rx="113" ry="97"/><ellipse cx="777" cy="324" rx="83" ry="84"/>
+ <ellipse cx="278" cy="378" rx="85" ry="69"/><ellipse cx="624" cy="375" rx="90" ry="74"/>
+</g>
+<g opacity=".75"><use href="#sprig" transform="translate(125 162) rotate(-20)"/><use href="#sprig" transform="translate(245 114) rotate(35)"/><use href="#sprig" transform="translate(372 122)"/><use href="#sprig" transform="translate(540 102) rotate(50)"/><use href="#sprig" transform="translate(716 146) rotate(60)"/><use href="#sprig" transform="translate(805 223) rotate(70)"/><use href="#sprig" transform="translate(94 310) rotate(-40)"/><use href="#sprig" transform="translate(230 275) rotate(20)"/><use href="#sprig" transform="translate(409 252) rotate(-20)"/><use href="#sprig" transform="translate(595 252) rotate(25)"/><use href="#sprig" transform="translate(750 378) rotate(100)"/><use href="#sprig" transform="translate(360 406) rotate(-45)"/><use href="#sprig" transform="translate(570 398) rotate(65)"/></g>
+<g fill="#e9d9a4" opacity=".38"><circle cx="114" cy="203" r="6"/><circle cx="288" cy="145" r="5"/><circle cx="456" cy="97" r="7"/><circle cx="591" cy="178" r="5"/><circle cx="799" cy="291" r="6"/><circle cx="192" cy="355" r="5"/><circle cx="670" cy="409" r="5"/></g>
+<g><use href="#flower" x="61" y="536"/><use href="#flower" x="83" y="552"/><use href="#flower" x="149" y="565"/><use href="#flower" x="205" y="513"/><use href="#flower" x="698" y="555"/><use href="#flower" x="734" y="525"/><use href="#flower" x="838" y="570"/></g>
+<path d="M0 590Q180 565 300 596M615 595Q750 565 900 588" stroke="#367d4d" stroke-width="6" fill="none" opacity=".45"/>
+</svg>
