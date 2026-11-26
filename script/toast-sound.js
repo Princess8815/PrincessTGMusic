@@ -20,7 +20,7 @@ function inspect(node){
 }
 export function showToast(message){
  let stack=document.getElementById("ptg-toast-stack");
- if(!stack){stack=document.createElement("div");stack.id="ptg-toast-stack";stack.className="ptg-toast-stack";stack.setAttribute("aria-live","polite");document.body.append(stack);}
+ if(!stack){stack=document.createElement("div");stack.id="ptg-toast-stack";stack.className="ptg-toast-stack";stack.setAttribute("aria-live","polite");(document.fullscreenElement||document.querySelector(".ac-expanded")||document.body).append(stack);}
  const node=document.createElement("div");node.className="ptg-toast";node.textContent=message;stack.append(node);setTimeout(()=>node.remove(),6500);
 }
 if(typeof document!=="undefined"){

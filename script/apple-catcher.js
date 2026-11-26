@@ -5,6 +5,8 @@ import {TICK_MS,CHECKPOINT_TICKS,step,newGame,difficulty,LANES} from "./apple-ca
 import {showToast} from "./toast-sound.js";
 const $=id=>document.getElementById(id),canvas=$("ac-board"),ctx=canvas.getContext("2d"),endpoint="https://princesstg-cd-store-live.transgirl1991.workers.dev/games/apple-catcher";
 let game=newGame(1),runId=null,best=0,saved=0,baseTick=0,moves=[],target=2,playing=false,busy=false,failed=null,epoch=0,frame=0,last=0,acc=0,seen=new Set(),loaded=false;
+const playArea=$("ac-play-area"),fullscreenButton=$("ac-fullscreen"),boardWrap=canvas.parentElement;
+const held=new Set();let keyRepeatTick=0,expanded=false,oldOverflow="";
 const eligible=()=>!!auth.currentUser?.emailVerified&&!usingLocalFirebaseEmulators;
 function status(s){$("ac-status").textContent=s;}
 function controls(){
@@ -14,6 +16,9 @@ function controls(){
 }
 function draw(){
  const w=600,h=420,ground=350;
+ const rect=canvas.getBoundingClientRect(),ratio=Math.min(3,window.devicePixelRatio||1),pw=Math.max(1,Math.round(rect.width*ratio)),ph=Math.max(1,Math.round(rect.height*ratio));
+ if(canvas.width!==pw||canvas.height!==ph){canvas.width=pw;canvas.height=ph;}
+ ctx.setTransform(canvas.width/w,0,0,canvas.height/h,0,0);
  ctx.clearRect(0,0,w,h);ctx.fillStyle="#d7f1cd";ctx.fillRect(0,0,w,h);
  ctx.fillStyle="#7dad64";ctx.fillRect(0,0,w,48);ctx.fillStyle="#527d42";for(let i=0;i<8;i++){ctx.beginPath();ctx.arc(i*88,16,52,0,Math.PI*2);ctx.fill();}
  ctx.fillStyle="#8ac66b";ctx.fillRect(0,ground,w,h-ground);
@@ -21,10 +26,10 @@ function draw(){
  for(const a of game.apples){
   const x=(a.lane+.5)*w/LANES,y=44+(ground-70)*Math.max(0,Math.min(1,(game.tick-a.born)/(a.due-a.born)));
   ctx.fillStyle=a.rotten?"#71683c":"#dd3d48";ctx.strokeStyle=a.rotten?"#443e2a":"#9c2431";ctx.lineWidth=2;
-  ctx.beginPath();ctx.ellipse(x-9,y,15,17,-.25,0,Math.PI*2);ctx.ellipse(x+9,y,15,17,.25,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.ellipse(x-11,y,19,21,-.25,0,Math.PI*2);ctx.ellipse(x+11,y,19,21,.25,0,Math.PI*2);ctx.fill();ctx.stroke();
   ctx.strokeStyle="#65412b";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(x,y-12);ctx.lineTo(x+3,y-27);ctx.stroke();
   ctx.fillStyle="#3d813b";ctx.beginPath();ctx.ellipse(x+10,y-23,10,5,-.45,0,Math.PI*2);ctx.fill();
-  if(a.rotten){ctx.fillStyle="#302a22";for(const [dx,dy] of [[-9,-2],[8,5],[0,10]]){ctx.beginPath();ctx.arc(x+dx,y+dy,4,0,Math.PI*2);ctx.fill();}ctx.strokeStyle="#fff1bb";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x-8,y-8);ctx.lineTo(x+8,y+8);ctx.moveTo(x+8,y-8);ctx.lineTo(x-8,y+8);ctx.stroke();}
+  if(a.rotten){ctx.fillStyle="#302a22";for(const [dx,dy] of [[-9,-2],[8,5],[0,10]]){ctx.beginPath();ctx.arc(x+dx,y+dy,4,0,Math.PI*2);ctx.fill();}ctx.strokeStyle="#fff1bb";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(x-12,y-12);ctx.lineTo(x+12,y+12);ctx.moveTo(x+12,y-12);ctx.lineTo(x-12,y+12);ctx.stroke();}
   else{ctx.fillStyle="#ffb3a6";ctx.beginPath();ctx.ellipse(x-11,y-8,4,7,.5,0,Math.PI*2);ctx.fill();}
  }
  const bx=(game.lane+.5)*w/LANES;
@@ -50,7 +55,9 @@ function pause(){playing=false;cancelAnimationFrame(frame);controls();}
 function resume(){playing=true;last=0;acc=0;status("Catch the fresh apples!");controls();frame=requestAnimationFrame(loop);}
 function loop(now){
  if(!playing)return;if(!last)last=now;acc+=Math.min(250,now-last);last=now;
- while(acc>=TICK_MS&&playing){acc-=TICK_MS;const tick=game.tick+1;if(target!==game.target)moves.push([tick,target]);game=step(game,target).state;
+ while(acc>=TICK_MS&&playing){acc-=TICK_MS;const tick=game.tick+1;
+  if(held.size&&tick>=keyRepeatTick){const dir=heldDirection();if(dir)aim(target+dir);keyRepeatTick=tick+3;}
+  if(target!==game.target)moves.push([tick,target]);game=step(game,target).state;
   if(game.done||game.tick-baseTick>=CHECKPOINT_TICKS){void save(game.done?"finish":"checkpoint");break;}
  }
  draw();if(playing)frame=requestAnimationFrame(loop);
@@ -65,7 +72,7 @@ async function save(action){
 }
 $("ac-start").onclick=async()=>{
  if(busy||playing||!eligible())return;const current=epoch,id=crypto.randomUUID();busy=true;controls();status("Starting your orchard…");
- try{const data=await request("start",{runId:id});if(current!==epoch)return;accept(data);busy=false;resume();}
+ try{const data=await request("start",{runId:id});if(current!==epoch)return;accept(data);busy=false;resume();canvas.focus({preventScroll:true});}
  catch(e){if(current===epoch){busy=false;status(e.message);controls();}}
 };
 $("ac-retry").onclick=()=>save(failed?.action||"checkpoint");
@@ -73,14 +80,46 @@ $("ac-finish").onclick=()=>save("finish");
 $("ac-login").onclick=()=>$("auth-open")?.click();
 function aim(lane){if(playing)target=Math.max(0,Math.min(LANES-1,lane));}
 for(const b of document.querySelectorAll("[data-lane]"))b.onclick=()=>aim(Number(b.dataset.lane));
-function pointer(e){const r=canvas.getBoundingClientRect();aim(Math.floor((e.clientX-r.left)/r.width*LANES));}
-canvas.addEventListener("pointerdown",e=>{canvas.setPointerCapture(e.pointerId);pointer(e);});
+function pointer(e){held.clear();const r=canvas.getBoundingClientRect();aim(Math.floor((e.clientX-r.left)/r.width*LANES));}
+canvas.addEventListener("pointerdown",e=>{canvas.focus({preventScroll:true});canvas.setPointerCapture(e.pointerId);pointer(e);});
 canvas.addEventListener("pointermove",e=>{if(e.pointerType==="mouse"||e.buttons)pointer(e);});
-document.addEventListener("keydown",e=>{if(!playing||e.ctrlKey||e.metaKey||e.altKey||/INPUT|TEXTAREA|SELECT/.test(e.target?.tagName))return;const k=e.key.toLowerCase();if(["arrowleft","a","arrowright","d"].includes(k)){e.preventDefault();aim(target+(["arrowleft","a"].includes(k)?-1:1));}else if(/^[1-5]$/.test(k)){e.preventDefault();aim(Number(k)-1);}});
-document.addEventListener("visibilitychange",()=>{if(document.hidden&&playing)void save("checkpoint");else if(!document.hidden&&runId&&!game.done&&!busy&&!failed&&!playing&&$("ac-status").textContent.startsWith("Saved. Return"))resume();});
+function heldDirection(){const left=held.has("arrowleft")||held.has("a"),right=held.has("arrowright")||held.has("d");return Number(right)-Number(left);}
+function keyboardAvailable(e){return !e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.target?.closest?.("input,textarea,select,[contenteditable]:not([contenteditable=false]),dialog[open]")&&!document.querySelector("dialog[open]");}
+document.addEventListener("keydown",e=>{
+ if(e.key==="Escape"&&expanded){e.preventDefault();exitExpanded();return;}
+ if(!keyboardAvailable(e)||(!playing&&!busy))return;
+ const k=e.key.toLowerCase();
+ if(["arrowleft","a","arrowright","d"].includes(k)){
+  e.preventDefault();
+  if(!held.has(k)){held.add(k);const dir=heldDirection();if(dir)aim(target+dir);keyRepeatTick=game.tick+4;}
+ }else if(/^[1-5]$/.test(k)){e.preventDefault();held.clear();aim(Number(k)-1);}
+}, {capture:true});
+document.addEventListener("keyup",e=>held.delete(e.key.toLowerCase()),{capture:true});
+window.addEventListener("blur",()=>held.clear());
+function refreshFullscreen(){
+ const active=document.fullscreenElement===playArea||expanded;
+ fullscreenButton.textContent=active?"⛶ Exit fullscreen":"⛶ Fullscreen";
+ fullscreenButton.setAttribute("aria-pressed",String(active));
+ fullscreenButton.setAttribute("aria-label",active?"Exit fullscreen":"Enter fullscreen");
+ const stack=document.getElementById("ptg-toast-stack");
+ if(stack)(active?playArea:document.body).append(stack);
+ requestAnimationFrame(draw);
+}
+function exitExpanded(){if(!expanded)return;expanded=false;playArea.classList.remove("ac-expanded");document.body.style.overflow=oldOverflow;refreshFullscreen();fullscreenButton.focus({preventScroll:true});}
+fullscreenButton.addEventListener("click",async()=>{
+ if(expanded){exitExpanded();return;}
+ if(document.fullscreenElement===playArea){await document.exitFullscreen().catch(()=>{});return;}
+ try{if(!playArea.requestFullscreen)throw Error("Fullscreen unavailable");await playArea.requestFullscreen();}
+ catch{oldOverflow=document.body.style.overflow;document.body.style.overflow="hidden";expanded=true;playArea.classList.add("ac-expanded");refreshFullscreen();}
+ canvas.focus({preventScroll:true});
+});
+document.addEventListener("fullscreenchange",()=>{refreshFullscreen();if(document.fullscreenElement===playArea)canvas.focus({preventScroll:true});});
+if(typeof ResizeObserver!=="undefined")new ResizeObserver(()=>draw()).observe(boardWrap);else window.addEventListener("resize",draw);
+
+document.addEventListener("visibilitychange",()=>{if(document.hidden)held.clear();if(document.hidden&&playing)void save("checkpoint");else if(!document.hidden&&runId&&!game.done&&!busy&&!failed&&!playing&&$("ac-status").textContent.startsWith("Saved. Return"))resume();});
 window.addEventListener("beforeunload",e=>{if(playing||busy||failed){e.preventDefault();e.returnValue="";}});
 onAuthStateChanged(auth,async user=>{
- const current=++epoch;pause();busy=false;failed=null;loaded=false;runId=null;game=newGame(1);saved=0;best=0;seen=new Set();draw();controls();
+ const current=++epoch;held.clear();pause();busy=false;failed=null;loaded=false;runId=null;game=newGame(1);saved=0;best=0;seen=new Set();draw();controls();
  if(!eligible()){status(usingLocalFirebaseEmulators?"Choose Live Firebase in Settings to play.":!user?"Sign in to play.":"Verify your email to play.");return;}
  busy=true;controls();try{const data=await request("state");if(current!==epoch)return;accept(data,false);busy=false;loaded=true;controls();if(data&&!data.closed&&!data.state.done){status("Resuming your saved run.");resume();}else status("Ready to play.");}
  catch(e){if(current===epoch){busy=false;loaded=true;status(e.message);controls();}}
