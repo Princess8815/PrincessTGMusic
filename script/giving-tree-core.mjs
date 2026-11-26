@@ -21,7 +21,7 @@ const copy=s=>({...s,plots:s.plots.map(t=>t?{...t}:null),inventory:s.inventory.m
 const effects=()=>({coins:0,spent:0,fruits:0,rewards:[],enemies:0,bosses:0});
 function credit(s,fx,quarters){
  const units=s.coinQuarters+quarters,whole=Math.floor(units/4);
- s.coinQuarters=units%4;s.totalCoins+=whole;fx.coins+=whole;
+ s.coinQuarters=units%4;s.totalCoins+=whole;fx.coins+=whole;return whole;
 }
 function unlock(s){
  if(s.plots.some(t=>t&&Math.max(t.attack,t.defense)>=2))s.enemiesUnlocked=true;
@@ -132,10 +132,10 @@ export function gardenAction(state,action,now,wallet=0,rng=Math.random){
   if(hit===0){ensureSeed(s);return done(true,"The pear was blocked! It dealt no damage.");}
   op.hp=Math.max(0,op.hp-hit);
   if(op.hp===0){
-   credit(s,fx,dropQuarters(op));
+   const earned=credit(s,fx,dropQuarters(op));
    if(kind==="boss"){s.bossesDefeated++;fx.bosses++;s.boss=makeOpponent(kind,s.bossesDefeated);}
    else{s.enemiesDefeated++;fx.enemies++;s.enemy=makeOpponent(kind,s.enemiesDefeated);}
-   ensureSeed(s);return done(true,(kind==="boss"?"Boss":"Enemy")+" defeated! "+dropCoins(op).toLocaleString()+" Star Coin reward earned.");
+   ensureSeed(s);return done(true,(kind==="boss"?"Boss":"Enemy")+" defeated! "+earned.toLocaleString()+" whole Star Coins credited.");
   }
   ensureSeed(s);return done(true,"Pear dealt "+hit.toLocaleString()+" damage.");
  }

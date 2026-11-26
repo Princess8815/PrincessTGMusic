@@ -56,7 +56,7 @@ function render(){
   setMeter(c.water,t.water/WATER_MS,time(t.water));
   setMeter(c.fert,t.fertilizer/FERT_MS,t.fertilizer?time(t.fertilizer)+" boost":"None");
   c.w.disabled=!enabled||actual.water===WATER_MS&&t.water===WATER_MS;
-  const q=Number(c.qty.value),valid=Number.isSafeInteger(q)&&q>0&&Number.isSafeInteger(q*FERT_COST);
+  const q=Number(c.qty.value),valid=Number.isSafeInteger(q)&&q>0&&Number.isSafeInteger(q*FERT_COST)&&Number.isSafeInteger(actual.fertilizer+q*FERT_MS);
   c.buy.textContent="Fertilize · "+(valid?fmt(q*FERT_COST):"?")+" ★";c.buy.disabled=!enabled||!valid||wallet<q*FERT_COST;
   c.cut.disabled=!enabled||st!==3;
  }
@@ -67,7 +67,7 @@ function render(){
   c.detail.textContent=unlocked?"ATK "+fmt(op.attack)+" · DEF "+fmt(op.defense):"Plant a tree with attack or defense "+(kind==="boss"?5:2)+" to unlock.";
   setMeter(c.hp,unlocked?op.hp/op.maxHp:0,unlocked?fmt(op.hp)+" / "+fmt(op.maxHp):"Locked");
   c.timer.textContent=unlocked&&kind==="boss"?(op.deadline?"Full heal in "+time(op.deadline-now):"30-second battle timer starts on first throw."):unlocked?"Does not attack you.":"";
-  c.reward.textContent=unlocked?"Victory reward: "+fmt(dropCoins(op))+" ★":"";
+  c.reward.textContent=unlocked?"Victory reward: "+fmt(Math.floor(dropCoins(op)))+"+ ★":"";
   c.thrower.textContent=pear&&unlocked?"Throw pear · "+fmt(damage(pear,op))+" damage":"Throw selected pear";
   c.thrower.disabled=!enabled||!pear||!unlocked;
  }
