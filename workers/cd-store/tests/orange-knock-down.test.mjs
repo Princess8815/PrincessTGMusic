@@ -313,3 +313,18 @@ test("tightened allowances still permit sampled wins and enforce game over after
   assert.ok(orangeGameOver(s.board));assert.equal(applyOrange(s,{kind:"shot",shot:{type:"marina",angle:20,power:100}}).applied,false);
  }
 });
+
+test("cached collision geometry preserves deterministic server and browser results across successive gravity shots",()=>{
+ for(const level of [17,29,249]){
+  const map=campaignMap(level,123);let board=boardFromMap(map);
+  for(const shot of [{type:"marina",angle:4,power:100},{type:"sploder",angle:15,power:100},{type:"aqualily",angle:25,power:95}]){
+   if(!board.remaining.length)break;
+   const snapshot=JSON.stringify(board),server=simulateShot(map,board,shot),browser=simulateShot(map,board,shot,true);
+   assert.equal(JSON.stringify(board),snapshot);
+   assert.deepEqual(server,simulateShot(map,board,shot));
+   assert.deepEqual(server,{...browser,frames:[],worldFrames:[]});
+   const {hp,remaining,piecePoses,orangePoses,pieceOffsets,orangeOffsets,debrisPoses}=server;
+   board={...board,hp,remaining,piecePoses,orangePoses,pieceOffsets,orangeOffsets,debrisPoses};
+  }
+ }
+});

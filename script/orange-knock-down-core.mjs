@@ -501,12 +501,24 @@ function gravityShot(base,board,shot,trace){
  for(const o of scene.oranges)if(remaining.has(o.id)){const a=make("fruit",o.id,o.x,o.y,0,14,14);fruit.push(a);all.push(a);}
  for(const b of board.debrisPoses||[]){const part=make("debris",debris.length,b.x,b.y,b.a,b.hw,b.hh,false,b.material);debris.push(part);all.push(part);}
  const getBlock=id=>blocks.find(b=>b.id===id);
- function axes(b){const x=Math.cos(b.a),y=Math.sin(b.a);return {x,y,u:-y,v:x};}
- function extent(b){if(b.kind==="fruit")return {x:14,y:14};const a=axes(b);return {x:Math.abs(a.x)*b.hw+Math.abs(a.u)*b.hh,y:Math.abs(a.y)*b.hw+Math.abs(a.v)*b.hh};}
+ // Angles only change during integration; contacts change position, not angle.
+ // Cache the rotation and AABB once per angle, including sleeping bodies.
+ const fruitExtent={x:14,y:14};
+ function axes(b){
+  let a=b.geometry;
+  if(!a||a.angle!==b.a){const x=Math.cos(b.a),y=Math.sin(b.a),u=-y,v=x;
+   a=b.geometry={angle:b.a,x,y,u,v,extent:{x:Math.abs(x)*b.hw+Math.abs(u)*b.hh,y:Math.abs(y)*b.hw+Math.abs(v)*b.hh}};
+  }
+  return a;
+ }
+ function extent(b){return b.kind==="fruit"?fruitExtent:axes(b).extent;}
  function segment(b){const a=axes(b);return {...scene.branches[b.id],x1:b.x-a.x*b.hw,y1:b.y-a.y*b.hw,x2:b.x+a.x*b.hw,y2:b.y+a.y*b.hw,width:b.hh*2};}
  function supportPoint(b,nx,ny){if(b.kind==="fruit")return {x:b.x+nx*14,y:b.y+ny*14};const a=axes(b),u=nx*a.x+ny*a.y,v=nx*a.u+ny*a.v;return {x:b.x+a.x*b.hw*Math.sign(Math.abs(u)<.025?0:u)+a.u*b.hh*Math.sign(Math.abs(v)<.025?0:v),y:b.y+a.y*b.hw*Math.sign(Math.abs(u)<.025?0:u)+a.v*b.hh*Math.sign(Math.abs(v)<.025?0:v)};}
  function circleRect(x,y,r,b){
-  const a=axes(b),dx=x-b.x,dy=y-b.y,lx=dx*a.x+dy*a.y,ly=dx*a.u+dy*a.v,qx=clamp(lx,-b.hw,b.hw),qy=clamp(ly,-b.hh,b.hh);
+  const a=axes(b),dx=x-b.x,dy=y-b.y;
+  // Reject distant projectile/body pairs before the rotated narrow phase.
+  if(Math.abs(dx)>a.extent.x+r+1e-7||Math.abs(dy)>a.extent.y+r+1e-7)return null;
+  const lx=dx*a.x+dy*a.y,ly=dx*a.u+dy*a.v,qx=clamp(lx,-b.hw,b.hw),qy=clamp(ly,-b.hh,b.hh);
   let nx=lx-qx,ny=ly-qy,dist=Math.hypot(nx,ny),depth;
   if(dist>=r)return null;
   if(dist<1e-8){const ax=b.hw-Math.abs(lx),ay=b.hh-Math.abs(ly);if(ax<ay){nx=lx>=0?1:-1;ny=0;depth=r+ax;}else{nx=0;ny=ly>=0?1:-1;depth=r+ay;}}
@@ -520,7 +532,9 @@ function gravityShot(base,board,shot,trace){
   if(a.kind==="fruit"){const q=circleRect(a.x,a.y,14,b);return q?{...q,nx:-q.nx,ny:-q.ny}:null;}
   if(b.kind==="fruit")return circleRect(b.x,b.y,14,a);
   const aa=axes(a),bb=axes(b);let best=Infinity,nx=0,ny=0;
-  for(const [x,y] of [[aa.x,aa.y],[aa.u,aa.v],[bb.x,bb.y],[bb.u,bb.v]]){
+  // Same SAT axis order, without allocating four arrays on every contact.
+  for(let axis=0;axis<4;axis++){
+   const basis=axis<2?aa:bb,x=axis%2?basis.u:basis.x,y=axis%2?basis.v:basis.y;
    const ra=a.hw*Math.abs(x*aa.x+y*aa.y)+a.hh*Math.abs(x*aa.u+y*aa.v),rb=b.hw*Math.abs(x*bb.x+y*bb.y)+b.hh*Math.abs(x*bb.u+y*bb.v),dot=dx*x+dy*y,over=ra+rb-Math.abs(dot);
    if(over<=0)return null;if(over<best){best=over;nx=x*(dot>=0?1:-1);ny=y*(dot>=0?1:-1);}
   }
