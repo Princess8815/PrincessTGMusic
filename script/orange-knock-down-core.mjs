@@ -795,12 +795,15 @@ function gravityShot(base,board,shot,trace){
   return {nx,ny,depth:best,x:clamp((p.x+q.x)/2,Math.max(a.x-ea.x,b.x-eb.x),Math.min(a.x+ea.x,b.x+eb.x)),y:clamp((p.y+q.y)/2,Math.max(a.y-ea.y,b.y-eb.y),Math.min(a.y+ea.y,b.y+eb.y))};
  }
  function impulse(b,ix,iy,x=b.x,y=b.y){if(!b.inv)return;b.vx=clamp(b.vx+ix*b.inv,-26,26);b.vy=clamp(b.vy+iy*b.inv,-26,26);if(b.kind!=="fruit")b.w=clamp(b.w+((x-b.x)*iy-(y-b.y)*ix)*b.ii,-.18,.18);}
- function resolve(a,b,q){
+ const contactSound=new Map();
+ function blockSound(b,t,strength){if(b.kind==="fruit"||strength<2.7)return;const key=b.kind+":"+b.id;if(t-(contactSound.get(key)??-100)<10)return;contactSound.set(key,t);events.push({kind:"blockContact",material:b.material,x:b.x,y:b.y,t,strength:Math.min(24,strength)});}
+ function resolve(a,b,q,t){
   const inv=a.inv+b.inv;if(!inv)return;
   const {nx,ny,depth,x,y}=q,correction=Math.max(0,depth-.08)*.82/inv;
   a.x-=nx*correction*a.inv;a.y-=ny*correction*a.inv;b.x+=nx*correction*b.inv;b.y+=ny*correction*b.inv;
   const arx=x-a.x,ary=y-a.y,brx=x-b.x,bry=y-b.y,rvx=b.vx-b.w*bry-a.vx+a.w*ary,rvy=b.vy+b.w*brx-a.vy-a.w*arx,vn=rvx*nx+rvy*ny;
   if(vn>=0)return;
+  blockSound(a,t,-vn);blockSound(b,t,-vn);
   const ac=arx*ny-ary*nx,bc=brx*ny-bry*nx,den=inv+ac*ac*a.ii+bc*bc*b.ii;
   const force=-(1+(Math.abs(vn)>2?.18:0))*vn/den;
   impulse(a,-nx*force,-ny*force,x,y);impulse(b,nx*force,ny*force,x,y);
@@ -818,7 +821,7 @@ function gravityShot(base,board,shot,trace){
  }
  function removeFruit(b,t){if(!b.alive)return;b.alive=false;remaining.delete(b.id);events.push({kind:"orange",id:b.id,t,x:b.x,y:b.y});}
  function breakBlock(b,t,ix,iy){
-  if(!b.alive||!b.inv)return;b.alive=false;hp[b.id]=0;events.push({kind:"branch",id:b.id,t});
+  if(!b.alive||!b.inv)return;b.alive=false;hp[b.id]=0;events.push({kind:"branch",id:b.id,t,material:b.material,x:b.x,y:b.y});
   const a=axes(b),glass=b.material==="glass",count=glass?Math.min(5,Math.max(3,Math.ceil(b.hw/22))):2;
   if(glass)events.push({kind:"glassShatter",id:b.id,t,x:b.x,y:b.y,count});
   for(let k=0;k<count;k++){
@@ -838,13 +841,13 @@ function gravityShot(base,board,shot,trace){
   if(!awake)return;
   for(const b of all){if(!b.alive||!b.inv||!b.active)continue;b.vy+=.38*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;b.a+=b.w*dt;b.vx*=.993;b.w*=.987;}
   for(let iter=0;iter<3;iter++){
-   for(const b of all){if(!b.alive||!b.inv||!b.active)continue;const e=extent(b);if(b.y+e.y>GROUND){const p=supportPoint(b,0,1);b.y=GROUND-e.y;const downward=b.vy+b.w*(p.x-b.x);if(downward>0){const den=b.inv+(p.x-b.x)**2*b.ii;impulse(b,0,-downward*(downward>2?1.18:1)/den,p.x,GROUND);}b.vx*=.86;b.w*=.76;}if(b.x-e.x<160){b.x=160+e.x;b.vx=Math.abs(b.vx)*.28;}if(b.x+e.x>WIDTH){b.x=WIDTH-e.x;b.vx=-Math.abs(b.vx)*.28;}}
-   for(let i=0;i<all.length;i++){const a=all[i];if(!a.alive)continue;for(let k=i+1;k<all.length;k++){const b=all[k];if(!b.alive||!a.inv&&!b.inv||!a.active&&!b.active)continue;const q=contact(a,b);if(q){wake(a);wake(b);resolve(a,b,q);}}}
+   for(const b of all){if(!b.alive||!b.inv||!b.active)continue;const e=extent(b);if(b.y+e.y>GROUND){const p=supportPoint(b,0,1);b.y=GROUND-e.y;const downward=b.vy+b.w*(p.x-b.x);if(downward>0){blockSound(b,t,downward);const den=b.inv+(p.x-b.x)**2*b.ii;impulse(b,0,-downward*(downward>2?1.18:1)/den,p.x,GROUND);}b.vx*=.86;b.w*=.76;}if(b.x-e.x<160){b.x=160+e.x;b.vx=Math.abs(b.vx)*.28;}if(b.x+e.x>WIDTH){b.x=WIDTH-e.x;b.vx=-Math.abs(b.vx)*.28;}}
+   for(let i=0;i<all.length;i++){const a=all[i];if(!a.alive)continue;for(let k=i+1;k<all.length;k++){const b=all[k];if(!b.alive||!a.inv&&!b.inv||!a.active&&!b.active)continue;const q=contact(a,b);if(q){wake(a);wake(b);resolve(a,b,q,t);}}}
   }
   for(const b of all){if(!b.alive||!b.inv||!b.active)continue;const e=extent(b),onGround=b.y+e.y>=GROUND-1.2,shift=Math.hypot(b.x-b.ox,b.y-b.oy),rot=Math.abs(b.a-b.oa);b.ground=onGround?b.ground+dt:0;
    if(b.kind==="fruit"){if(onGround&&(b.touched||shift>8)&&b.ground>=5)removeFruit(b,t);}
    else if(b.kind==="debris"){if(b.ground>=9)b.alive=false;}
-   else if(b.ground>=9&&(shift>14||rot>.20||b.touched&&hp[b.id]<scene.branches[b.id].hp||b.oy+extent({...b,a:b.oa}).y<GROUND-3&&b.y>b.oy+3)){b.alive=false;hp[b.id]=0;events.push({kind:"branch",id:b.id,t,ground:true});}
+   else if(b.ground>=9&&(shift>14||rot>.20||b.touched&&hp[b.id]<scene.branches[b.id].hp||b.oy+extent({...b,a:b.oa}).y<GROUND-3&&b.y>b.oy+3)){b.alive=false;hp[b.id]=0;events.push({kind:"branch",id:b.id,t,ground:true,material:b.material,x:b.x,y:b.y});}
   }
  }
  const projectiles=shot.type==="sniper"?[]:(shot.type==="aqualily"?[-9,0,9]:[0]).map(a=>({...velocity(shot.angle+a,shot.power),x:SLING.x,y:SLING.y,type:shot.type,r:shot.type==="bulky"?23:shot.type==="aqualily"?11:15,active:true,hit:new Set(),fruitHits:new Set()}));
@@ -869,14 +872,14 @@ function gravityShot(base,board,shot,trace){
      wake(b);p.hit.add(b.id);b.touched=true;
      if(p.type==="sploder"){blast(p.x,p.y,t);p.active=false;break;}
      const before=hp[b.id],damaged=before<original.hp,damage=p.type==="bulky"?3:1;
-     hp[b.id]=Math.max(0,before-damage);events.push({kind:"damage",id:b.id,hp:hp[b.id],t});
+     hp[b.id]=Math.max(0,before-damage);events.push({kind:"damage",id:b.id,hp:hp[b.id],t,material:b.material,x:b.x,y:b.y});
      const impact=clamp(-dot*.65,1.5,13),ix=-q.nx*impact,iy=-q.ny*impact;
      impulse(b,ix/b.inv,iy/b.inv,q.x,q.y);
      if(!hp[b.id]){breakBlock(b,t,ix,iy);if(original.burst)blast(b.x,b.y,t);}
      // A fresh solid surface always rebounds Marina, even if it cracks.
      // Only an already-weakened piece and enough incoming momentum allow a push-through.
      if(damaged&&speed>8&&(!hp[b.id]||impact>6)){if(b.alive){b.x+=ix*1.6;b.y+=iy*1.6;}p.vx*=.58;p.vy*=.58;events.push({kind:"pushThrough",id:b.id,t});}
-     else{p.x+=q.nx*(q.depth+.5);p.y+=q.ny*(q.depth+.5);p.vx=(p.vx-2*dot*q.nx)*.58;p.vy=(p.vy-2*dot*q.ny)*.58;events.push({kind:"impactBounce",id:b.id,x:p.x,y:p.y,t,vx:round(p.vx),vy:round(p.vy)});}
+     else{p.x+=q.nx*(q.depth+.5);p.y+=q.ny*(q.depth+.5);p.vx=(p.vx-2*dot*q.nx)*.58;p.vy=(p.vy-2*dot*q.ny)*.58;events.push({kind:"impactBounce",id:b.id,material:b.material,x:p.x,y:p.y,t,vx:round(p.vx),vy:round(p.vy)});}
      break;
     }
     if(!p.active)continue;
@@ -968,6 +971,11 @@ export function applyOrange(state,action,rng=Math.random){
  if(action.kind==="resetCampaign"){
   s.rewardedThrough=highestRewarded(s);s.level=1;s.cleared=0;s.version=5;s.layoutVersion=5;delete s.levelMap;delete s.milestones;s.board=freshLevel(1,s.seed,5);
   return done(true,"Campaign restarted at level 1. Wallet, specials and collectibles kept.");
+ }
+ if(action.kind==="selectLevel"){
+  if(!Number.isInteger(action.level)||action.level<1||action.level>Math.min(1000000,s.cleared+1))return done(false,"That level is locked.");
+  s.level=action.level;s.version=5;s.layoutVersion=5;delete s.levelMap;delete s.milestones;s.board=freshLevel(s.level,s.seed,5);
+  return done(true,"Level "+s.level+" ready. Used special throws are not refunded.");
  }
  if(action.kind==="retry"){if(s.board.won)return done(false,"This level is already complete.");s.board=boardFromMap(stateMap(s));return done(true,"Level reset. Used power-ups are not refunded.");}
  if(action.kind==="next"){if(!s.board.won)return done(false,"Clear all the oranges first.");if(s.level>=1000000)return done(false,"Maximum supported level reached.");s.level++;s.version=5;s.layoutVersion=5;delete s.levelMap;s.board=freshLevel(s.level,s.seed,5);return done(true,"Level "+s.level+" ready.");}

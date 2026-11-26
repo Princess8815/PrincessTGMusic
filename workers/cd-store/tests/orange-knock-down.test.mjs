@@ -263,3 +263,26 @@ test("glass shatters into multiple physical shards and rebounds Marina",()=>{
  const board=boardFromMap(map),shot={type:"marina",angle:0,power:100},r=simulateShot(map,board,shot,true);
  const event=r.events.find(e=>e.kind==="glassShatter");assert.ok(event&&event.count>=3);assert.ok(r.worldFrames.some(f=>f.debris.filter(b=>b.material==="glass").length>=3));assert.ok(r.events.some(e=>e.kind==="impactBounce"&&e.vx<0));assert.deepEqual(r.piecePoses,simulateShot(map,board,shot).piecePoses);
 });
+
+test("level selection is gated by campaign progress and preserves rewards and inventory",()=>{
+ const s=initialOrange(1);s.cleared=4;s.level=5;s.rewardedThrough=4;s.totalStars=10;
+ assert.equal(applyOrange(s,{kind:"selectLevel",level:6}).applied,false);
+ const r=applyOrange(s,{kind:"selectLevel",level:2});assert.equal(r.applied,true);assert.equal(r.state.level,2);assert.equal(r.state.cleared,4);assert.equal(r.state.totalStars,10);assert.deepEqual(r.state.inventory,s.inventory);
+ assert.equal(applyOrange(r.state,{kind:"resetCampaign"}).state.totalStars,10);
+});
+test("star history keeps best only, is atomic and cannot duplicate coin rewards",async()=>{
+ const root="documents",uid="stars",user="users/"+uid,path=user+"/privateGames/orangeKnockDown",wp=user+"/wallets/starCoins";
+ const map=designMap({title:"Single fruit",shots:5,two:1,three:3,pieces:[],oranges:[{x:500,y:300,branch:-1}]});
+ const s=initialOrange(1);s.cleared=1;s.level=2;s.rewardedThrough=1;s.levelMap=map;s.board=boardFromMap(map);s.board.marina=1;s.inventory.sniper=8;
+ const store=new Map([[user,{updateTime:"1",fields:{status:{stringValue:"active"}}}],[path,{updateTime:"2",fields:{payload:{stringValue:JSON.stringify({state:s})}}}],[wp,{updateTime:"3",fields:{balance:{integerValue:"20"}}}]]);
+ let commits=0,lastWrites=[];
+ const read=async p=>store.get(p)||null,commit=async writes=>{lastWrites=writes;commits++;for(const w of writes)if(w.update)store.set(w.update.name.slice(root.length+1),{updateTime:String(commits+3),fields:w.update.fields});return true;};
+ const call=(kind,n,revision,extra={})=>orangeWithStorage({read,commit,root,uid,input:{kind,requestId:"00000000-0000-4000-8000-"+String(n).padStart(12,"0"),revision,...extra},configure:async(_,s)=>{s.levelMap=map;s.board=boardFromMap(map);},rng:()=>.99});
+ let win=await call("shot",1,0,{shot:{type:"sniper",target:0}});assert.equal(win.bestStars,2);assert.equal(win.starsGained,2);assert.equal(win.state.totalStars,3);assert.equal(win.wallet,30);assert.ok(lastWrites.some(w=>w.update?.name.endsWith("/orangeStarPages/0")));
+ const repeat=await call("shot",1,0,{shot:{type:"sniper",target:0}});assert.equal(repeat.state.totalStars,3);assert.equal(commits,1);
+ let replay=await call("selectLevel",2,1,{level:2});assert.equal(replay.state.board.marina,5);
+ win=await call("shot",3,2,{shot:{type:"sniper",target:0}});assert.equal(win.bestStars,3);assert.equal(win.starsGained,1);assert.equal(win.state.totalStars,4);assert.equal(win.wallet,30);
+ replay=await call("selectLevel",4,3,{level:2});win=await call("shot",5,4,{shot:{type:"sniper",target:0}});assert.equal(win.starsGained,0);assert.equal(win.state.totalStars,4);
+ const page=await call("levels",6,0,{page:0});assert.equal(page.totalStars,4);assert.deepEqual(page.levels.slice(0,3),[{level:1,stars:1},{level:2,stars:3},{level:3,stars:0}]);
+ const reset=await call("resetCampaign",7,5);assert.equal(reset.state.totalStars,4);const locked=await call("selectLevel",8,6,{level:2});assert.equal(locked.applied,false);
+});
