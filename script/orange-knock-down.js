@@ -8,7 +8,7 @@ const endpoint="https://princesstg-cd-store-live.transgirl1991.workers.dev/games
 const eligible=()=>!!auth.currentUser?.emailVerified&&!usingLocalFirebaseEmulators;
 let state=null,wallet=0,type="marina",busy=false,failed=null,epoch=0,drag=null,anim=null,frame=0,expanded=false,oldOverflow="",confirmUntil=0;
 let featureSignature="",featureAccount=null;
-const quickNodes=new Map();
+const quickNodes=new Map(),arenaNodes=new Map();
 const nodes=new Map(),status=m=>{$("ok-status").textContent=m;$("ok-rail-status").textContent=m;$("ok-arena-notice").textContent=m;};
 const key=uid=>"ptg-orange-pending-v1:"+uid;
 const stash=(uid,action)=>{try{localStorage.setItem(key(uid),JSON.stringify(action));}catch{}};
@@ -20,7 +20,13 @@ const canShoot=()=>ready()&&!state.board.won&&!orangeGameOver(state.board)&&coun
 const arenaMode=()=>expanded||document.fullscreenElement===area;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function portrait(t){const a=AXOLOTLS[t];return '<svg viewBox="0 0 70 55" aria-hidden="true"><g fill="'+a.gill+'"><path d="M19 25 2 7 16 10 24 22 1 23 6 36 24 32M51 25 68 7 54 10 46 22 69 23 64 36 46 32"/></g><ellipse cx="35" cy="30" rx="23" ry="19" fill="'+a.color+'" stroke="#4e4857" stroke-width="2"/><circle cx="27" cy="28" r="2.7" fill="#303244"/><circle cx="43" cy="28" r="2.7" fill="#303244"/><path d="M31 35q4 5 8 0" fill="none" stroke="#60455c" stroke-width="2"/></svg>';}
-function build(){for(const t of TYPES){const quick=document.createElement("button");quick.type="button";quick.className="ptg-theme-exempt ok-quick";quick.innerHTML=portrait(t);const qlabel=document.createElement("span");quick.append(qlabel);quick.onclick=()=>{type=t;confirmUntil=0;render();};$("ok-quick-team").append(quick);quickNodes.set(t,{b:quick,label:qlabel});const card=document.createElement("div");card.className="ok-type";const b=document.createElement("button");b.type="button";b.className="ok-select ptg-theme-exempt";b.innerHTML=portrait(t);const label=document.createElement("span");b.append(label);b.onclick=()=>{type=t;confirmUntil=0;render();};card.append(b);let buy=null;if(t!=="marina"){buy=document.createElement("button");buy.className="ptg-theme-exempt";buy.type="button";buy.textContent="100 ★";buy.title="Buy one "+AXOLOTLS[t].name+" throw";buy.onclick=()=>void send("buy",{type:t});card.append(buy);}const hint=document.createElement("small");hint.textContent=AXOLOTLS[t].description;card.append(hint);$("ok-types").append(card);nodes.set(t,{b,label,buy});}}
+function buildSelector(t,parent,registry){
+ const b=document.createElement("button");b.type="button";b.className="ptg-theme-exempt ok-quick";b.innerHTML=portrait(t);
+ const label=document.createElement("span");b.append(label);b.title=AXOLOTLS[t].description;
+ b.onclick=()=>{if(!ready()||drag||state.board.won||orangeGameOver(state.board)||!count(t))return;type=t;confirmUntil=0;render();};
+ $(parent).append(b);registry.set(t,{b,label});
+}
+function build(){for(const t of TYPES){buildSelector(t,"ok-quick-team",quickNodes);buildSelector(t,"ok-arena-team",arenaNodes);const card=document.createElement("div");card.className="ok-type";const b=document.createElement("button");b.type="button";b.className="ok-select ptg-theme-exempt";b.innerHTML=portrait(t);const label=document.createElement("span");b.append(label);b.onclick=()=>{type=t;confirmUntil=0;render();};card.append(b);let buy=null;if(t!=="marina"){buy=document.createElement("button");buy.className="ptg-theme-exempt";buy.type="button";buy.textContent="100 ★";buy.title="Buy one "+AXOLOTLS[t].name+" throw";buy.onclick=()=>void send("buy",{type:t});card.append(buy);}const hint=document.createElement("small");hint.textContent=AXOLOTLS[t].description;card.append(hint);$("ok-types").append(card);nodes.set(t,{b,label,buy});}}
 function featureIcon(id,locked=false){
  const m=MATERIALS[id==="angled"?"reflector":id]||MATERIALS.wood,fill=locked?"#373a4c":m.color,edge=locked?"#373a4c":m.edge;
  const block=(x,y,w,h,extra="")=>'<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="2" fill="'+fill+'" stroke="'+edge+'" stroke-width="2" '+extra+'/>';
@@ -63,7 +69,7 @@ function controls(){
  $("ok-resend").hidden=!failed||busy;$("ok-reset").disabled=!ready()||won;$("ok-next").hidden=!won;$("ok-next").disabled=!ready();$("ok-game-retry").hidden=!lost;$("ok-game-retry").disabled=!ready();$("ok-mechanic").textContent=state?((layout(state.level,state.seed,state.layoutVersion||1).design||"Classic orchard")+" · "+levelIntro(state.level,state.layoutVersion||1)):"";renderFeatures();
  if(confirmUntil&&Date.now()>=confirmUntil)confirmUntil=0;$("ok-reset").textContent=confirmUntil?"Are you sure?":"Retry level";$("ok-reset").classList.toggle("ok-confirm",!!confirmUntil);
  for(const [t,n] of nodes){n.label.textContent=AXOLOTLS[t].name+" ×"+count(t);n.b.setAttribute("aria-pressed",String(type===t));n.b.disabled=!ready()||won||lost||count(t)<=0;if(n.buy)n.buy.disabled=!ready()||wallet<PRICE||count(t)>=9999;}
- for(const [t,n] of quickNodes){n.label.textContent=AXOLOTLS[t].name+" ×"+count(t);n.b.setAttribute("aria-pressed",String(type===t));n.b.setAttribute("aria-label",AXOLOTLS[t].name+", "+count(t)+" throws");n.b.disabled=!ready()||won||lost||count(t)<=0;}
+ for(const registry of [quickNodes,arenaNodes])for(const [t,n] of registry){n.label.textContent=AXOLOTLS[t].name+" ×"+count(t);n.b.setAttribute("aria-pressed",String(type===t));n.b.setAttribute("aria-label",AXOLOTLS[t].name+", "+count(t)+" throws");n.b.disabled=!ready()||won||lost||count(t)<=0;}
  $("ok-quick-info").textContent=AXOLOTLS[type].description;
  $("ok-angle-label").textContent=$("ok-angle").value+"°";$("ok-power-label").textContent=$("ok-power").value+"%";
  $("ok-angle").disabled=!canShoot()||type==="sniper";$("ok-power").disabled=!canShoot()||type==="sniper";

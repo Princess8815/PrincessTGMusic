@@ -167,3 +167,39 @@ body #ok-area:is(:fullscreen,.ok-expanded){
 #ok-area:is(:fullscreen,.ok-expanded) #ok-overlay strong{font-size:clamp(1.6rem,5vw,3rem)}
 #ok-area:is(:fullscreen,.ok-expanded) #ok-result-detail{font-size:clamp(.8rem,2.5vw,1.1rem)}
 #ok-area:is(:fullscreen,.ok-expanded) #ok-overlay button{min-height:48px;padding:10px 28px}
+
+/* Put the launcher tray in the unused ground area, not a side panel.
+   The canvas retains its aspect ratio and pointer-coordinate mapping.
+   On wide/short screens reserve only the compact tray height. */
+#ok-area:is(:fullscreen,.ok-expanded) .ok-canvas-wrap{
+ display:grid!important;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;
+}
+#ok-area:is(:fullscreen,.ok-expanded) #ok-canvas{
+ grid-row:1;grid-column:1;min-height:0;min-width:0;object-fit:contain;
+}
+#ok-area:is(:fullscreen,.ok-expanded) #ok-arena-team{
+ display:grid;grid-column:1;grid-row:2;grid-template-columns:repeat(5,minmax(0,1fr));
+ width:min(100%,620px);justify-self:center;gap:5px;
+ padding:4px max(6px,env(safe-area-inset-right)) max(5px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));
+ z-index:2;align-self:end;
+}
+#ok-area:is(:fullscreen,.ok-expanded) #ok-arena-team .ok-quick{
+ min-width:0;min-height:48px;display:flex;align-items:center;justify-content:center;gap:5px;
+ padding:4px 6px;border-radius:10px;font-size:clamp(.68rem,1.4vw,.9rem);line-height:1.15;text-align:center;
+ background:#fff0c9!important;color:#45260b!important;border:2px solid #946135!important;
+}
+#ok-area:is(:fullscreen,.ok-expanded) #ok-arena-team .ok-quick svg{width:38px;height:34px;flex:none}
+#ok-area:is(:fullscreen,.ok-expanded) #ok-arena-team .ok-quick[aria-pressed=true]:not(:disabled){
+ background:#fff1a6!important;border-color:#a26719!important;box-shadow:inset 0 0 0 2px #d99b3d,0 2px 5px #0003;
+}
+#ok-area:is(:fullscreen,.ok-expanded) #ok-arena-team .ok-quick:disabled{background:#d9d3cc!important;color:#615950!important;border-color:#9c968b!important}
+@media(max-width:520px){
+ #ok-area:is(:fullscreen,.ok-expanded) #ok-arena-team{gap:3px}
+ #ok-area:is(:fullscreen,.ok-expanded) #ok-arena-team .ok-quick{flex-direction:column;gap:1px;padding:3px 1px;font-size:.66rem;min-height:58px;overflow-wrap:anywhere}
+ #ok-area:is(:fullscreen,.ok-expanded) #ok-arena-team .ok-quick svg{width:30px;height:27px}
+}
+@media(orientation:landscape) and (max-height:500px){
+ #ok-area:is(:fullscreen,.ok-expanded) #ok-arena-team{padding-top:2px}
+ #ok-area:is(:fullscreen,.ok-expanded) #ok-arena-team .ok-quick{min-height:44px;padding:2px 4px}
+ #ok-area:is(:fullscreen,.ok-expanded) #ok-arena-team .ok-quick svg{width:28px;height:25px}
+}
