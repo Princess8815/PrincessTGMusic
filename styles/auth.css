@@ -235,3 +235,10 @@
   .auth-dialog{max-height:calc(100dvh - 20px);padding:25px 16px}
   .auth-google-button{min-height:46px}
 }
+
+/* Registration and recovery */
+#auth-password-group,#auth-registration-fields,#auth-registration-form{display:flex;flex-direction:column;gap:10px}
+#auth-registration-form input[type=date]{box-sizing:border-box;width:100%;padding:12px;border:1px solid #777;border-radius:7px;background:var(--ptg-tertiary,#111827);color:inherit}
+.auth-consent{display:flex;align-items:flex-start;gap:8px;line-height:1.45}
+#auth-form .auth-consent input,.auth-consent input{width:auto;flex:none;margin:3px 0 0;accent-color:var(--ptg-primary,#9f7bff)}
+.auth-consent a{color:var(--ptg-link,#c4b5fd);text-decoration:underline}

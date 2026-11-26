@@ -1,7 +1,9 @@
 import {publicError,withErrorCode} from "./site-errors.js";
 import {claimPendingAxolotls,discoverAxolotl} from "./reef-collection.js";
 
-import { auth } from "./firebase.js";
+import { auth, db } from "./firebase.js";
+import {doc,getDocFromServer,runTransaction,serverTimestamp,Timestamp} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+import {TERMS_VERSION,PRIVACY_VERSION,registrationError} from "./account-registration.mjs";
 import { saveUserIfChanged } from "./user-data.js";
 import {hasSiteVerificationAccess,refreshSiteVerificationAccess} from "./verification-access.js";
 import {
@@ -28,6 +30,25 @@ import {
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 
+const termsURL=new URL("../pages/terms-of-service.html",import.meta.url).href;
+const privacyURL=new URL("../pages/privacy-policy.html",import.meta.url).href;
+function registrationFields(prefix){
+ return `<label for="${prefix}-birthdate">Date of birth</label>
+ <input id="${prefix}-birthdate" type="date" min="1900-01-01" max="${new Date().toISOString().slice(0,10)}" autocomplete="bday" required>
+ <p class="auth-provider-note">Your birthday is private and used for age eligibility. Members must be at least 13. Minors should have parent or guardian permission.</p>
+ <label class="auth-consent"><input id="${prefix}-consent" type="checkbox" required><span>I agree to the <a href="${termsURL}" target="_blank" rel="noopener noreferrer">Terms of Service</a> and acknowledge the <a href="${privacyURL}" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.</span></label>`;
+}
+const registrationRef=uid=>doc(db,"accountRegistration",uid);
+async function saveRegistration(user,birthdate,accepted){
+ const error=registrationError(birthdate,accepted);
+ if(error)throw Error(error);
+ if(auth.currentUser?.uid!==user.uid)throw Error("Account changed.");
+ await runTransaction(db,async tx=>{
+  const ref=registrationRef(user.uid),existing=await tx.get(ref);
+  if(existing.exists())return;
+  tx.set(ref,{birthDate:Timestamp.fromDate(new Date(birthdate+"T00:00:00Z")),termsVersion:TERMS_VERSION,privacyVersion:PRIVACY_VERSION,acceptedAt:serverTimestamp()});
+ });
+}
 const container = document.getElementById("auth-container");
 
 if (!container) {
@@ -81,9 +102,12 @@ if (!container) {
           <input id="auth-email" type="email" required
                  autocomplete="email">
 
-          <label for="auth-password">Password</label>
-          <input id="auth-password" type="password" required
-                 minlength="6" autocomplete="current-password">
+          <div id="auth-password-group">
+            <label for="auth-password">Password</label>
+            <input id="auth-password" type="password" required minlength="6" autocomplete="current-password">
+          </div>
+          <div id="auth-registration-fields" hidden>${registrationFields("auth-register")}</div>
+          <p id="auth-recovery-note" class="auth-provider-note" hidden>Enter your account email to request a secure link to set a new password. Google-only accounts should recover access through Google.</p>
 
           <p id="auth-message" role="status" aria-live="polite"></p>
 
@@ -105,6 +129,15 @@ if (!container) {
           Forgot Password?
         </button>
 
+        <section id="auth-registration-panel" hidden>
+          <p>Complete your account details to continue. Your birthday will not appear on your public profile.</p>
+          <form id="auth-registration-form">
+            ${registrationFields("auth-complete")}
+            <p id="auth-registration-message" role="status" aria-live="polite"></p>
+            <button class="auth-primary" id="auth-registration-submit" type="submit">Save account details</button>
+            <button class="auth-text-button" id="auth-registration-signout" type="button">Sign out</button>
+          </form>
+        </section>
         <section id="auth-verify-panel" class="auth-verify-panel" hidden aria-label="Email verification">
           <p>To protect member accounts, please verify your email address before using member features.</p>
           <p class="auth-verify-address">Verification email: <strong id="auth-verify-email"></strong></p>
@@ -208,6 +241,41 @@ adminButton.addEventListener("click", async () => {
 
   let mode = "login";
   let busy = false;
+  let registrationUid="",registrationStatus="unknown",registrationCheck=null;
+  const registrationPanel=$("auth-registration-panel");
+  const registrationForm=$("auth-registration-form");
+  const registerFields=$("auth-registration-fields");
+  function setRegistrationStatus(user,status){registrationUid=user?.uid||"";registrationStatus=status;}
+  function registrationReady(user){return !!user&&registrationUid===user.uid&&registrationStatus==="complete";}
+  function showRegistration(user,notice=""){
+   if(!user||auth.currentUser?.uid!==user.uid||registrationReady(user))return;
+   modal.hidden=false;form.hidden=true;verifyPanel.hidden=true;
+   loginTab.parentElement.hidden=true;googleGroup.hidden=true;$("auth-reset").hidden=true;
+   registrationPanel.hidden=false;$("auth-heading").textContent="Complete Your Account";
+   $("auth-open").hidden=false;$("auth-open").textContent="Complete Account";
+   $("auth-welcome").textContent="Account details required";
+   if(notice)$("auth-registration-message").textContent=notice;
+  }
+  function checkRegistration(user){
+   if(!user)return Promise.resolve(false);
+   if(registrationReady(user))return Promise.resolve(true);
+   if(registrationCheck?.uid===user.uid)return registrationCheck.promise;
+   const uid=user.uid;setRegistrationStatus(user,"checking");
+   const promise=(async()=>{
+    try{
+     const snap=await getDocFromServer(registrationRef(uid));
+     if(auth.currentUser?.uid!==uid)return false;
+     if(registrationReady(user))return true;
+     setRegistrationStatus(user,snap.exists()?"complete":"missing");return snap.exists();
+    }catch(error){
+     if(auth.currentUser?.uid===uid&&!registrationReady(user)){setRegistrationStatus(user,"error");console.warn("Account details lookup failed",error?.code);}
+     return registrationReady(user);
+    }
+   })();
+   registrationCheck={uid,promise};
+   void promise.finally(()=>{if(registrationCheck?.promise===promise)registrationCheck=null;});
+   return promise;
+  }
   let lastVerificationEmailAt = 0;
   let lastVerificationUid = "";
   let lastAutomaticCheckAt=0;
@@ -225,9 +293,10 @@ adminButton.addEventListener("click", async () => {
 
   function showAuthForms() {
     verifyPanel.hidden = true;
+    registrationPanel.hidden=true;
     form.hidden = false;
-    $("auth-google-group").hidden = false;
-    $("auth-reset").hidden = mode === "register";
+    $("auth-google-group").hidden = mode === "recovery";
+    $("auth-reset").hidden = mode !== "login";
     $("auth-login-tab").parentElement.hidden = false;
   }
 
@@ -236,21 +305,27 @@ adminButton.addEventListener("click", async () => {
     form.reset();
     setMessage("");
     showAuthForms();
-    const registering = mode === "register";
-    $("auth-heading").textContent =
-      registering ? "Create Your Account" : "Welcome Back";
-    submit.textContent = registering ? "Create Account" : "Sign In";
+    const registering = mode === "register",recovering=mode==="recovery";
+    $("auth-heading").textContent = recovering?"Reset Your Password":registering ? "Create Your Account" : "Welcome Back";
+    submit.textContent = recovering?"Send Reset Link":registering ? "Create Account" : "Sign In";
+    $("auth-password-group").hidden=recovering;
+    $("auth-recovery-note").hidden=!recovering;
+    password.required=!recovering;password.disabled=recovering;
+    registerFields.hidden=!registering;
+    for(const input of registerFields.querySelectorAll("input")){input.disabled=!registering;input.required=registering;}
     nameGroup.hidden = !registering;
     $("auth-name").required = registering;
     password.autocomplete =
       registering ? "new-password" : "current-password";
-    $("auth-reset").hidden = registering;
-    loginTab.classList.toggle("active", !registering);
+    $("auth-reset").hidden = mode!=="login";
+    loginTab.classList.toggle("active", mode==="login");
     registerTab.classList.toggle("active", registering);
   }
 
   function showVerification(user, text = "") {
     if (!user || hasSiteVerificationAccess(user)) return;
+    if(!registrationReady(user)){syncAuthBar(user);return;}
+    registrationPanel.hidden=true;
     modal.hidden = false;
     form.hidden = true;
     loginTab.parentElement.hidden = true;
@@ -266,6 +341,22 @@ adminButton.addEventListener("click", async () => {
 
   function syncAuthBar(user) {
     const loggedIn=!!user;
+    if(user&&!registrationReady(user)){
+      $("auth-logout").hidden=false;
+      $("auth-open").hidden=false;$("auth-open").textContent="Complete Account";
+      $("auth-welcome").textContent="Checking account details...";
+      if(registrationUid===user.uid&&["missing","error"].includes(registrationStatus)){
+        showRegistration(user,registrationStatus==="error"?"Could not check your details. You can retry by saving the form.":"");return;
+      }
+      void checkRegistration(user).then(ok=>{
+        if(auth.currentUser?.uid!==user.uid)return;
+        if(ok)syncAuthBar(user);
+        else showRegistration(user,registrationStatus==="error"?"Could not check your details. You can retry by saving the form.":"");
+      });
+      return;
+    }
+    if(!user){setRegistrationStatus(null,"unknown");registrationForm.reset();registrationPanel.hidden=true;}
+    else registrationPanel.hidden=true;
     const verified=hasSiteVerificationAccess(user);
     $("auth-open").hidden = loggedIn && verified;
     $("auth-open").textContent = loggedIn ? "Verify Email" : "Login / Register";
@@ -289,6 +380,7 @@ adminButton.addEventListener("click", async () => {
 
   function openModal() {
     const user = auth.currentUser;
+    if(user&&!registrationReady(user)){syncAuthBar(user);return;}
     if (user && !hasSiteVerificationAccess(user)) {
       showVerification(user);
       return;
@@ -299,7 +391,7 @@ adminButton.addEventListener("click", async () => {
   }
 
   function closeModal() {
-    if (busy) return;
+    if (busy || (auth.currentUser&&!registrationReady(auth.currentUser))) return;
     modal.hidden = true;
     form.reset();
     setMessage("");
@@ -356,6 +448,18 @@ adminButton.addEventListener("click", async () => {
     const email=$("auth-email").value.trim();
     const userPassword=password.value;
     const displayName=$("auth-name").value.trim();
+    if(mode==="recovery"){
+      busy=true;submit.disabled=true;setMessage("");
+      const generic="If a password account exists for this email, a reset link will be sent. Check your inbox and spam folder.";
+      try{await sendPasswordResetEmail(auth,email);setMessage(generic);}
+      catch(error){
+        if(["auth/user-not-found","auth/user-disabled"].includes(error?.code))setMessage(generic);
+        else setMessage(error?.code==="auth/too-many-requests"?"Too many requests. Try again later.":"Could not request a reset link. Check your connection and retry.",true);
+      }finally{busy=false;submit.disabled=false;}
+      return;
+    }
+    const birthdate=$("auth-register-birthdate").value,accepted=$("auth-register-consent").checked;
+    if(mode==="register"){const error=registrationError(birthdate,accepted);if(error){setMessage(error,true);return;}}
     if(mode==="register"&&!displayName){
       setMessage("Please enter a display name.",true);
       return;
@@ -364,6 +468,11 @@ adminButton.addEventListener("click", async () => {
     try{
       if(mode==="register"){
         const credential=await createUserWithEmailAndPassword(auth,email,userPassword);
+        try{await saveRegistration(credential.user,birthdate,accepted);setRegistrationStatus(credential.user,"complete");}
+        catch(error){
+          setRegistrationStatus(credential.user,"missing");showRegistration(credential.user,"Account created, but details could not be saved. Please retry.");
+          $("auth-complete-birthdate").value=birthdate;$("auth-complete-consent").checked=accepted;return;
+        }
         void claimPendingAxolotls(credential.user);
         // Request verification FIRST. A slow/denied Firestore profile write
         // or display-name update must never delay the new user's email.
@@ -383,6 +492,7 @@ adminButton.addEventListener("click", async () => {
         });
       }else{
         const credential=await signInWithEmailAndPassword(auth,email,userPassword);
+        if(!await checkRegistration(credential.user)){showRegistration(credential.user);return;}
         void claimPendingAxolotls(credential.user);
         const verified=await refreshSiteVerificationAccess(credential.user)
           || await refreshSiteVerification(credential.user);
@@ -404,7 +514,8 @@ adminButton.addEventListener("click", async () => {
       // Popup is opened directly from the click handler. Redirect sign-in
       // is deliberately avoided on third-party GitHub Pages hosting.
       const credential=await signInWithPopup(auth,googleProvider);
-        void claimPendingAxolotls(credential.user);
+      if(!await checkRegistration(credential.user)){showRegistration(credential.user);return;}
+      void claimPendingAxolotls(credential.user);
       await credential.user.getIdToken(true);
       if(credential.user.emailVerified || await refreshSiteVerificationAccess(credential.user)){
         modal.hidden=true;
@@ -465,25 +576,33 @@ adminButton.addEventListener("click", async () => {
     }finally{busy=false;}
   });
 
-  $("auth-reset").addEventListener("click", async () => {
-    const email = $("auth-email").value.trim();
-
-    if (!email) {
-      setMessage("Enter your email address first.", true);
-      $("auth-email").focus();
-      return;
-    }
-
-    try {
-      await sendPasswordResetEmail(auth, email);
-      setMessage(
-        "If an account exists for that email, a reset link will be sent."
-      );
-    } catch (error) {
-      console.error("Password reset error:", error);
-      setMessage(friendlyError(error), true);
-    }
+  $("auth-reset").addEventListener("click",()=>{
+    const email=$("auth-email").value;
+    setMode("recovery");$("auth-email").value=email;$("auth-email").focus();
   });
+  registrationForm.addEventListener("submit",async event=>{
+    event.preventDefault();if(busy)return;
+    const user=auth.currentUser;if(!user)return;
+    const birthdate=$("auth-complete-birthdate").value,accepted=$("auth-complete-consent").checked;
+    const error=registrationError(birthdate,accepted),notice=$("auth-registration-message");
+    if(error){notice.textContent=error;return;}
+    busy=true;$("auth-registration-submit").disabled=true;notice.textContent="Saving...";
+    try{
+      await saveRegistration(user,birthdate,accepted);
+      if(auth.currentUser?.uid!==user.uid)return;
+      setRegistrationStatus(user,"complete");registrationForm.reset();registrationPanel.hidden=true;
+      void claimPendingAxolotls(user);
+      syncAuthBar(user);
+      if(!hasSiteVerificationAccess(user))await sendVerification(user,true);
+    }catch(error){notice.textContent="Could not save account details. Please retry.";}
+    finally{busy=false;$("auth-registration-submit").disabled=false;}
+  });
+  $("auth-registration-signout").addEventListener("click",async()=>{
+    if(busy)return;
+    try{await signOut(auth);registrationForm.reset();setMode("login");modal.hidden=false;}
+    catch(error){$("auth-registration-message").textContent="Could not sign out. Please retry.";}
+  });
+  setMode("login");
 
 
 $("auth-logout").addEventListener("click", async () => {

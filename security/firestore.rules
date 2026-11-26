@@ -117,6 +117,36 @@ service cloud.firestore {
         && request.auth.uid == uid;
     }
 
+    // Private, write-once self-reported birthday and policy receipt.
+    function ageAtLeast(birth, years) {
+      return birth is timestamp && (
+        request.time.year() > birth.year() + years
+        || (request.time.year() == birth.year() + years
+          && (request.time.month() > birth.month()
+            || (request.time.month() == birth.month() && request.time.day() >= birth.day())))
+      );
+    }
+    // Apply this to future 18+ Firestore resources; missing data fails closed.
+    function adultAccount(uid) {
+      return isOwner(uid)
+        && exists(/databases/$(database)/documents/accountRegistration/$(uid))
+        && ageAtLeast(get(/databases/$(database)/documents/accountRegistration/$(uid)).data.birthDate, 18);
+    }
+    match /accountRegistration/{uid} {
+      allow get: if isOwner(uid) || isStaff();
+      allow list: if isStaff();
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(["birthDate","termsVersion","privacyVersion","acceptedAt"])
+        && request.resource.data.keys().hasAll(["birthDate","termsVersion","privacyVersion","acceptedAt"])
+        && request.resource.data.birthDate is timestamp
+        && request.resource.data.birthDate.year() >= 1900
+        && ageAtLeast(request.resource.data.birthDate, 13)
+        && request.resource.data.termsVersion == "2026-11-26"
+        && request.resource.data.privacyVersion == "2026-11-26"
+        && request.resource.data.acceptedAt == request.time;
+      allow update, delete: if false;
+    }
+
     function validAuth(uid) {
       return request.auth != null
         && request.resource.data.auth is map

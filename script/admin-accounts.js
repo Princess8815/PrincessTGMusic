@@ -1,4 +1,5 @@
 import {publicError,withErrorCode} from "./site-errors.js";
+import {ageStatus} from "./account-registration.mjs";
 
 import { auth, db, usingLocalFirebaseEmulators } from "./firebase.js";
 
@@ -44,6 +45,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!section) return;
 
   let accounts = [];
+  let registrations=new Map();
+  function ageLabel(uid){
+    const date=registrations.get(uid)?.birthDate?.toDate?.();
+    return ageStatus(date?date.toISOString().slice(0,10):null);
+  }
   let selectedUid = null;
   let managerRole = null;
   let selectedBypass=false;
@@ -237,6 +243,10 @@ async function verifyManager() {
       collection(db, "users")
     );
 
+    try{
+      const ageRecords=await getDocsFromServer(collection(db,"accountRegistration"));
+      registrations=new Map(ageRecords.docs.map(d=>[d.id,d.data()]));
+    }catch(error){registrations.clear();console.warn("Age flags unavailable",error?.code);}
     accounts = snapshot.docs.map(userDoc => ({
       uid: userDoc.id,
       ...userDoc.data()
@@ -290,7 +300,8 @@ async function verifyManager() {
 
       const details = document.createElement("small");
       details.textContent =
-        `${getEmail(data)} | ${describeStatus(data)}`;
+        `${getEmail(data)} | ${describeStatus(data)} | ${ageLabel(data.uid)}`;
+      if(ageLabel(data.uid)==="Under 18")details.style.fontWeight="bold";
 
       button.append(title, details);
 
@@ -330,7 +341,7 @@ async function verifyManager() {
 
     selectedName.textContent = getName(data);
     selectedEmail.textContent = getEmail(data);
-    currentStatus.textContent = describeStatus(data);
+    currentStatus.textContent = describeStatus(data)+" | "+ageLabel(uid);
 
     if (isBanActive(data)) {
       roleSelect.value = "banned";
@@ -603,6 +614,16 @@ await updateDoc(targetRef, {
   });
 
   search.addEventListener("input", renderSearch);
+  // Refresh derived badges when an open admin page crosses a UTC date boundary.
+  let lastAgeDate=new Date().toISOString().slice(0,10);
+  function refreshAgeFlags(){
+    const today=new Date().toISOString().slice(0,10);
+    if(today===lastAgeDate)return;lastAgeDate=today;renderSearch();
+    const selected=accounts.find(a=>a.uid===selectedUid);
+    if(selected)currentStatus.textContent=describeStatus(selected)+" | "+ageLabel(selectedUid);
+  }
+  setInterval(refreshAgeFlags,60000);
+  window.addEventListener("focus",refreshAgeFlags);
 
   refreshButton.addEventListener(
     "click",
