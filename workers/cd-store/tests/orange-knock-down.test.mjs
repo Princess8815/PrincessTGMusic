@@ -53,7 +53,7 @@ test("materials unlock progressively, support collapse and legacy saves are pres
  assert.deepEqual(result.hp,[0,0]);assert.equal(result.remaining.length,0);
  const old=initialOrange(123);delete old.layoutVersion;old.version=1;old.board=freshLevel(1,123,1);
  const retry=applyOrange(old,{kind:"retry"});assert.deepEqual(retry.state.board,old.board);
- old.board.remaining=[0];const win=applyOrange(old,{kind:"shot",shot:{type:"sniper",target:0}},()=>.5);const next=applyOrange(win.state,{kind:"next"});assert.equal(next.state.layoutVersion,3);assert.deepEqual(next.state.board,freshLevel(2,123,3));
+ old.board.remaining=[0];const win=applyOrange(old,{kind:"shot",shot:{type:"sniper",target:0}},()=>.5);const next=applyOrange(win.state,{kind:"next"});assert.equal(next.state.layoutVersion,4);assert.deepEqual(next.state.board,freshLevel(2,123,4));
 });
 test("two-hit walls stop direct shots, reflectors reverse motion and resist blasts",()=>{
  const map={branches:[{id:0,x1:220,y1:290,x2:220,y2:480,hp:2,width:26,material:"wall"}],oranges:[{id:0,branch:-1,x:290,y:390}]},board={hp:[2],remaining:[0]},shot={type:"marina",angle:0,power:100};
@@ -79,4 +79,16 @@ test("spring bounce boosts speed and burst crates chain without damaging reflect
  assert.ok(result.events.some(e=>e.kind==="bounce"&&e.spring));assert.equal(result.hp[0],1);
  const crates={branches:[{id:0,x1:200,y1:370,x2:200,y2:420,hp:1,burst:true},{id:1,x1:290,y1:370,x2:290,y2:420,hp:1,burst:true},{id:2,x1:380,y1:370,x2:380,y2:420,hp:1,reflect:true}],oranges:[{id:0,branch:-1,x:400,y:400}]};
  const r=simulateShot(crates,{hp:[1,1,1],remaining:[0]},{type:"marina",angle:0,power:100});assert.deepEqual(r.hp,[0,0,1]);assert.equal(r.remaining.length,0);assert.equal(r.events.filter(e=>e.kind==="blast").length,2);
+});
+
+test("trampolines unlock at 27, preserve v3 layouts, and boost falling shots upward without taking damage",()=>{
+ assert.ok(!layout(26,123).branches.some(b=>b.trampoline));assert.ok(layout(27,123).branches.some(b=>b.trampoline));assert.ok(!layout(27,123,3).branches.some(b=>b.trampoline));
+ assert.equal(featureProgress(25).next.id,"trampoline");assert.equal(featureProgress(25).next.percent,66);assert.equal(featureProgress(26).latest.id,"trampoline");
+ const pad={id:0,x1:230,y1:465,x2:340,y2:465,width:12,hp:1,reflect:true,trampoline:true};
+ const map={branches:[pad],oranges:[{id:0,branch:-1,x:560,y:220}]};
+ const result=simulateShot(map,{hp:[1],remaining:[0]},{type:"marina",angle:-12,power:45},true);
+ const event=result.events.find(e=>e.trampoline);assert.ok(event);assert.equal(result.hp[0],1);
+ assert.ok(result.frames.slice(event.t+1).some(frame=>frame[0]&&frame[0].y<event.y-100));
+ const old=initialOrange(123);old.level=27;old.layoutVersion=3;old.board=freshLevel(27,123,3);
+ assert.deepEqual(applyOrange(old,{kind:"retry"}).state.board,old.board);
 });
