@@ -1,4 +1,5 @@
 import {publicError} from "./site-errors.js";
+import {reefClue,attachReefClue} from "./reef-clues.mjs";
 // Original PrincessTG reef collection. Discoveries are cosmetic, not entitlements.
 import {auth,db} from "./firebase.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
@@ -219,7 +220,7 @@ export function mountReefCollection(){
    else{art.classList.add("reef-mystery");art.textContent="?";}
    const heading=document.createElement("h3");heading.textContent=found.has(id)?name:"???";
    const caption=document.createElement("p");caption.textContent=found.has(id)?"Discovered":"Not yet discovered";
-   card.append(art,heading,caption);grid.append(card);
+   card.append(art,heading,caption);if(!found.has(id))attachReefClue(card,reefClue(id));grid.append(card);
   }
  }
  render(new Set(),"Loading your collection…");

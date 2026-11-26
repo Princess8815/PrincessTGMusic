@@ -15,3 +15,12 @@
 .reef-card-art{height:112px;display:grid;place-items:center}
 .reef-card-art svg{max-height:112px}
 .reef-mystery{font-weight:900;font-size:3rem;color:#b8b0df;background:radial-gradient(ellipse,#8279bd30,transparent 68%)}
+
+/* Locked slots reveal a clue on mouse hover, keyboard focus, or touch focus.
+   Keep the tooltip inside the card so parent panels cannot clip it. */
+.reef-clue-card{position:relative;cursor:help;isolation:isolate}
+.reef-clue-card:focus-visible{outline:3px solid #f7d58a;outline-offset:2px}
+.reef-clue-tip{position:absolute;z-index:2;inset:8px 6px auto;display:block;padding:9px 7px;border:1px solid #e9ca8f;border-radius:9px;background:#211c31;color:#fff4da!important;font-size:.8rem;line-height:1.35;font-weight:600;text-align:center;white-space:normal;overflow-wrap:anywhere;box-shadow:0 4px 12px #0006;opacity:0;pointer-events:none;transition:opacity .12s}
+.reef-clue-card:hover>.reef-clue-tip,.reef-clue-card:focus>.reef-clue-tip,.reef-clue-card:focus-within>.reef-clue-tip{opacity:1}
+.reef-store-locked .reef-card-art{min-height:112px;flex:none;border-radius:10px}
+@media(prefers-reduced-motion:reduce){.reef-clue-tip{transition:none}}
