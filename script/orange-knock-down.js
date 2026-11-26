@@ -9,7 +9,7 @@ const audio=createOrangeAudio();
 const showToast=message=>siteToast(message,{silent:true});
 const endpoint="https://princesstg-cd-store-live.transgirl1991.workers.dev/games/orange-knock-down";
 const testMode=new URLSearchParams(location.search).get("test")==="1";
-let testMap=null;
+let testMap=null,starResult=null,pickerPage=0,pickerEpoch=0,pickerBusy=false;
 const eligible=()=>testMode||!!auth.currentUser?.emailVerified&&!usingLocalFirebaseEmulators;
 let state=null,wallet=0,type="marina",busy=false,failed=null,epoch=0,drag=null,anim=null,frame=0,expanded=false,oldOverflow="",confirmUntil=0;
 let featureSignature="",featureAccount=null;
@@ -69,7 +69,7 @@ function controls(){
  const board=state?.board,won=!!board?.won,lost=orangeGameOver(board);
  $("ok-arena-hud").textContent=state?(testMode?"Test":"Lv "+state.level)+" · "+board.remaining.length+" 🍊 · Marina ×"+board.marina+(type!=="marina"?" · "+AXOLOTLS[type].name+" ×"+count(type):""):"Orange Knock Down";
  $("ok-arena-notice").hidden=!!state&&!failed;
- $("ok-level").textContent=testMode?"Test":state?.level||1;$("ok-left").textContent=board?.remaining.length||0;$("ok-shots").textContent=board?.marina||0;$("ok-wallet").textContent=testMode?"Practice":wallet.toLocaleString();
+ $("ok-level").textContent=testMode?"Test":state?.level||1;$("ok-left").textContent=board?.remaining.length||0;$("ok-shots").textContent=board?.marina||0;$("ok-wallet").textContent=testMode?"Practice":wallet.toLocaleString();$("ok-total-card").hidden=testMode;$("ok-total-stars").textContent=(state?.totalStars||0).toLocaleString();$("ok-level-picker").hidden=testMode;$("ok-level-picker").disabled=!ready()||!!drag;
  $("ok-login").hidden=testMode||!!auth.currentUser||usingLocalFirebaseEmulators;$("ok-refresh").disabled=busy||!eligible()||!!failed;
  $("ok-resend").hidden=!failed||busy;$("ok-reset").disabled=!ready()||won;$("ok-campaign-reset").hidden=testMode;$("ok-campaign-reset").disabled=testMode||!ready()||!!drag;$("ok-next").hidden=!won;$("ok-next").disabled=!ready();$("ok-game-retry").hidden=!lost;$("ok-game-retry").disabled=!ready();$("ok-mechanic").textContent=state?(stateMap(state).design||"Classic orchard")+(testMode?" · Practice only":state.levelMap?" · Campaign": " · "+levelIntro(state.level,state.layoutVersion||1)):"";renderFeatures();
  if(confirmUntil&&Date.now()>=confirmUntil)confirmUntil=0;$("ok-reset").textContent=confirmUntil?"Are you sure?":"Retry level";$("ok-reset").classList.toggle("ok-confirm",!!confirmUntil);
@@ -84,6 +84,12 @@ function controls(){
  $("ok-overlay").hidden=busy||!state||(!won&&!lost);$("ok-overlay").classList.toggle("ok-victory",won);$("ok-overlay").classList.toggle("ok-defeat",lost);$("ok-result").textContent=won?"Level cleared!":"Game over";$("ok-result-detail").textContent=won?(testMode?"Practice complete. No rewards.":board.rewarded===false?"Level replayed. First-clear rewards already claimed.":"10 Star Coins earned. Next level awaits."):"Marina is out of throws. Try the level again!";
  $("ok-stars").hidden=!won;const rating=won?(board.stars||starRating(stateMap(state),board)):0;$("ok-stars").textContent=won?"★".repeat(rating)+"☆".repeat(3-rating):"";
  $("ok-next").textContent=testMode?"Test again":"Next level →";
+ $("ok-next").hidden=!won||(!testMode&&state?.level>=1000000);
+ $("ok-replay").hidden=testMode||!won;$("ok-replay").disabled=!ready();
+ $("ok-pick-victory").hidden=testMode||!won;$("ok-pick-victory").disabled=!ready();
+ $("ok-star-detail").hidden=testMode||!won;
+ $("ok-star-detail").textContent=won&&!testMode?(starResult?.starsGained>0?"+"+starResult.starsGained+" new "+(starResult.starsGained===1?"star":"stars")+" · ":starResult?"Best score kept · ":"")+"Total stars: "+(state?.totalStars||0).toLocaleString():"";
+
 }
 function line(x1,y1,x2,y2,color,width){ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap="round";ctx.stroke();}
 function circle(x,y,r,color,stroke){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1.5;ctx.stroke();}}
@@ -171,10 +177,10 @@ function cancelDrag(e){if(drag?.id===e.pointerId){drag=null;render();}}
 canvas.addEventListener("pointercancel",cancelDrag);canvas.addEventListener("lostpointercapture",cancelDrag);
 window.addEventListener("blur",()=>{if(drag){drag=null;render();}});
 async function request(action,uid){const user=auth.currentUser;if(!eligible()||user.uid!==uid)throw Error("Sign in with a verified account.");const idToken=await user.getIdToken();if(auth.currentUser?.uid!==uid)throw Error("Account changed.");const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({idToken,...action})});const data=await r.json();if(!r.ok)throw Error(data.error||"Game unavailable.");return data;}
-function accept(data,notify){const previous=state?.cleared;state=data.state;wallet=data.wallet;confirmUntil=0;if(!count(type))type=count("marina")?"marina":type;status(data.message||"Ready.");if((data.rewards||[]).includes("orange-knock-down-mastery")&&!data.conflict)showToast("Trophy earned: Orange Knock Down Mastery!");if(notify){if(state.board.won&&previous!==undefined&&state.cleared>previous){for(const f of featureSchedule(state.milestones))if(!arenaMode()&&f.level>1&&previous<f.level-1&&state.cleared>=f.level-1)showToast("New feature unlocked: "+f.name+"!");}if(data.coins>0)showToast("Level cleared! +"+data.coins+" Star Coins");for(const id of data.rewards||[])if(id!=="orange-knock-down-mastery")showToast(id==="tangie"?"You found Tangie!":"You found Fruiter!");}}
+function accept(data,notify){const previous=state?.cleared;starResult=data.state.board.won&&Number.isInteger(data.starsGained)&&data.bestStars>0?{starsGained:data.starsGained,bestStars:data.bestStars}:null;state=data.state;wallet=data.wallet;confirmUntil=0;if(!count(type))type=count("marina")?"marina":type;status(data.message||"Ready.");if((data.rewards||[]).includes("orange-knock-down-mastery")&&!data.conflict)showToast("Trophy earned: Orange Knock Down Mastery!");if(notify){if(state.board.won&&previous!==undefined&&state.cleared>previous){for(const f of featureSchedule(state.milestones))if(!arenaMode()&&f.level>1&&previous<f.level-1&&state.cleared>=f.level-1)showToast("New feature unlocked: "+f.name+"!");}if(data.coins>0)showToast("Level cleared! +"+data.coins+" Star Coins");for(const id of data.rewards||[])if(id!=="orange-knock-down-mastery")showToast(id==="tangie"?"You found Tangie!":"You found Fruiter!");}}
 function animate(trace,current){
  audio.effect("launch");let played=0;const ordered=[...trace.events].sort((a,b)=>a.t-b.t);
- return new Promise(resolve=>{anim={trace,start:performance.now(),duration:Math.max(trace.frames.length,trace.worldFrames?.length||0,...trace.events.map(e=>e.t+(trace.worldFrames?.length?12:50)),1)};function step(now){if(current!==epoch||!anim){resolve();return;}const tick=Math.floor((now-anim.start)/16);while(played<ordered.length&&ordered[played].t<=tick){const event=ordered[played++];audio.event(event,stateMap(state).branches[event.id]?.material);}draw(now);if(now-anim.start>=anim.duration*16){resolve();return;}frame=requestAnimationFrame(step);}frame=requestAnimationFrame(step);});
+ return new Promise(resolve=>{anim={trace,start:performance.now(),duration:Math.max(trace.frames.length,trace.worldFrames?.length||0,...trace.events.map(e=>e.t+(trace.worldFrames?.length?12:50)),1)};function step(now){if(current!==epoch||!anim){resolve();return;}const tick=Math.floor((now-anim.start)/16);while(played<ordered.length&&ordered[played].t<=tick){const event=ordered[played++];audio.event(event,event.material||stateMap(state).branches[event.id]?.material);}draw(now);if(now-anim.start>=anim.duration*16){resolve();return;}frame=requestAnimationFrame(step);}frame=requestAnimationFrame(step);});
 }
 function startTest(){
  if(!testMap)return;
@@ -187,7 +193,7 @@ async function send(kind,extra={},retry=false,trace=null){
   if(kind!=="shot"||!canShoot())return;
   busy=true;render();if(trace)await animate(trace,epoch);anim=null;
   const result=practiceOrange(state,{kind,...extra});
-  state=result.state;busy=false;if(state.board.won)audio.effect("win");else if(orangeGameOver(state.board))audio.effect("lose");if(!count(type)&&count("marina"))type="marina";status(state.board.won?"Practice complete. No rewards.":result.message);render();return;
+  state=result.state;busy=false;if(state.board.won)audio.victory(state.board.stars,false);else if(orangeGameOver(state.board))audio.effect("lose");if(!count(type)&&count("marina"))type="marina";status(state.board.won?"Practice complete. No rewards.":result.message);render();return;
  }
  if(!eligible()||busy||(!retry&&failed)||kind!=="state"&&!state&&!retry)return;
  const uid=auth.currentUser.uid,current=epoch,action=retry?failed:kind==="state"?{kind}:{kind,requestId:crypto.randomUUID(),revision:state.revision,...extra};if(action.kind!=="state")stash(uid,action);
@@ -196,19 +202,51 @@ async function send(kind,extra={},retry=false,trace=null){
   const net=request(action,uid).then(data=>({data}),error=>({error}));
   const [result]=await Promise.all([net,trace?animate(trace,current):Promise.resolve()]);
   if(current!==epoch)return;if(result.error)throw result.error;
-  anim=null;busy=false;forget(uid);if(["retry","resetCampaign"].includes(action.kind)&&result.data.applied&&!result.data.conflict)type="marina";accept(result.data,action.kind!=="state"&&!result.data.conflict);if(action.kind==="shot"&&result.data.applied&&!result.data.conflict){if(state.board.won)audio.effect("win");else if(orangeGameOver(state.board))audio.effect("lose");}render();
+  anim=null;busy=false;forget(uid);if(["retry","resetCampaign","selectLevel","next"].includes(action.kind)&&result.data.applied&&!result.data.conflict)type="marina";const previousClear=state?.cleared||0;accept(result.data,action.kind!=="state"&&!result.data.conflict);if(action.kind==="shot"&&result.data.applied&&!result.data.conflict){if(state.board.won)audio.victory(state.board.stars,state.cleared>previousClear);else if(orangeGameOver(state.board))audio.effect("lose");}render();
  }catch(e){if(current!==epoch)return;anim=null;busy=false;failed=action;status(e.message+" Retry save to recover the same action.");render();}
 }
 async function launch(){if(!canShoot())return;const shot=shotFromControls();let trace;try{trace=simulateShot(stateMap(state),state.board,shot,true);}catch(e){status(e.message);return;}await send("shot",{shot},false,trace);}
 $("ok-fire").onclick=()=>{if(!drag)void launch();};$("ok-angle").oninput=render;$("ok-power").oninput=render;$("ok-target").onchange=render;
 $("ok-reset").onclick=()=>{if(!ready())return;if(confirmUntil>Date.now())void send("retry");else{confirmUntil=Date.now()+8000;render();}};
-$("ok-campaign-reset").onclick=()=>{if(testMode||!ready()||drag)return;if(window.confirm("Restart Orange Knock Down at level 1? Current campaign progress and feature unlock progress will reset. Your Star Coins, special axolotl inventory, trophies and collectibles stay. Previously completed levels will not award coins or collectibles again."))void send("resetCampaign");};
+$("ok-campaign-reset").onclick=()=>{if(testMode||!ready()||drag)return;if(window.confirm("Restart Orange Knock Down at level 1? Current campaign progress and feature unlock progress will reset. Your total best stars, Star Coins, special axolotl inventory, trophies and collectibles stay. Previously completed levels will not award coins or collectibles again."))void send("resetCampaign");};
 $("ok-game-retry").onclick=()=>{if(ready()&&orangeGameOver(state.board))void send("retry");};
+const picker=$("ok-level-dialog");
+function closePicker(){++pickerEpoch;pickerBusy=false;if(picker.open)picker.close();}
+async function loadPicker(page){
+ if(!picker.open||!ready()||testMode)return;
+ const max=Math.min(33333,Math.floor(state.cleared/30)+1);page=clamp(page,0,max);
+ const generation=++pickerEpoch,uid=auth.currentUser.uid;pickerBusy=true;
+ $("ok-level-grid").replaceChildren();$("ok-picker-status").textContent="Loading levels…";
+ $("ok-picker-prev").disabled=true;$("ok-picker-next").disabled=true;$("ok-picker-go").disabled=true;
+ try{
+  const result=await request({kind:"levels",page},uid);
+  if(generation!==pickerEpoch||!picker.open||uid!==auth.currentUser?.uid)return;
+  pickerPage=result.page;$("ok-picker-total").textContent="Total stars: "+result.totalStars.toLocaleString();
+  $("ok-picker-jump").value=page*30+1;$("ok-picker-status").textContent="Levels "+(page*30+1)+"–"+Math.min(1000000,(page+1)*30);
+  for(const item of result.levels){
+   const b=document.createElement("button");b.type="button";b.className="ptg-theme-exempt ok-level-tile";b.disabled=item.level>result.unlockedThrough;
+   if(item.level===state.level)b.setAttribute("aria-current","true");
+   const n=document.createElement("strong");n.textContent="Level "+item.level;
+   const stars=document.createElement("span");stars.className="ok-tile-stars";stars.textContent="★".repeat(item.stars)+"☆".repeat(3-item.stars);
+   const info=document.createElement("small");info.textContent=b.disabled?"Locked":item.level<=state.cleared?"Replay":"Play";b.append(n,stars,info);
+   b.setAttribute("aria-label","Level "+item.level+", "+item.stars+" of 3 stars, "+info.textContent);
+   b.onclick=()=>{if(!ready()||pickerBusy)return;if(!state.board.won&&!orangeGameOver(state.board)&&!confirm("Leave this attempt? The level will restart and used specials will not be refunded."))return;closePicker();void send("selectLevel",{level:item.level});};
+   $("ok-level-grid").append(b);
+  }
+ }catch(e){if(generation===pickerEpoch)$("ok-picker-status").textContent=e.message;}
+ finally{if(generation===pickerEpoch){pickerBusy=false;$("ok-picker-prev").disabled=page===0;$("ok-picker-next").disabled=page>=max;$("ok-picker-go").disabled=false;}}
+}
+function openPicker(){if(!ready()||testMode||drag)return;picker.showModal();void loadPicker(Math.floor((state.level-1)/30));}
+$("ok-level-picker").onclick=openPicker;$("ok-pick-victory").onclick=openPicker;
+$("ok-picker-close").onclick=closePicker;picker.addEventListener("close",()=>{++pickerEpoch;pickerBusy=false;});
+$("ok-picker-prev").onclick=()=>void loadPicker(pickerPage-1);$("ok-picker-next").onclick=()=>void loadPicker(pickerPage+1);
+$("ok-picker-go").onclick=()=>{const n=Number($("ok-picker-jump").value);if(Number.isInteger(n)&&n>=1&&n<=1000000)void loadPicker(Math.floor((n-1)/30));};
+$("ok-replay").onclick=()=>{if(ready()&&state.board.won)void send("selectLevel",{level:state.level});};
 $("ok-next").onclick=()=>void send("next");$("ok-refresh").onclick=()=>void send("state");$("ok-resend").onclick=()=>{if(failed)void send(failed.kind,{},true);};
 function fullRefresh(){drag=null;const active=expanded||document.fullscreenElement===area;$("ok-full").textContent=active?"⛶ Exit fullscreen":"⛶ Fullscreen";$("ok-full").setAttribute("aria-pressed",String(active));const stack=$("ptg-toast-stack");if(stack)(active?area:document.body).append(stack);render();}
 async function exitFull(){if(expanded){expanded=false;area.classList.remove("ok-expanded");document.body.style.overflow=oldOverflow;fullRefresh();}else if(document.fullscreenElement===area)await document.exitFullscreen().catch(()=>{});}
 $("ok-back").onclick=()=>void exitFull();
 $("ok-full").onclick=async()=>{if(expanded||document.fullscreenElement===area)return exitFull();try{if(!area.requestFullscreen)throw Error("Unavailable");await area.requestFullscreen();}catch{oldOverflow=document.body.style.overflow;document.body.style.overflow="hidden";expanded=true;area.classList.add("ok-expanded");fullRefresh();}};
 document.addEventListener("fullscreenchange",fullRefresh);document.addEventListener("keydown",e=>{if(e.key==="Escape"&&expanded)void exitFull();});$("ok-login").onclick=async()=>{await exitFull();$("auth-open")?.click();};
-build();render();if(testMode){area.classList.add("ok-test-mode");try{testMap=designMap(JSON.parse(sessionStorage.getItem("ptg-orange-test")||"null"));startTest();}catch(e){status("No valid test level. Return to the editor and select Test level.");}}else onAuthStateChanged(auth,user=>{++epoch;cancelAnimationFrame(frame);anim=null;state=null;wallet=0;type="marina";busy=false;failed=null;drag=null;confirmUntil=0;render();if(!eligible()){status(!user?"Sign in to play.":usingLocalFirebaseEmulators?"Select Live Firebase in Settings.":"Verify your email to play.");return;}const pending=restore(user.uid);if(pending){failed=pending;void send(pending.kind,{},true);}else void send("state");});
+build();render();if(testMode){area.classList.add("ok-test-mode");try{testMap=designMap(JSON.parse(sessionStorage.getItem("ptg-orange-test")||"null"));startTest();}catch(e){status("No valid test level. Return to the editor and select Test level.");}}else onAuthStateChanged(auth,user=>{++epoch;closePicker();starResult=null;cancelAnimationFrame(frame);anim=null;state=null;wallet=0;type="marina";busy=false;failed=null;drag=null;confirmUntil=0;render();if(!eligible()){status(!user?"Sign in to play.":usingLocalFirebaseEmulators?"Select Live Firebase in Settings.":"Verify your email to play.");return;}const pending=restore(user.uid);if(pending){failed=pending;void send(pending.kind,{},true);}else void send("state");});
 setInterval(()=>{if(confirmUntil&&Date.now()>=confirmUntil){confirmUntil=0;controls();}},500);

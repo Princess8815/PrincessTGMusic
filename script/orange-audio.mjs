@@ -10,10 +10,10 @@ export function createOrangeAudio({doc=document,storage=localStorage,Audio=globa
  const melody=[72,76,79,76,74,77,81,77,76,79,83,79,74,77,79,77,72,76,79,84,81,79,76,74,77,81,84,81,79,77,74,72];
  const bass=[48,53,52,55,48,57,53,55];
  function update(){for(const b of buttons){const key=b.dataset.okAudio,on=pref[key];b.setAttribute("aria-pressed",String(on));b.textContent=(key==="music"?"Music":"Sound")+": "+(on?"On":"Off");}}
- function note(bus,hz,at,length,volume=.035,type="sine",endHz=hz){
+ function note(bus,hz,at,length,volume=.035,type="sine",endHz=hz,pan=0){
   if(!ctx||ctx.state!=="running")return;
   const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.setValueAtTime(hz,at);if(endHz!==hz)o.frequency.exponentialRampToValueAtTime(Math.max(20,endHz),at+length);
-  g.gain.setValueAtTime(.0001,at);g.gain.exponentialRampToValueAtTime(volume,at+.008);g.gain.exponentialRampToValueAtTime(.0001,at+length);o.connect(g);g.connect(bus);o.start(at);o.stop(at+length+.01);
+  g.gain.setValueAtTime(.0001,at);g.gain.exponentialRampToValueAtTime(volume,at+.008);g.gain.exponentialRampToValueAtTime(.0001,at+length);o.connect(g);if(pan&&ctx.createStereoPanner){const p=ctx.createStereoPanner();p.pan.value=pan;g.connect(p);p.connect(bus);}else g.connect(bus);o.start(at);o.stop(at+length+.01);
  }
  const hz=n=>440*2**((n-69)/12);
  function schedule(){
@@ -39,16 +39,23 @@ export function createOrangeAudio({doc=document,storage=localStorage,Audio=globa
    if(ctx.state!=="running")await ctx.resume();unlocked=ctx.state==="running";sync();
   }catch{}
  }
- function effect(name){
+ function effect(name,{x=480,strength=10,delay=0,count=1}={}){
   if(!pref.sound||doc.hidden||!ctx||ctx.state!=="running")return;
-  const at=ctx.currentTime,previous=last.get(name)??-Infinity;if(at-previous<.075)return;last.set(name,at);
+  const at=ctx.currentTime+delay,pan=Math.max(-.9,Math.min(.9,(x-480)/480)),volume=Math.max(.3,Math.min(1.3,strength/10));const key=name+":"+Math.round(pan*3),previous=last.get(key)??-Infinity;if(at-previous<.065)return;last.set(key,at);
   try{
-   const play=(f,delay,length,vol,type="sine",end=f)=>note(sound,f,at+delay,length,vol,type,end);
+   const play=(f,delay,length,vol,type="sine",end=f)=>note(sound,f,at+delay,length,vol*volume,type,end,pan);
    switch(name){
     case "launch":play(250,0,.18,.095,"triangle",810);break;
     case "glass":for(let i=0;i<5;i++)play([2450,1720,3180,2110,1320][i],i*.023,.09+i*.015,.022,"triangle",900+i*140);break;
     case "wood":play(195,0,.10,.10,"triangle",65);play(480,.015,.045,.035,"square",120);break;
     case "impact":play(180,0,.09,.075,"triangle",82);break;
+    case "woodHit":play(290,0,.07,.055,"triangle",110);break;
+    case "glassHit":play(1900,0,.09,.035,"sine",1400);play(2600,.01,.06,.018,"triangle");break;
+    case "stoneHit":play(125,0,.10,.09,"triangle",55);play(320,.01,.06,.027,"square",95);break;
+    case "metalHit":play(920,0,.18,.045,"triangle",620);play(1480,.015,.12,.022,"sine");break;
+    case "springHit":play(320,0,.16,.06,"sine",780);break;
+    case "star":for(let i=0;i<count;i++)play(hz([76,79,84][i]),i*.18,.23,.075,"triangle");break;
+    case "levelUp":[72,76,79,84,88].forEach((n,i)=>play(hz(n),i*.095,.24,.06,"triangle"));break;
     case "bounce":play(440,0,.11,.075,"sine",720);break;
     case "fruit":play(350,0,.13,.08,"sine",190);break;
     case "clear":play(740,0,.10,.055);play(990,.065,.12,.046);break;
@@ -58,15 +65,18 @@ export function createOrangeAudio({doc=document,storage=localStorage,Audio=globa
    }
   }catch{}
  }
+ function materialSound(material){return material==="glass"?"glassHit":["wall","stone"].includes(material)?"stoneHit":["steel","reinforced","reflector"].includes(material)?"metalHit":["spring","trampoline"].includes(material)?"springHit":"woodHit";}
  function event(e,material){
-  if(e.kind==="glassShatter")effect("glass");
-  else if(e.kind==="branch"&&material!=="glass")effect("wood");
-  else if(e.kind==="impactBounce")effect("impact");
-  else if(e.kind==="bounce"||e.kind==="pushThrough")effect("bounce");
-  else if(e.kind==="fruitImpact")effect("fruit");
-  else if(e.kind==="orange")effect("clear");
-  else if(e.kind==="blast")effect("blast");
+  const m=e.material||material,opts={x:e.x??480,strength:e.strength??10};
+  if(e.kind==="glassShatter")effect("glass",opts);
+  else if(e.kind==="branch"&&m!=="glass")effect(m==="wood"||!m?"wood":materialSound(m),opts);
+  else if(e.kind==="blockContact"||e.kind==="impactBounce"||e.kind==="pushThrough")effect(materialSound(m),opts);
+  else if(e.kind==="bounce")effect(materialSound(m||"spring"),opts);
+  else if(e.kind==="fruitImpact")effect("fruit",opts);
+  else if(e.kind==="orange")effect("clear",opts);
+  else if(e.kind==="blast")effect("blast",opts);
  }
+ function victory(rating,levelUp){const count=Math.max(1,Math.min(3,Number(rating)||1));effect("star",{count});effect(levelUp?"levelUp":"win",{delay:count*.18+.15});}
  function toggle(key){if(!Object.hasOwn(pref,key))return;pref[key]=!pref[key];try{storage.setItem(KEY,JSON.stringify(pref));}catch{}sync();void unlock();}
  for(const b of buttons)b.addEventListener("click",()=>toggle(b.dataset.okAudio));
  doc.addEventListener("pointerdown",()=>void unlock(),{passive:true});
@@ -76,5 +86,5 @@ export function createOrangeAudio({doc=document,storage=localStorage,Audio=globa
  globalThis.addEventListener?.("pagehide",e=>{if(!e.persisted)dispose();else stopMusic();});
  globalThis.addEventListener?.("pageshow",e=>{if(e.persisted&&unlocked)void unlock();});
  update();
- return {effect,event,toggle,preferences:()=>({...pref}),dispose};
+ return {effect,event,victory,toggle,preferences:()=>({...pref}),dispose};
 }
