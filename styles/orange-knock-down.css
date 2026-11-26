@@ -13,3 +13,17 @@ body #ok-area:is(:fullscreen,.ok-expanded){position:fixed;inset:0;width:100vw!im
 @media(max-width:849px){.ok-layout{grid-template-columns:1fr}.ok-team #ok-types{grid-template-columns:repeat(auto-fit,minmax(155px,1fr))}.ok-hud{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 #ok-overlay.ok-victory{pointer-events:auto;background:#102518b0;gap:12px;z-index:3}#ok-overlay #ok-next{font-size:clamp(1rem,2.5vw,1.4rem);min-height:48px;padding:12px 28px;background:#ffcf67!important;color:#45260b!important;box-shadow:0 4px 0 #9f6624;text-shadow:none}#ok-overlay #ok-next:disabled{background:#d9d3cc!important;color:#615950!important;box-shadow:none}.ok-mechanic{font-size:.78rem;margin:2px 0 6px;color:var(--ptg-text,#f9f6ed)}#ok-area:is(:fullscreen,.ok-expanded) .ok-mechanic{margin:0;font-size:.72rem}
+
+.ok-feature-panel{border:1px solid #b98e4b;border-radius:10px;background:#29283b;padding:6px;margin-bottom:8px;color:#fff4da}
+.ok-feature-panel h2{color:#ffe1a1!important;font-size:.86rem;margin:0 0 4px}
+.ok-feature-card{display:flex;align-items:center;gap:7px;padding:6px;background:#353347;color:#fff4da;border-radius:8px;border:1px solid #5c5773;min-width:0;text-align:left;text-shadow:none}
+.ok-feature-card.is-unlocked{border-color:#d3b46a;background:#3b493c}
+.ok-feature-icon{width:46px;height:46px;flex:0 0 46px;display:grid;place-items:center;background:#e9e4d5;border-radius:8px}
+.ok-feature-icon svg{width:100%;height:100%}.is-locked .ok-feature-icon{background:#8a899c}
+.ok-feature-copy{display:grid;gap:3px;min-width:0;flex:1}.ok-feature-copy strong{font-size:.78rem!important;color:#fff4da!important;line-height:1.2}.ok-feature-copy span{font-size:.68rem;line-height:1.25;color:#f4ead4!important}
+.ok-feature-progress{display:flex;align-items:center;gap:5px;font-size:.72rem;color:#ffdb84}.ok-feature-progress progress{width:100%;min-width:0;height:9px;accent-color:#ffbf59}
+.ok-feature-catalog{margin:4px 0!important}.ok-feature-catalog summary{cursor:pointer;color:#ffe1a1;font-size:.72rem}
+#ok-feature-list{display:grid;gap:4px;margin-top:5px;max-height:270px;overflow:auto}
+#ok-victory-feature{width:min(88%,340px)}#ok-victory-feature .ok-feature-card{background:#29283b;box-shadow:0 2px 10px #0005}
+#ok-overlay.ok-victory{gap:8px}#ok-overlay #ok-next{min-height:42px;padding:8px 22px}
+@media(max-height:520px){#ok-victory-feature .ok-feature-icon{width:32px;height:32px;flex-basis:32px}#ok-overlay.ok-victory{gap:4px}}

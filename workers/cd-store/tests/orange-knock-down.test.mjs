@@ -1,7 +1,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import {initialOrange,layout,freshLevel,simulateShot,applyOrange,validShot,fruiterChance,tangieChance} from "../../../script/orange-knock-down-core.mjs";
+import {WIDTH,GROUND,initialOrange,layout,freshLevel,simulateShot,applyOrange,validShot,fruiterChance,tangieChance,FEATURES,featureProgress,DESIGN_NAMES} from "../../../script/orange-knock-down-core.mjs";
 import {orangeWithStorage} from "../orange-knock-down.mjs";
 test("starter pack and increasing orchard",()=>{
  const s=initialOrange(123);assert.deepEqual(s.inventory,{aqualily:3,bulky:3,sploder:3,sniper:3});assert.ok(s.board.marina>=5);assert.ok(layout(30,123).branches.length>layout(1,123).branches.length);assert.ok(layout(30,123).branches.some(b=>b.hp===2));assert.deepEqual(layout(10,123),layout(10,123));
@@ -53,11 +53,30 @@ test("materials unlock progressively, support collapse and legacy saves are pres
  assert.deepEqual(result.hp,[0,0]);assert.equal(result.remaining.length,0);
  const old=initialOrange(123);delete old.layoutVersion;old.version=1;old.board=freshLevel(1,123,1);
  const retry=applyOrange(old,{kind:"retry"});assert.deepEqual(retry.state.board,old.board);
- old.board.remaining=[0];const win=applyOrange(old,{kind:"shot",shot:{type:"sniper",target:0}},()=>.5);const next=applyOrange(win.state,{kind:"next"});assert.equal(next.state.layoutVersion,2);assert.deepEqual(next.state.board,freshLevel(2,123,2));
+ old.board.remaining=[0];const win=applyOrange(old,{kind:"shot",shot:{type:"sniper",target:0}},()=>.5);const next=applyOrange(win.state,{kind:"next"});assert.equal(next.state.layoutVersion,3);assert.deepEqual(next.state.board,freshLevel(2,123,3));
 });
 test("two-hit walls stop direct shots, reflectors reverse motion and resist blasts",()=>{
  const map={branches:[{id:0,x1:220,y1:290,x2:220,y2:480,hp:2,width:26,material:"wall"}],oranges:[{id:0,branch:-1,x:290,y:390}]},board={hp:[2],remaining:[0]},shot={type:"marina",angle:0,power:100};
  const a=simulateShot(map,board,shot,true);assert.equal(a.hp[0],1);assert.deepEqual(a.remaining,[0]);const b=simulateShot(map,{hp:a.hp,remaining:a.remaining},shot);assert.equal(b.hp[0],0);
  map.branches[0]={...map.branches[0],hp:1,reflect:true,material:"reflector"};const r=simulateShot(map,{hp:[1],remaining:[0]},shot,true);assert.equal(r.hp[0],1);assert.ok(r.events.some(e=>e.kind==="bounce"));assert.ok(r.frames.some((f,i)=>i>0&&f[0]&&r.frames[i-1][0]&&f[0].x<r.frames[i-1][0].x));assert.deepEqual(r.remaining,[0]);
  const blast=simulateShot(map,{hp:[1],remaining:[0]},{...shot,type:"sploder"});assert.equal(blast.hp[0],1);
+});
+
+test("feature progress is interval-based, reaches 100% only at milestone, and reveals in order",()=>{
+ const a=featureProgress(0);assert.equal(a.latest.id,"wood");assert.equal(a.next.id,"glass");assert.equal(a.next.percent,0);
+ assert.equal(featureProgress(1).next.percent,50);assert.equal(featureProgress(2).latest.id,"glass");assert.equal(featureProgress(3).next.percent,50);
+ assert.equal(featureProgress(35).latest.id,"crate");assert.equal(featureProgress(35).next,null);
+});
+test("varied puzzle families, valid structures, deterministic maps and old-layout compatibility",()=>{
+ const names=new Set();
+ for(let l=1;l<=60;l++){const m=layout(l,123);names.add(m.design);assert.deepEqual(m,layout(l,123));assert.ok(m.oranges.length<=32);assert.ok(m.oranges.every(o=>o.x>=0&&o.x<=WIDTH&&o.y>=0&&o.y<GROUND&&m.branches[o.branch]));assert.ok(m.branches.every((b,i)=>b.id===i&&b.supports.every(x=>x!==i&&m.branches[x])));}
+ assert.equal(names.size,DESIGN_NAMES.length);
+ const old=initialOrange(123);old.version=2;old.layoutVersion=2;old.board=freshLevel(1,123,2);assert.deepEqual(applyOrange(old,{kind:"retry"}).state.board,old.board);
+});
+test("spring bounce boosts speed and burst crates chain without damaging reflectors",()=>{
+ const map={branches:[{id:0,x1:220,y1:290,x2:220,y2:480,hp:1,width:19,reflect:true,spring:true}],oranges:[{id:0,branch:-1,x:400,y:390}]};
+ const shot={type:"marina",angle:0,power:70},result=simulateShot(map,{hp:[1],remaining:[0]},shot,true);
+ assert.ok(result.events.some(e=>e.kind==="bounce"&&e.spring));assert.equal(result.hp[0],1);
+ const crates={branches:[{id:0,x1:200,y1:370,x2:200,y2:420,hp:1,burst:true},{id:1,x1:290,y1:370,x2:290,y2:420,hp:1,burst:true},{id:2,x1:380,y1:370,x2:380,y2:420,hp:1,reflect:true}],oranges:[{id:0,branch:-1,x:400,y:400}]};
+ const r=simulateShot(crates,{hp:[1,1,1],remaining:[0]},{type:"marina",angle:0,power:100});assert.deepEqual(r.hp,[0,0,1]);assert.equal(r.remaining.length,0);assert.equal(r.events.filter(e=>e.kind==="blast").length,2);
 });

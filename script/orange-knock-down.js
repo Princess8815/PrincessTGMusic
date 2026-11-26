@@ -1,12 +1,13 @@
 
 import {auth,usingLocalFirebaseEmulators} from "./firebase.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-import {WIDTH,HEIGHT,GROUND,SLING,PRICE,TYPES,AXOLOTLS,MATERIALS,levelIntro,layout,velocity,simulateShot} from "./orange-knock-down-core.mjs";
+import {WIDTH,HEIGHT,GROUND,SLING,PRICE,TYPES,AXOLOTLS,MATERIALS,FEATURES,featureProgress,levelIntro,layout,velocity,simulateShot} from "./orange-knock-down-core.mjs";
 import {showToast} from "./toast-sound.js";
 const $=id=>document.getElementById(id),area=$("ok-area"),canvas=$("ok-canvas"),ctx=canvas.getContext("2d");
 const endpoint="https://princesstg-cd-store-live.transgirl1991.workers.dev/games/orange-knock-down";
 const eligible=()=>!!auth.currentUser?.emailVerified&&!usingLocalFirebaseEmulators;
 let state=null,wallet=0,type="marina",busy=false,failed=null,epoch=0,drag=null,anim=null,frame=0,expanded=false,oldOverflow="",confirmUntil=0;
+let featureSignature="",featureAccount=null;
 const nodes=new Map(),status=m=>$("ok-status").textContent=m;
 const key=uid=>"ptg-orange-pending-v1:"+uid;
 const stash=(uid,action)=>{try{localStorage.setItem(key(uid),JSON.stringify(action));}catch{}};
@@ -18,11 +19,43 @@ const canShoot=()=>ready()&&!state.board.won&&count(type)>0;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function portrait(t){const a=AXOLOTLS[t];return '<svg viewBox="0 0 70 55" aria-hidden="true"><g fill="'+a.gill+'"><path d="M19 25 2 7 16 10 24 22 1 23 6 36 24 32M51 25 68 7 54 10 46 22 69 23 64 36 46 32"/></g><ellipse cx="35" cy="30" rx="23" ry="19" fill="'+a.color+'" stroke="#4e4857" stroke-width="2"/><circle cx="27" cy="28" r="2.7" fill="#303244"/><circle cx="43" cy="28" r="2.7" fill="#303244"/><path d="M31 35q4 5 8 0" fill="none" stroke="#60455c" stroke-width="2"/></svg>';}
 function build(){for(const t of TYPES){const card=document.createElement("div");card.className="ok-type";const b=document.createElement("button");b.type="button";b.className="ok-select ptg-theme-exempt";b.innerHTML=portrait(t);const label=document.createElement("span");b.append(label);b.onclick=()=>{type=t;confirmUntil=0;render();};card.append(b);let buy=null;if(t!=="marina"){buy=document.createElement("button");buy.className="ptg-theme-exempt";buy.type="button";buy.textContent="100 ★";buy.title="Buy one "+AXOLOTLS[t].name+" throw";buy.onclick=()=>void send("buy",{type:t});card.append(buy);}const hint=document.createElement("small");hint.textContent=AXOLOTLS[t].description;card.append(hint);$("ok-types").append(card);nodes.set(t,{b,label,buy});}}
+function featureIcon(id,locked=false){
+ const m=MATERIALS[id==="angled"?"reflector":id]||MATERIALS.wood,fill=locked?"#373a4c":m.color,edge=locked?"#373a4c":m.edge;
+ const block=(x,y,w,h,extra="")=>'<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="2" fill="'+fill+'" stroke="'+edge+'" stroke-width="2" '+extra+'/>';
+ let art="";
+ if(id==="wood"){art=block(8,18,8,36)+block(48,18,8,36)+block(4,12,56,9);}
+ else if(id==="wall"||id==="stone"){for(let y=12;y<56;y+=13)for(let x=6+(y%2)*7;x<52;x+=17)art+=block(x,y,15,11);}
+ else if(id==="reflector"||id==="angled"){art=block(26,5,12,54,id==="angled"?'transform="rotate(38 32 32)"':"");if(!locked)art+='<path d="M13 13l13 16-13 13" fill="none" stroke="#f6e9ff" stroke-width="3"/>';}
+ else if(id==="spring"){art=block(6,43,52,10)+block(8,10,48,10)+'<path d="M13 20l38 6-38 6 38 6-38 5" stroke="'+edge+'" stroke-width="6" fill="none"/>';}
+ else if(id==="crate"){art=block(10,11,44,44);if(!locked)art+='<path d="m32 17 5 11 12-1-9 9 3 12-11-7-11 7 3-12-9-9 12 1z" fill="#fff1a4"/>';}
+ else{art=block(8,23,48,18,'transform="rotate(-25 32 32)"');if(!locked)art+='<path d="M14 32h36" stroke="#eff6f9" stroke-width="2" transform="rotate(-25 32 32)"/>';}
+ return '<svg viewBox="0 0 64 64" aria-hidden="true">'+art+'</svg>';
+}
+function featureCard(f,compact=false){
+ const card=document.createElement("div");card.className="ok-feature-card"+(f.unlocked?" is-unlocked":" is-locked")+(compact?" is-compact":"");
+ const icon=document.createElement("span");icon.className="ok-feature-icon";icon.innerHTML=featureIcon(f.id,!f.unlocked);card.append(icon);
+ const body=document.createElement("div");body.className="ok-feature-copy";const name=document.createElement("strong"),desc=document.createElement("span");name.textContent=f.unlocked?f.name:"Mystery feature";desc.textContent=f.unlocked?f.description:"Unlocks at level "+f.level+" · "+f.remaining+" "+(f.remaining===1?"clear":"clears")+" to go";body.append(name,desc);
+ if(!f.unlocked){const progress=document.createElement("progress");progress.max=100;progress.value=f.percent;progress.setAttribute("aria-label","Progress to next feature");const percent=document.createElement("b");percent.textContent=f.percent+"%";const row=document.createElement("div");row.className="ok-feature-progress";row.append(progress,percent);body.append(row);}
+ card.append(body);return card;
+}
+function renderFeatures(){
+ const cleared=state?.cleared||0,signature=String(cleared)+":"+String(state?.level||0)+":"+String(!!state?.board.won);
+ if(signature===featureSignature)return;featureSignature=signature;
+ const summary=$("ok-feature-summary"),all=$("ok-feature-list"),victory=$("ok-victory-feature");
+ summary.replaceChildren();all.replaceChildren();victory.replaceChildren();victory.hidden=true;
+ if(!state)return;
+ const p=featureProgress(cleared);
+ if(p.next)summary.append(featureCard(p.next,true));else{const done=document.createElement("p");done.textContent="All orchard mechanics unlocked!";summary.append(done);}
+ for(const f of p.features)all.append(featureCard(f));
+ const unlocked=p.features.find(f=>f.level>1&&f.level-1===cleared);
+ if(state.board.won&&unlocked){victory.append(featureCard(unlocked,true));victory.hidden=false;}
+ else if(state.board.won&&p.next){victory.append(featureCard(p.next,true));victory.hidden=false;}
+}
 function controls(){
  const board=state?.board,won=!!board?.won,shots=TYPES.some(t=>count(t)>0);
  $("ok-level").textContent=state?.level||1;$("ok-left").textContent=board?.remaining.length||0;$("ok-shots").textContent=board?.marina||0;$("ok-wallet").textContent=wallet.toLocaleString();
  $("ok-login").hidden=!!auth.currentUser||usingLocalFirebaseEmulators;$("ok-refresh").disabled=busy||!eligible()||!!failed;
- $("ok-resend").hidden=!failed||busy;$("ok-reset").disabled=!ready()||won;$("ok-next").hidden=!won;$("ok-next").disabled=!ready();$("ok-mechanic").textContent=state?levelIntro(state.level,state.layoutVersion||1):"";
+ $("ok-resend").hidden=!failed||busy;$("ok-reset").disabled=!ready()||won;$("ok-next").hidden=!won;$("ok-next").disabled=!ready();$("ok-mechanic").textContent=state?((layout(state.level,state.seed,state.layoutVersion||1).design||"Classic orchard")+" · "+levelIntro(state.level,state.layoutVersion||1)):"";renderFeatures();
  if(confirmUntil&&Date.now()>=confirmUntil)confirmUntil=0;$("ok-reset").textContent=confirmUntil?"Are you sure?":"Retry level";$("ok-reset").classList.toggle("ok-confirm",!!confirmUntil);
  for(const [t,n] of nodes){n.label.textContent=AXOLOTLS[t].name+" ×"+count(t);n.b.setAttribute("aria-pressed",String(type===t));n.b.disabled=!ready()||won||count(t)<=0;if(n.buy)n.buy.disabled=!ready()||wallet<PRICE||count(t)>=9999;}
  $("ok-angle-label").textContent=$("ok-angle").value+"°";$("ok-power-label").textContent=$("ok-power").value+"%";
@@ -52,7 +85,10 @@ function draw(now=performance.now()){
   ctx.save();ctx.translate(b.x1,b.y1+dy);const dx=b.x2-b.x1,by=b.y2-b.y1,len=Math.hypot(dx,by);ctx.rotate(Math.atan2(by,dx));
   ctx.fillStyle=material.color;ctx.strokeStyle=material.edge;ctx.lineWidth=2;ctx.fillRect(0,-w/2,len,w);ctx.strokeRect(0,-w/2,len,w);
   if(b.material==="wall"||b.material==="stone"){for(let x=18;x<len;x+=23)line(x,-w/2,x,w/2,material.edge,1.3);line(0,0,len,0,material.edge,1);}
+  else if(b.spring){for(let x=6;x<len-5;x+=12)line(x,-w/2+2,x+6,w/2-2,"#e2ffe4",3);}
   else if(b.reflect){for(let x=8;x<len-5;x+=18)line(x,-w/2+2,x+8,w/2-2,"#f4eaff",2);}
+  else if(b.burst){ctx.fillStyle="#fff0a5";ctx.font="bold 18px system-ui";ctx.textAlign="center";ctx.fillText("✦",len/2,6);}
+  else if(b.material==="reinforced"){line(2,-w/3,len-2,-w/3,"#b4c7d5",2);line(2,w/3,len-2,w/3,"#b4c7d5",2);for(let x=8;x<len;x+=22)circle(x,0,3,"#e0e6ec",material.edge);}
   else if(b.material==="steel"){for(let x=8;x<len;x+=30)circle(x,0,2.8,"#c7d5e1",material.edge);}
   else if(b.material==="glass"){line(3,-w/2+3,len-3,-w/2+3,"#e7fbff",2);for(let x=12;x<len;x+=24)line(x,-w/2+2,x+5,w/2-2,"#e7fbff",1);}
   else{line(4,-w/2+3,len-4,-w/2+3,"#d3a56c",2);line(10,1,len-10,1,"#775031",1);}
@@ -61,7 +97,7 @@ function draw(now=performance.now()){
   if(!e&&!b.reflect&&b.hp>1){ctx.font="bold 11px system-ui";ctx.textAlign="center";ctx.fillStyle="#302c2a";ctx.fillText(String(hp),b.x1+dx/2,b.y1+by/2-12);}
  }
  for(const o of map.oranges){if(!board.remaining.includes(o.id))continue;const e=fallen.get(o.id),dt=e?tick-e.t:0,y=e?Math.min(GROUND-14,o.y+.32*dt*dt):o.y;
-  if(e&&dt>48)continue;if(!e&&state.layoutVersion!==2)line(o.x,o.y-20,o.x,o.y-12,"#6e5737",2);orange(o.x,y);
+  if(e&&dt>48)continue;if(!e&&(state.layoutVersion||1)===1)line(o.x,o.y-20,o.x,o.y-12,"#6e5737",2);orange(o.x,y);
   if(!anim&&type==="sniper"){ctx.font="bold 10px system-ui";ctx.textAlign="center";ctx.fillStyle="#522b14";ctx.fillText(String(o.id+1),o.x,o.y+4);if(Number($("ok-target").value)===o.id){ctx.beginPath();ctx.arc(o.x,o.y,22,0,Math.PI*2);ctx.strokeStyle="#7438be";ctx.lineWidth=3;ctx.stroke();}}
  }
  if(anim){for(const p of anim.trace.frames[tick]||[])axo(p.x,p.y,p.type,p.r);for(const e of events)if(e.kind==="bounce"&&tick>=e.t&&tick-e.t<12){ctx.globalAlpha=1-(tick-e.t)/12;circle(e.x,e.y,8+(tick-e.t)*2,"#e6d9ff","#7d56bd");ctx.globalAlpha=1;}for(const e of events)if(e.kind==="blast"&&tick>=e.t&&tick-e.t<15){ctx.globalAlpha=1-(tick-e.t)/15;circle(e.x,e.y,20+(tick-e.t)*7,"#fff2aa","#f2a329");ctx.globalAlpha=1;}return;}
@@ -78,7 +114,7 @@ canvas.addEventListener("pointermove",e=>{if(drag?.id===e.pointerId)aim(point(e)
 canvas.addEventListener("pointerup",e=>{if(drag?.id!==e.pointerId)return;const p=point(e),dist=Math.hypot(p.x-SLING.x,p.y-SLING.y);aim(p);drag=null;if(dist>=12)void launch();else render();});
 canvas.addEventListener("pointercancel",()=>{drag=null;render();});
 async function request(action,uid){const user=auth.currentUser;if(!eligible()||user.uid!==uid)throw Error("Sign in with a verified account.");const idToken=await user.getIdToken();if(auth.currentUser?.uid!==uid)throw Error("Account changed.");const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({idToken,...action})});const data=await r.json();if(!r.ok)throw Error(data.error||"Game unavailable.");return data;}
-function accept(data,notify){state=data.state;wallet=data.wallet;confirmUntil=0;if(!count(type))type=TYPES.find(t=>count(t)>0)||"marina";status(data.message||"Ready.");if(notify){if(data.coins>0)showToast("Level cleared! +"+data.coins+" Star Coins");for(const id of data.rewards||[])showToast(id==="tangie"?"You found Tangie!":"You found Fruiter!");}}
+function accept(data,notify){const previous=state?.cleared;state=data.state;wallet=data.wallet;confirmUntil=0;if(!count(type))type=TYPES.find(t=>count(t)>0)||"marina";status(data.message||"Ready.");if(notify){if(data.coins>0&&previous!==undefined){for(const f of FEATURES)if(f.level>1&&previous<f.level-1&&state.cleared>=f.level-1)showToast("New feature unlocked: "+f.name+"!");}if(data.coins>0)showToast("Level cleared! +"+data.coins+" Star Coins");for(const id of data.rewards||[])showToast(id==="tangie"?"You found Tangie!":"You found Fruiter!");}}
 function animate(trace,current){
  return new Promise(resolve=>{anim={trace,start:performance.now(),duration:Math.max(trace.frames.length,...trace.events.map(e=>e.t+50),1)};function step(now){if(current!==epoch||!anim){resolve();return;}draw(now);if(now-anim.start>=anim.duration*16){resolve();return;}frame=requestAnimationFrame(step);}frame=requestAnimationFrame(step);});
 }

@@ -31,9 +31,12 @@ export const MATERIALS=Object.freeze({
  stone:{hp:2,width:17,color:"#a7a5a1",edge:"#666c75",label:"Stone"},
  steel:{hp:3,width:18,color:"#718da4",edge:"#3c5266",label:"Steel"},
  wall:{hp:2,width:26,color:"#c17b59",edge:"#79412d",label:"Brick wall"},
- reflector:{hp:1,width:15,color:"#b59bf0",edge:"#6448a0",label:"Reflector"}
+ reflector:{hp:1,width:15,color:"#b59bf0",edge:"#6448a0",label:"Reflector"},
+ spring:{hp:1,width:19,color:"#7ee3a0",edge:"#246b50",label:"Spring bumper"},
+ reinforced:{hp:4,width:21,color:"#536577",edge:"#233748",label:"Reinforced alloy"},
+ crate:{hp:1,width:28,color:"#f5a23c",edge:"#923e24",label:"Burst crate"}
 });
-export function layout(level,seed,version=2){
+function towerLayout(level,seed,version=2){
  if(version===1)return legacyLayout(level,seed);
  const rng=layoutRandom((seed^Math.imul(level,0x9e3779b1))>>>0),branches=[],oranges=[];
  const pick=n=>Math.floor(rng()*n);
@@ -78,7 +81,129 @@ export function layout(level,seed,version=2){
  // Enough for repeated structural hits, plus a limited miss allowance.
  return {branches,oranges,shots:Math.max(5,Math.ceil(durability*.45)+2)};
 }
-export function levelIntro(level,version=2){
+export const FEATURES=Object.freeze([
+ {id:"wood",level:1,name:"Timber frames",description:"Break a support and watch connected shelves collapse."},
+ {id:"glass",level:3,name:"Glass beams",description:"Fragile blue beams shatter with one hit."},
+ {id:"wall",level:5,name:"Brick barricades",description:"Break them with two ordinary hits or arc over the top."},
+ {id:"stone",level:8,name:"Stone structures",description:"Stone needs two hits. Aim for its weaker connections."},
+ {id:"reflector",level:12,name:"Ricochet panels",description:"Unbreakable purple panels reflect your shot."},
+ {id:"steel",level:16,name:"Steel beams",description:"Three hits to break. Bulky can smash one in a single shot."},
+ {id:"angled",level:20,name:"Angled reflectors",description:"Slanted panels send shots in surprising directions."},
+ {id:"spring",level:24,name:"Spring bumpers",description:"Green bumpers bounce shots back with extra speed."},
+ {id:"reinforced",level:30,name:"Reinforced alloy",description:"Four hits to break. Find a weak point instead."},
+ {id:"crate",level:36,name:"Chain-reaction crates",description:"Hit an orange burst crate to damage nearby pieces and shake fruit loose."}
+]);
+export function featureProgress(cleared=0){
+ const reached=Math.max(0,Math.floor(Number(cleared)||0));
+ const features=FEATURES.map((f,i)=>{
+  const start=i?FEATURES[i-1].level-1:0,end=f.level-1;
+  const unlocked=reached>=end,percent=unlocked?100:Math.floor(100*clamp((reached-start)/Math.max(1,end-start),0,1));
+  return {...f,unlocked,percent,remaining:Math.max(0,end-reached)};
+ });
+ return {features,next:features.find(f=>!f.unlocked)||null,latest:features.filter(f=>f.unlocked).at(-1)||null};
+}
+export const DESIGN_NAMES=["Orchard bridge","Twin towers","Pyramid steps","Triangular A-frame","Staggered terraces","Diamond pavilion","Cantilever garden","Fortified shelter","Crown gate","Crisscross lattice"];
+export function layout(level,seed,version=3){
+ if(version<3)return towerLayout(level,seed,version);
+ const rng=layoutRandom((seed^Math.imul(level,0x9e3779b1))>>>0),branches=[],oranges=[];
+ const pick=n=>Math.floor(rng()*n),base=GROUND-6;
+ const available=Math.min(DESIGN_NAMES.length,level<4?4:level<8?6:level<12?8:10);
+ // Every run cycles through a changing family, not just randomized coordinates.
+ const design=(level-1+(Math.floor((level-1)/10)*(1+(seed>>>0)%3)))%available;
+ const offset=pick(31)-15;
+ function add(x1,y1,x2,y2,material="wood",supports=[]){
+  const m=MATERIALS[material],id=branches.length;
+  branches.push({id,x1,y1,x2,y2,hp:m.hp,material,width:m.width,supports,reflect:material==="reflector"||material==="spring",spring:material==="spring",burst:material==="crate"});return id;
+ }
+ function fruit(shelf,x,y){oranges.push({id:oranges.length,branch:shelf,x,y});}
+ function material(i){if(level>=30&&i%7===0)return "reinforced";if(level>=16&&i%4===0)return "steel";if(level>=8&&i%3===0)return "stone";if(level>=3&&i%2===1)return "glass";return "wood";}
+ function shelf(x,y,w,supports,i=0,n=2){const id=add(x-5,y,x+w+5,y,material(i),supports);for(let j=0;j<n;j++)fruit(id,x+w*(j+1)/(n+1),y-22);return id;}
+ function box(x,y,w,h,i=0,below=[],n=2){
+  const a=add(x,y+h,x,y,material(i+1),below),b=add(x+w,y+h,x+w,y,material(i+2),below);
+  return shelf(x,y,w,[a,b],i,n);
+ }
+ function triangle(x,y,w,h,i=0,below=[]){
+  const a=add(x,y,x+w/2,y-h,material(i+1),below),b=add(x+w,y,x+w/2,y-h,material(i+2),below);
+  const deck=shelf(x+w*.25,y-h*.5,w*.5,[a,b],i,1);
+  fruit(deck,x+w*.5,y-h-21);return deck;
+ }
+ function diamond(x,y,w,h,i=0,below=[]){
+  const left=add(x,y-h/2,x+w/2,y,material(i+1),below),right=add(x+w,y-h/2,x+w/2,y,material(i+2),below);
+  const roofL=add(x,y-h/2,x+w/2,y-h,material(i+3),[left]),roofR=add(x+w,y-h/2,x+w/2,y-h,material(i+4),[right]);
+  const deck=shelf(x+12,y-h/2,w-24,[left,right],i,1);fruit(deck,x+w/2,y-h-22);
+  // The outer roof is a separate protective layer, not the fruit's support.
+  return {deck,roofL,roofR};
+ }
+ const x=520+offset,far=760-offset;
+ switch(design){
+  case 0:{
+   const l=box(x,base-95,75,95,0,[],1),r=box(far,base-95,70,95,1,[],1);
+   const bridge=shelf(x+75,base-153,far-x-75,[l,r],2,2);
+   add(x+75,base-95,x+75,base-153,material(3),[l]);add(far,base-95,far,base-153,material(4),[r]);
+   // Bridge deck depends on the upper columns as well as its piers.
+   branches[bridge].supports.push(bridge+1,bridge+2);
+   if(level>=13)triangle(x+95,base-153,125,83,4,[bridge]);break;
+  }
+  case 1:{
+   const floors=level<7?1:level<20?2:3;
+   for(const [pos,w,n] of [[x,115,floors],[far,96,Math.max(1,floors-1)]]){let lower=[];for(let j=0;j<n;j++)lower=[box(pos,base-(j+1)*76,w,76,j+pos%3,lower)];}break;
+  }
+  case 2:{
+   const l=box(x-20,base-65,145,65,1),r=box(x+145,base-65,145,65,2);
+   const top=box(x+65,base-135,140,70,3,[l,r],2);
+   if(level>=13)triangle(x+85,base-135,100,78,5,[top]);break;
+  }
+  case 3:{
+   triangle(x-25,base,200,160,0);triangle(far-30,base,125,115,2);
+   if(level>=12){const beam=box(x+30,base-52,100,52,4,[],1);fruit(beam,x+80,base-95);}break;
+  }
+  case 4:{
+   const a=box(x-40,base-58,100,58,0,[],2),b=box(x+95,base-132,105,132,2,[],2);
+   box(far-10,base-200,100,200,3,[],2);
+   if(level>=16)shelf(x+12,base-120,64,[a,b],5,1);break;
+  }
+  case 5:{
+   const a=box(x,base-48,110,48,0,[],1);diamond(x-20,base-48,150,142,2,[a]);diamond(far-40,base,150,168,4);break;
+  }
+  case 6:{
+   const a=box(x,base-120,78,120,0,[],1),b=shelf(x-60,base-120,190,[a],3,3);
+   const c=box(far-15,base-75,105,75,2,[],1);
+   shelf(far-65,base-75,175,[c],5,3);
+   if(level>=16)triangle(x-40,base-120,115,100,6,[b]);break;
+  }
+  case 7:{
+   const a=box(x-25,base-100,145,100,1,[],2),b=box(far-25,base-85,125,85,3,[],2);
+   add(x-45,base-10,x-45,base-120,level>=8?"stone":"wall");
+   add(x-45,base-120,x+135,base-120,material(4),[a]);
+   add(far-35,base-105,far+105,base-105,material(5),[b]);break;
+  }
+  case 8:{
+   const l=box(x-15,base-120,90,120,0,[],2),r=box(far-30,base-120,90,120,3,[],2);
+   const top=shelf(x-15,base-208,far-x+75,[l,r],5,3);
+   add(x-15,base-120,x-15,base-208,material(6),[l]);add(far+60,base-120,far+60,base-208,material(7),[r]);branches[top].supports.push(top+1,top+2);break;
+  }
+  default:{
+   const l=box(x-25,base-85,130,85,0),r=box(far-25,base-85,110,85,3);
+   add(x-25,base,x+105,base-85,material(4));add(x+105,base,x-25,base-85,material(5));
+   triangle(x-25,base-85,130,105,6,[l]);triangle(far-25,base-85,110,90,7,[r]);break;
+  }
+ }
+ // Guaranteed introduction of each material at its milestone, even if the
+ // selected family happens not to use that material's index naturally.
+ for(const feature of FEATURES.filter(f=>f.level<=level&&["glass","stone","steel","reinforced"].includes(f.id))){
+  if(!branches.some(b=>b.material===feature.id)){
+   const b=branches.find(b=>b.material==="wood");if(b){Object.assign(b,{material:feature.id,hp:MATERIALS[feature.id].hp,width:MATERIALS[feature.id].width});}
+  }
+ }
+ if(level>=5){const xw=350+pick(28),height=level<10?90:level<20?120:150;add(xw,base,xw,base-height,"wall");}
+ if(level>=12)add(923,base-35,923,base-255,"reflector");
+ if(level>=20){const px=410+pick(35);add(px,base-150,px+58,base-204,"reflector");}
+ if(level>=24)add(880,base-12,920,base-50,"spring");
+ if(level>=36){add(x-30,base-10,x-30,base-38,"crate");add(far-45,base-10,far-45,base-38,"crate");}
+ const durability=branches.reduce((n,b)=>n+(b.reflect?0:b.hp),0);
+ return {branches,oranges,design:DESIGN_NAMES[design],shots:Math.max(5,Math.ceil(durability*.42)+3)};
+}
+export function levelIntro(level,version=3){
  if(version===1)return "Classic orchard";
  if(level<3)return "Wooden towers · Break supports to topple shelves";
  if(level<5)return "Glass beams · Fragile structures";
@@ -86,10 +211,13 @@ export function levelIntro(level,version=2){
  if(level<12)return "Stone supports · Two hits";
  if(level<16)return "Reflective backstops · Bank your shots";
  if(level<20)return "Steel supports · Three hits";
- return "Mixed fortresses · Angled reflectors and taller walls";
+ if(level<24)return "Mixed fortresses · Angled reflectors and taller walls";
+ if(level<30)return "Spring bumpers · Boosted ricochets";
+ if(level<36)return "Reinforced alloy · Four hits";
+ return "Chain-reaction crates · Look for the weak point";
 }
-export function freshLevel(level,seed,version=2){const map=layout(level,seed,version);return {hp:map.branches.map(b=>b.hp),remaining:map.oranges.map(o=>o.id),marina:map.shots,won:false};}
-export function initialOrange(seed){return {version:2,layoutVersion:2,revision:0,seed:seed>>>0,level:1,cleared:0,inventory:Object.fromEntries(SPECIALS.map(t=>[t,3])),board:freshLevel(1,seed)};}
+export function freshLevel(level,seed,version=3){const map=layout(level,seed,version);return {hp:map.branches.map(b=>b.hp),remaining:map.oranges.map(o=>o.id),marina:map.shots,won:false};}
+export function initialOrange(seed){return {version:3,layoutVersion:3,revision:0,seed:seed>>>0,level:1,cleared:0,inventory:Object.fromEntries(SPECIALS.map(t=>[t,3])),board:freshLevel(1,seed)};}
 export function validShot(shot){
  if(!shot||!TYPES.includes(shot.type))return false;
  if(shot.type==="sniper")return Number.isInteger(shot.target)&&shot.target>=0&&shot.target<32;
@@ -116,6 +244,7 @@ export function simulateShot(map,board,shot,trace=false){
   if(!hp[id]){
    events.push({kind:"branch",id,t});for(const o of map.oranges)if(o.branch===id)drop(o.id,t);
    for(const b of map.branches)if(hp[b.id]&&b.supports?.includes(id))damageBranch(b.id,hp[b.id],t);
+   const piece=map.branches[id];if(piece.burst)blast((piece.x1+piece.x2)/2,(piece.y1+piece.y2)/2,t);
   }
  };
  const blast=(x,y,t)=>{events.push({kind:"blast",x,y,t});for(const b of map.branches)if(hp[b.id]&&!b.reflect&&distanceSegment(x,y,b)<115)damageBranch(b.id,2,t);for(const o of map.oranges)if(remaining.has(o.id)&&Math.hypot(x-o.x,y-o.y)<130)drop(o.id,t);};
@@ -134,7 +263,7 @@ export function simulateShot(map,board,shot,trace=false){
      // Resolve solid material before touching fruit behind it.
      for(const b of map.branches){
       if(!hp[b.id]||distanceSegment(p.x,p.y,b)>p.r+(b.width||12)/2)continue;
-      if(b.reflect){reflectParticle(p,b,.88);events.push({kind:"bounce",x:p.x,y:p.y,t});continue;}
+      if(b.reflect){reflectParticle(p,b,b.spring?1.25:.88);const speed=Math.hypot(p.vx,p.vy);if(speed>32){p.vx*=32/speed;p.vy*=32/speed;}events.push({kind:"bounce",x:p.x,y:p.y,t,spring:!!b.spring});continue;}
       if(!p.hit.has(b.id)){
        p.hit.add(b.id);
        if(p.type==="sploder"){blast(p.x,p.y,t);p.active=false;break;}
@@ -155,7 +284,7 @@ export function applyOrange(state,action,rng=Math.random){
  const done=(applied,message,coins=0,rewards=[])=>({state:s,applied,message,coins,rewards});
  if(action.kind==="buy"){if(!SPECIALS.includes(action.type))return done(false,"Choose a power-up.");if(s.inventory[action.type]>=9999)return done(false,"Power-up storage is full.");s.inventory[action.type]++;return done(true,AXOLOTLS[action.type].name+" added.",-PRICE);}
  if(action.kind==="retry"){if(s.board.won)return done(false,"This level is already complete.");s.board=freshLevel(s.level,s.seed,s.layoutVersion||1);return done(true,"Level reset. Used power-ups are not refunded.");}
- if(action.kind==="next"){if(!s.board.won)return done(false,"Clear all the oranges first.");if(s.level>=1000000)return done(false,"Maximum supported level reached.");s.level++;s.version=2;s.layoutVersion=2;s.board=freshLevel(s.level,s.seed,2);return done(true,"Level "+s.level+" ready.");}
+ if(action.kind==="next"){if(!s.board.won)return done(false,"Clear all the oranges first.");if(s.level>=1000000)return done(false,"Maximum supported level reached.");s.level++;s.version=3;s.layoutVersion=3;s.board=freshLevel(s.level,s.seed,3);return done(true,"Level "+s.level+" ready.");}
  if(action.kind!=="shot"||!validShot(action.shot))return done(false,"Invalid shot.");
  if(s.board.won)return done(false,"Level already complete.");
  const shot=action.shot,type=shot.type;if(type==="marina"?s.board.marina<=0:s.inventory[type]<=0)return done(false,"No "+AXOLOTLS[type].name+" throws left.");
