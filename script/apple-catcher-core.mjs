@@ -37,7 +37,7 @@ export function replay(s,to,moves){
 }
 export function rollRewards(catches,randomInt){
  const found=new Set();for(const c of catches){
-  if(c.score===50&&randomInt(5)===0)found.add("appey");
+  if(c.score>=50&&randomInt(5)===0)found.add("appey");
   if(randomInt(fruiterDenominator(c.tick))===0)found.add("fruiter");
   if(c.score===1000)found.add("apple-tree-basket");
  }return [...found];

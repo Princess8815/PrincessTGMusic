@@ -28,3 +28,13 @@ test("a perfect solver can reach 1,000 without impossible overlapping arrivals",
  s=step(s,t).state;
  }assert.equal(s.score,1000);assert.equal(s.lives,3);
 });
+
+test("Appey rolls on every fresh catch at score 50 and above, with one unlock per batch",()=>{
+ const eligible=[49,50,51,52,73,74,75].map(score=>({score,tick:100}));
+ let rolls=0;
+ const found=rollRewards(eligible,n=>n===5?(++rolls===6?0:4):n-1);
+ assert.equal(rolls,6);
+ assert.deepEqual(found,["appey"]);
+ assert.deepEqual(rollRewards(eligible,n=>n===5?0:n-1),["appey"]);
+ assert.deepEqual(rollRewards([{score:49,tick:1}],n=>n===5?0:n-1),[]);
+});
