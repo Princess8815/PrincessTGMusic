@@ -1,7 +1,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import {validateDesign,designMap,boardFromMap,stateMap,starRating,validateMilestones,checkDesignUnlocks,campaignMap,practiceOrange,orangeGameOver,ORANGE_TROPHY,hasOrangeMastery,WIDTH,GROUND,initialOrange,layout,freshLevel,simulateShot,applyOrange,validShot,fruiterChance,tangieChance,FEATURES,featureProgress,DESIGN_NAMES,bouncePad} from "../../../script/orange-knock-down-core.mjs";
+import {settleGravity,sceneMap,validateDesign,designMap,boardFromMap,stateMap,starRating,validateMilestones,checkDesignUnlocks,campaignMap,practiceOrange,orangeGameOver,ORANGE_TROPHY,hasOrangeMastery,WIDTH,GROUND,initialOrange,layout,freshLevel,simulateShot,applyOrange,validShot,fruiterChance,tangieChance,FEATURES,featureProgress,DESIGN_NAMES,bouncePad} from "../../../script/orange-knock-down-core.mjs";
 import {orangeWithStorage,configuredOrangeLevel} from "../orange-knock-down.mjs";
 test("starter pack and increasing orchard",()=>{
  const s=initialOrange(123);assert.deepEqual(s.inventory,{aqualily:3,bulky:3,sploder:3,sniper:3});assert.ok(s.board.marina>=5);assert.ok(layout(30,123).branches.length>layout(1,123).branches.length);assert.ok(layout(30,123).branches.some(b=>b.hp===2));assert.deepEqual(layout(10,123),layout(10,123));
@@ -196,4 +196,18 @@ test("reset server transaction preserves wallet, loads official level one and is
  const repeat=await call("resetCampaign",1,8);assert.equal(repeat.state.revision,9);assert.equal(commits,1);
  const stale=await call("resetCampaign",2,8);assert.equal(stale.conflict,true);
  const win=await call("shot",3,9,{shot:{type:"sniper",target:0}});assert.equal(win.state.board.won,true);assert.equal(win.coins,0);assert.equal(win.wallet,500);assert.deepEqual(win.rewards,[]);
+});
+
+test("gravity settles unsupported pieces and fruit without clearing ground fruit at start",()=>{
+ const d={title:"Gravity stack",gravity:true,shots:5,two:1,three:3,pieces:[{material:"wood",x:400,y:440,angle:0,length:100,supports:[]},{material:"wood",x:400,y:300,angle:0,length:100,supports:[]}],oranges:[{x:400,y:180,branch:-1},{x:660,y:200,branch:-1}]};
+ const map=designMap(d),board=boardFromMap(map),scene=sceneMap(map,board);
+ assert.equal(scene.branches[0].y1,GROUND-6);assert.equal(scene.branches[1].y1,GROUND-18);assert.equal(scene.oranges[0].y,GROUND-38);assert.equal(scene.oranges[1].y,GROUND-14);assert.equal(board.remaining.length,2);
+ assert.deepEqual(settleGravity(map,board),{pieceOffsets:board.pieceOffsets,orangeOffsets:board.orangeOffsets});
+});
+test("gravity collapse preserves intact beams, drops debris and persists settled poses",()=>{
+ const d={title:"Gravity collapse",gravity:true,shots:5,two:1,three:3,pieces:[{material:"wood",x:400,y:400,angle:90,length:160,supports:[]},{material:"steel",x:400,y:220,angle:0,length:100,supports:[0]}],oranges:[{x:400,y:160,branch:1},{x:700,y:300,branch:-1}]};
+ const map=designMap(d),board=boardFromMap(map);let shot,result;
+ for(let a=-20;a<=80&&!shot;a+=2)for(let p=25;p<=100&&!shot;p+=5){const q={type:"marina",angle:a,power:p},r=simulateShot(map,board,q);if(r.hp[0]===0&&r.hp[1]>0){shot=q;result=r;}}
+ assert.ok(shot);assert.ok(result.events.some(e=>e.kind==="debris"));assert.ok(result.pieceOffsets[1]>board.pieceOffsets[1]);assert.ok(result.hp[1]>0);assert.deepEqual(result,simulateShot(map,board,shot));
+ const s=initialOrange(123);s.levelMap=map;s.board=board;const out=applyOrange(s,{kind:"shot",shot},()=>.99);assert.deepEqual(out.state.board.pieceOffsets,result.pieceOffsets);
 });

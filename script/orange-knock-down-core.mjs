@@ -260,7 +260,7 @@ export function validateDesign(raw){
  function visit(i){if(visiting.has(i))throw Error("Circular supports are not allowed.");if(done.has(i))return;visiting.add(i);for(const x of pieces[i].supports)visit(x);visiting.delete(i);done.add(i);}
  pieces.forEach((_,i)=>visit(i));
  const oranges=raw.oranges.map((o,i)=>{if(!o||!exactInt(o.x,180,940)||!exactInt(o.y,20,480)||o.x%EDIT_GRID||o.y%EDIT_GRID||!exactInt(o.branch,-1,pieces.length-1))throw Error("Invalid orange "+(i+1));return {x:o.x,y:o.y,branch:o.branch};});
- return {title:raw.title.trim(),shots:raw.shots,two:raw.two,three:raw.three,pieces,oranges};
+ return {title:raw.title.trim(),shots:raw.shots,two:raw.two,three:raw.three,pieces,oranges,...(raw.gravity===true?{gravity:true}:{})};
 }
 export function designFeature(piece){
  if(piece.material==="reflector"&&piece.angle%90!==0)return "angled";
@@ -273,7 +273,7 @@ export function checkDesignUnlocks(design,level,milestones){
 }
 export function designMap(raw){
  const d=validateDesign(raw);
- return {design:d.title,shots:d.shots,two:d.two,three:d.three,branches:d.pieces.map((p,id)=>{const a=p.angle*Math.PI/180,dx=Math.cos(a)*p.length/2,dy=Math.sin(a)*p.length/2,m=MATERIALS[p.material];return {id,material:p.material,x1:p.x-dx,y1:p.y-dy,x2:p.x+dx,y2:p.y+dy,hp:m.hp,width:m.width,supports:p.supports,reflect:["reflector","spring","trampoline"].includes(p.material),spring:p.material==="spring",trampoline:p.material==="trampoline",directional:p.material==="trampoline",burst:p.material==="crate"};}),oranges:d.oranges.map((o,id)=>({...o,id}))};
+ return {design:d.title,shots:d.shots,two:d.two,three:d.three,...(d.gravity?{gravity:true}:{}),branches:d.pieces.map((p,id)=>{const a=p.angle*Math.PI/180,dx=Math.cos(a)*p.length/2,dy=Math.sin(a)*p.length/2,m=MATERIALS[p.material];return {id,material:p.material,x1:p.x-dx,y1:p.y-dy,x2:p.x+dx,y2:p.y+dy,hp:m.hp,width:m.width,supports:p.supports,reflect:["reflector","spring","trampoline"].includes(p.material),spring:p.material==="spring",trampoline:p.material==="trampoline",directional:p.material==="trampoline",burst:p.material==="crate"};}),oranges:d.oranges.map((o,id)=>({...o,id}))};
 }
 export function campaignMap(level,seed,milestones){
  const map=layout(level,seed),schedule=Object.fromEntries(featureSchedule(milestones).map(f=>[f.id,f.level]));
@@ -298,10 +298,96 @@ export function campaignMap(level,seed,milestones){
   map.branches.push({id:map.branches.length,x1,y1,x2,y2,material,hp:m.hp,width:m.width,supports:[],reflect:["reflector","spring","trampoline"].includes(material),spring:material==="spring",trampoline:material==="trampoline",directional:material==="trampoline",burst:material==="crate"});
  }
  map.shots=Math.max(5,Math.ceil(map.branches.reduce((n,b)=>n+(b.reflect?0:b.hp),0)*.42)+3);
+ map.gravity=true;
  return map;
 }
 export function stateMap(s){return s.levelMap||layout(s.level,s.seed,s.layoutVersion||1);}
-export function boardFromMap(map){return {hp:map.branches.map(b=>b.hp),remaining:map.oranges.map(o=>o.id),marina:map.shots,won:false};}
+// Shared deterministic vertical contact solver: rotated rectangles and
+// twelve-sided fruit approximations. Reflective fixtures stay anchored.
+function blockPoly(b){
+ const dx=b.x2-b.x1,dy=b.y2-b.y1,l=Math.hypot(dx,dy)||1,nx=-dy/l*(b.width||12)/2,ny=dx/l*(b.width||12)/2;
+ return [[b.x1+nx,b.y1+ny],[b.x2+nx,b.y2+ny],[b.x2-nx,b.y2-ny],[b.x1-nx,b.y1-ny]];
+}
+function orangePoly(o){return Array.from({length:12},(_,i)=>[o.x+14*Math.cos(i*Math.PI/6),o.y+14*Math.sin(i*Math.PI/6)]);}
+function body(poly,id,anchor=false){
+ const xs=poly.map(p=>p[0]),ys=poly.map(p=>p[1]);return {poly,id,anchor,left:Math.min(...xs),right:Math.max(...xs),top:Math.min(...ys),bottom:Math.max(...ys),dy:0};
+}
+function span(poly,x){
+ let lo=Infinity,hi=-Infinity;
+ for(let i=0;i<poly.length;i++){
+  const a=poly[i],b=poly[(i+1)%poly.length],dx=b[0]-a[0];
+  if(x<Math.min(a[0],b[0])-1e-7||x>Math.max(a[0],b[0])+1e-7)continue;
+  if(Math.abs(dx)<1e-7){lo=Math.min(lo,a[1],b[1]);hi=Math.max(hi,a[1],b[1]);}
+  else{const y=a[1]+(b[1]-a[1])*(x-a[0])/dx;lo=Math.min(lo,y);hi=Math.max(hi,y);}
+ }
+ return [lo,hi];
+}
+function land(a,supports){
+ let dy=GROUND-a.bottom;
+ for(const b of supports){
+  const l=Math.max(a.left,b.left),r=Math.min(a.right,b.right);
+  if(r-l<.05)continue;
+  // A body below a fixture must not teleport onto its upper surface.
+  if((b.top+b.bottom)/2+b.dy<(a.top+a.bottom)/2)continue;
+  const xs=[l,r,(l+r)/2,...a.poly.map(p=>p[0]).filter(x=>x>l&&x<r),...b.poly.map(p=>p[0]).filter(x=>x>l&&x<r)];
+  for(const x of xs){const gap=span(b.poly,x)[0]+b.dy-span(a.poly,x)[1];if(Number.isFinite(gap))dy=Math.min(dy,gap);}
+ }
+ a.dy=Math.round(Math.max(-a.top,dy)*100)/100;return a;
+}
+export function sceneMap(map,board){
+ if(!map.gravity)return map;
+ return {...map,branches:map.branches.map(b=>({...b,y1:b.y1+(board.pieceOffsets?.[b.id]||0),y2:b.y2+(board.pieceOffsets?.[b.id]||0)})),oranges:map.oranges.map(o=>({...o,y:o.y+(board.orangeOffsets?.[o.id]||0)}))};
+}
+export function settleGravity(map,board){
+ const scene=sceneMap(map,board),pieceOffsets=[...(board.pieceOffsets||map.branches.map(()=>0))],orangeOffsets=[...(board.orangeOffsets||map.oranges.map(()=>0))];
+ const blocks=scene.branches.filter(b=>board.hp[b.id]>0).map(b=>body(blockPoly(b),b.id,!!b.reflect));
+ const supports=blocks.filter(b=>b.anchor);
+ for(const b of blocks.filter(b=>!b.anchor).sort((a,b)=>b.bottom-a.bottom||a.id-b.id)){land(b,supports);pieceOffsets[b.id]=Math.round((pieceOffsets[b.id]+b.dy)*100)/100;supports.push(b);}
+ for(const o of scene.oranges.filter(o=>board.remaining.includes(o.id)).map(o=>body(orangePoly(o),o.id)).sort((a,b)=>b.bottom-a.bottom||a.id-b.id)){land(o,supports);orangeOffsets[o.id]=Math.round((orangeOffsets[o.id]+o.dy)*100)/100;supports.push(o);}
+ return {pieceOffsets,orangeOffsets};
+}
+export function boardFromMap(map){
+ const board={hp:map.branches.map(b=>b.hp),remaining:map.oranges.map(o=>o.id),marina:map.shots,won:false};
+ if(map.gravity)Object.assign(board,settleGravity(map,board));return board;
+}
+function gravityAfterShot(base,scene,board,hp,remaining,events,t){
+ const next={...board,hp,remaining:[...remaining]},poses=settleGravity(base,next),settled=sceneMap(base,{...next,...poses});
+ const supports=settled.branches.filter(b=>hp[b.id]>0).map(b=>body(blockPoly(b),b.id)),falling=[];
+ for(const b of scene.branches){
+  if(board.hp[b.id]>0&&!hp[b.id]){
+   const mx=(b.x1+b.x2)/2,my=(b.y1+b.y2)/2;
+   for(const part of [{...b,x2:mx,y2:my},{...b,x1:mx,y1:my}]){
+    const a=land(body(blockPoly(part),b.id),supports);
+    if(a.dy>0)falling.push(a);
+    const broken=events.find(e=>e.kind==="branch"&&e.id===b.id);
+    events.push({kind:"debris",t:broken?.t??t,part,dy:a.dy});
+   }
+  }else if(hp[b.id]>0){
+   const dy=poses.pieceOffsets[b.id]-(board.pieceOffsets?.[b.id]||0);
+   if(Math.abs(dy)>.01){events.push({kind:"settlePiece",id:b.id,t,dy});if(dy>0){const a=body(blockPoly(b),b.id);a.dy=dy;falling.push(a);}}
+  }
+ }
+ for(const o of scene.oranges){
+  if(!remaining.has(o.id))continue;
+  const dy=poses.orangeOffsets[o.id]-(board.orangeOffsets?.[o.id]||0);
+  const crushed=falling.some(a=>{
+   if(o.x+14<a.left||o.x-14>a.right)return false;
+   const [,bottom]=span(a.poly,clamp(o.x,a.left+.001,a.right-.001));
+   return Number.isFinite(bottom)&&bottom<=o.y+14&&bottom+a.dy>=o.y-14;
+  });
+  if(crushed||dy>1&&settled.oranges[o.id].y>=GROUND-14-.05){remaining.delete(o.id);events.push({kind:"orange",id:o.id,t});}
+ }
+ // Removing lower fruit may release the rest of a stack. Iterate only
+ // while a new ground-reaching fruit is removed, bounded by fruit count.
+ let final=poses;
+ for(let i=0;i<=base.oranges.length;i++){
+  final=settleGravity(base,{...next,...final,remaining:[...remaining]});let removed=false;
+  for(const o of scene.oranges)if(remaining.has(o.id)&&final.orangeOffsets[o.id]-(board.orangeOffsets?.[o.id]||0)>1&&base.oranges[o.id].y+final.orangeOffsets[o.id]>=GROUND-14-.05){remaining.delete(o.id);events.push({kind:"orange",id:o.id,t});removed=true;}
+  if(!removed)break;
+ }
+ for(const o of scene.oranges){if(!remaining.has(o.id))continue;const dy=final.orangeOffsets[o.id]-(board.orangeOffsets?.[o.id]||0);if(Math.abs(dy)>.01)events.push({kind:"settleOrange",id:o.id,t,dy});}
+ return final;
+}
 export function starRating(map,board){if(!board.won)return 0;const two=map.two??Math.ceil(map.shots*.25),three=map.three??Math.ceil(map.shots*.5);return board.marina>=three?3:board.marina>=two?2:1;}
 export function freshLevel(level,seed,version=5){return boardFromMap(layout(level,seed,version));}
 
@@ -341,14 +427,16 @@ export function bouncePad(p,b){
 }
 export function simulateShot(map,board,shot,trace=false){
  if(!validShot(shot))throw Error("Invalid shot.");
- const hp=[...board.hp],remaining=new Set(board.remaining),events=[],frames=[];
+ const base=map;map=sceneMap(map,board);
+ const hp=[...board.hp],remaining=new Set(board.remaining),events=[],frames=[];let lastTick=0;
  const drop=(id,t)=>{if(remaining.delete(id))events.push({kind:"orange",id,t});};
  const damageBranch=(id,amount,t)=>{
   if(!hp[id]||map.branches[id].reflect)return;
   hp[id]=Math.max(0,hp[id]-amount);events.push({kind:"damage",id,hp:hp[id],t});
   if(!hp[id]){
-   events.push({kind:"branch",id,t});for(const o of map.oranges)if(o.branch===id)drop(o.id,t);
-   for(const b of map.branches)if(hp[b.id]&&b.supports?.includes(id))damageBranch(b.id,hp[b.id],t);
+   events.push({kind:"branch",id,t});
+   if(!base.gravity){for(const o of map.oranges)if(o.branch===id)drop(o.id,t);
+   for(const b of map.branches)if(hp[b.id]&&b.supports?.includes(id))damageBranch(b.id,hp[b.id],t);}
    const piece=map.branches[id];if(piece.burst)blast((piece.x1+piece.x2)/2,(piece.y1+piece.y2)/2,t);
   }
  };
@@ -356,10 +444,10 @@ export function simulateShot(map,board,shot,trace=false){
  if(shot.type==="sniper"){
   const o=map.oranges.find(o=>o.id===shot.target&&remaining.has(o.id));if(!o)throw Error("Choose a remaining orange.");
   if(trace)for(let t=0;t<=28;t++){const u=t/28;frames.push([{x:SLING.x+(o.x-SLING.x)*u,y:SLING.y+(o.y-SLING.y)*u-80*Math.sin(Math.PI*u),type:"sniper",r:15}]);}
-  drop(o.id,28);
+  drop(o.id,28);lastTick=28;
  }else{
   const particles=(shot.type==="aqualily"?[-9,0,9]:[0]).map(a=>({...velocity(shot.angle+a,shot.power),x:SLING.x,y:SLING.y,type:shot.type,r:shot.type==="bulky"?23:shot.type==="aqualily"?11:15,active:true,hit:new Set()}));
-  for(let t=0;t<230&&particles.some(p=>p.active);t++){
+  for(let t=0;t<230&&particles.some(p=>p.active);t++){lastTick=t;
    if(trace)frames.push(particles.filter(p=>p.active).map(({x,y,type,r})=>({x,y,type,r})));
    for(const p of particles){if(!p.active)continue;p.vy+=.34;
     for(let step=0;step<4&&p.active;step++){
@@ -395,7 +483,8 @@ export function simulateShot(map,board,shot,trace=false){
    }
   }
  }
- return {hp,remaining:[...remaining],events,frames};
+ const poses=base.gravity?gravityAfterShot(base,map,board,hp,remaining,events,lastTick+1):{};
+ return {hp,remaining:[...remaining],events,frames,...poses};
 }
 export const orangeGameOver=board=>!!board&&!board.won&&board.marina<=0;
 export function applyOrange(state,action,rng=Math.random){
@@ -415,6 +504,7 @@ export function applyOrange(state,action,rng=Math.random){
  let result;try{result=simulateShot(stateMap(s),s.board,shot);}catch(e){return done(false,e.message);}
  if(type==="marina")s.board.marina--;else s.inventory[type]--;
  s.board.hp=result.hp;s.board.remaining=result.remaining;
+ if(result.pieceOffsets){s.board.pieceOffsets=result.pieceOffsets;s.board.orangeOffsets=result.orangeOffsets;}
  if(!result.remaining.length){
   const first=s.level>highestRewarded(s);
   s.board.won=true;s.board.stars=starRating(stateMap(s),s.board);s.board.rewarded=first;

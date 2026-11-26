@@ -1,7 +1,7 @@
 
 import {auth,usingLocalFirebaseEmulators} from "./firebase.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-import {WIDTH,HEIGHT,GROUND,SLING,PRICE,TYPES,AXOLOTLS,MATERIALS,FEATURES,featureProgress,featureSchedule,levelIntro,stateMap,designMap,initialOrange,boardFromMap,practiceOrange,starRating,velocity,simulateShot,orangeGameOver} from "./orange-knock-down-core.mjs";
+import {WIDTH,HEIGHT,GROUND,SLING,PRICE,TYPES,AXOLOTLS,MATERIALS,FEATURES,featureProgress,featureSchedule,levelIntro,stateMap,sceneMap,designMap,initialOrange,boardFromMap,practiceOrange,starRating,velocity,simulateShot,orangeGameOver} from "./orange-knock-down-core.mjs";
 import {showToast} from "./toast-sound.js";
 const $=id=>document.getElementById(id),area=$("ok-area"),canvas=$("ok-canvas"),ctx=canvas.getContext("2d");
 const endpoint="https://princesstg-cd-store-live.transgirl1991.workers.dev/games/orange-knock-down";
@@ -92,12 +92,14 @@ function draw(now=performance.now()){
  ctx.fillStyle="#a5c787";ctx.beginPath();ctx.moveTo(0,GROUND);ctx.quadraticCurveTo(220,350,460,GROUND);ctx.quadraticCurveTo(720,310,960,GROUND);ctx.fill();ctx.fillStyle="#77a45d";ctx.fillRect(0,GROUND,WIDTH,HEIGHT-GROUND);ctx.fillStyle="#527f47";ctx.fillRect(0,GROUND,WIDTH,5);
  line(SLING.x-17,GROUND,SLING.x-17,SLING.y-22,"#895937",12);line(SLING.x-17,GROUND,SLING.x+17,SLING.y-22,"#895937",12);
  if(!state)return;
- const map=stateMap(state),board=state.board;
+ const board=state.board,base=stateMap(state),map=sceneMap(base,board);
  const tick=anim?Math.min(anim.duration,Math.max(0,Math.floor((now-anim.start)/16))):0;
  const events=anim?.trace.events||[],fallen=new Map(events.filter(e=>e.t<=tick&&e.kind==="orange").map(e=>[e.id,e])),broken=new Map(events.filter(e=>e.t<=tick&&e.kind==="branch").map(e=>[e.id,e])),damage=new Map(events.filter(e=>e.t<=tick&&e.kind==="damage").map(e=>[e.id,e.hp]));
+ const fall=e=>e?Math.min(1,Math.pow(Math.max(0,tick-e.t)/34,2)):0;
  for(const b of map.branches){
   if(!board.hp[b.id])continue;
-  const e=broken.get(b.id);let dy=0;if(e){const dt=tick-e.t;dy=.31*dt*dt;if(b.y1+dy>GROUND+20)continue;}
+  const e=broken.get(b.id);if(e&&base.gravity)continue;
+  const move=events.find(e=>e.kind==="settlePiece"&&e.id===b.id);let dy=move?move.dy*fall(move):0;if(e){const dt=tick-e.t;dy=.31*dt*dt;if(b.y1+dy>GROUND+20)continue;}
   const material=MATERIALS[b.material]||MATERIALS.wood,w=b.width||12,hp=damage.get(b.id)??board.hp[b.id];
   ctx.save();ctx.translate(b.x1,b.y1+dy);const dx=b.x2-b.x1,by=b.y2-b.y1,len=Math.hypot(dx,by);ctx.rotate(Math.atan2(by,dx));
   ctx.fillStyle=material.color;ctx.strokeStyle=material.edge;ctx.lineWidth=2;ctx.fillRect(0,-w/2,len,w);ctx.strokeRect(0,-w/2,len,w);
@@ -114,11 +116,11 @@ function draw(now=performance.now()){
   ctx.restore();
   if(!e&&!b.reflect&&b.hp>1){ctx.font="bold 11px system-ui";ctx.textAlign="center";ctx.fillStyle="#302c2a";ctx.fillText(String(hp),b.x1+dx/2,b.y1+by/2-12);}
  }
- for(const o of map.oranges){if(!board.remaining.includes(o.id))continue;const e=fallen.get(o.id),dt=e?tick-e.t:0,y=e?Math.min(GROUND-14,o.y+.32*dt*dt):o.y;
+ for(const o of map.oranges){if(!board.remaining.includes(o.id))continue;const e=fallen.get(o.id),dt=e?tick-e.t:0,move=events.find(e=>e.kind==="settleOrange"&&e.id===o.id),y=e?Math.min(GROUND-14,o.y+.32*dt*dt):o.y+(move?move.dy*fall(move):0);
   if(e&&dt>48)continue;if(!e&&(state.layoutVersion||1)===1)line(o.x,o.y-20,o.x,o.y-12,"#6e5737",2);orange(o.x,y);
   if(!anim&&type==="sniper"){ctx.font="bold 10px system-ui";ctx.textAlign="center";ctx.fillStyle="#522b14";ctx.fillText(String(o.id+1),o.x,o.y+4);if(Number($("ok-target").value)===o.id){ctx.beginPath();ctx.arc(o.x,o.y,22,0,Math.PI*2);ctx.strokeStyle="#7438be";ctx.lineWidth=3;ctx.stroke();}}
  }
- if(anim){for(const p of anim.trace.frames[tick]||[])axo(p.x,p.y,p.type,p.r);for(const e of events)if(e.kind==="bounce"&&tick>=e.t&&tick-e.t<12){ctx.globalAlpha=1-(tick-e.t)/12;circle(e.x,e.y,8+(tick-e.t)*2,"#e6d9ff","#7d56bd");ctx.globalAlpha=1;}for(const e of events)if(e.kind==="blast"&&tick>=e.t&&tick-e.t<15){ctx.globalAlpha=1-(tick-e.t)/15;circle(e.x,e.y,20+(tick-e.t)*7,"#fff2aa","#f2a329");ctx.globalAlpha=1;}return;}
+ if(anim){for(const e of events)if(e.kind==="debris"&&tick>=e.t&&tick-e.t<50){const b=e.part,dy=e.dy*fall(e);ctx.save();ctx.globalAlpha=tick-e.t>34?Math.max(0,1-(tick-e.t-34)/16):1;line(b.x1,b.y1+dy,b.x2,b.y2+dy,(MATERIALS[b.material]||MATERIALS.wood).edge,b.width||12);line(b.x1,b.y1+dy,b.x2,b.y2+dy,(MATERIALS[b.material]||MATERIALS.wood).color,Math.max(2,(b.width||12)-4));ctx.restore();}for(const p of anim.trace.frames[tick]||[])axo(p.x,p.y,p.type,p.r);for(const e of events)if(e.kind==="bounce"&&tick>=e.t&&tick-e.t<12){ctx.globalAlpha=1-(tick-e.t)/12;circle(e.x,e.y,8+(tick-e.t)*2,"#e6d9ff","#7d56bd");ctx.globalAlpha=1;}for(const e of events)if(e.kind==="blast"&&tick>=e.t&&tick-e.t<15){ctx.globalAlpha=1-(tick-e.t)/15;circle(e.x,e.y,20+(tick-e.t)*7,"#fff2aa","#f2a329");ctx.globalAlpha=1;}return;}
  const pull=drag?drag.point:SLING;line(SLING.x-17,SLING.y-22,pull.x,pull.y,"#573a2b",4);line(SLING.x+17,SLING.y-22,pull.x,pull.y,"#573a2b",4);
  if(count(type)>0&&!board.won&&!orangeGameOver(board))axo(pull.x,pull.y,type,type==="bulky"?23:15);
  if(canShoot()&&type!=="sniper"){const v=velocity(Number($("ok-angle").value),Number($("ok-power").value));for(let i=5;i<=55;i+=5){const x=SLING.x+v.vx*i,y=SLING.y+v.vy*i+.17*i*(i+1);if(x>WIDTH||y>GROUND)break;circle(x,y,2.4,"#fff9e8","#9d875c");}}
@@ -143,7 +145,7 @@ canvas.addEventListener("pointerdown",e=>{
  const p=point(e),scale=boardGeometry().scale,touch=e.pointerType==="touch"||e.pointerType==="pen";
  if(p.x<0||p.x>WIDTH||p.y<0||p.y>HEIGHT)return;
  if(type==="sniper"){
-  const target=stateMap(state).oranges.filter(o=>state.board.remaining.includes(o.id)).sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y))[0];
+  const target=sceneMap(stateMap(state),state.board).oranges.filter(o=>state.board.remaining.includes(o.id)).sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y))[0];
   if(target&&Math.hypot(target.x-p.x,target.y-p.y)<(touch?Math.max(40,24/scale):40)){$("ok-target").value=target.id;void launch();}
   return;
  }
