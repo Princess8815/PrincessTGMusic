@@ -656,7 +656,11 @@ function land(a,supports){
 }
 export function sceneMap(map,board){
  if(!map.gravity)return map;
- return {...map,branches:map.branches.map(b=>({...b,y1:b.y1+(board.pieceOffsets?.[b.id]||0),y2:b.y2+(board.pieceOffsets?.[b.id]||0)})),oranges:map.oranges.map(o=>({...o,y:o.y+(board.orangeOffsets?.[o.id]||0)}))};
+ return {...map,branches:map.branches.map(b=>{
+  const p=board.piecePoses?.[b.id];if(!p)return {...b,y1:b.y1+(board.pieceOffsets?.[b.id]||0),y2:b.y2+(board.pieceOffsets?.[b.id]||0)};
+  const len=Math.hypot(b.x2-b.x1,b.y2-b.y1)/2,dx=Math.cos(p.a)*len,dy=Math.sin(p.a)*len;
+  return {...b,x1:p.x-dx,y1:p.y-dy,x2:p.x+dx,y2:p.y+dy};
+ }),oranges:map.oranges.map(o=>({...o,x:board.orangePoses?.[o.id]?.x??o.x,y:board.orangePoses?.[o.id]?.y??(o.y+(board.orangeOffsets?.[o.id]||0))}))};
 }
 export function settleGravity(map,board){
  const scene=sceneMap(map,board),pieceOffsets=[...(board.pieceOffsets||map.branches.map(()=>0))],orangeOffsets=[...(board.orangeOffsets||map.oranges.map(()=>0))];
@@ -745,8 +749,141 @@ export function bouncePad(p,b){
  p.vx=vx*boost;p.vy=vy*boost;
  return true;
 }
+// Fixed-step impulse/contact simulation for gravity boards. The editor's
+// initial vertical settling stays unchanged; moving bodies now collide and
+// rotate throughout the shot rather than being teleported after it.
+function gravityShot(base,board,shot,trace){
+ const scene=sceneMap(base,board),hp=[...board.hp],remaining=new Set(board.remaining),events=[],frames=[],worldFrames=[];
+ const round=n=>Math.round(n*1000)/1000;
+ const blocks=[],fruit=[],debris=[],all=[];
+ function make(kind,id,x,y,a,hw,hh,anchor=false,material="wood"){
+  const mass=kind==="fruit"?.65:Math.max(.8,hw*hh/260),inv=anchor?0:1/mass;
+  return {kind,id,x,y,a,hw,hh,inv,ii:inv*3/(hw*hw+hh*hh),vx:0,vy:0,w:0,ox:x,oy:y,oa:a,alive:true,ground:0,touched:false,material};
+ }
+ for(const b of scene.branches)if(hp[b.id]>0){const a=make("block",b.id,(b.x1+b.x2)/2,(b.y1+b.y2)/2,Math.atan2(b.y2-b.y1,b.x2-b.x1),Math.hypot(b.x2-b.x1,b.y2-b.y1)/2,(b.width||12)/2,!!b.reflect,b.material);blocks.push(a);all.push(a);}
+ for(const o of scene.oranges)if(remaining.has(o.id)){const a=make("fruit",o.id,o.x,o.y,0,14,14);fruit.push(a);all.push(a);}
+ const getBlock=id=>blocks.find(b=>b.id===id);
+ function axes(b){const x=Math.cos(b.a),y=Math.sin(b.a);return {x,y,u:-y,v:x};}
+ function extent(b){if(b.kind==="fruit")return {x:14,y:14};const a=axes(b);return {x:Math.abs(a.x)*b.hw+Math.abs(a.u)*b.hh,y:Math.abs(a.y)*b.hw+Math.abs(a.v)*b.hh};}
+ function segment(b){const a=axes(b);return {...scene.branches[b.id],x1:b.x-a.x*b.hw,y1:b.y-a.y*b.hw,x2:b.x+a.x*b.hw,y2:b.y+a.y*b.hw,width:b.hh*2};}
+ function supportPoint(b,nx,ny){if(b.kind==="fruit")return {x:b.x+nx*14,y:b.y+ny*14};const a=axes(b),u=nx*a.x+ny*a.y,v=nx*a.u+ny*a.v;return {x:b.x+a.x*b.hw*Math.sign(Math.abs(u)<.025?0:u)+a.u*b.hh*Math.sign(Math.abs(v)<.025?0:v),y:b.y+a.y*b.hw*Math.sign(Math.abs(u)<.025?0:u)+a.v*b.hh*Math.sign(Math.abs(v)<.025?0:v)};}
+ function circleRect(x,y,r,b){
+  const a=axes(b),dx=x-b.x,dy=y-b.y,lx=dx*a.x+dy*a.y,ly=dx*a.u+dy*a.v,qx=clamp(lx,-b.hw,b.hw),qy=clamp(ly,-b.hh,b.hh);
+  let nx=lx-qx,ny=ly-qy,dist=Math.hypot(nx,ny),depth;
+  if(dist>=r)return null;
+  if(dist<1e-8){const ax=b.hw-Math.abs(lx),ay=b.hh-Math.abs(ly);if(ax<ay){nx=lx>=0?1:-1;ny=0;depth=r+ax;}else{nx=0;ny=ly>=0?1:-1;depth=r+ay;}}
+  else{nx/=dist;ny/=dist;depth=r-dist;}
+  return {nx:nx*a.x+ny*a.u,ny:nx*a.y+ny*a.v,depth,x:b.x+qx*a.x+qy*a.u,y:b.y+qx*a.y+qy*a.v};
+ }
+ function contact(a,b){
+  const dx=b.x-a.x,dy=b.y-a.y,ea=extent(a),eb=extent(b);
+  if(Math.abs(dx)>=ea.x+eb.x||Math.abs(dy)>=ea.y+eb.y)return null;
+  if(a.kind==="fruit"&&b.kind==="fruit"){const dist=Math.hypot(dx,dy);if(dist>=28)return null;const nx=dist>1e-6?dx/dist:1,ny=dist>1e-6?dy/dist:0;return {nx,ny,depth:28-dist,x:a.x+nx*14,y:a.y+ny*14};}
+  if(a.kind==="fruit"){const q=circleRect(a.x,a.y,14,b);return q?{...q,nx:-q.nx,ny:-q.ny}:null;}
+  if(b.kind==="fruit")return circleRect(b.x,b.y,14,a);
+  const aa=axes(a),bb=axes(b);let best=Infinity,nx=0,ny=0;
+  for(const [x,y] of [[aa.x,aa.y],[aa.u,aa.v],[bb.x,bb.y],[bb.u,bb.v]]){
+   const ra=a.hw*Math.abs(x*aa.x+y*aa.y)+a.hh*Math.abs(x*aa.u+y*aa.v),rb=b.hw*Math.abs(x*bb.x+y*bb.y)+b.hh*Math.abs(x*bb.u+y*bb.v),dot=dx*x+dy*y,over=ra+rb-Math.abs(dot);
+   if(over<=0)return null;if(over<best){best=over;nx=x*(dot>=0?1:-1);ny=y*(dot>=0?1:-1);}
+  }
+  const p=supportPoint(a,nx,ny),q=supportPoint(b,-nx,-ny);
+  // Clamp the contact to the overlapping area, avoiding false torque from a long shelf.
+  return {nx,ny,depth:best,x:clamp((p.x+q.x)/2,Math.max(a.x-ea.x,b.x-eb.x),Math.min(a.x+ea.x,b.x+eb.x)),y:clamp((p.y+q.y)/2,Math.max(a.y-ea.y,b.y-eb.y),Math.min(a.y+ea.y,b.y+eb.y))};
+ }
+ function impulse(b,ix,iy,x=b.x,y=b.y){if(!b.inv)return;b.vx=clamp(b.vx+ix*b.inv,-26,26);b.vy=clamp(b.vy+iy*b.inv,-26,26);if(b.kind!=="fruit")b.w=clamp(b.w+((x-b.x)*iy-(y-b.y)*ix)*b.ii,-.18,.18);}
+ function resolve(a,b,q){
+  const inv=a.inv+b.inv;if(!inv)return;
+  const {nx,ny,depth,x,y}=q,correction=Math.max(0,depth-.08)*.82/inv;
+  a.x-=nx*correction*a.inv;a.y-=ny*correction*a.inv;b.x+=nx*correction*b.inv;b.y+=ny*correction*b.inv;
+  const arx=x-a.x,ary=y-a.y,brx=x-b.x,bry=y-b.y,rvx=b.vx-b.w*bry-a.vx+a.w*ary,rvy=b.vy+b.w*brx-a.vy-a.w*arx,vn=rvx*nx+rvy*ny;
+  if(vn>=0)return;
+  const ac=arx*ny-ary*nx,bc=brx*ny-bry*nx,den=inv+ac*ac*a.ii+bc*bc*b.ii;
+  const force=-(1+(Math.abs(vn)>2?.18:0))*vn/den;
+  impulse(a,-nx*force,-ny*force,x,y);impulse(b,nx*force,ny*force,x,y);
+  const tx=-ny,ty=nx,vt=rvx*tx+rvy*ty,friction=clamp(-vt/(inv+.001),-force*.32,force*.32);
+  impulse(a,-tx*friction,-ty*friction,x,y);impulse(b,tx*friction,ty*friction,x,y);
+  if(Math.abs(vn)>1.5&&(a.touched||b.touched||Math.abs(vn)>4)){a.touched=true;b.touched=true;}
+ }
+ let awake=false;
+ function removeFruit(b,t){if(!b.alive)return;b.alive=false;remaining.delete(b.id);events.push({kind:"orange",id:b.id,t,x:b.x,y:b.y});}
+ function breakBlock(b,t,ix,iy){
+  if(!b.alive||!b.inv)return;b.alive=false;hp[b.id]=0;events.push({kind:"branch",id:b.id,t});
+  const a=axes(b);
+  for(const side of [-1,1]){
+   const part=make("debris",debris.length,b.x+a.x*b.hw*.5*side,b.y+a.y*b.hw*.5*side,b.a,b.hw*.5,b.hh,false,b.material);
+   part.vx=b.vx+ix*.65+side*a.x*1.7;part.vy=b.vy+iy*.4-1;part.w=side*.055+b.w;part.touched=true;debris.push(part);all.push(part);
+  }
+ }
+ function blast(x,y,t){
+  awake=true;events.push({kind:"blast",x,y,t});
+  for(const b of blocks){if(!b.alive||!b.inv)continue;const dx=b.x-x,dy=b.y-y,dist=Math.hypot(dx,dy);if(dist>b.hw+115)continue;const old=hp[b.id];hp[b.id]=Math.max(0,old-2);b.touched=true;events.push({kind:"damage",id:b.id,hp:hp[b.id],t});const vx=dx/(dist||1)*9,vy=dy/(dist||1)*9-3;if(!hp[b.id]){breakBlock(b,t,vx,vy);if(scene.branches[b.id].burst&&old)blast(b.x,b.y,t);}else impulse(b,vx/b.inv,vy/b.inv);}
+  for(const b of fruit){if(!b.alive)continue;const dx=b.x-x,dy=b.y-y,dist=Math.hypot(dx,dy);if(dist>130)continue;b.touched=true;b.vx+=dx/(dist||1)*12;b.vy+=dy/(dist||1)*12-5;}
+ }
+ function worldStep(dt,t){
+  if(!awake)return;
+  for(const b of all){if(!b.alive||!b.inv)continue;b.vy+=.38*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;b.a+=b.w*dt;b.vx*=.993;b.w*=.987;}
+  for(let iter=0;iter<3;iter++){
+   for(const b of all){if(!b.alive||!b.inv)continue;const e=extent(b);if(b.y+e.y>GROUND){const p=supportPoint(b,0,1);b.y=GROUND-e.y;const downward=b.vy+b.w*(p.x-b.x);if(downward>0){const den=b.inv+(p.x-b.x)**2*b.ii;impulse(b,0,-downward*(downward>2?1.18:1)/den,p.x,GROUND);}b.vx*=.86;b.w*=.76;}if(b.x-e.x<160){b.x=160+e.x;b.vx=Math.abs(b.vx)*.28;}if(b.x+e.x>WIDTH){b.x=WIDTH-e.x;b.vx=-Math.abs(b.vx)*.28;}}
+   for(let i=0;i<all.length;i++){const a=all[i];if(!a.alive)continue;for(let k=i+1;k<all.length;k++){const b=all[k];if(!b.alive||!a.inv&&!b.inv)continue;const q=contact(a,b);if(q)resolve(a,b,q);}}
+  }
+  for(const b of all){if(!b.alive||!b.inv)continue;const e=extent(b),onGround=b.y+e.y>=GROUND-1.2,shift=Math.hypot(b.x-b.ox,b.y-b.oy),rot=Math.abs(b.a-b.oa);b.ground=onGround?b.ground+dt:0;
+   if(b.kind==="fruit"){if(onGround&&(b.touched||shift>8)&&b.ground>=5)removeFruit(b,t);}
+   else if(b.kind==="debris"){if(b.ground>=9)b.alive=false;}
+   else if(b.ground>=9&&(shift>14||rot>.20||b.touched&&hp[b.id]<scene.branches[b.id].hp)){b.alive=false;hp[b.id]=0;events.push({kind:"branch",id:b.id,t,ground:true});}
+  }
+ }
+ const projectiles=shot.type==="sniper"?[]:(shot.type==="aqualily"?[-9,0,9]:[0]).map(a=>({...velocity(shot.angle+a,shot.power),x:SLING.x,y:SLING.y,type:shot.type,r:shot.type==="bulky"?23:shot.type==="aqualily"?11:15,active:true,hit:new Set(),fruitHits:new Set()}));
+ const target=shot.type==="sniper"?fruit.find(b=>b.id===shot.target):null;
+ if(shot.type==="sniper"&&!target)throw Error("Choose a remaining orange.");
+ function snapWorld(){return {pieces:blocks.filter(b=>b.alive).map(b=>({id:b.id,x:round(b.x),y:round(b.y),a:round(b.a),hp:hp[b.id]})),oranges:fruit.filter(b=>b.alive).map(b=>({id:b.id,x:round(b.x),y:round(b.y)})),debris:debris.filter(b=>b.alive).map(b=>({x:round(b.x),y:round(b.y),a:round(b.a),hw:b.hw,hh:b.hh,material:b.material}))};}
+ let quiet=0;
+ for(let t=0;t<260;t++){
+  if(trace){frames.push(target&&t<=28?[{x:SLING.x+(target.x-SLING.x)*t/28,y:SLING.y+(target.y-SLING.y)*t/28-80*Math.sin(Math.PI*t/28),type:"sniper",r:15}]:projectiles.filter(p=>p.active).map(({x,y,type,r})=>({x,y,type,r})));worldFrames.push(snapWorld());}
+  if(target&&t===28){awake=true;target.touched=true;target.vx=12;target.vy=-7;}
+  if(target&&t===80&&target.alive)removeFruit(target,t); // Sniper retains its guaranteed power.
+  for(let sub=0;sub<4;sub++){
+   for(const p of projectiles){if(!p.active)continue;p.vy+=.34/4;p.x+=p.vx/4;p.y+=p.vy/4;
+    if(p.x>WIDTH+50||p.x<-50||p.y>GROUND-p.r||p.y<-360){if(p.type==="sploder"&&p.y>=GROUND-p.r)blast(p.x,p.y,t);p.active=false;continue;}
+    for(const b of blocks){
+     if(!b.alive)continue;const q=circleRect(p.x,p.y,p.r,b);if(!q)continue;
+     const original=scene.branches[b.id],speed=Math.hypot(p.vx,p.vy);
+     if(original.reflect){const seg=segment(b);if(original.trampoline&&original.directional)bouncePad(p,seg);else reflectParticle(p,seg,original.spring?1.25:.88);const v=Math.hypot(p.vx,p.vy);if(v>32){p.vx*=32/v;p.vy*=32/v;}events.push({kind:"bounce",x:p.x,y:p.y,t,trampoline:!!original.trampoline});continue;}
+     if(p.hit.has(b.id)){p.x+=q.nx*(q.depth+.15);p.y+=q.ny*(q.depth+.15);const dot=p.vx*q.nx+p.vy*q.ny;if(dot<0){p.vx-=dot*q.nx;p.vy-=dot*q.ny;}continue;}
+     const dot=p.vx*q.nx+p.vy*q.ny;
+     if(dot>=0){p.x+=q.nx*(q.depth+.2);p.y+=q.ny*(q.depth+.2);continue;}
+     awake=true;p.hit.add(b.id);b.touched=true;
+     if(p.type==="sploder"){blast(p.x,p.y,t);p.active=false;break;}
+     const before=hp[b.id],damaged=before<original.hp,damage=p.type==="bulky"?3:1;
+     hp[b.id]=Math.max(0,before-damage);events.push({kind:"damage",id:b.id,hp:hp[b.id],t});
+     const impact=clamp(-dot*.65,1.5,13),ix=-q.nx*impact,iy=-q.ny*impact;
+     impulse(b,ix/b.inv,iy/b.inv,q.x,q.y);
+     if(!hp[b.id]){breakBlock(b,t,ix,iy);if(original.burst)blast(b.x,b.y,t);}
+     // A fresh solid surface always rebounds Marina, even if it cracks.
+     // Only an already-weakened piece and enough incoming momentum allow a push-through.
+     if(damaged&&speed>8&&(!hp[b.id]||impact>6)){if(b.alive){b.x+=ix*1.6;b.y+=iy*1.6;}p.vx*=.58;p.vy*=.58;events.push({kind:"pushThrough",id:b.id,t});}
+     else{p.x+=q.nx*(q.depth+.5);p.y+=q.ny*(q.depth+.5);p.vx=(p.vx-2*dot*q.nx)*.58;p.vy=(p.vy-2*dot*q.ny)*.58;events.push({kind:"impactBounce",id:b.id,x:p.x,y:p.y,t,vx:round(p.vx),vy:round(p.vy)});}
+     break;
+    }
+    if(!p.active)continue;
+    for(const b of fruit){if(!b.alive)continue;const dx=b.x-p.x,dy=b.y-p.y,dist=Math.hypot(dx,dy);if(dist>p.r+14||p.fruitHits.has(b.id))continue;awake=true;p.fruitHits.add(b.id);b.touched=true;const nx=dist>.001?dx/dist:1,ny=dist>.001?dy/dist:0,speed=clamp(Math.hypot(p.vx,p.vy)*.9,4,19);b.vx+=nx*speed;b.vy+=ny*speed-2;events.push({kind:"fruitImpact",id:b.id,t,x:b.x,y:b.y});p.vx*=.72;p.vy*=.72;if(p.type==="sploder"){blast(p.x,p.y,t);p.active=false;break;}}
+   }
+   // Two world substeps per projectile frame keep costs bounded.
+   if(sub%2===1)worldStep(.5,t);
+  }
+  if(!projectiles.some(p=>p.active)&&(!target||t>=80)){
+   const moving=all.some(b=>b.alive&&b.inv&&(Math.abs(b.vx)+Math.abs(b.vy)+Math.abs(b.w)*b.hw>1.1));
+   quiet=moving?0:quiet+1;if(!awake||quiet>=12)break;
+  }
+ }
+ const piecePoses=base.branches.map(b=>{const p=getBlock(b.id);return p?{x:round(p.x),y:round(p.y),a:round(p.a)}:board.piecePoses?.[b.id]||{x:(b.x1+b.x2)/2,y:(b.y1+b.y2)/2+(board.pieceOffsets?.[b.id]||0),a:Math.atan2(b.y2-b.y1,b.x2-b.x1)};});
+ const orangePoses=base.oranges.map(o=>{const b=fruit.find(p=>p.id===o.id);return b?{x:round(b.x),y:round(b.y)}:board.orangePoses?.[o.id]||{x:o.x,y:o.y+(board.orangeOffsets?.[o.id]||0)};});
+ const pieceOffsets=piecePoses.map((p,i)=>round(p.y-(base.branches[i].y1+base.branches[i].y2)/2)),orangeOffsets=orangePoses.map((p,i)=>round(p.y-base.oranges[i].y));
+ if(trace){worldFrames.push(snapWorld());frames.push([]);}
+ return {hp,remaining:[...remaining],events,frames,worldFrames,piecePoses,orangePoses,pieceOffsets,orangeOffsets};
+}
 export function simulateShot(map,board,shot,trace=false){
  if(!validShot(shot))throw Error("Invalid shot.");
+ if(map.gravity)return gravityShot(map,board,shot,trace);
  const base=map;map=sceneMap(map,board);
  const hp=[...board.hp],remaining=new Set(board.remaining),events=[],frames=[];let lastTick=0;
  const drop=(id,t)=>{if(remaining.delete(id))events.push({kind:"orange",id,t});};
@@ -825,6 +962,7 @@ export function applyOrange(state,action,rng=Math.random){
  if(type==="marina")s.board.marina--;else s.inventory[type]--;
  s.board.hp=result.hp;s.board.remaining=result.remaining;
  if(result.pieceOffsets){s.board.pieceOffsets=result.pieceOffsets;s.board.orangeOffsets=result.orangeOffsets;}
+ if(result.piecePoses){s.board.piecePoses=result.piecePoses;s.board.orangePoses=result.orangePoses;}
  if(!result.remaining.length){
   const first=s.level>highestRewarded(s);
   s.board.won=true;s.board.stars=starRating(stateMap(s),s.board);s.board.rewarded=first;
