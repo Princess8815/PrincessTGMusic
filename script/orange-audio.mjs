@@ -16,6 +16,38 @@ export function createOrangeAudio({doc=document,storage=localStorage,Audio=globa
   g.gain.setValueAtTime(.0001,at);g.gain.exponentialRampToValueAtTime(volume,at+.008);g.gain.exponentialRampToValueAtTime(.0001,at+length);o.connect(g);if(pan&&ctx.createStereoPanner){const p=ctx.createStereoPanner();p.pan.value=pan;g.connect(p);p.connect(bus);}else g.connect(bus);o.start(at);o.stop(at+length+.01);
  }
  const hz=n=>440*2**((n-69)/12);
+ // Generate a short broadband brittle fracture and a cascading cluster of
+ // inharmonic shard impacts, instead of the former pitched chime sequence.
+ let glassBuffers=null,glassVariant=0;
+ function fractureBuffer(seed){
+  const rate=ctx.sampleRate,len=Math.ceil(rate*.65),buffer=ctx.createBuffer(1,len,rate),out=buffer.getChannelData(0);
+  let state=seed>>>0,prev=0;
+  const random=()=>{state=(Math.imul(state,1664525)+1013904223)>>>0;return state/4294967296;};
+  const shards=Array.from({length:25},(_,i)=>({
+   at:i===0?0:.012+Math.pow(i/25,1.55)*.40+random()*.019,
+   f:1800+random()*5600,decay:.012+random()*.043,
+   gain:(i===0?.6:.24)*(1-i/32)*(.55+random()*.45),phase:random()*6.28
+  }));
+  for(let i=0;i<len;i++){
+   const time=i/rate,n=random()*2-1,bright=(n-prev)*.5;prev=n;
+   let sample=bright*.88*Math.exp(-time/.018)+bright*.13*Math.exp(-time/.13);
+   for(const s of shards){
+    const t=time-s.at;if(t<0||t>s.decay*6)continue;
+    const env=Math.exp(-t/s.decay)*Math.min(1,t/.001);
+    // Inharmonic ringing and a very short noisy contact transient.
+    sample+=s.gain*env*(.40*Math.sin(2*Math.PI*s.f*t+s.phase)+.22*Math.sin(2*Math.PI*s.f*1.47*t)+.14*Math.sin(2*Math.PI*s.f*2.11*t)+bright*.7*Math.exp(-t/.006));
+   }
+   out[i]=Math.tanh(sample)*Math.min(1,(len-i)/(rate*.035));
+  }
+  return buffer;
+ }
+ function shatter(at,volume,pan){
+  if(!glassBuffers)glassBuffers=[fractureBuffer(29417),fractureBuffer(71425),fractureBuffer(91939)];
+  const source=ctx.createBufferSource(),gain=ctx.createGain();
+  source.buffer=glassBuffers[glassVariant++%glassBuffers.length];gain.gain.setValueAtTime(.62*volume,at);source.connect(gain);
+  if(ctx.createStereoPanner){const p=ctx.createStereoPanner();p.pan.value=pan;gain.connect(p);p.connect(sound);}else gain.connect(sound);
+  source.start(at);
+ }
  function schedule(){
   if(!ctx||ctx.state!=="running"||!pref.music||doc.hidden)return;
   if(next<ctx.currentTime)next=ctx.currentTime+.025;
@@ -46,7 +78,7 @@ export function createOrangeAudio({doc=document,storage=localStorage,Audio=globa
    const play=(f,delay,length,vol,type="sine",end=f)=>note(sound,f,at+delay,length,vol*volume,type,end,pan);
    switch(name){
     case "launch":play(250,0,.18,.095,"triangle",810);break;
-    case "glass":for(let i=0;i<5;i++)play([2450,1720,3180,2110,1320][i],i*.023,.09+i*.015,.022,"triangle",900+i*140);break;
+    case "glass":shatter(at,volume,pan);break;
     case "wood":play(195,0,.10,.10,"triangle",65);play(480,.015,.045,.035,"square",120);break;
     case "impact":play(180,0,.09,.075,"triangle",82);break;
     case "woodHit":play(290,0,.07,.055,"triangle",110);break;
