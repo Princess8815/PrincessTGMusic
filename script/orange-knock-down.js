@@ -1,7 +1,7 @@
 
 import {auth,usingLocalFirebaseEmulators} from "./firebase.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-import {WIDTH,HEIGHT,GROUND,SLING,PRICE,TYPES,AXOLOTLS,MATERIALS,FEATURES,featureProgress,featureSchedule,levelIntro,stateMap,sceneMap,designMap,initialOrange,boardFromMap,practiceOrange,starRating,velocity,simulateShot,orangeGameOver} from "./orange-knock-down-core.mjs";
+import {WIDTH,HEIGHT,GROUND,SLING,PRICE,TYPES,AXOLOTLS,MATERIALS,FEATURES,featureProgress,featureSchedule,campaignDifficulty,levelIntro,stateMap,sceneMap,designMap,initialOrange,boardFromMap,practiceOrange,starRating,velocity,simulateShot,orangeGameOver} from "./orange-knock-down-core.mjs";
 import {showToast as siteToast} from "./toast-sound.js";
 import {createOrangeAudio} from "./orange-audio.mjs";
 const $=id=>document.getElementById(id),area=$("ok-area"),canvas=$("ok-canvas"),ctx=canvas.getContext("2d");
@@ -85,6 +85,9 @@ function controls(){
  $("ok-stars").hidden=!won;const rating=won?(board.stars||starRating(stateMap(state),board)):0;$("ok-stars").textContent=won?"★".repeat(rating)+"☆".repeat(3-rating):"";
  $("ok-next").textContent=testMode?"Test again":"Next level →";
  $("ok-next").hidden=!won||(!testMode&&state?.level>=1000000);
+ const upcoming=!testMode&&won&&state.level<1000000?campaignDifficulty(state.level+1):"normal";
+ $("ok-next").dataset.difficulty=upcoming;
+ const preview=$("ok-next-difficulty");preview.hidden=upcoming==="normal";preview.dataset.difficulty=upcoming;preview.textContent=upcoming==="normal"?"":"Level "+(state.level+1)+": "+(upcoming==="hard"?"Hard":"Super Hard");
  $("ok-replay").hidden=testMode||!won;$("ok-replay").disabled=!ready();
  $("ok-pick-victory").hidden=testMode||!won;$("ok-pick-victory").disabled=!ready();
  $("ok-star-detail").hidden=testMode||!won;
@@ -208,7 +211,7 @@ async function send(kind,extra={},retry=false,trace=null){
 async function launch(){if(!canShoot())return;const shot=shotFromControls();let trace;try{trace=simulateShot(stateMap(state),state.board,shot,true);}catch(e){status(e.message);return;}await send("shot",{shot},false,trace);}
 $("ok-fire").onclick=()=>{if(!drag)void launch();};$("ok-angle").oninput=render;$("ok-power").oninput=render;$("ok-target").onchange=render;
 $("ok-reset").onclick=()=>{if(!ready())return;if(confirmUntil>Date.now())void send("retry");else{confirmUntil=Date.now()+8000;render();}};
-$("ok-campaign-reset").onclick=()=>{if(testMode||!ready()||drag)return;if(window.confirm("Restart Orange Knock Down at level 1? Current campaign progress and feature unlock progress will reset. Your total best stars, Star Coins, special axolotl inventory, trophies and collectibles stay. Previously completed levels will not award coins or collectibles again."))void send("resetCampaign");};
+$("ok-campaign-reset").onclick=()=>{if(testMode||!ready()||drag)return;if(window.confirm("Restart Orange Knock Down at level 1? Current campaign progress, feature unlock progress, total stars and all level star ratings will reset. Your Star Coins, special axolotl inventory, trophies and collectibles stay. Previously completed levels will not award coins or collectibles again."))void send("resetCampaign");};
 $("ok-game-retry").onclick=()=>{if(ready()&&orangeGameOver(state.board))void send("retry");};
 const picker=$("ok-level-dialog");
 function closePicker(){++pickerEpoch;pickerBusy=false;if(picker.open)picker.close();}

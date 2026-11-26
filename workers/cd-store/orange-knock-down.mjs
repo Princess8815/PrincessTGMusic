@@ -17,10 +17,10 @@ export function starLedger(s){
  const legacy=rating&&s.level<=baseline?{level:s.level,rating}:null;
  return {...s,totalStars:baseline+(legacy?legacy.rating-1:0),legacyStar:legacy};
 }
-function readRatings(doc){const raw=doc?.fields?.ratings?.stringValue||"";return Array.from({length:STAR_PAGE_SIZE},(_,i)=>validRating(Number(raw[i])));}
-function bestStar(s,level,ratings){return Math.max(level<=highestRewardedCompat(s)?1:0,s.legacyStar?.level===level?s.legacyStar.rating:0,ratings[(level-1)%STAR_PAGE_SIZE]||0);}
+function readRatings(doc,s){const generation=Number(doc?.fields?.generation?.integerValue||0);const raw=generation===(s.starGeneration||0)?doc?.fields?.ratings?.stringValue||"":"";return Array.from({length:STAR_PAGE_SIZE},(_,i)=>validRating(Number(raw[i])));}
+function bestStar(s,level,ratings){return Math.max(!s.starGeneration&&level<=highestRewardedCompat(s)?1:0,s.legacyStar?.level===level?s.legacyStar.rating:0,ratings[(level-1)%STAR_PAGE_SIZE]||0);}
 export function starPage(s,page,doc){
- const ratings=readRatings(doc),start=page*STAR_PAGE_SIZE+1,end=Math.min(1000000,start+STAR_PAGE_SIZE-1);
+ const ratings=readRatings(doc,s),start=page*STAR_PAGE_SIZE+1,end=Math.min(1000000,start+STAR_PAGE_SIZE-1);
  return {page,totalStars:s.totalStars,unlockedThrough:Math.min(1000000,s.cleared+1),levels:Array.from({length:end-start+1},(_,i)=>({level:start+i,stars:bestStar(s,start+i,ratings)}))};
 }
 
@@ -69,10 +69,10 @@ export async function orangeWithStorage({read,commit,root,uid,input,clock=Date.n
   if(input.kind!=="state")next.revision=state.revision+1;
   let starWrite=null,starsGained=0,bestStars=0;
   if(input.kind==="shot"&&next.board.won&&!state.board.won){
-   const level=next.level,page=pageFor(level),path=starPath(user,page),doc=await read(path),ratings=readRatings(doc);
+   const level=next.level,page=pageFor(level),path=starPath(user,page),doc=await read(path),ratings=readRatings(doc,state);
    const prior=bestStar(state,level,ratings);bestStars=Math.max(prior,validRating(next.board.stars));starsGained=bestStars-prior;
    next.totalStars=state.totalStars+starsGained;
-   if(starsGained){ratings[(level-1)%STAR_PAGE_SIZE]=bestStars;starWrite={update:{name:root+"/"+path,fields:{ratings:str(ratings.join(""))}},currentDocument:doc?{updateTime:doc.updateTime}:{exists:false}};}
+   if(starsGained){ratings[(level-1)%STAR_PAGE_SIZE]=bestStars;starWrite={update:{name:root+"/"+path,fields:{ratings:str(ratings.join("")),generation:integer(state.starGeneration||0)}},currentDocument:doc?{updateTime:doc.updateTime}:{exists:false}};}
   }
   for(const id of result.rewards)if(!await read(user+"/axolotls/"+id))rewards.push(id);
   if(hasOrangeMastery(next)&&!next.level1000TrophyAwarded){

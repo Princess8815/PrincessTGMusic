@@ -297,7 +297,7 @@ export function builtInOrangeDesign(level,milestones=null){
  const bays=level===1?1:level<20?2:3;
  const centers=bays===1?[540]:bays===2?[460,800]:[420,640,860];
  for(let bay=0;bay<bays;bay++){
-  const cx=centers[bay]+(bay===0&&level>1?20*pick(2):0);
+  const cx=centers[bay]+(bay===0&&level>1?20*pick(2):0)+(level===4&&bay===1?-40:0);
   const half=bays===3?40:40+20*pick(2),L=cx-half,R=cx+half;
   const floors=level<5?1:Math.min(3,1+(level>=12&&(bay+family)%2===0?1:0)+(superHard&&bay===1?1:0)+(hard&&bay===2?1:0));
   let floorY=480;
@@ -326,8 +326,8 @@ export function builtInOrangeDesign(level,milestones=null){
  if(allowed("spring")&&(level%4===1||introduced.includes("spring")))add("spring",240,440,0,60);
  if(allowed("trampoline")&&(level%3===1||superHard||introduced.includes("trampoline")))add("trampoline",340,460,15,60);
  if(allowed("crate")&&(level%2===0||superHard||introduced.includes("crate")))add("crate",300,460,0,40);
- const shots=Math.min(50,level===1?5:Math.max(7,Math.ceil(pieces.filter(p=>!["reflector","spring","trampoline"].includes(p.material)).reduce((n,p)=>n+MATERIALS[p.material].hp+1,0)*.65)+oranges.length+(superHard?2:hard?1:3)));
- const two=Math.max(1,Math.ceil(shots*.15)),three=Math.max(two,Math.ceil(shots*(superHard?.42:hard?.4:.35)));
+ const shots=level===1?2:level<=9?3:level<20?4:superHard?Math.min(6,Math.max(4,Math.ceil(oranges.length/2))):hard?Math.min(6,Math.max(3,Math.ceil(oranges.length/2))):Math.min(7,Math.max(4,Math.ceil(oranges.length/2)+1));
+ const two=1,three=Math.min(shots-1,Math.max(1,Math.ceil(shots*.5)));
  return validateDesign({title:"Level "+level+" · "+FAMILY_NAMES[family],shots,two,three,gravity:true,physics:2,difficulty,pieces,oranges});
 }
 export function campaignMap(level,seed,milestones){
@@ -703,8 +703,8 @@ export function applyOrange(state,action,rng=Math.random){
  const done=(applied,message,coins=0,rewards=[])=>({state:s,applied,message,coins,rewards});
  if(action.kind==="buy"){if(!SPECIALS.includes(action.type))return done(false,"Choose a power-up.");if(s.inventory[action.type]>=9999)return done(false,"Power-up storage is full.");s.inventory[action.type]++;return done(true,AXOLOTLS[action.type].name+" added.",-PRICE);}
  if(action.kind==="resetCampaign"){
-  s.rewardedThrough=highestRewarded(s);s.level=1;s.cleared=0;s.version=5;s.layoutVersion=5;delete s.levelMap;delete s.milestones;s.board=freshLevel(1,s.seed,5);
-  return done(true,"Campaign restarted at level 1. Wallet, specials and collectibles kept.");
+  s.rewardedThrough=highestRewarded(s);s.totalStars=0;s.starGeneration=(s.starGeneration||0)+1;delete s.legacyStar;s.level=1;s.cleared=0;s.version=5;s.layoutVersion=5;delete s.levelMap;delete s.milestones;s.board=freshLevel(1,s.seed,5);
+  return done(true,"Campaign restarted at level 1 with zero stars. Wallet, specials and collectibles kept.");
  }
  if(action.kind==="selectLevel"){
   if(!Number.isInteger(action.level)||action.level<1||action.level>Math.min(1000000,s.cleared+1))return done(false,"That level is locked.");
