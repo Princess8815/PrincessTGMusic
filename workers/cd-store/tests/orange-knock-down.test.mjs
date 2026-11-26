@@ -64,8 +64,8 @@ test("two-hit walls stop direct shots, reflectors reverse motion and resist blas
 
 test("feature progress is interval-based, reaches 100% only at milestone, and reveals in order",()=>{
  const a=featureProgress(0);assert.equal(a.latest.id,"wood");assert.equal(a.next.id,"glass");assert.equal(a.next.percent,0);
- assert.equal(featureProgress(1).next.percent,25);assert.equal(featureProgress(3).next.percent,75);assert.ok(featureProgress(4).features.find(f=>f.id==="glass").unlocked);assert.equal(featureProgress(4).next.id,"stone");
- assert.equal(featureProgress(35).latest.id,"crate");assert.equal(featureProgress(35).next,null);
+ assert.equal(featureProgress(1).next.percent,25);assert.equal(featureProgress(3).next.percent,75);assert.ok(featureProgress(4).features.find(f=>f.id==="glass").unlocked);assert.equal(featureProgress(4).next.id,"wall");
+ assert.equal(featureProgress(199).latest.id,"crate");assert.equal(featureProgress(199).next,null);
 });
 test("varied puzzle families, valid structures, deterministic maps and old-layout compatibility",()=>{
  const names=new Set();
@@ -81,9 +81,9 @@ test("spring bounce boosts speed and burst crates chain without damaging reflect
  const r=simulateShot(crates,{hp:[1,1,1],remaining:[0]},{type:"marina",angle:0,power:100});assert.deepEqual(r.hp,[0,0,1]);assert.equal(r.remaining.length,0);assert.equal(r.events.filter(e=>e.kind==="blast").length,2);
 });
 
-test("trampolines unlock at 27, preserve v3 layouts, and boost falling shots upward without taking damage",()=>{
+test("trampolines unlock at 75 in the current campaign, preserve v3 layouts, and boost falling shots upward without taking damage",()=>{
  assert.ok(!layout(26,123).branches.some(b=>b.trampoline));assert.ok(layout(27,123).branches.some(b=>b.trampoline));assert.ok(!layout(27,123,3).branches.some(b=>b.trampoline));
- assert.equal(featureProgress(25).next.id,"trampoline");assert.equal(featureProgress(25).next.percent,66);assert.equal(featureProgress(26).latest.id,"trampoline");
+ assert.equal(featureProgress(49).next.id,"trampoline");assert.equal(featureProgress(49).next.percent,0);assert.equal(featureProgress(74).latest.id,"trampoline");
  const pad={id:0,x1:230,y1:465,x2:340,y2:465,width:12,hp:1,reflect:true,trampoline:true};
  const map={branches:[pad],oranges:[{id:0,branch:-1,x:560,y:220}]};
  const result=simulateShot(map,{hp:[1],remaining:[0]},{type:"marina",angle:-12,power:45},true);
@@ -170,11 +170,11 @@ test("custom feature schedule changes progress and generated availability",()=>{
  assert.equal(featureProgress(0,config).next.id,"trampoline");assert.equal(featureProgress(1,config).latest.id,"trampoline");assert.ok(campaignMap(2,123,config).branches.some(b=>b.trampoline));assert.ok(!campaignMap(30,123,config).branches.some(b=>b.material==="glass"));assert.throws(()=>checkDesignUnlocks(editorExample(),1,config));assert.ok(checkDesignUnlocks(editorExample(),2,config));
 });
 test("campaign uses official design from trusted storage only when entering level",async()=>{
- const s=initialOrange(123);s.level=27;
+ const s=initialOrange(123);s.level=75;
  const config=Object.fromEntries(FEATURES.map(f=>[f.id,f.level]));const d=editorExample();
- const docs={"orangeConfig/milestones":{fields:{payload:{stringValue:JSON.stringify(config)}}},"orangeOfficialLevels/27":{fields:{payload:{stringValue:JSON.stringify(d)}}}};
+ const docs={"orangeConfig/milestones":{fields:{payload:{stringValue:JSON.stringify(config)}}},"orangeOfficialLevels/75":{fields:{payload:{stringValue:JSON.stringify(d)}}}};
  await configuredOrangeLevel(async path=>docs[path]||null,s);assert.equal(s.levelMap.design,d.title);assert.equal(s.board.marina,5);
- docs["orangeOfficialLevels/27"].fields.payload.stringValue=JSON.stringify({...d,shots:10});const retry=applyOrange(s,{kind:"retry"});assert.equal(retry.state.board.marina,5);
+ docs["orangeOfficialLevels/75"].fields.payload.stringValue=JSON.stringify({...d,shots:10});const retry=applyOrange(s,{kind:"retry"});assert.equal(retry.state.board.marina,5);
 });
 
 test("campaign reset preserves paid inventory and lifetime reward eligibility but restarts progression",()=>{
@@ -213,7 +213,7 @@ test("gravity impacts rebound, animate falling fragments and persist settled pos
  const s=initialOrange(123);s.levelMap=map;s.board=board;const out=applyOrange(s,{kind:"shot",shot},()=>.99);assert.deepEqual(out.state.board.piecePoses,result.piecePoses);assert.deepEqual(out.state.board.debrisPoses,result.debrisPoses);
 });
 test("handcrafted wooden levels have fixed geometry, valid gravity, Marina-only solutions and override priority",async()=>{
- const solutions={"2":[{"type":"marina","angle":22,"power":65}],"3":[{"type":"marina","angle":22,"power":90}],"4":[{"type":"marina","angle":22,"power":80}]};
+ const solutions={"2":[{"type":"marina","angle":5,"power":100},{"type":"marina","angle":5,"power":95}],"3":[{"type":"marina","angle":5,"power":80},{"type":"marina","angle":0,"power":65},{"type":"marina","angle":45,"power":50}],"4":[{"type":"marina","angle":10,"power":70},{"type":"marina","angle":10,"power":70}]};
  for(const level of [2,3,4]){
   const s=initialOrange(123);s.level=level;s.cleared=level-1;
   await configuredOrangeLevel(async()=>null,s);
@@ -247,7 +247,7 @@ test("a missed shot leaves sleeping structures in their initial positions",()=>{
 });
 
 test("levels 5–9 have editable glass-and-wood layouts, honor milestone overrides and clear with Marina",async()=>{
- const solutions={"5":[{"type":"marina","angle":14,"power":100}],"6":[{"type":"marina","angle":6,"power":90}],"7":[{"type":"marina","angle":14,"power":65}],"8":[{"type":"marina","angle":22,"power":65}],"9":[{"type":"marina","angle":30,"power":65}]};
+ const solutions={"5":[{"type":"marina","angle":0,"power":100},{"type":"marina","angle":20,"power":70}],"6":[{"type":"marina","angle":15,"power":75}],"7":[{"type":"marina","angle":0,"power":70},{"type":"marina","angle":10,"power":70}],"8":[{"type":"marina","angle":0,"power":100},{"type":"marina","angle":10,"power":70}],"9":[{"type":"marina","angle":0,"power":100},{"type":"marina","angle":20,"power":70}]};
  for(const level of [5,6,7,8,9]){
   const s=initialOrange(456);s.level=level;s.cleared=level-1;await configuredOrangeLevel(async()=>null,s);
   assert.ok(s.levelMap.branches.some(b=>b.material==="glass"));assert.ok(s.levelMap.branches.every(b=>["wood","glass"].includes(b.material)));
@@ -268,7 +268,7 @@ test("level selection is gated by campaign progress and preserves rewards and in
  const s=initialOrange(1);s.cleared=4;s.level=5;s.rewardedThrough=4;s.totalStars=10;
  assert.equal(applyOrange(s,{kind:"selectLevel",level:6}).applied,false);
  const r=applyOrange(s,{kind:"selectLevel",level:2});assert.equal(r.applied,true);assert.equal(r.state.level,2);assert.equal(r.state.cleared,4);assert.equal(r.state.totalStars,10);assert.deepEqual(r.state.inventory,s.inventory);
- assert.equal(applyOrange(r.state,{kind:"resetCampaign"}).state.totalStars,10);
+ assert.equal(applyOrange(r.state,{kind:"resetCampaign"}).state.totalStars,0);
 });
 test("star history keeps best only, is atomic and cannot duplicate coin rewards",async()=>{
  const root="documents",uid="stars",user="users/"+uid,path=user+"/privateGames/orangeKnockDown",wp=user+"/wallets/starCoins";
@@ -284,5 +284,32 @@ test("star history keeps best only, is atomic and cannot duplicate coin rewards"
  win=await call("shot",3,2,{shot:{type:"sniper",target:0}});assert.equal(win.bestStars,3);assert.equal(win.starsGained,1);assert.equal(win.state.totalStars,4);assert.equal(win.wallet,30);
  replay=await call("selectLevel",4,3,{level:2});win=await call("shot",5,4,{shot:{type:"sniper",target:0}});assert.equal(win.starsGained,0);assert.equal(win.state.totalStars,4);
  const page=await call("levels",6,0,{page:0});assert.equal(page.totalStars,4);assert.deepEqual(page.levels.slice(0,3),[{level:1,stars:1},{level:2,stars:3},{level:3,stars:0}]);
- const reset=await call("resetCampaign",7,5);assert.equal(reset.state.totalStars,4);const locked=await call("selectLevel",8,6,{level:2});assert.equal(locked.applied,false);
+ const reset=await call("resetCampaign",7,5);assert.equal(reset.state.totalStars,0);assert.equal(reset.state.starGeneration,1);assert.equal(reset.wallet,30);
+ const blank=await call("levels",8,0,{page:0});assert.equal(blank.totalStars,0);assert.ok(blank.levels.every(l=>l.stars===0));
+ const locked=await call("selectLevel",9,6,{level:2});assert.equal(locked.applied,false);
+ const first=await call("shot",10,6,{shot:{type:"sniper",target:0}});assert.equal(first.starsGained,3);assert.equal(first.state.totalStars,3);assert.equal(first.wallet,30);
+ const fresh=await call("levels",11,0,{page:0});assert.deepEqual(fresh.levels.slice(0,3),[{level:1,stars:3},{level:2,stars:0},{level:3,stars:0}]);
+ const duplicate=await call("shot",10,6,{shot:{type:"sniper",target:0}});assert.equal(duplicate.state.totalStars,3);
+});
+
+test("250 rebuilt defaults have distinct valid geometry, correct unlocks, tight budgets and decade difficulty",()=>{
+ const seen=new Set(),schedule=Object.fromEntries(FEATURES.map(f=>[f.id,f.level]));
+ assert.deepEqual(schedule,{wood:1,glass:5,wall:10,stone:15,reflector:20,steel:30,angled:40,spring:50,trampoline:75,reinforced:100,crate:200});
+ for(let level=1;level<=250;level++){
+  const d=builtInOrangeDesign(level);assert.ok(d.shots>=2&&d.shots<=7);checkDesignUnlocks(d,level,schedule);
+  const key=JSON.stringify([d.pieces,d.oranges]);assert.ok(!seen.has(key));seen.add(key);
+  assert.equal(d.difficulty,level>=29&&level%10===9?"super-hard":level>=24&&level%10===4?"hard":"normal");
+  const map=designMap(d);assert.equal(boardFromMap(map).remaining.length,d.oranges.length);
+ }
+ assert.equal(seen.size,250);
+});
+test("tightened allowances still permit sampled wins and enforce game over after missed throws",()=>{
+ const solutions={"1":[{"type":"marina","angle":15,"power":79}],"2":[{"type":"marina","angle":5,"power":100},{"type":"marina","angle":5,"power":95}],"3":[{"type":"marina","angle":5,"power":80},{"type":"marina","angle":0,"power":65},{"type":"marina","angle":45,"power":50}],"4":[{"type":"marina","angle":10,"power":70},{"type":"marina","angle":10,"power":70}],"5":[{"type":"marina","angle":0,"power":100},{"type":"marina","angle":20,"power":70}],"6":[{"type":"marina","angle":15,"power":75}],"7":[{"type":"marina","angle":0,"power":70},{"type":"marina","angle":10,"power":70}],"8":[{"type":"marina","angle":0,"power":100},{"type":"marina","angle":10,"power":70}],"9":[{"type":"marina","angle":0,"power":100},{"type":"marina","angle":20,"power":70}],"24":[{"type":"marina","angle":20,"power":95},{"type":"marina","angle":25,"power":95},{"type":"marina","angle":20,"power":100},{"type":"marina","angle":15,"power":95}],"29":[{"type":"marina","angle":30,"power":65},{"type":"marina","angle":30,"power":70}],"244":[{"type":"marina","angle":25,"power":80}],"249":[{"type":"marina","angle":35,"power":100},{"type":"marina","angle":40,"power":50}]};
+ for(const [l,route] of Object.entries(solutions)){
+  const map=designMap(builtInOrangeDesign(Number(l)));let s=initialOrange(42);s.level=Number(l);s.levelMap=map;s.board=boardFromMap(map);
+  for(const shot of route){const result=applyOrange(s,{kind:"shot",shot},()=>.99);assert.ok(result.applied);s=result.state;}
+  assert.equal(s.board.won,true);
+  s.board=boardFromMap(map);for(let i=0;i<map.shots;i++){const q=applyOrange(s,{kind:"shot",shot:{type:"marina",angle:-20,power:1}},()=>.99);assert.ok(q.applied);s=q.state;}
+  assert.ok(orangeGameOver(s.board));assert.equal(applyOrange(s,{kind:"shot",shot:{type:"marina",angle:20,power:100}}).applied,false);
+ }
 });
