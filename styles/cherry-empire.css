@@ -14,3 +14,5 @@
 .ce-tree-status{font-size:.8rem;margin:0;min-height:1.2em}.ce-upgrades{display:grid;grid-template-columns:1fr 1fr;gap:6px}.ce-upgrades button{text-align:left;display:grid;gap:3px;font-size:.83rem;min-width:0}.ce-upgrades small{font-weight:400;font-size:.75rem}.ce-upgrades [data-upgrade=star]{border:2px solid #dab455}
 .ce-prestige{background:var(--ptg-highlight,#c084fc)!important;color:var(--ptg-on-highlight,#111)!important}.ce-help{margin-top:14px;font-size:.9rem}#ce-status{min-height:1.3em;margin:8px 0;font-size:.9rem}
 @media(max-width:480px){.ce-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.ce-main{padding-inline:8px}.ce-tree-art{height:100px}}
+
+.ce-upgrades [data-upgrade=starMultiplier]{border:2px solid #dab455}

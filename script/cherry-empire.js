@@ -1,7 +1,7 @@
 
 import {auth,usingLocalFirebaseEmulators} from "./firebase.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-import {advance,caps,fruitInterval,autoInterval,yieldPerFruit,starChance,treePrice,prestigePrice,upgradePrice,MAX_TREES,MAX_PRESTIGE,growDuration,treeCapacity,prestigeReady,masteryCount,CHERRY_TROPHY,slotsPerGrowth,prestigeMultiplier} from "./cherry-empire-core.mjs";
+import {advance,caps,fruitInterval,autoInterval,yieldPerFruit,starChance,treePrice,prestigePrice,upgradePrice,MAX_TREES,MAX_PRESTIGE,growDuration,treeCapacity,prestigeReady,masteryCount,CHERRY_TROPHY,slotsPerGrowth,prestigeMultiplier,starMultiplier,starFraction,pendingStarValue} from "./cherry-empire-core.mjs";
 import {showToast} from "./toast-sound.js";
 const $=id=>document.getElementById(id),grid=$("ce-orchard"),endpoint="https://princesstg-cd-store-live.transgirl1991.workers.dev/games/cherry-empire";
 const fmt=n=>Math.floor(n).toLocaleString(),eligible=()=>!!auth.currentUser?.emailVerified&&!usingLocalFirebaseEmulators;
@@ -20,7 +20,7 @@ function makeCard(t){
  const progress=element(card,"div","ce-progress"),fill=element(progress,"span"),timer=element(card,"p","ce-tree-status");
  const harvest=button(card,"Harvest",()=>send("harvest",{treeId:t.id}));
  const upgrades=element(card,"div","ce-upgrades"),up={};
- for(const [k,name] of [["speed","Fruit speed"],["yield","Cherry yield"],["auto","Auto harvester"],["capacity","Tree capacity"],["star","Star Coin chance"]]){
+ for(const [k,name] of [["speed","Fruit speed"],["yield","Cherry yield"],["auto","Auto harvester"],["capacity","Tree capacity"],["star","Star Coin chance"],["starMultiplier","Star Coin multiplier"]]){
   const b=button(upgrades,"",()=>send("upgrade",{treeId:t.id,upgrade:k}));b.dataset.upgrade=k;
   const label=element(b,"span");label.textContent=name;const detail=element(b,"small");up[k]={b,detail};
  }
@@ -32,25 +32,25 @@ function render(){
  $("ce-login").hidden=!!auth.currentUser||usingLocalFirebaseEmulators;
  $("ce-retry").hidden=!failed||busy;
  $("ce-sync").disabled=!active;
- if(!saved){$("ce-buy").disabled=true;$("ce-all").disabled=true;$("ce-cherries").textContent="0";$("ce-tree-count").textContent="0";$("ce-harvests").textContent="0";$("ce-mastery").textContent="0 / 12";grid.replaceChildren();cards.clear();return;}
+ if(!saved){$("ce-buy").disabled=true;$("ce-all").disabled=true;$("ce-cherries").textContent="0";$("ce-tree-count").textContent="0";$("ce-harvests").textContent="0";$("ce-mastery").textContent="0 / 12";$("ce-star-carry").textContent="0";grid.replaceChildren();cards.clear();return;}
  const time=Math.max(saved.lastAt,now()),projection=advance(saved,time),s=projection.state;
- $("ce-cherries").textContent=fmt(s.cherries);$("ce-tree-count").textContent=s.trees.length+"/"+MAX_TREES;$("ce-harvests").textContent=fmt(s.totalHarvests);$("ce-mastery").textContent=masteryCount(s)+" / "+MAX_TREES;
+ $("ce-cherries").textContent=fmt(s.cherries);$("ce-tree-count").textContent=s.trees.length+"/"+MAX_TREES;$("ce-harvests").textContent=fmt(s.totalHarvests);$("ce-mastery").textContent=masteryCount(s)+" / "+MAX_TREES;$("ce-star-carry").textContent=starFraction(saved).toFixed(6).replace(/0+$/,"").replace(/\.$/,"");
  $("ce-buy").textContent=s.trees.length>=MAX_TREES?"Orchard full":"Plant tree · "+fmt(treePrice(s.trees.length))+" 🍒";
  $("ce-buy").title="Growth time: "+duration(growDuration(s.trees.length));$("ce-buy").disabled=!active||s.trees.length>=MAX_TREES||s.cherries<treePrice(s.trees.length);
  $("ce-all").disabled=!active||!s.trees.some(t=>t.fruit>0);
  for(const t of s.trees){
   const c=cards.get(t.id)||makeCard(t),growing=time<t.matureAt,cap=caps(t),interval=fruitInterval(t);
   c.badge.textContent="Prestige "+t.prestige;c.art.dataset.growing=String(growing);
-  c.fruit.textContent=fmt(t.fruit)+"/"+fmt(treeCapacity(t))+" fruit slots · "+fmt(t.pendingCherries)+" 🍒"+(t.pendingStars?" · "+fmt(t.pendingStars)+" ★":"");
+  c.fruit.textContent=fmt(t.fruit)+"/"+fmt(treeCapacity(t))+" fruit slots · "+fmt(t.pendingCherries)+" 🍒"+(pendingStarValue(t)>0?" · "+pendingStarValue(t).toLocaleString(undefined,{maximumFractionDigits:6})+" ★":"");
   c.yieldText.textContent=slotsPerGrowth(t)+" fruit / growth · ×"+prestigeMultiplier(t)+" cherries";
   c.fill.style.width=(growing?0:t.fruit>=treeCapacity(t)?100:100*Math.max(0,Math.min(1,1-(t.nextFruitAt-time)/interval)))+"%";
   c.timer.textContent=growing?"Growing · "+duration(t.matureAt-time)+" remaining":(t.fruit>=treeCapacity(t)?"Tree full · harvest to make room":"Next fruit in "+duration(t.nextFruitAt-time))+(t.auto?" · auto harvest in "+duration(t.nextAutoAt-time):" · manual harvest");
   c.harvest.textContent="Harvest "+fmt(t.pendingCherries)+" 🍒";c.harvest.disabled=!active||!t.fruit;
   for(const k of Object.keys(c.up)){
    const {b,detail}=c.up[k],max=t[k]>=cap[k],price=upgradePrice(t,k);
-   const stat=k==="speed"?duration(interval)+" / fruit":k==="yield"?slotsPerGrowth(t)+" fruit / growth · "+yieldPerFruit(t)+" 🍒":k==="auto"?(t.auto?"Every "+duration(autoInterval(t)):"Off"):k==="capacity"?treeCapacity(t)+" fruit maximum":(starChance(t)*100).toFixed(2)+"% · permanent";
-   detail.textContent=t[k]+"/"+cap[k]+" · "+stat+(max?" · MAX":" · "+fmt(price)+" 🍒");
-   b.disabled=!active||max||s.cherries<price;
+   const stat=k==="speed"?duration(interval)+" / fruit":k==="yield"?slotsPerGrowth(t)+" fruit / growth · "+yieldPerFruit(t)+" 🍒":k==="auto"?(t.auto?"Every "+duration(autoInterval(t)):"Off"):k==="capacity"?treeCapacity(t)+" fruit maximum":k==="star"?(starChance(t)*100).toFixed(4)+"% chance · permanent":(starMultiplier(t)*100).toFixed(3)+"% payout · permanent";
+   detail.textContent=(Number.isFinite(cap[k])?t[k]+"/"+cap[k]:"Level "+t[k]+" / ∞")+" · "+stat+(max?" · MAX":" · "+fmt(price)+" 🍒");
+   b.disabled=!active||max||!Number.isSafeInteger(price)||s.cherries<price;
   }
   const ready=prestigeReady(t);
   c.prestige.textContent=t.prestige>=MAX_PRESTIGE?"Prestige max":ready?"Prestige · "+fmt(prestigePrice(t))+" 🍒":"Prestige · max all regular upgrades first";

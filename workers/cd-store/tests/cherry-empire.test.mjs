@@ -1,7 +1,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import {initialEmpire,makeTree,advance,applyAction,fruitInterval,autoInterval,starChance,caps,yieldPerFruit,treePrice,treeCapacity,slotsPerGrowth,prestigeMultiplier,prestigeReady,hasMastery,CHERRY_TROPHY,chanceAtLeastOne,rewardCandidates,binomial,FRUITER_CHANCE} from "../../../script/cherry-empire-core.mjs";
+import {initialEmpire,makeTree,advance,applyAction,fruitInterval,autoInterval,starChance,caps,yieldPerFruit,treePrice,treeCapacity,slotsPerGrowth,prestigeMultiplier,starMultiplier,starMultiplierUnits,starFraction,STAR_SCALE,upgradePrice,prestigeReady,hasMastery,CHERRY_TROPHY,chanceAtLeastOne,rewardCandidates,binomial,FRUITER_CHANCE} from "../../../script/cherry-empire-core.mjs";
 import {orchardWithStorage} from "../cherry-empire.mjs";
 const NOW=1700000000000;
 test("manual fruit accumulates offline; harvesting many fruits counts as one harvest",()=>{
@@ -134,7 +134,7 @@ test("version 2 ripe harvests preserve value when migrated to slot occupancy",()
  const s=initialEmpire(NOW),t=makeTree(1,NOW,0,1);s.version=2;s.trees=[t];
  t.fruit=4;t.yield=2;t.pendingCherries=30;t.pendingStars=2;
  const a=advance(s,NOW);
- assert.equal(a.state.version,3);assert.equal(a.state.trees[0].fruit,10);
+ assert.equal(a.state.version,4);assert.equal(a.state.trees[0].fruit,10);
  assert.equal(a.state.trees[0].pendingCherries,30);assert.equal(a.state.trees[0].pendingStars,2);
  assert.deepEqual(advance(a.state,NOW).state,a.state);
 });
@@ -146,4 +146,49 @@ test("offline capped auto harvesting agrees with exact event-by-event growth eve
   while(slow.lastAt<until){const tree=slow.trees[0];slow=advance(slow,Math.min(until,tree.nextFruitAt,tree.nextAutoAt),n=>n).state;}
   assert.deepEqual(fast,slow);
  }
+});
+
+test("star chance and multiplier have no gameplay cap; chance diminishes after ten percent",()=>{
+ const t=makeTree(1,NOW);
+ assert.equal(caps(t).star,Infinity);assert.equal(caps(t).starMultiplier,Infinity);
+ assert.equal(starChance(t),.001);
+ t.star=10;assert.ok(Math.abs(starChance(t)-.016)<1e-12);
+ t.star=66;const before=starChance(t);t.star=67;const a=starChance(t);t.star=68;const b=starChance(t);t.star=1000;const c=starChance(t);t.star=1001;const d=starChance(t);
+ assert.ok(before<=.1&&a>.1&&b>a&&d>c&&d-c<b-a&&d<1);
+ t.starMultiplier=0;assert.equal(starMultiplier(t),1);t.starMultiplier=1;const first=starMultiplier(t);t.starMultiplier=2;const second=starMultiplier(t);t.starMultiplier=1000;assert.ok(first>1&&second-first<first-1&&starMultiplier(t)>second);
+ assert.ok(Number.isSafeInteger(upgradePrice(t,"star")));
+});
+test("both uncapped star upgrades can be purchased beyond level ten and retained on prestige",()=>{
+ let s=initialEmpire(NOW);let t=s.trees[0];s.cherries=10000000;t.star=11;t.starMultiplier=11;
+ s=applyAction(s,{kind:"upgrade",treeId:1,upgrade:"star"},NOW).state;
+ s=applyAction(s,{kind:"upgrade",treeId:1,upgrade:"starMultiplier"},NOW).state;
+ t=s.trees[0];assert.equal(t.star,12);assert.equal(t.starMultiplier,12);
+ for(const k of ["speed","yield","auto","capacity"])t[k]=caps(t)[k];
+ const result=applyAction(s,{kind:"prestige",treeId:1},NOW);
+ assert.equal(result.applied,true);assert.equal(result.state.trees[0].star,12);assert.equal(result.state.trees[0].starMultiplier,12);
+});
+test("fractional star payouts persist across trees, saves, harvests and prestige",()=>{
+ let s=initialEmpire(NOW);s.trees.push(makeTree(2,NOW));for(const t of s.trees)t.starMultiplier=20;
+ const units=starMultiplierUnits(s.trees[0]);let coins=0;
+ for(let i=1;i<=15;i++){
+  const g=advance(s,NOW+i*30000,n=>n).state;
+  s=applyAction(g,{kind:"harvestAll"},NOW+i*30000).state;
+  coins=s.totalStars;s=JSON.parse(JSON.stringify(s));
+ }
+ assert.equal(coins,Math.floor(30*units/STAR_SCALE));
+ assert.equal(s.starCarry,30*units%STAR_SCALE);
+ assert.equal(starFraction(s),s.starCarry/STAR_SCALE);
+ assert.equal(s.trees[0].pendingStarMicros,0);
+ const carry=s.starCarry;s.cherries=1000000;const t=s.trees[0];for(const k of ["speed","yield","auto","capacity"])t[k]=caps(t)[k];
+ const p=applyAction(s,{kind:"prestige",treeId:1},s.lastAt);assert.equal(p.state.starCarry,carry);assert.equal(p.state.trees[0].starMultiplier,20);
+});
+test("offline auto multiplier settlement matches individual harvest events and preserves accrued rates",()=>{
+ let s=initialEmpire(NOW);let t=s.trees[0];t.starMultiplier=17;t.auto=1;t.nextAutoAt=NOW+autoInterval(t);
+ const until=NOW+86400000,fast=advance(s,until,n=>n).state;let slow=s;
+ for(let at=NOW+120000;at<=until;at+=120000)slow=advance(slow,at,n=>n).state;
+ assert.deepEqual(fast,slow);
+ const old=advance(s,NOW+30000,n=>n).state;const before=old.trees[0].pendingStars*STAR_SCALE+old.trees[0].pendingStarMicros;
+ old.cherries=100000;const upgraded=applyAction(old,{kind:"upgrade",treeId:1,upgrade:"starMultiplier"},NOW+30000).state;
+ const next=advance(upgraded,NOW+60000,n=>n).state;
+ assert.equal(next.trees[0].pendingStars*STAR_SCALE+next.trees[0].pendingStarMicros,before+starMultiplierUnits(upgraded.trees[0]));
 });

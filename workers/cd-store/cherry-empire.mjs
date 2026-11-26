@@ -12,7 +12,7 @@ function validate(input){
  if(!input||!uuid.test(input.requestId||"")||!["sync","buyTree","harvestAll","harvest","upgrade","prestige"].includes(input.kind))fail("Invalid orchard action.");
  if(input.kind!=="sync"&&(!Number.isSafeInteger(input.revision)||input.revision<0))fail("Refresh your orchard first.");
  if(["harvest","upgrade","prestige"].includes(input.kind)&&(!Number.isInteger(input.treeId)||input.treeId<1||input.treeId>12))fail("Invalid tree.");
- if(input.kind==="upgrade"&&!["speed","yield","auto","capacity","star"].includes(input.upgrade))fail("Invalid upgrade.");
+ if(input.kind==="upgrade"&&!["speed","yield","auto","capacity","star","starMultiplier"].includes(input.upgrade))fail("Invalid upgrade.");
 }
 export async function orchardWithStorage({read,commit,root,uid,input,clock=Date.now,rng=secureRandom}){
  validate(input);
