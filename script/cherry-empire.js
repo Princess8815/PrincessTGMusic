@@ -77,7 +77,38 @@ async function send(kind,extras={},retry=false){
   render();
  }catch(e){if(current!==epoch)return;busy=false;failed=action;status(e.message+" Use Retry save to check the same request.");render();}
 }
-$("ce-login").onclick=()=>$("auth-open")?.click();
+const playArea=$("ce-play-area"),fullscreenButton=$("ce-fullscreen");
+let expanded=false,oldOverflow="";
+function refreshFullscreen(){
+ const active=document.fullscreenElement===playArea||expanded;
+ fullscreenButton.textContent=active?"⛶ Exit fullscreen":"⛶ Fullscreen";
+ fullscreenButton.setAttribute("aria-pressed",String(active));
+ fullscreenButton.setAttribute("aria-label",active?"Exit fullscreen":"Enter fullscreen");
+ const stack=document.getElementById("ptg-toast-stack");
+ if(stack)(active?playArea:document.body).append(stack);
+}
+function exitExpanded(){
+ if(!expanded)return;
+ expanded=false;playArea.classList.remove("ce-expanded");document.body.style.overflow=oldOverflow;
+ refreshFullscreen();fullscreenButton.focus({preventScroll:true});
+}
+async function exitFullscreen(){
+ if(expanded)exitExpanded();
+ else if(document.fullscreenElement===playArea)await document.exitFullscreen().catch(()=>{});
+}
+fullscreenButton.addEventListener("click",async()=>{
+ if(expanded||document.fullscreenElement===playArea){await exitFullscreen();return;}
+ try{
+  if(!playArea.requestFullscreen)throw Error("Fullscreen unavailable");
+  await playArea.requestFullscreen();
+ }catch{
+  oldOverflow=document.body.style.overflow;document.body.style.overflow="hidden";
+  expanded=true;playArea.classList.add("ce-expanded");refreshFullscreen();
+ }
+});
+document.addEventListener("fullscreenchange",refreshFullscreen);
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&expanded){e.preventDefault();exitExpanded();}});
+$("ce-login").onclick=async()=>{await exitFullscreen();$("auth-open")?.click();};
 $("ce-buy").onclick=()=>send("buyTree");
 $("ce-all").onclick=()=>send("harvestAll");
 $("ce-sync").onclick=()=>send("sync");
