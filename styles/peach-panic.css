@@ -5,7 +5,7 @@
 .pp-area{height:var(--pp-fit,calc(100dvh - 120px));min-height:270px;display:flex;flex-direction:column;gap:5px;min-width:0;padding:8px;border:1px solid var(--ptg-border,#786080);border-radius:14px;background:var(--ptg-secondary,#252334);box-sizing:border-box;overflow:hidden}
 .pp-hud{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;flex:none}.pp-hud>div{border:1px solid var(--ptg-border,#786080);border-radius:9px;padding:3px 7px;display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap}.pp-hud span{font-size:.78rem}.pp-hud strong{font-size:1.25rem;font-variant-numeric:tabular-nums}
 .pp-timebar{height:7px;border-radius:5px;background:#151321;overflow:hidden;flex:none}.pp-timebar span{height:100%;width:100%;display:block;background:linear-gradient(90deg,#ed7772,#f7c574);transition:background .2s}
-.pp-actions{display:flex;flex-wrap:wrap;gap:5px;flex:none}.pp-actions button{min-height:34px;border:1px solid var(--ptg-border,#786080);border-radius:8px;padding:5px 10px;font:inherit;font-size:.88rem;font-weight:650;background:var(--ptg-primary,#bd9af5);color:var(--ptg-on-primary,#1d152a);cursor:pointer}.pp-actions button:disabled{opacity:.55;cursor:not-allowed}.pp-area [hidden]{display:none!important}
+.pp-actions{display:flex;flex-wrap:wrap;gap:5px;flex:none}.pp-actions button{min-height:34px;border:1px solid var(--ptg-border,#786080);border-radius:8px;padding:5px 10px;font:inherit;font-size:.88rem;font-weight:650;background:#ffd0a6;color:#352014;border-color:#d48a5b;cursor:pointer}.pp-actions button:disabled{opacity:1;cursor:not-allowed;background:#d7d1cd;color:#51453d;border-color:#93847a}.pp-area [hidden]{display:none!important}
 .pp-area button:focus-visible{outline:3px solid #fff0a5;outline-offset:2px}
 #pp-status{margin:0;min-height:1.25em;font-size:.85rem;line-height:1.25;overflow-wrap:anywhere;flex:none}
 .pp-board-wrap{flex:1 1 0;min-height:0;min-width:0;position:relative;display:grid;place-items:center;overflow:hidden}
@@ -24,3 +24,14 @@
 @media(max-width:480px){.pp-hud>div{flex-direction:column;gap:0;padding:3px}.pp-hud strong{font-size:1.05rem}.pp-fruit{width:10.5%}.pp-legend{gap:4px 8px;font-size:.7rem}}
 @media(max-height:480px){.pp-area{gap:3px;padding:4px}.pp-hud strong{font-size:1rem}.pp-actions button{min-height:28px;padding:3px 6px}.pp-legend{font-size:.68rem}}
 @media(prefers-reduced-motion:reduce){.pp-popup{animation:none}}
+
+/* The site theme intentionally skips these game controls: keep foreground
+   and background paired, regardless of custom palette or link colors. */
+.pp-area .pp-actions button.ptg-theme-exempt{background:#ffd0a6!important;color:#352014!important;border-color:#d48a5b!important;opacity:1}
+.pp-area .pp-actions button.ptg-theme-exempt:not(:disabled):hover{background:#ffe5cb!important;color:#352014!important;border-color:#ab6944!important}
+.pp-area .pp-actions #pp-fullscreen{background:#dbeafe!important;color:#15345b!important;border-color:#86a8d5!important}
+.pp-area .pp-actions #pp-fullscreen[aria-pressed=true],.pp-area .pp-actions #pp-fullscreen:hover{background:#bcd9ff!important;color:#15345b!important}
+.pp-area .pp-actions button.ptg-theme-exempt:disabled{background:#d7d1cd!important;color:#51453d!important;border-color:#93847a!important;opacity:1}
+.pp-area .pp-actions button:focus-visible{outline:3px solid #fff!important;outline-offset:2px;box-shadow:0 0 0 5px #24334d}
+.pp-area .pp-fruit.ptg-theme-exempt,.pp-area .pp-fruit.ptg-theme-exempt:hover,.pp-area .pp-fruit.ptg-theme-exempt:active{background:transparent!important;border:0!important;box-shadow:none}
+@media(forced-colors:active){.pp-area .pp-actions button.ptg-theme-exempt{forced-color-adjust:auto}}

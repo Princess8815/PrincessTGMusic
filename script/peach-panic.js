@@ -29,7 +29,7 @@ function pause(){playing=false;cancelAnimationFrame(frame);controls();}
 function clearBoard(){fruits.replaceChildren();popups.replaceChildren();nodes.clear();}
 function mix(a,b,t){return "rgb("+a.map((v,i)=>Math.round(v+(b[i]-v)*t)).join(",")+")";}
 function createFruit(p){
- const b=document.createElement("button");b.type="button";b.className="pp-fruit";b.dataset.blue=String(p.blue);
+ const b=document.createElement("button");b.type="button";b.className="pp-fruit ptg-theme-exempt";b.dataset.blue=String(p.blue);
  b.style.left=SLOTS[p.slot][0]+"%";b.style.top=SLOTS[p.slot][1]+"%";b.innerHTML=fruitArt;
  b.setAttribute("aria-label",p.blue?"Blue peach":"Peach");b.addEventListener("click",()=>pick(p));
  fruits.append(b);nodes.set(p.id,b);return b;
