@@ -327,6 +327,7 @@ export function simulateShot(map,board,shot,trace=false){
  }
  return {hp,remaining:[...remaining],events,frames};
 }
+export const orangeGameOver=board=>!!board&&!board.won&&board.marina<=0;
 export function applyOrange(state,action,rng=Math.random){
  const s={...state,inventory:{...state.inventory},board:{...state.board,hp:[...state.board.hp],remaining:[...state.board.remaining]}};
  const done=(applied,message,coins=0,rewards=[])=>({state:s,applied,message,coins,rewards});
@@ -335,10 +336,11 @@ export function applyOrange(state,action,rng=Math.random){
  if(action.kind==="next"){if(!s.board.won)return done(false,"Clear all the oranges first.");if(s.level>=1000000)return done(false,"Maximum supported level reached.");s.level++;s.version=5;s.layoutVersion=5;s.board=freshLevel(s.level,s.seed,5);return done(true,"Level "+s.level+" ready.");}
  if(action.kind!=="shot"||!validShot(action.shot))return done(false,"Invalid shot.");
  if(s.board.won)return done(false,"Level already complete.");
+ if(orangeGameOver(s.board))return done(false,"Game over. Retry the level first.");
  const shot=action.shot,type=shot.type;if(type==="marina"?s.board.marina<=0:s.inventory[type]<=0)return done(false,"No "+AXOLOTLS[type].name+" throws left.");
  let result;try{result=simulateShot(layout(s.level,s.seed,s.layoutVersion||1),s.board,shot);}catch(e){return done(false,e.message);}
  if(type==="marina")s.board.marina--;else s.inventory[type]--;
  s.board.hp=result.hp;s.board.remaining=result.remaining;
  if(!result.remaining.length){s.board.won=true;s.cleared=Math.max(s.cleared,s.level);const rewards=[];if(rng()<fruiterChance(s.level))rewards.push("fruiter");if(s.level>10&&rng()<tangieChance(s.level))rewards.push("tangie");return done(true,"Level "+s.level+" cleared! +10 Star Coins.",WIN_COINS,rewards);}
- return done(true,result.remaining.length+" oranges left.");
+ return done(true,orangeGameOver(s.board)?"Game over. Retry the level.":result.remaining.length+" oranges left.");
 }

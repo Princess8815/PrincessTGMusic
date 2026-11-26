@@ -1,7 +1,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import {ORANGE_TROPHY,hasOrangeMastery,WIDTH,GROUND,initialOrange,layout,freshLevel,simulateShot,applyOrange,validShot,fruiterChance,tangieChance,FEATURES,featureProgress,DESIGN_NAMES,bouncePad} from "../../../script/orange-knock-down-core.mjs";
+import {orangeGameOver,ORANGE_TROPHY,hasOrangeMastery,WIDTH,GROUND,initialOrange,layout,freshLevel,simulateShot,applyOrange,validShot,fruiterChance,tangieChance,FEATURES,featureProgress,DESIGN_NAMES,bouncePad} from "../../../script/orange-knock-down-core.mjs";
 import {orangeWithStorage} from "../orange-knock-down.mjs";
 test("starter pack and increasing orchard",()=>{
  const s=initialOrange(123);assert.deepEqual(s.inventory,{aqualily:3,bulky:3,sploder:3,sniper:3});assert.ok(s.board.marina>=5);assert.ok(layout(30,123).branches.length>layout(1,123).branches.length);assert.ok(layout(30,123).branches.some(b=>b.hp===2));assert.deepEqual(layout(10,123),layout(10,123));
@@ -133,4 +133,22 @@ test("orange mastery requires completing level 1000, not entering it, and awards
  store.delete(dest);const saved=JSON.parse(store.get(path).fields.payload.stringValue);delete saved.state.level1000TrophyAwarded;store.get(path).fields.payload.stringValue=JSON.stringify(saved);
  const backfill=await call("state",4,saved.state.revision);assert.ok(backfill.rewards.includes(ORANGE_TROPHY[0]));assert.equal(backfill.state.revision,saved.state.revision);assert.ok(store.has(dest));
  const repeat=await call("state",5,saved.state.revision);assert.equal(repeat.rewards.length,0);assert.equal(commits,3);
+});
+
+test("last Marina throw ends the attempt even with specials, retry preserves specials",()=>{
+ const s=initialOrange(123);s.board.marina=1;
+ const miss=applyOrange(s,{kind:"shot",shot:{type:"marina",angle:-20,power:1}},()=>.99);
+ assert.equal(miss.applied,true);assert.equal(miss.state.board.marina,0);assert.equal(orangeGameOver(miss.state.board),true);assert.equal(miss.coins,0);
+ const special=applyOrange(miss.state,{kind:"shot",shot:{type:"sniper",target:miss.state.board.remaining[0]}});
+ assert.equal(special.applied,false);assert.deepEqual(special.state.inventory,s.inventory);
+ const retry=applyOrange(miss.state,{kind:"retry"});assert.equal(orangeGameOver(retry.state.board),false);assert.deepEqual(retry.state.board,freshLevel(1,s.seed));assert.deepEqual(retry.state.inventory,s.inventory);
+});
+test("clearing the orchard on the last Marina shot is a victory, not game over",()=>{
+ const s=initialOrange(123);s.board.marina=1;const map=layout(1,s.seed);let shot=null;
+ for(let angle=0;angle<=80&&!shot;angle+=4)for(let power=25;power<=100&&!shot;power+=5){
+  const q={type:"marina",angle,power};if(!simulateShot(map,s.board,q).remaining.length)shot=q;
+ }
+ assert.ok(shot);
+ const win=applyOrange(s,{kind:"shot",shot},()=>.99);assert.equal(win.state.board.marina,0);assert.equal(win.state.board.won,true);assert.equal(orangeGameOver(win.state.board),false);assert.equal(win.coins,10);
+ assert.equal(applyOrange(win.state,{kind:"next"}).state.level,2);
 });

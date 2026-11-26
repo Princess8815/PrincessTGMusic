@@ -1,7 +1,7 @@
 
 import {auth,usingLocalFirebaseEmulators} from "./firebase.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-import {WIDTH,HEIGHT,GROUND,SLING,PRICE,TYPES,AXOLOTLS,MATERIALS,FEATURES,featureProgress,levelIntro,layout,velocity,simulateShot} from "./orange-knock-down-core.mjs";
+import {WIDTH,HEIGHT,GROUND,SLING,PRICE,TYPES,AXOLOTLS,MATERIALS,FEATURES,featureProgress,levelIntro,layout,velocity,simulateShot,orangeGameOver} from "./orange-knock-down-core.mjs";
 import {showToast} from "./toast-sound.js";
 const $=id=>document.getElementById(id),area=$("ok-area"),canvas=$("ok-canvas"),ctx=canvas.getContext("2d");
 const endpoint="https://princesstg-cd-store-live.transgirl1991.workers.dev/games/orange-knock-down";
@@ -9,14 +9,15 @@ const eligible=()=>!!auth.currentUser?.emailVerified&&!usingLocalFirebaseEmulato
 let state=null,wallet=0,type="marina",busy=false,failed=null,epoch=0,drag=null,anim=null,frame=0,expanded=false,oldOverflow="",confirmUntil=0;
 let featureSignature="",featureAccount=null;
 const quickNodes=new Map();
-const nodes=new Map(),status=m=>{$("ok-status").textContent=m;$("ok-rail-status").textContent=m;};
+const nodes=new Map(),status=m=>{$("ok-status").textContent=m;$("ok-rail-status").textContent=m;$("ok-arena-notice").textContent=m;};
 const key=uid=>"ptg-orange-pending-v1:"+uid;
 const stash=(uid,action)=>{try{localStorage.setItem(key(uid),JSON.stringify(action));}catch{}};
 const forget=uid=>{try{localStorage.removeItem(key(uid));}catch{}};
 function restore(uid){try{return JSON.parse(localStorage.getItem(key(uid))||"null");}catch{return null;}}
 const count=t=>t==="marina"?state?.board.marina||0:state?.inventory[t]||0;
 const ready=()=>eligible()&&!!state&&!busy&&!failed;
-const canShoot=()=>ready()&&!state.board.won&&count(type)>0;
+const canShoot=()=>ready()&&!state.board.won&&!orangeGameOver(state.board)&&count(type)>0;
+const arenaMode=()=>expanded||document.fullscreenElement===area;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function portrait(t){const a=AXOLOTLS[t];return '<svg viewBox="0 0 70 55" aria-hidden="true"><g fill="'+a.gill+'"><path d="M19 25 2 7 16 10 24 22 1 23 6 36 24 32M51 25 68 7 54 10 46 22 69 23 64 36 46 32"/></g><ellipse cx="35" cy="30" rx="23" ry="19" fill="'+a.color+'" stroke="#4e4857" stroke-width="2"/><circle cx="27" cy="28" r="2.7" fill="#303244"/><circle cx="43" cy="28" r="2.7" fill="#303244"/><path d="M31 35q4 5 8 0" fill="none" stroke="#60455c" stroke-width="2"/></svg>';}
 function build(){for(const t of TYPES){const quick=document.createElement("button");quick.type="button";quick.className="ptg-theme-exempt ok-quick";quick.innerHTML=portrait(t);const qlabel=document.createElement("span");quick.append(qlabel);quick.onclick=()=>{type=t;confirmUntil=0;render();};$("ok-quick-team").append(quick);quickNodes.set(t,{b:quick,label:qlabel});const card=document.createElement("div");card.className="ok-type";const b=document.createElement("button");b.type="button";b.className="ok-select ptg-theme-exempt";b.innerHTML=portrait(t);const label=document.createElement("span");b.append(label);b.onclick=()=>{type=t;confirmUntil=0;render();};card.append(b);let buy=null;if(t!=="marina"){buy=document.createElement("button");buy.className="ptg-theme-exempt";buy.type="button";buy.textContent="100 ★";buy.title="Buy one "+AXOLOTLS[t].name+" throw";buy.onclick=()=>void send("buy",{type:t});card.append(buy);}const hint=document.createElement("small");hint.textContent=AXOLOTLS[t].description;card.append(hint);$("ok-types").append(card);nodes.set(t,{b,label,buy});}}
@@ -54,20 +55,22 @@ function renderFeatures(){
  else if(state.board.won&&p.next){victory.append(featureCard(p.next,true));victory.hidden=false;}
 }
 function controls(){
- const board=state?.board,won=!!board?.won,shots=TYPES.some(t=>count(t)>0);
+ const board=state?.board,won=!!board?.won,lost=orangeGameOver(board);
+ $("ok-arena-hud").textContent=state?"Lv "+state.level+" · "+board.remaining.length+" 🍊 · Marina ×"+board.marina+(type!=="marina"?" · "+AXOLOTLS[type].name+" ×"+count(type):""):"Orange Knock Down";
+ $("ok-arena-notice").hidden=!!state&&!failed;
  $("ok-level").textContent=state?.level||1;$("ok-left").textContent=board?.remaining.length||0;$("ok-shots").textContent=board?.marina||0;$("ok-wallet").textContent=wallet.toLocaleString();
  $("ok-login").hidden=!!auth.currentUser||usingLocalFirebaseEmulators;$("ok-refresh").disabled=busy||!eligible()||!!failed;
- $("ok-resend").hidden=!failed||busy;$("ok-reset").disabled=!ready()||won;$("ok-next").hidden=!won;$("ok-next").disabled=!ready();$("ok-mechanic").textContent=state?((layout(state.level,state.seed,state.layoutVersion||1).design||"Classic orchard")+" · "+levelIntro(state.level,state.layoutVersion||1)):"";renderFeatures();
+ $("ok-resend").hidden=!failed||busy;$("ok-reset").disabled=!ready()||won;$("ok-next").hidden=!won;$("ok-next").disabled=!ready();$("ok-game-retry").hidden=!lost;$("ok-game-retry").disabled=!ready();$("ok-mechanic").textContent=state?((layout(state.level,state.seed,state.layoutVersion||1).design||"Classic orchard")+" · "+levelIntro(state.level,state.layoutVersion||1)):"";renderFeatures();
  if(confirmUntil&&Date.now()>=confirmUntil)confirmUntil=0;$("ok-reset").textContent=confirmUntil?"Are you sure?":"Retry level";$("ok-reset").classList.toggle("ok-confirm",!!confirmUntil);
- for(const [t,n] of nodes){n.label.textContent=AXOLOTLS[t].name+" ×"+count(t);n.b.setAttribute("aria-pressed",String(type===t));n.b.disabled=!ready()||won||count(t)<=0;if(n.buy)n.buy.disabled=!ready()||wallet<PRICE||count(t)>=9999;}
- for(const [t,n] of quickNodes){n.label.textContent=AXOLOTLS[t].name+" ×"+count(t);n.b.setAttribute("aria-pressed",String(type===t));n.b.setAttribute("aria-label",AXOLOTLS[t].name+", "+count(t)+" throws");n.b.disabled=!ready()||won||count(t)<=0;}
+ for(const [t,n] of nodes){n.label.textContent=AXOLOTLS[t].name+" ×"+count(t);n.b.setAttribute("aria-pressed",String(type===t));n.b.disabled=!ready()||won||lost||count(t)<=0;if(n.buy)n.buy.disabled=!ready()||wallet<PRICE||count(t)>=9999;}
+ for(const [t,n] of quickNodes){n.label.textContent=AXOLOTLS[t].name+" ×"+count(t);n.b.setAttribute("aria-pressed",String(type===t));n.b.setAttribute("aria-label",AXOLOTLS[t].name+", "+count(t)+" throws");n.b.disabled=!ready()||won||lost||count(t)<=0;}
  $("ok-quick-info").textContent=AXOLOTLS[type].description;
  $("ok-angle-label").textContent=$("ok-angle").value+"°";$("ok-power-label").textContent=$("ok-power").value+"%";
  $("ok-angle").disabled=!canShoot()||type==="sniper";$("ok-power").disabled=!canShoot()||type==="sniper";
  $("ok-target-label").hidden=type!=="sniper";$("ok-target").disabled=!canShoot();$("ok-fire").disabled=!canShoot();$("ok-fire").textContent="Launch "+AXOLOTLS[type].name;
  const sel=$("ok-target"),signature=(board?.remaining||[]).join(",");
  if(sel.dataset.ids!==signature){const prev=sel.value;sel.replaceChildren();for(const id of board?.remaining||[]){const o=document.createElement("option");o.value=id;o.textContent="Orange "+(id+1);sel.append(o);}if([...sel.options].some(o=>o.value===prev))sel.value=prev;sel.dataset.ids=signature;}
- $("ok-overlay").hidden=busy||!state||(!won&&shots);$("ok-overlay").classList.toggle("ok-victory",won);$("ok-result").textContent=won?"Level cleared!":"Out of throws";$("ok-result-detail").textContent=won?"10 Star Coins earned. Next level awaits.":"Retry for free or buy another special throw.";
+ $("ok-overlay").hidden=busy||!state||(!won&&!lost);$("ok-overlay").classList.toggle("ok-victory",won);$("ok-overlay").classList.toggle("ok-defeat",lost);$("ok-result").textContent=won?"Level cleared!":"Game over";$("ok-result-detail").textContent=won?"10 Star Coins earned. Next level awaits.":"Marina is out of throws. Try the level again!";
 }
 function line(x1,y1,x2,y2,color,width){ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap="round";ctx.stroke();}
 function circle(x,y,r,color,stroke){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1.5;ctx.stroke();}}
@@ -107,7 +110,7 @@ function draw(now=performance.now()){
  }
  if(anim){for(const p of anim.trace.frames[tick]||[])axo(p.x,p.y,p.type,p.r);for(const e of events)if(e.kind==="bounce"&&tick>=e.t&&tick-e.t<12){ctx.globalAlpha=1-(tick-e.t)/12;circle(e.x,e.y,8+(tick-e.t)*2,"#e6d9ff","#7d56bd");ctx.globalAlpha=1;}for(const e of events)if(e.kind==="blast"&&tick>=e.t&&tick-e.t<15){ctx.globalAlpha=1-(tick-e.t)/15;circle(e.x,e.y,20+(tick-e.t)*7,"#fff2aa","#f2a329");ctx.globalAlpha=1;}return;}
  const pull=drag?drag.point:SLING;line(SLING.x-17,SLING.y-22,pull.x,pull.y,"#573a2b",4);line(SLING.x+17,SLING.y-22,pull.x,pull.y,"#573a2b",4);
- if(count(type)>0&&!board.won)axo(pull.x,pull.y,type,type==="bulky"?23:15);
+ if(count(type)>0&&!board.won&&!orangeGameOver(board))axo(pull.x,pull.y,type,type==="bulky"?23:15);
  if(canShoot()&&type!=="sniper"){const v=velocity(Number($("ok-angle").value),Number($("ok-power").value));for(let i=5;i<=55;i+=5){const x=SLING.x+v.vx*i,y=SLING.y+v.vy*i+.17*i*(i+1);if(x>WIDTH||y>GROUND)break;circle(x,y,2.4,"#fff9e8","#9d875c");}}
 }
 function render(){controls();draw();}
@@ -151,7 +154,7 @@ function cancelDrag(e){if(drag?.id===e.pointerId){drag=null;render();}}
 canvas.addEventListener("pointercancel",cancelDrag);canvas.addEventListener("lostpointercapture",cancelDrag);
 window.addEventListener("blur",()=>{if(drag){drag=null;render();}});
 async function request(action,uid){const user=auth.currentUser;if(!eligible()||user.uid!==uid)throw Error("Sign in with a verified account.");const idToken=await user.getIdToken();if(auth.currentUser?.uid!==uid)throw Error("Account changed.");const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({idToken,...action})});const data=await r.json();if(!r.ok)throw Error(data.error||"Game unavailable.");return data;}
-function accept(data,notify){const previous=state?.cleared;state=data.state;wallet=data.wallet;confirmUntil=0;if(!count(type))type=TYPES.find(t=>count(t)>0)||"marina";status(data.message||"Ready.");if((data.rewards||[]).includes("orange-knock-down-mastery")&&!data.conflict)showToast("Trophy earned: Orange Knock Down Mastery!");if(notify){if(data.coins>0&&previous!==undefined){for(const f of FEATURES)if(f.level>1&&previous<f.level-1&&state.cleared>=f.level-1)showToast("New feature unlocked: "+f.name+"!");}if(data.coins>0)showToast("Level cleared! +"+data.coins+" Star Coins");for(const id of data.rewards||[])if(id!=="orange-knock-down-mastery")showToast(id==="tangie"?"You found Tangie!":"You found Fruiter!");}}
+function accept(data,notify){const previous=state?.cleared;state=data.state;wallet=data.wallet;confirmUntil=0;if(!count(type))type=count("marina")?"marina":type;status(data.message||"Ready.");if((data.rewards||[]).includes("orange-knock-down-mastery")&&!data.conflict)showToast("Trophy earned: Orange Knock Down Mastery!");if(notify){if(data.coins>0&&previous!==undefined){for(const f of FEATURES)if(!arenaMode()&&f.level>1&&previous<f.level-1&&state.cleared>=f.level-1)showToast("New feature unlocked: "+f.name+"!");}if(data.coins>0)showToast("Level cleared! +"+data.coins+" Star Coins");for(const id of data.rewards||[])if(id!=="orange-knock-down-mastery")showToast(id==="tangie"?"You found Tangie!":"You found Fruiter!");}}
 function animate(trace,current){
  return new Promise(resolve=>{anim={trace,start:performance.now(),duration:Math.max(trace.frames.length,...trace.events.map(e=>e.t+50),1)};function step(now){if(current!==epoch||!anim){resolve();return;}draw(now);if(now-anim.start>=anim.duration*16){resolve();return;}frame=requestAnimationFrame(step);}frame=requestAnimationFrame(step);});
 }
@@ -163,15 +166,17 @@ async function send(kind,extra={},retry=false,trace=null){
   const net=request(action,uid).then(data=>({data}),error=>({error}));
   const [result]=await Promise.all([net,trace?animate(trace,current):Promise.resolve()]);
   if(current!==epoch)return;if(result.error)throw result.error;
-  anim=null;busy=false;forget(uid);accept(result.data,action.kind!=="state"&&!result.data.conflict);render();
+  anim=null;busy=false;forget(uid);if(action.kind==="retry"&&result.data.applied&&!result.data.conflict)type="marina";accept(result.data,action.kind!=="state"&&!result.data.conflict);render();
  }catch(e){if(current!==epoch)return;anim=null;busy=false;failed=action;status(e.message+" Retry save to recover the same action.");render();}
 }
 async function launch(){if(!canShoot())return;const shot=shotFromControls();let trace;try{trace=simulateShot(layout(state.level,state.seed,state.layoutVersion||1),state.board,shot,true);}catch(e){status(e.message);return;}await send("shot",{shot},false,trace);}
 $("ok-fire").onclick=()=>{if(!drag)void launch();};$("ok-angle").oninput=render;$("ok-power").oninput=render;$("ok-target").onchange=render;
 $("ok-reset").onclick=()=>{if(!ready())return;if(confirmUntil>Date.now())void send("retry");else{confirmUntil=Date.now()+8000;render();}};
+$("ok-game-retry").onclick=()=>{if(ready()&&orangeGameOver(state.board))void send("retry");};
 $("ok-next").onclick=()=>void send("next");$("ok-refresh").onclick=()=>void send("state");$("ok-resend").onclick=()=>{if(failed)void send(failed.kind,{},true);};
 function fullRefresh(){drag=null;const active=expanded||document.fullscreenElement===area;$("ok-full").textContent=active?"⛶ Exit fullscreen":"⛶ Fullscreen";$("ok-full").setAttribute("aria-pressed",String(active));const stack=$("ptg-toast-stack");if(stack)(active?area:document.body).append(stack);render();}
 async function exitFull(){if(expanded){expanded=false;area.classList.remove("ok-expanded");document.body.style.overflow=oldOverflow;fullRefresh();}else if(document.fullscreenElement===area)await document.exitFullscreen().catch(()=>{});}
+$("ok-back").onclick=()=>void exitFull();
 $("ok-full").onclick=async()=>{if(expanded||document.fullscreenElement===area)return exitFull();try{if(!area.requestFullscreen)throw Error("Unavailable");await area.requestFullscreen();}catch{oldOverflow=document.body.style.overflow;document.body.style.overflow="hidden";expanded=true;area.classList.add("ok-expanded");fullRefresh();}};
 document.addEventListener("fullscreenchange",fullRefresh);document.addEventListener("keydown",e=>{if(e.key==="Escape"&&expanded)void exitFull();});$("ok-login").onclick=async()=>{await exitFull();$("auth-open")?.click();};
 build();render();onAuthStateChanged(auth,user=>{++epoch;cancelAnimationFrame(frame);anim=null;state=null;wallet=0;type="marina";busy=false;failed=null;drag=null;confirmUntil=0;render();if(!eligible()){status(!user?"Sign in to play.":usingLocalFirebaseEmulators?"Select Live Firebase in Settings.":"Verify your email to play.");return;}const pending=restore(user.uid);if(pending){failed=pending;void send(pending.kind,{},true);}else void send("state");});
