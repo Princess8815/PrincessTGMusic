@@ -15,3 +15,5 @@ Fourth Fruity Paradice game, based on main after Peach Panic. Also hides Cherry 
 - Cut tree and discard pear use red two-click confirmation buttons with eight-second expiration instead of native dialogs, preserving fullscreen. Decimal genetics and formatting are unchanged.
 
 - Inventory management: ordinary clicks toggle multi-selection. Sort by newest, attack, defense or combined total (descending). Bulk discard and clear all confirm the exact displayed IDs in one server action, preserving any newly generated pears during the request. No-pear/no-tree recovery seed still applies. Deselect all is local only. Planting and throwing remain one pear per action. No extra rules.
+
+- Fullscreen inventory rendering fix: override shell main width limits, explicit bounded desktop grid row, dedicated inventory scroll wrapper with minimum usable height, non-collapsing pear rows and readable stats. Preserve inventory scroll position on selection/sync; sorting returns to top. Empty inventory message distinguishes no fruit from hidden tiles. Frontend only.

@@ -99,11 +99,13 @@ function render(){
  $("gt-upgrade-inventory").title=full?"Storage safety limit reached":"Permanently expand pear inventory for "+fmt(price)+" Star Coins.";
  const signature=JSON.stringify([saved?.inventory||[],selectedIds(),enabled,sortMode]);
  if(signature!==inventorySignature){
-  inventorySignature=signature;const inv=$("gt-inventory");inv.replaceChildren();
+  inventorySignature=signature;const inv=$("gt-inventory"),scroller=$("gt-inventory-scroll"),scrollTop=scroller.scrollTop;inv.replaceChildren();
+  if(!saved?.inventory.length){const empty=el(inv,"p","gt-empty-inventory");empty.textContent=saved?"No pears yet. Water your trees to grow more.":"Loading your pear inventory…";}
   for(const p of sortedPears(saved?.inventory||[],sortMode)){
    const b=btn(inv,"",()=>{armed=null;if(selected.has(p.id))selected.delete(p.id);else selected.add(p.id);render();},"gt-pear");b.innerHTML=pearArt;
-   const text=el(b,"small","gt-pear-stats");const attack=el(text,"span"),defense=el(text,"span");attack.textContent="ATK "+fmt(p.attack);defense.textContent="DEF "+fmt(p.defense);b.setAttribute("aria-pressed",String(selected.has(p.id)));b.setAttribute("aria-label","Pear attack "+p.attack+", defense "+p.defense);b.disabled=!enabled;
+   const text=el(b,"small","gt-pear-stats");const attack=el(text,"span"),defense=el(text,"span");attack.textContent="ATK "+fmt(p.attack);defense.textContent="DEF "+fmt(p.defense);b.setAttribute("aria-pressed",String(selected.has(p.id)));b.setAttribute("aria-label","Pear attack "+p.attack+", defense "+p.defense);b.title="ATK "+fmt(p.attack)+" · DEF "+fmt(p.defense);b.disabled=!enabled;
   }
+  scroller.scrollTop=scrollTop;
  }
 }
 async function request(action){
@@ -141,7 +143,7 @@ $("gt-upgrade-inventory").onclick=()=>send("upgradeInventory");
 $("gt-discard").onclick=()=>{const ids=selectedIds();if(ids.length)confirmAction("discardMany",selectionKey(ids),{fruitIds:ids});};
 $("gt-clear-inventory").onclick=()=>{const ids=allIds();if(ids.length)confirmAction("clearInventory",selectionKey(ids),{fruitIds:ids});};
 $("gt-clear-selection").onclick=()=>{armed=null;selected.clear();render();};
-$("gt-sort").onchange=()=>{sortMode=$("gt-sort").value;render();};
+$("gt-sort").onchange=()=>{sortMode=$("gt-sort").value;$("gt-inventory-scroll").scrollTop=0;render();};
 build();render();
 onAuthStateChanged(auth,user=>{++epoch;armed=null;saved=null;wallet=0;selected.clear();busy=false;failed=null;offset=0;lastSync=0;seen=new Set();render();if(!eligible()){status(usingLocalFirebaseEmulators?"Choose Live Firebase in Settings to play.":!user?"Sign in to grow your pear garden.":"Verify your email to play.");return;}void send("sync");});
 setInterval(()=>{if(document.hidden)return;render();if(eligible()&&saved&&!busy&&!failed&&Date.now()-lastSync>=30000)void send("sync");},1000);
