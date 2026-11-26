@@ -97,10 +97,11 @@ export const FEATURES=Object.freeze([
  {id:"reinforced",level:30,name:"Reinforced alloy",description:"Four hits to break. Find a weak point instead."},
  {id:"crate",level:36,name:"Chain-reaction crates",description:"Hit an orange burst crate to damage nearby pieces and shake fruit loose."}
 ]);
-export function featureProgress(cleared=0){
+export function featureProgress(cleared=0,milestones){
+ const configured=featureSchedule(milestones);
  const reached=Math.max(0,Math.floor(Number(cleared)||0));
- const features=FEATURES.map((f,i)=>{
-  const start=i?FEATURES[i-1].level-1:0,end=f.level-1;
+ const features=configured.map((f,i)=>{
+  const start=i?configured[i-1].level-1:0,end=f.level-1;
   const unlocked=reached>=end,percent=unlocked?100:Math.floor(100*clamp((reached-start)/Math.max(1,end-start),0,1));
   return {...f,unlocked,percent,remaining:Math.max(0,end-reached)};
  });
@@ -234,7 +235,60 @@ export function levelIntro(level,version=5){
  if(level<36)return "Reinforced alloy · Four hits";
  return "Chain-reaction crates · Look for the weak point";
 }
-export function freshLevel(level,seed,version=5){const map=layout(level,seed,version);return {hp:map.branches.map(b=>b.hp),remaining:map.oranges.map(o=>o.id),marina:map.shots,won:false};}
+
+export const EDIT_GRID=20,MAX_PIECES=48,MAX_ORANGES=32;
+export function featureSchedule(values){
+ return FEATURES.map(f=>({...f,level:Number.isInteger(values?.[f.id])&&values[f.id]>=1&&values[f.id]<=1000000?values[f.id]:f.level})).sort((a,b)=>a.level-b.level||FEATURES.findIndex(f=>f.id===a.id)-FEATURES.findIndex(f=>f.id===b.id));
+}
+export function validateMilestones(values){
+ if(!values||Object.keys(values).length!==FEATURES.length||FEATURES.some(f=>!Number.isInteger(values[f.id])||values[f.id]<1||values[f.id]>1000000)||values.wood!==1||values.angled<values.reflector)throw Error("Choose valid unlock levels. Wood starts at 1; angled reflectors require ordinary reflectors.");
+ return Object.fromEntries(FEATURES.map(f=>[f.id,values[f.id]]));
+}
+const exactInt=(v,min,max)=>Number.isInteger(v)&&v>=min&&v<=max;
+export function validateDesign(raw){
+ if(!raw||typeof raw.title!=="string"||!raw.title.trim()||raw.title.trim().length>80||!exactInt(raw.shots,1,50)||!exactInt(raw.two,0,raw.shots-1)||!exactInt(raw.three,raw.two,raw.shots-1))throw Error("Enter a title, 1–50 Marina throws, and valid star thresholds.");
+ if(!Array.isArray(raw.pieces)||raw.pieces.length>MAX_PIECES||!Array.isArray(raw.oranges)||raw.oranges.length<1||raw.oranges.length>MAX_ORANGES)throw Error("Use up to 48 pieces and 1–32 oranges.");
+ const pieces=raw.pieces.map((p,i)=>{
+  if(!p||!Object.hasOwn(MATERIALS,p.material)||!exactInt(p.x,180,940)||!exactInt(p.y,20,480)||p.x%EDIT_GRID||p.y%EDIT_GRID||!exactInt(p.angle,0,359)||!exactInt(p.length,20,240)||p.length%EDIT_GRID)throw Error("Invalid piece "+(i+1)+".");
+  const a=p.angle*Math.PI/180,dx=Math.cos(a)*p.length/2,dy=Math.sin(a)*p.length/2,r=MATERIALS[p.material].width/2;
+  if(p.x-Math.abs(dx)-r<160||p.x+Math.abs(dx)+r>WIDTH||p.y-Math.abs(dy)-r<0||p.y+Math.abs(dy)+r>GROUND)throw Error("Piece "+(i+1)+" extends outside the build area.");
+  if(!Array.isArray(p.supports)||p.supports.length>4||new Set(p.supports).size!==p.supports.length||p.supports.some(x=>!exactInt(x,0,raw.pieces.length-1)||x===i))throw Error("Invalid supports on piece "+(i+1));
+  return {material:p.material,x:p.x,y:p.y,angle:p.angle,length:p.length,supports:[...p.supports]};
+ });
+ const visiting=new Set(),done=new Set();
+ function visit(i){if(visiting.has(i))throw Error("Circular supports are not allowed.");if(done.has(i))return;visiting.add(i);for(const x of pieces[i].supports)visit(x);visiting.delete(i);done.add(i);}
+ pieces.forEach((_,i)=>visit(i));
+ const oranges=raw.oranges.map((o,i)=>{if(!o||!exactInt(o.x,180,940)||!exactInt(o.y,20,480)||o.x%EDIT_GRID||o.y%EDIT_GRID||!exactInt(o.branch,-1,pieces.length-1))throw Error("Invalid orange "+(i+1));return {x:o.x,y:o.y,branch:o.branch};});
+ return {title:raw.title.trim(),shots:raw.shots,two:raw.two,three:raw.three,pieces,oranges};
+}
+export function designFeature(piece){
+ if(piece.material==="reflector"&&piece.angle%90!==0)return "angled";
+ return piece.material;
+}
+export function checkDesignUnlocks(design,level,milestones){
+ const schedule=Object.fromEntries(featureSchedule(milestones).map(f=>[f.id,f.level]));
+ for(const p of design.pieces)if(schedule[designFeature(p)]>level)throw Error(MATERIALS[p.material].label+" is not unlocked at level "+level+".");
+ return design;
+}
+export function designMap(raw){
+ const d=validateDesign(raw);
+ return {design:d.title,shots:d.shots,two:d.two,three:d.three,branches:d.pieces.map((p,id)=>{const a=p.angle*Math.PI/180,dx=Math.cos(a)*p.length/2,dy=Math.sin(a)*p.length/2,m=MATERIALS[p.material];return {id,material:p.material,x1:p.x-dx,y1:p.y-dy,x2:p.x+dx,y2:p.y+dy,hp:m.hp,width:m.width,supports:p.supports,reflect:["reflector","spring","trampoline"].includes(p.material),spring:p.material==="spring",trampoline:p.material==="trampoline",directional:p.material==="trampoline",burst:p.material==="crate"};}),oranges:d.oranges.map((o,id)=>({...o,id}))};
+}
+export function campaignMap(level,seed,milestones){
+ const map=layout(level,seed),schedule=Object.fromEntries(featureSchedule(milestones).map(f=>[f.id,f.level]));
+ // Preserve structure references by replacing locked pieces rather than deleting them.
+ for(const b of map.branches){
+  const angled=b.material==="reflector"&&b.x1!==b.x2&&b.y1!==b.y2;
+  if(schedule[angled?"angled":b.material]>level){Object.assign(b,{material:"wood",hp:1,width:MATERIALS.wood.width,reflect:false,spring:false,trampoline:false,directional:false,burst:false});}
+ }
+ map.shots=Math.max(5,Math.ceil(map.branches.reduce((n,b)=>n+(b.reflect?0:b.hp),0)*.42)+3);
+ return map;
+}
+export function stateMap(s){return s.levelMap||layout(s.level,s.seed,s.layoutVersion||1);}
+export function boardFromMap(map){return {hp:map.branches.map(b=>b.hp),remaining:map.oranges.map(o=>o.id),marina:map.shots,won:false};}
+export function starRating(map,board){if(!board.won)return 0;const two=map.two??Math.ceil(map.shots*.25),three=map.three??Math.ceil(map.shots*.5);return board.marina>=three?3:board.marina>=two?2:1;}
+export function freshLevel(level,seed,version=5){return boardFromMap(layout(level,seed,version));}
+
 export function initialOrange(seed){return {version:5,layoutVersion:5,revision:0,seed:seed>>>0,level:1,cleared:0,inventory:Object.fromEntries(SPECIALS.map(t=>[t,3])),board:freshLevel(1,seed)};}
 export function validShot(shot){
  if(!shot||!TYPES.includes(shot.type))return false;
@@ -332,15 +386,15 @@ export function applyOrange(state,action,rng=Math.random){
  const s={...state,inventory:{...state.inventory},board:{...state.board,hp:[...state.board.hp],remaining:[...state.board.remaining]}};
  const done=(applied,message,coins=0,rewards=[])=>({state:s,applied,message,coins,rewards});
  if(action.kind==="buy"){if(!SPECIALS.includes(action.type))return done(false,"Choose a power-up.");if(s.inventory[action.type]>=9999)return done(false,"Power-up storage is full.");s.inventory[action.type]++;return done(true,AXOLOTLS[action.type].name+" added.",-PRICE);}
- if(action.kind==="retry"){if(s.board.won)return done(false,"This level is already complete.");s.board=freshLevel(s.level,s.seed,s.layoutVersion||1);return done(true,"Level reset. Used power-ups are not refunded.");}
- if(action.kind==="next"){if(!s.board.won)return done(false,"Clear all the oranges first.");if(s.level>=1000000)return done(false,"Maximum supported level reached.");s.level++;s.version=5;s.layoutVersion=5;s.board=freshLevel(s.level,s.seed,5);return done(true,"Level "+s.level+" ready.");}
+ if(action.kind==="retry"){if(s.board.won)return done(false,"This level is already complete.");s.board=boardFromMap(stateMap(s));return done(true,"Level reset. Used power-ups are not refunded.");}
+ if(action.kind==="next"){if(!s.board.won)return done(false,"Clear all the oranges first.");if(s.level>=1000000)return done(false,"Maximum supported level reached.");s.level++;s.version=5;s.layoutVersion=5;delete s.levelMap;s.board=freshLevel(s.level,s.seed,5);return done(true,"Level "+s.level+" ready.");}
  if(action.kind!=="shot"||!validShot(action.shot))return done(false,"Invalid shot.");
  if(s.board.won)return done(false,"Level already complete.");
  if(orangeGameOver(s.board))return done(false,"Game over. Retry the level first.");
  const shot=action.shot,type=shot.type;if(type==="marina"?s.board.marina<=0:s.inventory[type]<=0)return done(false,"No "+AXOLOTLS[type].name+" throws left.");
- let result;try{result=simulateShot(layout(s.level,s.seed,s.layoutVersion||1),s.board,shot);}catch(e){return done(false,e.message);}
+ let result;try{result=simulateShot(stateMap(s),s.board,shot);}catch(e){return done(false,e.message);}
  if(type==="marina")s.board.marina--;else s.inventory[type]--;
  s.board.hp=result.hp;s.board.remaining=result.remaining;
- if(!result.remaining.length){s.board.won=true;s.cleared=Math.max(s.cleared,s.level);const rewards=[];if(rng()<fruiterChance(s.level))rewards.push("fruiter");if(s.level>10&&rng()<tangieChance(s.level))rewards.push("tangie");return done(true,"Level "+s.level+" cleared! +10 Star Coins.",WIN_COINS,rewards);}
+ if(!result.remaining.length){s.board.won=true;s.board.stars=starRating(stateMap(s),s.board);s.cleared=Math.max(s.cleared,s.level);const rewards=[];if(rng()<fruiterChance(s.level))rewards.push("fruiter");if(s.level>10&&rng()<tangieChance(s.level))rewards.push("tangie");return done(true,"Level "+s.level+" cleared! +10 Star Coins.",WIN_COINS,rewards);}
  return done(true,orangeGameOver(s.board)?"Game over. Retry the level.":result.remaining.length+" oranges left.");
 }

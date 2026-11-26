@@ -1,11 +1,21 @@
 
 import {accessToken,verifyFirebaseIdentity} from "./rewards.js";
-import {initialOrange,applyOrange,PRICE,SPECIALS,validShot,ORANGE_TROPHY,hasOrangeMastery} from "../../script/orange-knock-down-core.mjs";
+import {initialOrange,applyOrange,PRICE,SPECIALS,validShot,ORANGE_TROPHY,hasOrangeMastery,validateDesign,checkDesignUnlocks,validateMilestones,designMap,campaignMap,boardFromMap} from "../../script/orange-knock-down-core.mjs";
 const fail=(message,status=400)=>{throw Object.assign(Error(message),{status});};
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const secureRandom=()=>(crypto.getRandomValues(new Uint32Array(1))[0]+.5)/4294967296;
 const str=v=>({stringValue:v}),integer=v=>({integerValue:String(v)});
-export async function orangeWithStorage({read,commit,root,uid,input,clock=Date.now,rng=secureRandom,seed=()=>crypto.getRandomValues(new Uint32Array(1))[0]}){
+export async function configuredOrangeLevel(read,state){
+ const [config,official]=await Promise.all([read("orangeConfig/milestones"),read("orangeOfficialLevels/"+state.level)]);
+ const milestones=config?validateMilestones(JSON.parse(config.fields.payload.stringValue)):null;
+ state.milestones=milestones;
+ let map;
+ if(official){try{const d=checkDesignUnlocks(validateDesign(JSON.parse(official.fields.payload.stringValue)),state.level,milestones);map=designMap(d);}catch(e){console.warn("Official orange level incompatible with milestones",state.level);}}
+ state.levelMap=map||campaignMap(state.level,state.seed,milestones);
+ state.board=boardFromMap(state.levelMap);
+ return state;
+}
+export async function orangeWithStorage({read,commit,root,uid,input,clock=Date.now,rng=secureRandom,seed=()=>crypto.getRandomValues(new Uint32Array(1))[0],configure=null}){
  if(!input||!["state","shot","buy","retry","next"].includes(input.kind))fail("Invalid game action.");
  if(input.kind!=="state"&&(!uuid.test(input.requestId||"")||!Number.isSafeInteger(input.revision)||input.revision<0))fail("Refresh your game first.");
  if(input.kind==="shot"&&!validShot(input.shot))fail("Invalid shot.");
@@ -27,11 +37,13 @@ export async function orangeWithStorage({read,commit,root,uid,input,clock=Date.n
   }
   if(record&&record.lastRequest===input.requestId)return {...record.response,wallet};
   const state=record?.state||initialOrange(seed());
+  if(!record&&configure)await configure(read,state);
   if(input.kind!=="state"&&!record)fail("Load the game first.",409);
   if(input.kind!=="state"&&input.revision!==state.revision)return {state,wallet,conflict:true,applied:false,rewards:[],coins:0,message:"Game changed in another tab. Review the board."};
   const result=input.kind==="state"?{state,applied:true,message:"Ready.",coins:0,rewards:[]}:input.kind==="buy"&&wallet<PRICE?{state,applied:false,message:"Not enough Star Coins.",coins:0,rewards:[]}:applyOrange(state,input,rng);
   if(!result.applied)return {...result,wallet};
   const next=result.state,rewards=[];
+  if(input.kind==="next"&&configure)await configure(read,next);
   if(input.kind!=="state")next.revision=state.revision+1;
   for(const id of result.rewards)if(!await read(user+"/axolotls/"+id))rewards.push(id);
   if(hasOrangeMastery(next)&&!next.level1000TrophyAwarded){
@@ -54,5 +66,5 @@ export async function playOrangeKnockDown(env,input){
  const root="projects/"+env.FIREBASE_PROJECT+"/databases/(default)/documents",url="https://firestore.googleapis.com/v1/"+root,headers={Authorization:"Bearer "+token,"Content-Type":"application/json"};
  const read=async p=>{const r=await fetch(url+"/"+p.split("/").map(encodeURIComponent).join("/"),{headers});if(r.status===404)return null;if(!r.ok)fail("Game storage unavailable.",503);return r.json();};
  const commit=async writes=>{const r=await fetch(url+":commit",{method:"POST",headers,body:JSON.stringify({writes})});if(r.ok)return true;const e=await r.json().catch(()=>({}));if([409,412].includes(r.status)||["ABORTED","FAILED_PRECONDITION","ALREADY_EXISTS"].includes(e.error?.status))return false;fail("Game save not confirmed. Retry to recover your result.",503);};
- return orangeWithStorage({read,commit,root,uid,input});
+ return orangeWithStorage({read,commit,root,uid,input,configure:configuredOrangeLevel});
 }
