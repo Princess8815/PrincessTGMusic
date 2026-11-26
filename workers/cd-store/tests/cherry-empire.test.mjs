@@ -1,7 +1,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import {initialEmpire,makeTree,advance,applyAction,fruitInterval,autoInterval,starChance,caps,yieldPerFruit,treePrice,chanceAtLeastOne,rewardCandidates,binomial,FRUITER_CHANCE} from "../../../script/cherry-empire-core.mjs";
+import {initialEmpire,makeTree,advance,applyAction,fruitInterval,autoInterval,starChance,caps,yieldPerFruit,treePrice,treeCapacity,prestigeReady,hasMastery,CHERRY_TROPHY,chanceAtLeastOne,rewardCandidates,binomial,FRUITER_CHANCE} from "../../../script/cherry-empire-core.mjs";
 import {orchardWithStorage} from "../cherry-empire.mjs";
 const NOW=1700000000000;
 test("manual fruit accumulates offline; harvesting many fruits counts as one harvest",()=>{
@@ -32,10 +32,10 @@ test("second tree matures on its own clock and unlock eligibility starts after p
  assert.equal(advance(p.state,t.nextFruitAt).state.trees[1].fruit,1);
 });
 test("prestige resets normal upgrades, retains star chance, grows longer and raises caps",()=>{
- const s=initialEmpire(NOW),t=s.trees[0];s.cherries=1000;t.speed=caps(t).speed;t.yield=caps(t).yield;t.auto=2;t.star=3;
+ const s=initialEmpire(NOW),t=s.trees[0];s.cherries=1000;t.speed=caps(t).speed;t.yield=caps(t).yield;t.auto=caps(t).auto;t.capacity=caps(t).capacity;t.star=3;
  t.nextFruitAt=NOW+fruitInterval(t);t.nextAutoAt=NOW+autoInterval(t);
  const p=applyAction(s,{kind:"prestige",treeId:1},NOW);
- const r=p.state.trees[0];assert.equal(p.applied,true);assert.equal(r.prestige,1);assert.equal(r.speed,0);assert.equal(r.yield,0);assert.equal(r.auto,0);assert.equal(r.star,3);assert.equal(starChance(r),starChance(t));assert.equal(r.matureAt,NOW+180000);assert.ok(caps(r).speed>caps(t).speed);assert.ok(fruitInterval(r)>fruitInterval(makeTree(1,NOW)));assert.ok(yieldPerFruit(r)>1);
+ const r=p.state.trees[0];assert.equal(p.applied,true);assert.equal(r.prestige,1);assert.equal(r.speed,0);assert.equal(r.yield,0);assert.equal(r.auto,0);assert.equal(r.capacity,0);assert.equal(r.star,3);assert.equal(starChance(r),starChance(t));assert.equal(r.matureAt,NOW+180000);assert.ok(caps(r).speed>caps(t).speed);assert.ok(fruitInterval(r)>fruitInterval(makeTree(1,NOW)));assert.ok(yieldPerFruit(r)>1);
 });
 test("chance uses independent nonempty harvests; Cheribelle gated by second tree",()=>{
  assert.ok(Math.abs(chanceAtLeastOne(1,FRUITER_CHANCE)-1/20000)<1e-12);
@@ -69,4 +69,45 @@ test("storage commits progress and wallet once; retries and stale tabs do not du
  const first=await call("harvest",2,start.state.revision,1);assert.equal(first.state.cherries,1);assert.equal(coins,1);assert.ok(first.rewards.includes("fruiter"));
  const again=await call("harvest",2,start.state.revision,1);assert.deepEqual(first.state,again.state);assert.equal(coins,1);assert.equal(writes,2);
  const stale=await call("harvest",3,start.state.revision,1);assert.equal(stale.conflict,true);assert.equal(writes,2);assert.ok(store.has(path));assert.ok(store.has(user+"/axolotls/fruiter"));
+});
+
+test("tree capacity caps manual growth, increases with upgrades and preserves legacy fruit",()=>{
+ const s=initialEmpire(NOW);s.cherries=100;
+ const full=advance(s,NOW+86400000).state;
+ assert.equal(full.trees[0].fruit,10);assert.equal(full.trees[0].pendingCherries,10);
+ const up=applyAction(full,{kind:"upgrade",treeId:1,upgrade:"capacity"},NOW+86400000).state;
+ assert.equal(treeCapacity(up.trees[0]),20);assert.equal(advance(up,NOW+86400000+300000).state.trees[0].fruit,20);
+ const legacy=initialEmpire(NOW);legacy.version=1;delete legacy.trees[0].capacity;legacy.trees[0].fruit=100;legacy.trees[0].pendingCherries=100;
+ const migrated=advance(legacy,NOW+30000).state;assert.equal(migrated.trees[0].fruit,100);assert.equal(migrated.trees[0].capacity,0);
+ assert.equal(applyAction(migrated,{kind:"harvest",treeId:1},NOW+30000).effects.cherries,100);
+});
+test("capped automatic growth matches incremental timestamp simulation",()=>{
+ for(let p=0;p<=4;p++)for(let speed=0;speed<=5+2*p;speed++)for(let auto=1;auto<=3+p;auto++){
+ const s=initialEmpire(NOW),t=makeTree(1,NOW,0,p);s.trees=[t];t.speed=speed;t.auto=auto;t.nextFruitAt=NOW+fruitInterval(t);t.nextAutoAt=NOW+autoInterval(t);
+ const until=NOW+9876543,fast=advance(s,until).state;let slow=s;
+ for(let at=NOW+10000;at<until;at+=10000)slow=advance(slow,at).state;slow=advance(slow,until).state;
+ assert.deepEqual(fast,slow);
+ }
+});
+test("all four regular caps are required; permanent star upgrades are optional",()=>{
+ const s=initialEmpire(NOW),t=s.trees[0];s.cherries=100000;
+ for(const k of ["speed","yield","auto","capacity"])t[k]=caps(t)[k];
+ assert.equal(prestigeReady(t),true);
+ for(const k of ["speed","yield","auto","capacity"]){t[k]--;assert.equal(applyAction(s,{kind:"prestige",treeId:1},NOW).applied,false);t[k]++;}
+ assert.equal(applyAction(s,{kind:"prestige",treeId:1},NOW).applied,true);
+});
+test("mastery is awarded atomically only when every one of twelve trees reaches prestige three",async()=>{
+ const uid="test",root="documents",user="users/test",path=user+"/privateGames/cherryEmpire",trophy=user+"/trophies/"+CHERRY_TROPHY[0];
+ const s=initialEmpire(NOW);s.trees=Array.from({length:12},(_,i)=>makeTree(i+1,NOW,0,i===11?2:3));s.cherries=100000;
+ const t=s.trees[11];for(const k of ["speed","yield","auto","capacity"])t[k]=caps(t)[k];t.nextAutoAt=NOW+autoInterval(t);t.nextFruitAt=NOW+fruitInterval(t);
+ assert.equal(hasMastery(s),false);
+ assert.equal(hasMastery({...s,trees:s.trees.slice(0,11)}),false);
+ const store=new Map([[user,{updateTime:"0",fields:{status:{stringValue:"active"}}}],[path,{updateTime:"1",fields:{payload:{stringValue:JSON.stringify({state:s})}}}]]);let rev=1,trophyWrites=0;
+ const read=async p=>store.get(p)||null;
+ const commit=async batch=>{for(const w of batch){if(!w.update||w.updateTransforms)continue;const p=w.update.name.slice(root.length+1);if(p===trophy)trophyWrites++;store.set(p,{updateTime:String(++rev),fields:w.update.fields});}return true;};
+ const id=n=>"00000000-0000-4000-8000-"+String(n).padStart(12,"0");
+ const call=(kind,n,revision)=>orchardWithStorage({read,commit,root,uid,input:{kind,requestId:id(n),revision,treeId:12},clock:()=>NOW,rng:()=>.9});
+ const award=await call("prestige",1,0);assert.ok(hasMastery(award.state));assert.deepEqual(award.rewards,[CHERRY_TROPHY[0]]);assert.ok(store.has(trophy));assert.equal(trophyWrites,1);
+ const retry=await call("prestige",1,0);assert.deepEqual(retry.rewards,award.rewards);assert.equal(trophyWrites,1);
+ const sync=await call("sync",2,1);assert.deepEqual(sync.rewards,[]);assert.equal(trophyWrites,1);
 });

@@ -1,6 +1,6 @@
 
 import {accessToken,verifyFirebaseIdentity} from "./rewards.js";
-import {initialEmpire,applyAction,binomial,rewardCandidates} from "../../script/cherry-empire-core.mjs";
+import {initialEmpire,applyAction,binomial,rewardCandidates,hasMastery,CHERRY_TROPHY} from "../../script/cherry-empire-core.mjs";
 const fail=(message,status=400)=>{throw Object.assign(Error(message),{status});};
 const str=v=>({stringValue:v}),integer=v=>({integerValue:String(v)});
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -12,7 +12,7 @@ function validate(input){
  if(!input||!uuid.test(input.requestId||"")||!["sync","buyTree","harvestAll","harvest","upgrade","prestige"].includes(input.kind))fail("Invalid orchard action.");
  if(input.kind!=="sync"&&(!Number.isSafeInteger(input.revision)||input.revision<0))fail("Refresh your orchard first.");
  if(["harvest","upgrade","prestige"].includes(input.kind)&&(!Number.isInteger(input.treeId)||input.treeId<1||input.treeId>12))fail("Invalid tree.");
- if(input.kind==="upgrade"&&!["speed","yield","auto","star"].includes(input.upgrade))fail("Invalid upgrade.");
+ if(input.kind==="upgrade"&&!["speed","yield","auto","capacity","star"].includes(input.upgrade))fail("Invalid upgrade.");
 }
 export async function orchardWithStorage({read,commit,root,uid,input,clock=Date.now,rng=secureRandom}){
  validate(input);
@@ -29,6 +29,11 @@ export async function orchardWithStorage({read,commit,root,uid,input,clock=Date.
   for(const id of rewardCandidates(fx,rng)){
    if(!await read(user+"/axolotls/"+id))rewards.push(id);
   }
+  const trophyPath=user+"/trophies/"+CHERRY_TROPHY[0];
+  if(hasMastery(next)&&!next.masteryAwarded){
+   if(!await read(trophyPath))rewards.push(CHERRY_TROPHY[0]);
+   next.masteryAwarded=true;
+  }
   next.revision=state.revision+1;
   const response={state:next,serverNow:now,effects:fx,rewards,message:result.message,applied:result.applied};
   const saved={state:next,lastRequest:input.requestId,response};
@@ -37,7 +42,7 @@ export async function orchardWithStorage({read,commit,root,uid,input,clock=Date.
    {update:{name:root+"/"+path,fields:{payload:str(JSON.stringify(saved))}},currentDocument:stored?{updateTime:stored.updateTime}:{exists:false}}
   ];
   if(fx.coins)writes.push({update:{name:root+"/"+user+"/wallets/starCoins",fields:{currency:str("starCoins")}},updateMask:{fieldPaths:["currency"]},updateTransforms:[{fieldPath:"balance",increment:integer(fx.coins)}]});
-  for(const id of rewards)writes.push({update:{name:root+"/"+user+"/axolotls/"+id,fields:{foundAt:{timestampValue:new Date(now).toISOString()},source:str("cherry-empire")}},currentDocument:{exists:false}});
+  for(const id of rewards)writes.push({update:{name:root+"/"+user+"/"+(id===CHERRY_TROPHY[0]?"trophies":"axolotls")+"/"+id,fields:{foundAt:{timestampValue:new Date(now).toISOString()},source:str("cherry-empire")}},currentDocument:{exists:false}});
   if(await commit(writes))return response;
  }
  fail("Orchard changed while saving. Retry to refresh.",409);

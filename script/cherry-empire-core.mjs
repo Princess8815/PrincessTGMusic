@@ -1,22 +1,27 @@
 
 export const MAX_TREES=12,MAX_PRESTIGE=20,STAR_CAP=10;
+export const CHERRY_TROPHY=["cherry-garden-mastery","Cherry Garden Mastery","Prestige all 12 cherry trees at least three times."];
+export const masteryCount=s=>s.trees.filter(t=>t.prestige>=3).length;
+export const hasMastery=s=>s.trees.length===MAX_TREES&&masteryCount(s)===MAX_TREES;
 export const CHERRY_AXOLOTLS=[["cheribelle","Cheribelle","#ffc0d0","#c83962","cherries"]];
 export const FRUITER_CHANCE=1/20000,CHERIBELLE_CHANCE=1/100;
 const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
-export const caps=t=>({speed:5+2*t.prestige,yield:5+2*t.prestige,auto:3+t.prestige,star:STAR_CAP});
+export const caps=t=>({speed:5+2*t.prestige,yield:5+2*t.prestige,auto:3+t.prestige,capacity:5+2*t.prestige,star:STAR_CAP});
 export const fruitInterval=t=>Math.max(5000,Math.round(30000*(1+.4*t.prestige)/(1+.22*t.speed)));
 export const autoInterval=t=>Math.max(fruitInterval(t),Math.round(120000/(1+.65*Math.max(0,t.auto-1))));
 export const yieldPerFruit=t=>(1+2*t.prestige)*(1+t.yield);
+export const treeCapacity=t=>10+5*t.prestige+10*(t.capacity||0);
+export const prestigeReady=t=>t.prestige<MAX_PRESTIGE&&["speed","yield","auto","capacity"].every(k=>(t[k]||0)>=caps(t)[k]);
 export const starChance=t=>.001+.0015*t.star;
 export const treePrice=count=>Math.ceil(80*Math.pow(2.25,count-1));
 export const growDuration=count=>600000*count;
 export const prestigePrice=t=>250*(t.prestige+1)**2;
-export const upgradePrice=(t,kind)=>kind==="star"?Math.ceil(100*1.7**t.star):({speed:5,yield:8,auto:20}[kind]||0)*(1+t.prestige)*(t[kind]+1)**2;
+export const upgradePrice=(t,kind)=>kind==="star"?Math.ceil(100*1.7**t.star):({speed:5,yield:8,auto:20,capacity:10}[kind]||0)*(1+t.prestige)*((t[kind]||0)+1)**2;
 export function makeTree(id,now,delay=0,prestige=0,star=0){
- const t={id,prestige,star,speed:0,yield:0,auto:0,matureAt:now+delay,fruit:0,pendingCherries:0,pendingStars:0,nextFruitAt:0,nextAutoAt:0};
+ const t={id,prestige,star,speed:0,yield:0,auto:0,capacity:0,matureAt:now+delay,fruit:0,pendingCherries:0,pendingStars:0,nextFruitAt:0,nextAutoAt:0};
  t.nextFruitAt=t.matureAt+fruitInterval(t);return t;
 }
-export function initialEmpire(now){return {version:1,revision:0,cherries:0,trees:[makeTree(1,now)],totalHarvests:0,totalCherries:0,totalStars:0,lastAt:now};}
+export function initialEmpire(now){return {version:2,revision:0,cherries:0,trees:[makeTree(1,now)],totalHarvests:0,totalCherries:0,totalStars:0,lastAt:now};}
 export const countDue=(first,interval,now)=>first>0&&first<=now?Math.floor((now-first)/interval)+1:0;
 export function chanceAtLeastOne(n,p){return n<=0?0:p>=1?1:-Math.expm1(n*Math.log1p(-p));}
 // Exact binomial sampling via beta order-statistic splitting: large offline
@@ -32,7 +37,7 @@ export function binomial(n,p,rng){
  const a=Math.floor(n/2)+1,b=n-a+1,x=gamma(a,rng),y=gamma(b,rng),v=x/(x+y);
  return v>=p?binomial(a-1,clamp(p/v,0,1),rng):a+binomial(b-1,clamp((p-v)/(1-v),0,1),rng);
 }
-const copy=s=>({...s,trees:s.trees.map(t=>({...t}))});
+const copy=s=>({...s,version:2,trees:s.trees.map(t=>({capacity:0,...t}))});
 const emptyEffects=()=>({cherries:0,coins:0,harvests:0,eligibleHarvests:0});
 function credit(s,t,fx,count){
  if(!t.fruit||count<=0)return;
@@ -41,13 +46,18 @@ function credit(s,t,fx,count){
  if(s.trees.length>=2)fx.eligibleHarvests+=count;
  t.fruit=0;t.pendingCherries=0;t.pendingStars=0;
 }
+function addFruit(t,n,sample){
+ if(n<=0)return;
+ t.fruit+=n;t.pendingCherries+=n*yieldPerFruit(t);t.pendingStars+=sample(n,starChance(t));
+}
 function grow(t,until,sample){
  const interval=fruitInterval(t),n=countDue(t.nextFruitAt,interval,until);
- if(n){t.fruit+=n;t.pendingCherries+=n*yieldPerFruit(t);t.pendingStars+=sample(n,starChance(t));t.nextFruitAt+=n*interval;}
+ if(n){addFruit(t,Math.min(n,Math.max(0,treeCapacity(t)-t.fruit)),sample);t.nextFruitAt+=n*interval;}
 }
-// Auto intervals are always at least the fruit interval. Once the first
-// scheduled harvest is evaluated, every subsequent interval contains fruit.
-// Count all nonempty harvest events in constant time, even after months away.
+// Process the first auto harvest separately (it may contain existing fruit).
+// Later harvest intervals contain floor or ceil(autoInterval/fruitInterval)
+// fruit. For an integer capacity, either all arrivals fit or every interval
+// fills its capacity. This preserves the exact capacity limit in O(1) time.
 export function advance(state,now,sample=()=>0){
  const s=copy(state),fx=emptyEffects();now=Math.max(s.lastAt,Math.floor(now));
  for(const t of s.trees){
@@ -55,8 +65,15 @@ export function advance(state,now,sample=()=>0){
    const interval=autoInterval(t),n=countDue(t.nextAutoAt,interval,now);
    if(n){
     const first=t.nextAutoAt,last=first+(n-1)*interval;
-    const firstNonempty=t.fruit>0||countDue(t.nextFruitAt,fruitInterval(t),first)>0;
-    grow(t,last,sample);credit(s,t,fx,n-(firstNonempty?0:1));t.nextAutoAt+=n*interval;
+    grow(t,first,sample);credit(s,t,fx,1);
+    if(n>1){
+     const arrivals=countDue(t.nextFruitAt,fruitInterval(t),last);
+     const accepted=Math.min(arrivals,(n-1)*treeCapacity(t));
+     addFruit(t,accepted,sample);
+     t.nextFruitAt+=arrivals*fruitInterval(t);
+     credit(s,t,fx,n-1);
+    }
+    t.nextAutoAt+=n*interval;
    }
   }
   grow(t,now,sample);
@@ -85,7 +102,7 @@ export function applyAction(state,action,now,sample=()=>0){
    credit(s,t,fx,1);message="Tree harvested.";
   }else if(action.kind==="upgrade"){
    const k=action.upgrade;
-   if(!["speed","yield","auto","star"].includes(k))return bad("Unknown upgrade.");
+   if(!["speed","yield","auto","capacity","star"].includes(k))return bad("Unknown upgrade.");
    if(t[k]>=caps(t)[k])return bad("Upgrade is at its current cap.");
    if(!pay(upgradePrice(t,k)))return bad("Not enough cherries for that upgrade.");
    const oldInterval=fruitInterval(t),oldAuto=t.auto?autoInterval(t):0,oldNext=t.nextFruitAt,oldNextAuto=t.nextAutoAt;
@@ -102,7 +119,7 @@ export function applyAction(state,action,now,sample=()=>0){
    message=k==="star"?"Permanent Star Coin chance improved.":"Tree upgrade purchased.";
   }else if(action.kind==="prestige"){
    if(t.prestige>=MAX_PRESTIGE)return bad("This tree has reached its prestige limit.");
-   if(t.speed<caps(t).speed||t.yield<caps(t).yield)return bad("Maximize fruit speed and cherry yield before prestige.");
+   if(!prestigeReady(t))return bad("Maximize fruit speed, cherry yield, auto harvester and tree capacity before prestige.");
    if(!pay(prestigePrice(t)))return bad("Not enough cherries to prestige.");
    credit(s,t,fx,1);
    const next=t.prestige+1;s.trees[i]=makeTree(t.id,now,180000*next,next,t.star);
