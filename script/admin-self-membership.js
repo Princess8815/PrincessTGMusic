@@ -1,8 +1,10 @@
 import {watchSelfMembership,setSelfMembership,selfMembership,previewMembership,membershipLookupError} from "./staff-membership.js";
 import {toggleMembership} from "./staff-membership-core.mjs";
+import {showAdminTestBanner} from "./banner-ads-core.mjs";
 const $=id=>document.getElementById(id),panel=$("admin-self-membership"),badge=$("admin-self-membership-badge"),toggle=$("admin-self-membership-toggle"),note=$("admin-self-membership-note"),message=$("admin-self-membership-message");
 let state={ready:false},busy=false;
 function render(){
+ const demo=$("admin-test-banner");demo.hidden=!showAdminTestBanner(state,state.ready?selfMembership(state).status:null);
  panel.hidden=!state.staff;
  if(panel.hidden)return;
  if(!state.ready){badge.textContent=state.error?"Unavailable":"Checking…";delete badge.dataset.membership;toggle.disabled=true;note.textContent=state.error?membershipLookupError(state):"Checking membership permissions…";return;}

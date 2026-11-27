@@ -350,6 +350,8 @@ function init(){
   // Firebase may be slow or blocked. The public menu should still work.
   // Keep account-only links hidden until authentication is verified.
   void attachAccountVisibility(special);
+  // Test-only banner; an ad failure must never break the site shell.
+  void import("./banner-ads.js").then(m=>m.initTestBanner()).catch(error=>console.warn("Test banner unavailable",error));
 }
 async function attachAccountVisibility(special){
   if(!special.profile && !special.admin)return;

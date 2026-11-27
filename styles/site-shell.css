@@ -123,3 +123,8 @@ body.ptg-shell-ready > main:has(#profile-app) .profile-card {
 .ptg-error-notice :focus-visible{outline:2px solid var(--ptg-highlight,#c084fc);outline-offset:2px}
 
 .ptg-toast-stack{position:fixed;right:16px;bottom:16px;z-index:99999;display:grid;gap:8px;width:min(340px,calc(100vw - 32px));pointer-events:none}.ptg-toast{padding:13px 16px;border-radius:12px;background:var(--ptg-secondary,#1f2937);color:var(--ptg-text,#fff);border:2px solid var(--ptg-highlight,#c084fc);box-shadow:0 6px 24px #0005;pointer-events:auto}
+
+/* Simulated banner: no third-party script, iframe, ad request or click target. */
+.ptg-test-banner{box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:106px;padding:14px;border:2px dashed var(--ptg-border,#8d7da7);border-radius:10px;background:var(--ptg-secondary,#1f2937);color:var(--ptg-text,#f3f4f6);font-family:system-ui,sans-serif;text-align:center;pointer-events:none}
+.ptg-test-banner strong{font-size:1.35rem;letter-spacing:.15em}.ptg-test-banner small{font-size:.78rem;opacity:.85}.ptg-test-banner[hidden]{display:none!important}
+body.ptg-shell-ready>.ptg-public-test-banner{width:min(94%,970px);max-width:970px;margin:24px auto;flex-shrink:0}.dp-self-test .ptg-test-banner{width:100%;max-width:970px;margin:18px auto 0}
