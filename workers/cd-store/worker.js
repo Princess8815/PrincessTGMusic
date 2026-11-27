@@ -18,6 +18,7 @@ import {buyStarlight,starlightOrigin} from "./starlight.mjs";
 import {publicError,errorCode} from "../../script/site-errors.js";
 import {ownerTools} from "./owner-tools.js";
 import {ownerVerification,ownerVerificationOrigin} from "./owner-verification.mjs";
+import {digitalEndpoint,digitalWebhook,digitalIntentWebhook} from "./digital-packs.mjs";
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status});};
 const str=(v,max,required=true)=>{if(typeof v!=="string"||v.length>max||required&&!v.trim())fail("Please complete the shipping address.");return v.trim();};
 const integer=(v,min,max)=>Number.isInteger(v)&&v>=min&&v<=max;
@@ -224,8 +225,11 @@ async function claimReward(env,b){
 async function webhook(req,env,ctx){
  const event=await verifyWebhook(req,env);
  if(event.livemode!==(env.STORE_MODE==="live"))fail("Wrong Stripe environment.");
+ const digitalStripe=(path,params,key)=>stripe(env,path,params,key);
+ if(event.type==="checkout.session.completed"||event.type==="checkout.session.async_payment_succeeded"){if(event.data.object.metadata?.digital_order_id)await digitalWebhook(env,digitalStripe,event.data.object.id);return {received:true};}
  if(event.type==="payment_intent.succeeded"){
   const intent=await stripe(env,"payment_intents/"+event.data.object.id);
+  if(intent.metadata?.digital_order_id){await digitalIntentWebhook(env,digitalStripe,intent);return {received:true};}
   if(uuid(intent.metadata?.store_order_id)){
    const summary=await syncRefunds(env,stripe,intent.id);
    if(summary?.status==="paid")ctx.waitUntil(Promise.all([fulfill(env,intent.metadata.store_order_id),tryReward(env,intent.metadata.store_order_id)]));
@@ -233,6 +237,7 @@ async function webhook(req,env,ctx){
  }else if(refundEvents.has(event.type)){
   const intent=await intentFromRefundEvent(env,stripe,event);
   if(intent){
+   const pi=await stripe(env,"payment_intents/"+intent);if(pi.metadata?.digital_order_id){await digitalIntentWebhook(env,digitalStripe,pi);return {received:true};}
    const summary=await syncRefunds(env,stripe,intent);
    if(summary?.status==="paid"){
     const row=await env.ORDERS.prepare("SELECT id FROM orders WHERE intent=?").bind(intent).first();
@@ -305,6 +310,7 @@ export default {
    if(url.pathname==="/shipping-admin")return json(await shippingAdmin(env,b));
    if(url.pathname==="/inventory-admin"){if(!await verifiedShippingStaff(env,b.idToken))fail("Administrator access required.",403);if(b.action==="save")await saveInventory(env,b.inventory);else if(b.action==="stage")await orderStage(env,b);else if(b.action!=="list")fail("Unknown inventory action.");return json({mode:env.STORE_MODE,inventory:await inventoryList(env),orders:await fulfillmentOrders(env),products:(await catalog(env,true)).products});}
    if(url.pathname==="/catalog-admin"){if(!await verifiedShippingStaff(env,b.idToken))fail("Administrator access required.",403);return json(await saveCatalog(env,b));}
+   if(url.pathname==="/digital-packs")return json(await digitalEndpoint(env,b,(path,params,key)=>stripe(env,path,params,key),origin));
    if(url.pathname==="/checkout")return json(await startOrder(env,b));
    if(url.pathname==="/status")return json(await status(env,b,ctx));
    if(url.pathname==="/cancel")return json(await cancel(env,b));

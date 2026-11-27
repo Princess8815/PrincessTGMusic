@@ -152,6 +152,21 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // Paid status is derived from a trusted expiration timestamp, never a role.
+    function isPaidMember(uid) {
+      return isOwner(uid)
+        && exists(/databases/$(database)/documents/memberships/$(uid))
+        && get(/databases/$(database)/documents/memberships/$(uid)).data.expiresAt is timestamp
+        && get(/databases/$(database)/documents/memberships/$(uid)).data.expiresAt > request.time;
+    }
+    match /memberships/{uid} {
+      allow get: if isOwner(uid) || isStaff();
+      allow list: if isStaff();
+      allow create, update, delete: if false;
+    }
+    match /digitalPackConfig/{id} { allow read, write: if false; }
+    match /digitalOrders/{id} { allow read, write: if false; }
+
     function validAuth(uid) {
       return request.auth != null
         && request.resource.data.auth is map
