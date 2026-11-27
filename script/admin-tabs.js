@@ -74,7 +74,8 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const index = tabs.indexOf(document.activeElement);
+    const visibleTabs=tabs.filter(tab=>!tab.hidden);
+    const index = visibleTabs.indexOf(document.activeElement);
 
     if (index < 0) return;
 
@@ -83,18 +84,18 @@ document.addEventListener("DOMContentLoaded", () => {
     let next = index;
 
     if (event.key === "ArrowRight") {
-      next = (index + 1) % tabs.length;
+      next = (index + 1) % visibleTabs.length;
     }
 
     if (event.key === "ArrowLeft") {
-      next = (index - 1 + tabs.length) % tabs.length;
+      next = (index - 1 + visibleTabs.length) % visibleTabs.length;
     }
 
     if (event.key === "Home") next = 0;
-    if (event.key === "End") next = tabs.length - 1;
+    if (event.key === "End") next = visibleTabs.length - 1;
 
-    tabs[next].focus();
-    activate(tabs[next].dataset.adminTab);
+    visibleTabs[next].focus();
+    activate(visibleTabs[next].dataset.adminTab);
   });
 
 

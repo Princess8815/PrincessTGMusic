@@ -23,12 +23,12 @@ function purchase(p){if(!auth.currentUser?.emailVerified){status("Sign in with a
  if(!liveDigital()){status("Digital checkout is available on the live site only.");return;}
  if(!confirm("Buy "+p.name+" for "+money(p.priceCents)+" plus applicable tax? This is a one-time purchase."))return;
  remember({id:crypto.randomUUID(),packId:p.id});resume();}
-function resume(){return run(async()=>{const ref=pending;if(!ref)return;status("Preparing secure Stripe checkout…");const result=await digitalRequest("start",{id:ref.id,packId:ref.packId});
+function resume(){return run(async()=>{const ref=pending,uid=auth.currentUser?.uid;if(!ref||!uid)return;status("Preparing secure Stripe checkout…");const result=await digitalRequest("start",{id:ref.id,packId:ref.packId});if(auth.currentUser?.uid!==uid||pending?.id!==ref.id)return;
  if(result.url){location.assign(result.url);return;}
  if(result.status==="expired"){remember(null);cleanReturn();status("Checkout expired. You can start another purchase.");return;}
  await checkInternal();});}
-async function checkInternal(){if(!pending)return;status("Checking payment…");const result=await digitalRequest("status",{id:pending.id,sessionId:pending.sessionId});
- if(result.status==="fulfilled"){remember(null);cleanReturn();status("Payment confirmed! Your membership or Star Coins have been added to your account.");}
+async function checkInternal(){const ref=pending,uid=auth.currentUser?.uid;if(!ref||!uid)return;status("Checking payment…");const result=await digitalRequest("status",{id:ref.id,sessionId:ref.sessionId});if(auth.currentUser?.uid!==uid||pending?.id!==ref.id)return;
+ if(result.status==="fulfilled"){remember(null);cleanReturn();status("Payment confirmed! Your membership or Star Coins have been added to your account. Reference: "+ref.id);}
  else if(result.status==="refund_review"){const id=pending.id;remember(null);cleanReturn();status("Purchase requires support review. Reference: "+id);}
  else if(result.status==="expired"){remember(null);cleanReturn();status("Checkout expired. No reward was issued.");}
  else status("Payment has not been confirmed. Resume checkout or check again.");
@@ -38,7 +38,7 @@ $("digital-dismiss").onclick=()=>run(async()=>{if(!pending)return;if(!confirm("S
 onAuthStateChanged(auth,user=>{
  pending=user?restore(user.uid):null;
  const q=new URLSearchParams(location.search),returned=q.get("digitalReturn"),canceled=q.get("digitalCancel");
- if(user?.emailVerified&&returned){remember({...pending,id:returned,sessionId:q.get("session_id")});void run(checkInternal);}
+ if(user?.emailVerified&&returned){remember({...(pending?.id===returned?pending:{}),id:returned,sessionId:q.get("session_id")});void run(checkInternal);}
  else if(user?.emailVerified&&canceled){if(!pending)remember({id:canceled});status("Checkout canceled in Stripe. Check payment status or resume your purchase.");}
  else if(!user&&(returned||canceled))status("Sign in to the account that started this purchase to check its status.");
  render();

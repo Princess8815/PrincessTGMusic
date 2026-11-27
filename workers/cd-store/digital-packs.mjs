@@ -147,7 +147,7 @@ export async function digitalIntentWebhook(env,stripe,intent){
  if(!verifiedLive(env)||!UUID.test(intent?.metadata?.digital_order_id||""))return;
  const s=await storage(env),order=unpack(await s.read(orderPath(intent.metadata.digital_order_id)));
  if(!order)fail("Digital order unavailable.",503);
- if(order.sessionId)return digitalWebhook(env,stripe,order.sessionId);
+ if(order.sessionId){const session=await stripe("checkout/sessions/"+order.sessionId);if(session.status!=="complete"||session.payment_status!=="paid")fail("Digital checkout completion pending.",503);return fulfillDigital({...s,id:order.id,session,...await verifySession(session,stripe)});}
  // A checkout session webhook or customer return handles the rare binding race.
  fail("Digital checkout binding pending.",503);
 }

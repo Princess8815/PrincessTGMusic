@@ -25,7 +25,7 @@ export function memberStatus(expiresAt,now=Date.now()){
 }
 export function extendMembership(expiresAt,days,now=Date.now()){
  ok(int(days,1,3650)&&Number.isSafeInteger(now),"Invalid membership duration.");
- const base=memberStatus(expiresAt,now).status==="paid"?Number(expiresAt):now;
+ const status=memberStatus(expiresAt,now),base=status.status==="paid"?status.expiresAt:now;
  const end=base+days*DAY_MS;ok(Number.isSafeInteger(end)&&end<253402300799000,"Membership duration limit reached.");
  return end;
 }

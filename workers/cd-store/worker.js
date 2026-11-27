@@ -234,10 +234,11 @@ async function webhook(req,env,ctx){
    const summary=await syncRefunds(env,stripe,intent.id);
    if(summary?.status==="paid")ctx.waitUntil(Promise.all([fulfill(env,intent.metadata.store_order_id),tryReward(env,intent.metadata.store_order_id)]));
   }
- }else if(refundEvents.has(event.type)){
+ }else if(refundEvents.has(event.type)||event.type==="charge.dispute.created"){
   const intent=await intentFromRefundEvent(env,stripe,event);
   if(intent){
    const pi=await stripe(env,"payment_intents/"+intent);if(pi.metadata?.digital_order_id){await digitalIntentWebhook(env,digitalStripe,pi);return {received:true};}
+   if(event.type==="charge.dispute.created")return {received:true};
    const summary=await syncRefunds(env,stripe,intent);
    if(summary?.status==="paid"){
     const row=await env.ORDERS.prepare("SELECT id FROM orders WHERE intent=?").bind(intent).first();
