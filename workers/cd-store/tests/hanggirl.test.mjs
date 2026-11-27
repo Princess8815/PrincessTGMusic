@@ -15,11 +15,11 @@ test("difficulty uses vowels, common patterns and familiarity rather than word l
 });
 test("all tiers and milestones award once; hard streak and total trophies",()=>{
  let s=initialState();
- s=win(s,"easy");assert.equal(s.round.awarded,1);assert.deepEqual(s.round.unlocks.map(u=>u.id),["hangy","sleepy"]);
+ s=win(s,"easy");assert.equal(s.round.awarded,10);assert.deepEqual(s.round.unlocks.map(u=>u.id),["hangy","sleepy"]);
  for(let i=1;i<5;i++)s=win(s,"easy");assert.equal(s.round.unlocks[0].id,"wordy");
- s=win(s,"medium");assert.equal(s.round.awarded,2);assert.equal(s.round.unlocks[0].id,"lazy");
+ s=win(s,"medium");assert.equal(s.round.awarded,30);assert.equal(s.round.unlocks[0].id,"lazy");
  for(let i=1;i<5;i++)s=win(s,"medium");assert.equal(s.round.unlocks[0].id,"impressionate");
- s=win(s,"hard");assert.equal(s.round.awarded,3);assert.equal(s.round.unlocks[0].id,"mindful");
+ s=win(s,"hard");assert.equal(s.round.awarded,50);assert.equal(s.round.unlocks[0].id,"mindful");
  const unlocked=new Set();
  for(let i=1;i<100;i++){s=win(s,"hard");for(const u of s.round.unlocks)unlocked.add(u.id);}
  assert.equal(s.streak,100);for(const id of ["wired","flippy","magica","hang-girl-god"])assert.ok(unlocked.has(id));
@@ -38,5 +38,5 @@ test("repeated guesses, no answer exposure, losses, abandonment and streak reset
  assert.equal(s.round.status,"lost");assert.equal(s.streak,0);assert.equal(s.round.awarded,0);
  s=begin(win(s,"hard"),"hard","cry","again");s=abandon(s);
  assert.equal(s.streak,0);assert.equal(s.round.status,"abandoned");
- assert.deepEqual(COINS,{easy:1,medium:2,hard:3});
+ assert.deepEqual(COINS,{easy:10,medium:30,hard:50});
 });

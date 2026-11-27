@@ -1,6 +1,6 @@
 
 export const DIFFICULTIES=["easy","medium","hard"];
-export const COINS={easy:1,medium:2,hard:3};
+export const COINS={easy:10,medium:30,hard:50};
 export const MAX_MISSES=6;
 export const AXOLOTLS=[
  ["hangy","Hangy","#f7a5b8","#c978d5","bow"],["flippy","Flippy","#7de1d4","#5b9fea","scarf"],

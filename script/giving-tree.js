@@ -131,7 +131,7 @@ function render(){
   c.detail.textContent=unlocked?"ATK "+fmt(op.attack)+" · DEF "+fmt(op.defense):"Plant a tree with attack or defense "+(kind==="boss"?5:2)+" to unlock.";
   setMeter(c.hp,unlocked?op.hp/op.maxHp:0,unlocked?fmt(op.hp)+" / "+fmt(op.maxHp):"Locked");
   c.timer.textContent=unlocked&&kind==="boss"?(op.deadline?"Full heal in "+time(op.deadline-now):"30-second battle timer starts on first throw."):unlocked?"Does not attack you.":"";
-  c.reward.textContent=unlocked?"Victory reward: "+fmt(Math.floor(dropCoins(op)))+"+ ★":"";
+  c.reward.textContent=unlocked?"Base victory reward: "+fmt(Math.floor(dropCoins(op)))+"+ ★":"";
   c.thrower.textContent=pear&&unlocked?"Throw pear · "+fmt(damage(pear,op))+" damage":"Throw selected pear";
   c.thrower.disabled=!enabled||!pear||!unlocked;
   c.firstThrow.disabled=!enabled||!firstPear||!unlocked;

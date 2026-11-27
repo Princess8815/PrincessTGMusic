@@ -34,7 +34,7 @@ export async function gardenWithStorage({read,commit,root,uid,input,clock=Date.n
   fx.coins=award.coins;next.totalCoins=(next.totalCoins||0)+fx.coins-baseCoins;
   const balance=wallet+fx.coins-fx.spent;
   if(!Number.isSafeInteger(balance)||balance<0)fail("Wallet balance exceeds the supported range.",409);
-  const response={state:next,serverNow:now,wallet:balance,applied:result.applied,message:award.coins>baseCoins?result.message.replace(/([\d,.]+) whole Star Coins credited\./,award.coins.toLocaleString()+" whole Star Coins credited (Paid 2×)."):result.message,effects:{coins:fx.coins,spent:fx.spent,fruits:fx.fruits,enemies:fx.enemies,bosses:fx.bosses},rewards};
+  const response={state:next,serverNow:now,wallet:balance,applied:result.applied,message:award.coins>baseCoins?result.message+" Paid bonus: +"+(award.coins-baseCoins).toLocaleString()+" Star Coins.":result.message,effects:{coins:fx.coins,spent:fx.spent,fruits:fx.fruits,enemies:fx.enemies,bosses:fx.bosses},rewards};
   const writes=[
    {verify:root+"/"+user,currentDocument:{updateTime:account.updateTime}},...award.checks,
    {update:{name:root+"/"+path,fields:{payload:str(JSON.stringify({state:next,lastRequest:input.requestId,response}))}},currentDocument:stored?{updateTime:stored.updateTime}:{exists:false}}
