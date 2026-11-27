@@ -1,6 +1,8 @@
 // Clues are cosmetic only. Never use this mapping to grant ownership.
+import {CHESS_UNLOCKS} from "./chess-core.mjs";
 export const STORE_AXOLOTL_CLUE="show me your wallet";
 export const REEF_CLUES=Object.freeze({
+ ...CHESS_UNLOCKS,
  hangy:"Every long chain begins with a single link. Mine is made of letters.",
  flippy:"A quarter of a century, but nobody is getting older.",
  magica:"My magic awakens when two digits are no longer enough.",

@@ -7,6 +7,7 @@ import {collection,doc,runTransaction,serverTimestamp,onSnapshot,getDocsFromServ
 
 import {HOME_REEF,homeReefPortrait} from "./reef-home-art.js";
 
+import {CHESS_AXOLOTLS} from "./chess-core.mjs";
 import {GAME_AXOLOTLS} from "./hanggirl-collectibles.js";
 import {REEF_REWARDS} from "./apple-catcher-core.mjs";
 import {CHERRY_AXOLOTLS} from "./cherry-empire-core.mjs";
@@ -16,6 +17,7 @@ import {ORANGE_AXOLOTLS} from "./orange-knock-down-core.mjs";
 import {SHINY_AXOLOTLS} from "./shiny-light-core.mjs";
 const reef=[
  ...GAME_AXOLOTLS,
+ ...CHESS_AXOLOTLS,
  ...REEF_REWARDS,
  ...CHERRY_AXOLOTLS,
  ...PEACH_AXOLOTLS,
@@ -36,7 +38,7 @@ const reef=[
 ];
 const ids=new Set(reef.map(f=>f[0]));
 // Trusted-only rewards cannot be requested by the public discovery function.
-const purchaseOnly=new Set(["tide",...GAME_AXOLOTLS.map(x=>x[0]),...REEF_REWARDS.map(x=>x[0]),...CHERRY_AXOLOTLS.map(x=>x[0]),...PEACH_AXOLOTLS.map(x=>x[0]),...PEAR_AXOLOTLS.map(x=>x[0]),...ORANGE_AXOLOTLS.map(x=>x[0]),...SHINY_AXOLOTLS.map(x=>x[0])]);
+const purchaseOnly=new Set(["tide",...GAME_AXOLOTLS.map(x=>x[0]),...CHESS_AXOLOTLS.map(x=>x[0]),...REEF_REWARDS.map(x=>x[0]),...CHERRY_AXOLOTLS.map(x=>x[0]),...PEACH_AXOLOTLS.map(x=>x[0]),...PEAR_AXOLOTLS.map(x=>x[0]),...ORANGE_AXOLOTLS.map(x=>x[0]),...SHINY_AXOLOTLS.map(x=>x[0])]);
 const encounterIds=[...ids].filter(id=>!purchaseOnly.has(id));
 const prefix="ptg-reef-pending-v1:";
 const pathFor=uid=>collection(db,"users",uid,"axolotls");
@@ -154,6 +156,8 @@ function installStyles(){
 }
 
 export function axolotlPortrait(id){return portrait(id);}
+export function axolotlName(id){return reef.find(x=>x[0]===id)?.[1]||id;}
+export function axolotlIds(){return [...ids];}
 let tidePortraitSerial=0;
 function portrait(id){
  const secret=homeReefPortrait(id);if(secret)return secret;

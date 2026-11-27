@@ -1,5 +1,6 @@
 
 import {auth,db} from "./firebase.js";
+import {CHESS_TROPHY} from "./chess-core.mjs";
 import {TROPHY} from "./apple-catcher-core.mjs";
 import {CHERRY_TROPHY} from "./cherry-empire-core.mjs";
 import {PEACH_TROPHY} from "./peach-panic-core.mjs";
@@ -18,7 +19,7 @@ export const GAME_AXOLOTLS=[
 export const GAME_TROPHIES=[
  ["hang-girl-mastery","Hang Girl Mastery","Win 1,000 Hanggirl games on any difficulty."],
  ["hang-girl-god","Hang Girl God","Win 100 Hard games in a row."],
- TROPHY,CHERRY_TROPHY,PEACH_TROPHY,GIVING_TREE_TROPHY,ORANGE_TROPHY,BANANA_TROPHY
+ TROPHY,CHERRY_TROPHY,PEACH_TROPHY,GIVING_TREE_TROPHY,ORANGE_TROPHY,BANANA_TROPHY,CHESS_TROPHY
 ];
 const grid=document.getElementById("trophy-grid"),status=document.getElementById("trophy-status");
 if(grid&&status){

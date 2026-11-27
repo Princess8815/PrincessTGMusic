@@ -40,3 +40,5 @@ Start here for developer setup, maintenance and testing instructions. These guid
 
 - [Health tracker and meal planner](HEALTH_TRACKER_SETUP.md)
 - [Site Mail](SITE_MAIL_SETUP.md)
+
+- [Chess and board games](CHESS_SETUP.md)
