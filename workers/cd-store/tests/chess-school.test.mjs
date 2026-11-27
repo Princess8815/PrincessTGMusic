@@ -5,8 +5,8 @@ import {moves,moveKey,playChess,botMove} from "../../../script/chess-core.mjs";
 import {schoolWithStorage,chessDiplomaWrite} from "../chess-school.mjs";
 import {SCHOOL_MEDALS,CHESS_DIPLOMA_ID,diplomaTitle} from "../../../script/chess-school-awards.mjs";
 const answers=s=>quizView(s).map(q=>q.options.findIndex(o=>o.id===0));
-test("four degrees, only Associate’s open; all examples and exercises use legal moves",()=>{
- assert.equal(DEGREES.length,4);assert.equal(DEGREES.filter(x=>x[2]).length,1);assert.equal(LESSONS.length,15);
+test("four degrees, Associate’s and Bachelor’s implemented; all examples and exercises use legal moves",()=>{
+ assert.equal(DEGREES.length,4);assert.equal(DEGREES.filter(x=>x[2]).length,2);assert.equal(LESSONS.length,15);
  for(const l of LESSONS)for(const e of [l.example,...l.exercises])assert.ok(moves(position(e[0])).some(m=>moveKey(m)===e[2]),l.title+": "+e[2]);
  assert.ok(LESSONS.every(l=>l.quiz.every(q=>q.length===5)));
 });

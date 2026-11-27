@@ -30,7 +30,7 @@ export function diplomaArt(rank,earned,displayName=""){
  <text x="160" y="148" font-size="8" letter-spacing="2" fill="#705a3c">DIPLOMA</text>
  </g>
  <g font-family="Georgia,serif" text-anchor="middle" fill="#654d38">
- ${rank===1?'<text x="88" y="161" font-size="13" font-style="italic">Professor Squiggles</text><path d="M29 166H147" stroke="#9e793d"/><text x="88" y="177" font-size="9">Associate’s Instructor</text>':'<text x="88" y="161" font-size="12">Chess School</text><path d="M29 166H147" stroke="#9e793d"/><text x="88" y="177" font-size="9">Degree program</text>'}
+ ${rank===1?'<text x="88" y="161" font-size="13" font-style="italic">Professor Squiggles</text><path d="M29 166H147" stroke="#9e793d"/><text x="88" y="177" font-size="9">Associate’s Instructor</text>':rank===2?'<text x="88" y="161" font-size="12" font-style="italic">Professor Wiggleworts</text><path d="M29 166H147" stroke="#9e793d"/><text x="88" y="177" font-size="9">Bachelor’s Instructor</text>':'<text x="88" y="161" font-size="12">Chess School</text><path d="M29 166H147" stroke="#9e793d"/><text x="88" y="177" font-size="9">Degree program</text>'}
  <path d="M237 166l-7 33 12-6 9 8 8-35" fill="#8863ba"/>
  <circle cx="248" cy="158" r="23" fill="#e4b651" stroke="#99712b" stroke-width="2"/><circle cx="248" cy="158" r="18" fill="none" stroke="#fff0ac"/>
  <text x="248" y="163" font-size="14" font-weight="bold" fill="#513c64">${seal}</text>

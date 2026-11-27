@@ -1,8 +1,9 @@
 import {initialChess,moves,playChess,botMove,inCheck,moveKey} from "./chess-core.mjs";
 import {position,coach,coachHint,LESSONS as OLD} from "./chess-academy-core.mjs";
+import {BACHELOR_LESSONS,BACHELOR_MODULES} from "./chess-bachelors-lessons.mjs";
 export {position,coach};
 export const PASS=80,COURSE_VERSION=1,PROFESSOR_ID="professor-squiggles";
-export const DEGREES=[["Associate’s","Learn chess from zero to independent play.",true,"Professor Squiggles"],["Bachelor’s","Intermediate strategy and opening study.",false,null],["Master’s","Advanced calculation and positional play.",false,null],["PhD","Expert research and chess mastery.",false,null]];
+export const DEGREES=[["Associate’s","Learn chess from zero to independent play.",true,"Professor Squiggles"],["Bachelor’s","Opening plans, tactical combinations and strategic endgames.",true,"Professor Wiggleworts"],["Master’s","Advanced calculation and positional play.",false,null],["PhD","Expert research and chess mastery.",false,null]];
 
 const E=(fen,prompt,key,hint)=>[fen,prompt,key,hint];
 const Q=(q,a,b,c,d)=>[q,a,b,c,d];
@@ -105,15 +106,17 @@ L("Graduation laboratory",[
 [Q("Which piece alone can jump normally?","Knight","Rook","Bishop","Queen"),Q("Can a move leave your own king in check?","No","Yes","Only when capturing","Only if ahead in material"),Q("A pawn on rank 8 must become?","Queen, rook, bishop or knight","A king","A pawn","Any enemy piece"),Q("Standard stalemate means?","Draw","Checkmate","A captured king","A win for trapping side"),Q("What is a useful opening plan?","Center, development and king safety","Move the queen every turn","Ignore opponent threats","Move all edge pawns"),Q("What does N mean in notation?","Knight","King","Pawn","Queen"),Q("When can you capture en passant?","Immediately after a qualifying double step","Any future turn","Only after castling","After promotion"),Q("Can you castle through an attacked square?","No","Yes","Only if rook is safe","Only queenside"),Q("What is a fork?","One piece attacking multiple targets","A draw","A pawn double step","A rook move"),Q("What ends standard chess with a winner on the board?","Checkmate","Stalemate","Capturing all pawns","A check alone")],"",{level:3,turns:12,opening:false})
 ];
 export const MODULES=[["Foundations",0,7],["Rules and Endings",7,12],["Independent Play",12,15]];
-export const EXAM_LEVEL=1;
-export const graduated=s=>passed(s)&&s.exam?.passed===true;
-export const passed=(s,n=LESSONS.length)=>s.best.slice(0,n).length===n&&s.best.slice(0,n).every(g=>Number.isFinite(g)&&g>=PASS);
-export function initialCourse(){return {version:COURSE_VERSION,revision:0,unlocked:0,best:LESSONS.map(()=>null),attempts:LESSONS.map(()=>0),lesson:0,exercise:0,phase:"study",match:null,quizAttempt:0,feedback:"Welcome to Chess School! Read the lesson, watch the example, then practice.",lastGrade:null,exam:{attempts:0,passed:false,game:null,result:null,seed:0}};}
+export const WIGGLEWORTS_ID="professor-wiggleworts";
+function createCourse({id,degree,professor,professorId,lessons:LESSONS,modules:MODULES,examLevel:EXAM_LEVEL}){
+
+const graduated=s=>passed(s)&&s.exam?.passed===true;
+const passed=(s,n=LESSONS.length)=>s.best.slice(0,n).length===n&&s.best.slice(0,n).every(g=>Number.isFinite(g)&&g>=PASS);
+function initialCourse(){return {version:COURSE_VERSION,revision:0,unlocked:0,best:LESSONS.map(()=>null),attempts:LESSONS.map(()=>0),lesson:0,exercise:0,phase:"study",match:null,quizAttempt:0,feedback:"Welcome to Chess School! Read the lesson, watch the example, then practice.",lastGrade:null,exam:{attempts:0,passed:false,game:null,result:null,seed:0}};}
 function shuffle(n,seed){const a=Array.from({length:n},(_,i)=>i);let x=seed>>>0||1;for(let i=n-1;i>0;i--){x^=x<<13;x^=x>>>17;x^=x<<5;const j=(x>>>0)%(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
-export function quizView(s){return LESSONS[s.lesson].quiz.map((q,i)=>({question:q[0],options:shuffle(4,Math.imul(s.quizAttempt+1,7919)+i*101+s.lesson*37).map(j=>({id:j,label:q[j+1]}))}));}
-export function isSchoolState(d){return !!d&&Array.isArray(d.best)&&d.best.length===LESSONS.length&&Array.isArray(d.attempts)&&d.attempts.length===LESSONS.length&&Number.isInteger(d.revision)&&Number.isInteger(d.lesson)&&d.lesson>=0&&d.lesson<LESSONS.length&&d.exam?.level===EXAM_LEVEL&&typeof d.examUnlocked==="boolean"&&typeof d.phase==="string";}
-export function publicCourse(s){const l=LESSONS[s.lesson],ex=s.phase==="exercise"?l.exercises[s.exercise]:null;return {version:s.version,revision:s.revision,unlocked:s.unlocked,best:s.best,attempts:s.attempts,lesson:s.lesson,exercise:s.exercise,exerciseCount:l.exercises.length,phase:s.phase,feedback:s.feedback,lastGrade:s.lastGrade,completed:graduated(s),examUnlocked:passed(s),exam:{level:EXAM_LEVEL,attempts:s.exam?.attempts||0,passed:s.exam?.passed===true,result:s.exam?.result||null,active:!!s.exam?.game&&!s.exam.game.winner&&!s.exam.result},board:ex?position(ex[0]):s.phase==="match"?s.match.game:s.phase==="exam"?s.exam.game:null,prompt:ex?.[1]||null,match:s.phase==="match"?{turns:s.match.turns,target:l.match.turns,mistakes:s.match.mistakes}:null,quiz:s.phase==="quiz"?quizView(s).map(q=>({question:q.question,options:q.options.map(o=>({label:o.label}))})):null};}
-export function courseAction(prior,input){
+function quizView(s){return LESSONS[s.lesson].quiz.map((q,i)=>({question:q[0],options:shuffle(4,Math.imul(s.quizAttempt+1,7919)+i*101+s.lesson*37).map(j=>({id:j,label:q[j+1]}))}));}
+function isSchoolState(d){return !!d&&d.school===id&&Array.isArray(d.best)&&d.best.length===LESSONS.length&&Array.isArray(d.attempts)&&d.attempts.length===LESSONS.length&&Number.isInteger(d.revision)&&Number.isInteger(d.lesson)&&d.lesson>=0&&d.lesson<LESSONS.length&&d.exam?.level===EXAM_LEVEL&&typeof d.examUnlocked==="boolean"&&typeof d.phase==="string";}
+function publicCourse(s){const l=LESSONS[s.lesson],ex=s.phase==="exercise"?l.exercises[s.exercise]:null;return {school:id,version:s.version,revision:s.revision,unlocked:s.unlocked,best:s.best,attempts:s.attempts,lesson:s.lesson,exercise:s.exercise,exerciseCount:l.exercises.length,phase:s.phase,feedback:s.feedback,lastGrade:s.lastGrade,completed:graduated(s),examUnlocked:passed(s),exam:{level:EXAM_LEVEL,attempts:s.exam?.attempts||0,passed:s.exam?.passed===true,result:s.exam?.result||null,active:!!s.exam?.game&&!s.exam.game.winner&&!s.exam.result},board:ex?position(ex[0]):s.phase==="match"?s.match.game:s.phase==="exam"?s.exam.game:null,prompt:ex?.[1]||null,match:s.phase==="match"?{turns:s.match.turns,target:l.match.turns,mistakes:s.match.mistakes}:null,quiz:s.phase==="quiz"?quizView(s).map(q=>({question:q.question,options:q.options.map(o=>({label:o.label}))})):null};}
+function courseAction(prior,input){
  const s=JSON.parse(JSON.stringify(prior)),l=LESSONS[s.lesson],action=input.action;
  s.exam??={attempts:0,passed:false,game:null,result:null,seed:0};
  const enterQuiz=()=>{s.phase="quiz";s.quizAttempt++;s.feedback="Time for your quiz. Score at least 80% to pass.";};
@@ -122,7 +125,7 @@ export function courseAction(prior,input){
   if(!passed(s))throw Error("Pass every lesson before attempting the final exam.");
   if(s.exam.passed)throw Error("You already graduated.");
   if(!s.exam.game||s.exam.result){s.exam.attempts++;s.exam.game=initialChess();s.exam.result=null;s.exam.seed=Math.imul(s.revision+1,7919)^Math.imul(s.exam.attempts,347);}
-  s.phase="exam";s.feedback="Final exam: defeat Professor Squiggles at difficulty 1. Play as White; no coaching or takebacks.";
+  s.phase="exam";s.feedback="Final exam: defeat "+professor+" at difficulty "+EXAM_LEVEL+". Play as White; no coaching or takebacks.";
  }
  else if(action==="exam-resign"){
   if(s.phase!=="exam"||!s.exam.game||s.exam.result)throw Error("No active exam.");
@@ -136,11 +139,11 @@ export function courseAction(prior,input){
   let next=playChess(g,m);
   if(!next.winner){const bot=botMove(next,EXAM_LEVEL,s.exam.seed);if(!bot)throw Error("No bot move.");next=playChess(next,bot);}
   s.exam.game=next;
-  if(next.winner){s.exam.passed=next.winner==="w";s.exam.result=s.exam.passed?"won":"lost";s.phase="exam-results";s.feedback=s.exam.passed?"Congratulations! You defeated Professor Squiggles and earned your Associate’s in Chess.":"Professor Squiggles won this attempt. Review any lesson and try again.";}
+  if(next.winner){s.exam.passed=next.winner==="w";s.exam.result=s.exam.passed?"won":"lost";s.phase="exam-results";s.feedback=s.exam.passed?"Congratulations! You defeated "+professor+" and earned your "+degree+" in Chess.":professor+" won this attempt. Review any lesson and try again.";}
   else s.feedback=inCheck(next)?"You are in check.":"Your turn.";
  }
  else if(action==="lesson"){if(!Number.isInteger(input.lesson)||input.lesson<0||input.lesson>=LESSONS.length||input.lesson>s.unlocked)throw Error("Pass the previous lesson first.");s.lesson=input.lesson;s.exercise=0;s.phase="study";s.match=null;s.lastGrade=null;s.feedback="Read the lesson and try the example before beginning practice.";}
- else if(action==="begin"&&s.phase==="study"){s.phase="exercise";s.feedback="Try the exercises. Ask Squiggles if you need a clue.";}
+ else if(action==="begin"&&s.phase==="study"){s.phase="exercise";s.feedback="Try the exercises. Ask your instructor if you need a clue.";}
  else if(action==="hint"){if(s.phase==="exercise")s.feedback=l.exercises[s.exercise][3];else if(s.phase==="match")s.feedback=coachHint(s.match.game,l.match.opening);else throw Error("Hints are available during practice.");}
  else if(action==="move"&&s.phase==="exercise"){const e=l.exercises[s.exercise],g=position(e[0]),m=moves(g).find(x=>moveKey(x)===input.move);if(!m||moveKey(m)!==e[2])s.feedback="Not quite. "+e[3]+" Try again.";else{s.exercise++;s.feedback="Nicely done!";if(s.exercise===l.exercises.length)afterExercises();}}
  else if(action==="move"&&s.phase==="match"){
@@ -162,3 +165,11 @@ export function courseAction(prior,input){
  else throw Error("Complete the current section first.");
  s.revision++;return s;
 }
+
+return {id,degree,professor,professorId,LESSONS,MODULES,EXAM_LEVEL,initialCourse,courseAction,publicCourse,quizView,passed,graduated,isSchoolState};
+}
+export const COURSES={
+ associates:createCourse({id:"associates",degree:"Associate’s",professor:"Professor Squiggles",professorId:PROFESSOR_ID,lessons:LESSONS,modules:MODULES,examLevel:1}),
+ bachelors:createCourse({id:"bachelors",degree:"Bachelor’s",professor:"Professor Wiggleworts",professorId:WIGGLEWORTS_ID,lessons:BACHELOR_LESSONS,modules:BACHELOR_MODULES,examLevel:4})
+};
+export const {EXAM_LEVEL,initialCourse,courseAction,publicCourse,quizView,passed,graduated,isSchoolState}=COURSES.associates;
