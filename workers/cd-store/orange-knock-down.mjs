@@ -1,3 +1,4 @@
+import {gameCoinAward} from "./game-coin-rewards.mjs";
 
 import {accessToken,verifyFirebaseIdentity} from "./rewards.js";
 import {initialOrange,applyOrange,PRICE,SPECIALS,validShot,ORANGE_TROPHY,hasOrangeMastery,validateDesign,checkDesignUnlocks,validateMilestones,designMap,campaignMap,boardFromMap,builtInOrangeDesign} from "../../script/orange-knock-down-core.mjs";
@@ -79,10 +80,14 @@ export async function orangeWithStorage({read,commit,root,uid,input,clock=Date.n
    if(!await read(user+"/trophies/"+ORANGE_TROPHY[0]))rewards.push(ORANGE_TROPHY[0]);
    next.level1000TrophyAwarded=true;
   }
+  const baseCoins=result.coins,award=await gameCoinAward({read,root,uid,account,coins:baseCoins,clock});
+  result.coins=award.coins;
+  if(award.coins>baseCoins)result.message=result.message.replace(/\+\d+ Star Coins\./,"+"+award.coins+" Star Coins (Paid 2×).");
   const balance=wallet+result.coins;if(!Number.isSafeInteger(balance)||balance<0)fail("Wallet unavailable.",409);
   const response={state:next,wallet:balance,applied:true,message:result.message,coins:result.coins,rewards,starsGained,bestStars};
   const writes=[{verify:root+"/"+user,currentDocument:{updateTime:account.updateTime}},
    {update:{name:root+"/"+path,fields:{payload:str(JSON.stringify({state:next,lastRequest:input.requestId||null,response}))}},currentDocument:stored?{updateTime:stored.updateTime}:{exists:false}}];
+  writes.push(...award.checks);
   if(starWrite)writes.push(starWrite);
   if(result.coins)writes.push({update:{name:root+"/"+wp,fields:{currency:str("starCoins"),balance:integer(balance)}},updateMask:{fieldPaths:["currency","balance"]},currentDocument:walletDoc?{updateTime:walletDoc.updateTime}:{exists:false}});
   for(const id of rewards)writes.push({update:{name:root+"/"+user+"/"+(id===ORANGE_TROPHY[0]?"trophies":"axolotls")+"/"+id,fields:{source:str("orange-knock-down"),foundAt:{timestampValue:new Date(clock()).toISOString()}}},currentDocument:{exists:false}});

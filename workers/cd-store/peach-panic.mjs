@@ -1,3 +1,4 @@
+import {gameCoinAward} from "./game-coin-rewards.mjs";
 
 import {accessToken,verifyFirebaseIdentity} from "./rewards.js";
 import {ROUND_MS,replayPeaches,peachRewards,PEACH_TROPHY} from "../../script/peach-panic-core.mjs";
@@ -14,7 +15,7 @@ export async function peachWithStorage({read,commit,root,uid,input,clock=Date.no
   if(!account?.updateTime||(account.fields?.status?.stringValue||"active")!=="active"||account.fields?.role?.stringValue==="banned")fail("An active verified account is required.",403);
   const previous=stored?JSON.parse(stored.fields.payload.stringValue):null,now=clock();
   if(input.action==="state")return present(previous,now);
-  let run;
+  let run,checks=[];
   if(input.action==="start"){
    if(previous?.runId===input.runId)return present(previous,now);
    if(previous&&!previous.closed&&now<previous.startAt+ROUND_MS)fail("A round is already running. Refresh to resume.",409);
@@ -29,10 +30,12 @@ export async function peachWithStorage({read,commit,root,uid,input,clock=Date.no
     const dest=user+"/"+(id===PEACH_TROPHY[0]?"trophies":"axolotls")+"/"+id;
     if(!await read(dest))rewards.push(id);
    }
+   const award=await gameCoinAward({read,root,uid,account,coins:result.coins,clock});result.coins=award.coins;checks=award.checks;
    run={...previous,closed:true,best:Math.max(previous.best,result.score),result,rewards};
   }
   const writes=[{verify:root+"/"+user,currentDocument:{updateTime:account.updateTime}},
    {update:{name:root+"/"+path,fields:{payload:str(JSON.stringify(run))}},currentDocument:stored?{updateTime:stored.updateTime}:{exists:false}}];
+  writes.push(...checks);
   // The verified round result and whole-coin wallet increment are committed
   // together. A closed run returns before this write, including on retries.
   if(run.closed&&run.result.coins>0)writes.push({update:{name:root+"/"+user+"/wallets/starCoins",fields:{currency:str("starCoins")}},updateMask:{fieldPaths:["currency"]},updateTransforms:[{fieldPath:"balance",increment:{integerValue:String(run.result.coins)}}]});

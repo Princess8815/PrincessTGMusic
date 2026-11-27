@@ -1,3 +1,4 @@
+import {gameCoinAward} from "./game-coin-rewards.mjs";
 
 import {accessToken,verifyFirebaseIdentity} from "./rewards.js";
 import {initialEmpire,applyAction,binomial,rewardCandidates,hasMastery,CHERRY_TROPHY} from "../../script/cherry-empire-core.mjs";
@@ -26,6 +27,7 @@ export async function orchardWithStorage({read,commit,root,uid,input,clock=Date.
   if(input.kind!=="sync"&&input.revision!==state.revision)return {state,serverNow:now,conflict:true,message:"Your orchard changed in another tab. Review the updated state and try again.",rewards:[],effects:{cherries:0,coins:0,harvests:0},applied:false};
   const result=applyAction(state,input,now,(n,p)=>binomial(n,p,rng));
   const next=result.state,fx=result.effects,rewards=[];
+  const award=await gameCoinAward({read,root,uid,account,coins:fx.coins,clock});
   for(const id of rewardCandidates(fx,rng)){
    if(!await read(user+"/axolotls/"+id))rewards.push(id);
   }
@@ -34,11 +36,12 @@ export async function orchardWithStorage({read,commit,root,uid,input,clock=Date.
    if(!await read(trophyPath))rewards.push(CHERRY_TROPHY[0]);
    next.masteryAwarded=true;
   }
+  fx.coins=award.coins;
   next.revision=state.revision+1;
   const response={state:next,serverNow:now,effects:fx,rewards,message:result.message,applied:result.applied};
   const saved={state:next,lastRequest:input.requestId,response};
   const writes=[
-   {verify:root+"/"+user,currentDocument:{updateTime:account.updateTime}},
+   {verify:root+"/"+user,currentDocument:{updateTime:account.updateTime}},...award.checks,
    {update:{name:root+"/"+path,fields:{payload:str(JSON.stringify(saved))}},currentDocument:stored?{updateTime:stored.updateTime}:{exists:false}}
   ];
   if(fx.coins)writes.push({update:{name:root+"/"+user+"/wallets/starCoins",fields:{currency:str("starCoins")}},updateMask:{fieldPaths:["currency"]},updateTransforms:[{fieldPath:"balance",increment:integer(fx.coins)}]});

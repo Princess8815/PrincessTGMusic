@@ -1,3 +1,4 @@
+import {gameCoinAward} from "./game-coin-rewards.mjs";
 import {accessToken,verifyFirebaseIdentity} from "./rewards.js";
 import {MAX_LEVEL,defaultMilestones,validateMilestones,validateDesign,proceduralDesign,initialBoard,settleLight,applyMove,shinyChance,fruiterChance,BANANA_TROPHY} from "../../script/shiny-light-core.mjs";
 const fail=(message,status=400)=>{throw Object.assign(Error(message),{status});};
@@ -101,7 +102,7 @@ export async function shinyGameAction({read,commit,root,uid,input,rng=random,clo
      if(JSON.stringify(prior)!==JSON.stringify(h))historyWrite=write(root,hp,h,old);
     }
     message=result.won?"All bananas illuminated!":result.fruit.length+" bananas illuminated.";
-    if(coins)message+=" +"+coins+" Star Coins.";
+
    }
   }
   if(Math.max(state.highestEverCleared||0,state.cleared||0)>=1000&&!state.bananaTrophyAwarded){
@@ -109,9 +110,11 @@ export async function shinyGameAction({read,commit,root,uid,input,rng=random,clo
    state.bananaTrophyAwarded=true;
   }
   if(kind!=="state")state.revision++;
+  const award=await gameCoinAward({read,root,uid,account,coins,clock});coins=award.coins;
+  if(coins)message+=" +"+coins+" Star Coins.";
   const lastResult={coins,rewards,message},writes=[
    {verify:root+"/"+user,currentDocument:pre(account)},
-   write(root,path,{state,lastRequest:input.requestId||null,lastResult},recordDoc)
+   write(root,path,{state,lastRequest:input.requestId||null,lastResult},recordDoc),...award.checks
   ];
   if(historyWrite)writes.push(historyWrite);
   if(coins){if(!Number.isSafeInteger(wallet+coins))fail("Wallet limit reached.",503);writes.push({update:{name:root+"/"+walletPath,fields:{currency:str("starCoins"),balance:num(wallet+coins)}},updateMask:{fieldPaths:["currency","balance"]},currentDocument:pre(walletDoc)});}

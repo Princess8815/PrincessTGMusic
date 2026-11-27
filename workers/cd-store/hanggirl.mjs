@@ -1,3 +1,4 @@
+import {gameCoinAward} from "./game-coin-rewards.mjs";
 
 import {accessToken,verifyFirebaseIdentity} from "./rewards.js";
 import {initialState,begin,guess,abandon,publicState,DIFFICULTIES} from "./hanggirl-core.mjs";
@@ -47,6 +48,8 @@ export async function playHanggirl(env,input){
    {update:{name:root+"/"+accountPath,fields:{}},updateMask:{fieldPaths:[]},currentDocument:{updateTime:account.updateTime}}
   ];
   if(next.round.status==="won"&&state.round.status==="playing"){
+   const award=await gameCoinAward({read,root,uid,account,coins:next.round.awarded});
+   next.round.awarded=award.coins;writes.push(...award.checks);
    writes.push({update:{name:root+"/"+accountPath+"/wallets/starCoins",fields:fields({currency:"starCoins"})},updateMask:{fieldPaths:["currency"]},updateTransforms:[{fieldPath:"balance",increment:{integerValue:String(next.round.awarded)}}]});
    for(const item of next.round.unlocks){
     const path=accountPath+"/"+item.type+"/"+item.id;
