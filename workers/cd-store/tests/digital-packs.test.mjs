@@ -77,3 +77,25 @@ test("Archived account requires support review instead of delivering a pack",asy
  f.docs.set(user,{updateTime:"99",fields:{status:{stringValue:"archived"},role:{stringValue:"user"}}});
  assert.equal((await fulfill(f,id,p.payment)).status,"refund_review");assert.equal(f.docs.has(member),false);
 });
+
+test("sandbox purchases cannot change production membership or wallet",async()=>{
+ const f=fixture();await f.admin("owner",{action:"save",pack:membership});
+ const args={root,read:f.read,commit:f.commit,uid,input:{id,packId:membership.id},mode:"test",origin:"http://localhost:5501",clock:()=>NOW,stripe:async()=>({id:"cs_test_abc123",status:"open",livemode:false,client_reference_id:id,url:"https://checkout.stripe.com/c/pay/test"})};
+ const result=await digitalStart(args);
+ const p=payment(id,membership,result.sessionId);p.session.livemode=false;p.intent.livemode=false;
+ const done=await fulfillDigital({root,read:f.read,commit:f.commit,id,...p,mode:"test",clock:()=>NOW});assert.equal(done.status,"fulfilled");
+ assert.equal(f.docs.has(member),false);assert.equal(f.docs.has(wallet),false);assert.equal(Date.parse(f.docs.get("digitalTestMemberships/"+uid).fields.expiresAt.timestampValue),NOW+30*DAY_MS);
+ await digitalAdminAction({root,read:f.read,commit:f.commit,uid:"owner",input:{action:"save",pack:{...membership,priceCents:200,days:365}},mode:"test"});
+ assert.equal((await f.admin("owner",{action:"list"})).packs[0].days,30);
+ assert.equal((await digitalAdminAction({root,read:f.read,commit:f.commit,uid:"owner",input:{action:"list"},mode:"test"})).packs[0].days,365);
+ await assert.rejects(()=>fulfillDigital({root,read:f.read,commit:f.commit,id,...p,mode:"live",clock:()=>NOW}),/unavailable/);
+});
+test("sandbox coin fulfillment remains isolated from real coins",async()=>{
+ const f=fixture();await f.admin("owner",{action:"save",pack:coins});
+ const r=await digitalStart({root,read:f.read,commit:f.commit,uid,input:{id,packId:coins.id},mode:"test",origin:"http://localhost:5501",clock:()=>NOW,stripe:async()=>({id:"cs_test_xyz123",status:"open",livemode:false,client_reference_id:id,url:"https://checkout.stripe.com/c/pay/test"})});
+ const p=payment(id,coins,r.sessionId);p.session.livemode=false;p.intent.livemode=false;
+ f.docs.set(wallet,{updateTime:"0",fields:{balance:{integerValue:"50"}}});
+ await fulfillDigital({root,read:f.read,commit:f.commit,id,...p,mode:"test",clock:()=>NOW});
+ await fulfillDigital({root,read:f.read,commit:f.commit,id,...p,mode:"test",clock:()=>NOW});
+ assert.equal(f.docs.get(wallet).fields.balance.integerValue,"50");assert.equal(f.docs.get("digitalTestWallets/"+uid).fields.balance.integerValue,"100");
+});
