@@ -60,14 +60,14 @@ service cloud.firestore {
     }
     function starlightType(typeId) {
       return typeId is string && starlightId(typeId)
-        && typeId != 'trophies'
+        && !(typeId in ['trophies','medals','diplomas'])
         && (typeId in ['axolotls','cards']
             || exists(/databases/$(database)/documents/starlightTypes/$(typeId)));
     }
     match /starlightTypes/{typeId} {
       allow get, list: if true;
       allow create, update: if isStaff() && starlightId(typeId)
-        && !(typeId in ['axolotls','trophies','cards'])
+        && !(typeId in ['axolotls','trophies','medals','diplomas','cards'])
         && request.resource.data.keys().hasOnly(['name','updatedAt'])
         && starlightName(request.resource.data.name)
         && request.resource.data.updatedAt == request.time;
@@ -115,6 +115,14 @@ service cloud.firestore {
       allow read, write: if false;
     }
     match /users/{uid}/trophies/{trophyId} {
+      allow get, list: if isOwner(uid);
+      allow create, update, delete: if false;
+    }
+    match /users/{uid}/medals/{medalId} {
+      allow get, list: if isOwner(uid);
+      allow create, update, delete: if false;
+    }
+    match /users/{uid}/diplomas/{subjectId} {
       allow get, list: if isOwner(uid);
       allow create, update, delete: if false;
     }

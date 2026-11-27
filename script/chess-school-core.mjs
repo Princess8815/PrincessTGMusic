@@ -3,11 +3,7 @@ import {position,coach,coachHint,LESSONS as OLD} from "./chess-academy-core.mjs"
 export {position,coach};
 export const PASS=80,COURSE_VERSION=1,PROFESSOR_ID="professor-squiggles";
 export const DEGREES=[["Associate’s","Learn chess from zero to independent play.",true,"Professor Squiggles"],["Bachelor’s","Intermediate strategy and opening study.",false,null],["Master’s","Advanced calculation and positional play.",false,null],["PhD","Expert research and chess mastery.",false,null]];
-export const SCHOOL_TROPHIES=[
- ["chess-school-foundations","Chess Foundations Medal","Complete the Foundations module.",6],
- ["chess-school-rulebook","Chess Rules Scholar","Complete the Rules and Endings module.",12],
- ["chess-associates-diploma","Associate’s in Chess Diploma","Graduate from Professor Squiggles’ Associate’s course.",15]
-];
+
 const E=(fen,prompt,key,hint)=>[fen,prompt,key,hint];
 const Q=(q,a,b,c,d)=>[q,a,b,c,d];
 const L=(title,teach,example,exercises,quiz,history="",match=null)=>({title,teach,example,exercises,quiz,history,match});
@@ -109,8 +105,6 @@ L("Graduation laboratory",[
 [Q("Which piece alone can jump normally?","Knight","Rook","Bishop","Queen"),Q("Can a move leave your own king in check?","No","Yes","Only when capturing","Only if ahead in material"),Q("A pawn on rank 8 must become?","Queen, rook, bishop or knight","A king","A pawn","Any enemy piece"),Q("Standard stalemate means?","Draw","Checkmate","A captured king","A win for trapping side"),Q("What is a useful opening plan?","Center, development and king safety","Move the queen every turn","Ignore opponent threats","Move all edge pawns"),Q("What does N mean in notation?","Knight","King","Pawn","Queen"),Q("When can you capture en passant?","Immediately after a qualifying double step","Any future turn","Only after castling","After promotion"),Q("Can you castle through an attacked square?","No","Yes","Only if rook is safe","Only queenside"),Q("What is a fork?","One piece attacking multiple targets","A draw","A pawn double step","A rook move"),Q("What ends standard chess with a winner on the board?","Checkmate","Stalemate","Capturing all pawns","A check alone")],"",{level:3,turns:12,opening:false})
 ];
 export const MODULES=[["Foundations",0,7],["Rules and Endings",7,12],["Independent Play",12,15]];
-// Foundations reward includes the king; all milestones use counts, not score totals.
-SCHOOL_TROPHIES[0][3]=7;
 export const EXAM_LEVEL=1;
 export const graduated=s=>passed(s)&&s.exam?.passed===true;
 export const passed=(s,n=LESSONS.length)=>s.best.slice(0,n).length===n&&s.best.slice(0,n).every(g=>Number.isFinite(g)&&g>=PASS);

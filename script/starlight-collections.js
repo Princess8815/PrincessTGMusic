@@ -2,7 +2,7 @@
 import {auth,db} from "./firebase.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {collection,onSnapshot,query,where} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
-import {mergeTypes,validImage} from "./starlight-model.mjs";
+import {mergeTypes,validImage,earnedOnlyType} from "./starlight-model.mjs";
 import {STORE_AXOLOTL_CLUE,attachReefClue} from "./reef-clues.mjs";
 const $=id=>document.getElementById(id),nav=$("sl-collection-tabs"),grid=$("sl-owned-grid"),section=$("sl-owned-section");
 if(nav&&grid&&section){
@@ -11,8 +11,8 @@ if(nav&&grid&&section){
   const tabs=[...types];for(const item of owned)if(!tabs.some(t=>t.id===item.typeId))tabs.push({id:item.typeId,name:"Other collectibles"});
   if(!tabs.some(t=>t.id===selected))selected="axolotls";
   nav.replaceChildren();for(const t of tabs){const b=document.createElement("button");b.type="button";b.textContent=t.name;b.setAttribute("aria-pressed",String(t.id===selected));b.onclick=()=>{selected=t.id;render();};nav.append(b);}
-  $("sl-original-reef").hidden=selected!=="axolotls";$("trophy-panel").hidden=selected!=="trophies";
-  const builtIn=["axolotls","trophies"].includes(selected),found=owned.filter(i=>i.typeId===selected);
+  $("sl-original-reef").hidden=selected!=="axolotls";$("trophy-panel").hidden=selected!=="trophies";$("medal-panel").hidden=selected!=="medals";$("diploma-panel").hidden=selected!=="diplomas";
+  const builtIn=selected==="axolotls"||earnedOnlyType(selected),found=owned.filter(i=>i.typeId===selected);
   const ownedIds=new Set(owned.map(i=>i.id));
   const missing=selected==="axolotls"&&loaded&&auth.currentUser?catalog.filter(i=>i.typeId==="axolotls"&&!ownedIds.has(i.id)):[];
   $("sl-owned-heading").textContent=builtIn?"Starlight Store purchases":tabs.find(t=>t.id===selected)?.name||"Collection";
