@@ -53,7 +53,9 @@ export async function sendMemberVerification(env,input,ip){
  const token=await accessToken(env,project,"https://www.googleapis.com/auth/identitytoolkit");
  const call=async(action,body)=>{
   const response=await fetch("https://identitytoolkit.googleapis.com/v1/projects/"+encodeURIComponent(project)+"/accounts:"+action,{method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify(body)});
-  if(!response.ok){console.warn("Verification Firebase API failed",action,response.status);fail("Email verification is temporarily unavailable.",503);}
+  if(!response.ok){const details = await response.json().catch(() => ({}));
+const reason = String(details?.error?.message || "").match(/^[A-Z][A-Z0-9_]+/)?.[0] || "UNKNOWN";
+console.warn("Verification Firebase API failed", action, response.status, reason);fail("Email verification is temporarily unavailable.",503);}
   return response.json();
  };
  return deliverVerification({uid,claims,ip,
