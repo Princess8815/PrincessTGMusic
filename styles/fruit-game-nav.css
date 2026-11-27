@@ -1,0 +1,10 @@
+
+/* Shared game navigation: visible contrast in light/dark/site themes. */
+a.fruit-nav-button,a.fruit-nav-button:visited{box-sizing:border-box;display:inline-flex!important;align-items:center;justify-content:center;gap:.45rem;padding:.6rem .95rem;margin:3px 5px 3px 0;border:1px solid #7599bd;border-radius:10px;background:#182c43!important;color:#eaf7ff!important;text-decoration:none!important;font:600 .88rem/1.3 system-ui,sans-serif;letter-spacing:.015em;white-space:normal;box-shadow:0 3px 8px #07152533;transition:background .15s,transform .15s,border-color .15s}
+a.fruit-nav-button span{font-size:1.24em;line-height:1}
+a.fruit-nav-button:hover{background:#294c6e!important;color:#fff!important;border-color:#c4e1ff;transform:translateY(-1px)}
+a.fruit-nav-button:focus-visible{outline:3px solid #ffdb7e;outline-offset:3px}
+a.fruit-nav-button.fruit-nav-editor{background:#584098!important;color:#fff!important;border-color:#a88ce9}
+a.fruit-nav-button.fruit-nav-editor:hover{background:#7054b5!important;border-color:#dfd0ff}
+@media(max-width:600px){a.fruit-nav-button{padding:.55rem .75rem;font-size:.82rem;margin-right:3px}}
+@media(prefers-reduced-motion:reduce){a.fruit-nav-button{transition:none}a.fruit-nav-button:hover{transform:none}}
