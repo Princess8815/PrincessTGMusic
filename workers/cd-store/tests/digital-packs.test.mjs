@@ -99,3 +99,18 @@ test("sandbox coin fulfillment remains isolated from real coins",async()=>{
  await fulfillDigital({root,read:f.read,commit:f.commit,id,...p,mode:"test",clock:()=>NOW});
  assert.equal(f.docs.get(wallet).fields.balance.integerValue,"50");assert.equal(f.docs.get("digitalTestWallets/"+uid).fields.balance.integerValue,"100");
 });
+
+test("all existing live packs persist and appear in sandbox even after isolated edits",async()=>{
+ const f=fixture();
+ const annual={...membership,id:"annual-365",days:365,name:"365 days"};
+ await f.admin("owner",{action:"save",pack:membership});
+ await digitalAdminAction({root,read:f.read,commit:f.commit,uid:"owner",input:{action:"save",pack:{...membership,days:60}},mode:"test"});
+ await f.admin("owner",{action:"save",pack:annual});
+ await f.admin("owner",{action:"save",pack:coins});
+ const list=await digitalAdminAction({root,read:f.read,commit:f.commit,uid:"owner",input:{action:"list"},mode:"test"});
+ assert.equal(list.packs.length,3);assert.equal(list.packs.find(p=>p.id===annual.id).days,365);
+ assert.equal(list.packs.find(p=>p.id===membership.id).days,60);
+ const real=await f.admin("owner",{action:"list"});assert.equal(real.packs.length,3);assert.equal(real.packs.find(p=>p.id===membership.id).days,30);
+ const started=await digitalStart({root,read:f.read,commit:f.commit,uid,input:{id,packId:annual.id},mode:"test",origin:"http://localhost:5501",clock:()=>NOW,stripe:async()=>({id:"cs_test_annual",status:"open",livemode:false,client_reference_id:id,url:"https://checkout.stripe.com/c/pay/test"})});
+ assert.equal(started.status,"pending");
+});

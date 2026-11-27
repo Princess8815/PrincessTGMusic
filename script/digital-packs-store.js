@@ -3,7 +3,7 @@ import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/fire
 import {digitalRequest,digitalMode,digitalAvailable,money,packBenefit} from "./digital-packs-api.js";
 const $=id=>document.getElementById(id),status=t=>$("digital-status").textContent=t;
 const pendingKey=uid=>digitalMode()==="live"?"ptg-digital-checkout-v1:"+uid:"ptg-digital-checkout-test-v1:"+uid;
-const kind=document.querySelector("[data-digital-kind]").dataset.digitalKind,perPage=12;let packs=[],busy=false,pending=null,page=0;
+const kind=document.querySelector("[data-digital-kind]").dataset.digitalKind,perPage=12;let packs=[],busy=false,pending=null,page=0,catalogLoaded=false,catalogError=false;
 const sandbox=()=>digitalMode()==="test";
 async function testBalance(){const el=$("digital-test-balance"),uid=auth.currentUser?.uid;el.hidden=!sandbox()||!auth.currentUser?.emailVerified||!digitalAvailable();if(el.hidden)return;try{const d=await digitalRequest("testBalance");if(auth.currentUser?.uid!==uid)return;el.textContent="TEST ONLY · "+(d.expiresAt&&Date.parse(d.expiresAt)>Date.now()?"Paid until "+new Date(d.expiresAt).toLocaleString():"Free")+" · "+d.balance.toLocaleString()+" test Star Coins";}catch(e){el.textContent="Sandbox balance unavailable: "+e.message;}}
 function remember(p){pending=p;try{if(p)localStorage.setItem(pendingKey(auth.currentUser.uid),JSON.stringify(p));else if(auth.currentUser)localStorage.removeItem(pendingKey(auth.currentUser.uid));}catch{}}
@@ -12,7 +12,7 @@ function cleanReturn(){const u=new URL(location.href);for(const k of ["digitalRe
 function info(p){$("digital-info-title").textContent=p.name;$("digital-info-description").textContent=p.description;$("digital-info-benefit").textContent=packBenefit(p)+" · "+money(p.priceCents)+" + applicable tax";$("digital-info").showModal();}
 function render(){
  {const target=$("digital-"+kind);target.replaceChildren();const list=packs.filter(p=>p.kind===kind).sort((a,b)=>(a.days??a.coins)-(b.days??b.coins)||a.name.localeCompare(b.name));const totalPages=Math.max(1,Math.ceil(list.length/perPage));page=Math.max(0,Math.min(page,totalPages-1));const nav=$("digital-pages");nav.hidden=totalPages<=1;nav.querySelector("[data-page-prev]").disabled=page===0;nav.querySelector("[data-page-next]").disabled=page>=totalPages-1;nav.querySelector("[data-page-label]").textContent="Page "+(page+1)+" of "+totalPages+" · "+list.length+" packs";
-  if(!list.length){const note=document.createElement("p");note.className="dp-muted";note.textContent="No packs available yet.";target.append(note);}
+  if(!list.length){const note=document.createElement("p");note.className="dp-muted";note.textContent=catalogError?"Could not load the existing catalog. Use Refresh packs to retry.":!catalogLoaded?"Loading existing packs…":"No active packs in this category.";target.append(note);}
   for(const p of list.slice(page*perPage,(page+1)*perPage)){const card=document.createElement("article");card.className="dp-card";const icon=document.createElement("span");icon.className="dp-pack-icon";icon.textContent=p.kind==="membership"?"✦":"★";
    const heading=document.createElement("h3");heading.textContent=p.name;heading.title=p.name;const benefit=document.createElement("p");benefit.textContent=packBenefit(p);
    const price=document.createElement("strong");price.className="dp-price";price.textContent=money(p.priceCents);
@@ -45,5 +45,5 @@ onAuthStateChanged(auth,user=>{
  else if(!user&&(returned||canceled))status("Sign in to the account that started this purchase to check its status.");
  render();void testBalance();
 });
-async function load(){try{const data=await digitalRequest("catalog",{},false);packs=data.packs;page=0;status(sandbox()?"SANDBOX · Stripe test payments only. Test credits are separate from your real account.":"One-time purchases. No automatic renewals or shipping.");render();}catch(e){status(e.message);}}
+async function load(){try{const data=await digitalRequest("catalog",{},false);packs=data.packs;catalogLoaded=true;catalogError=false;page=0;status(sandbox()?"SANDBOX · Stripe test payments only. Test credits are separate from your real account.":"One-time purchases. No automatic renewals or shipping.");render();}catch(e){catalogError=true;status("Catalog unavailable: "+e.message);render();}}
 $("digital-pages").querySelector("[data-page-prev]").onclick=()=>{page--;render();};$("digital-pages").querySelector("[data-page-next]").onclick=()=>{page++;render();};$("digital-refresh").onclick=load;render();void load();

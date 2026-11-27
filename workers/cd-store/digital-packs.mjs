@@ -19,7 +19,13 @@ async function storage(env){
  const commit=async writes=>{const r=await fetch(url+":commit",{method:"POST",headers,body:JSON.stringify({writes})});if(r.ok)return true;const e=await r.json().catch(()=>({}));if([409,412].includes(r.status)||["ABORTED","FAILED_PRECONDITION","ALREADY_EXISTS"].includes(e.error?.status))return false;fail("Digital store save not confirmed.",503);};
  return {root,read,commit,mode:env.STORE_MODE};
 }
-const catalog=async(read,mode="live")=>validateCatalog(unpack(await read(catalogPath(mode)))??(mode==="test"?unpack(await read(catalogPath("live"))):null)??[]);
+// Test entries override matching live IDs without hiding later live additions.
+const mergedCatalog=(live,test)=>[...new Map([...validateCatalog(live??[]),...validateCatalog(test??[])].map(p=>[p.id,p])).values()];
+const catalog=async(read,mode="live")=>{
+ const live=unpack(await read(catalogPath("live")));
+ if(mode!=="test")return validateCatalog(live??[]);
+ return mergedCatalog(live,unpack(await read(catalogPath("test"))));
+};
 export async function digitalAdminAction({read,commit,root,uid,input,mode="live"}){
  const account=await read("users/"+uid);
  if(!active(account)||val(account,"role")!=="owner")fail("Owner access required.",403);
@@ -32,10 +38,10 @@ export async function digitalAdminAction({read,commit,root,uid,input,mode="live"
  if(input.action!=="save")fail("Unknown pack action.");
  const pack=validatePack(input.pack);
  for(let attempt=0;attempt<4;attempt++){
-  const path=catalogPath(mode),old=await read(path),packs=validateCatalog(unpack(old)??(mode==="test"?unpack(await read(catalogPath("live"))):null)??[]),index=packs.findIndex(p=>p.id===pack.id);
+  const path=catalogPath(mode),old=await read(path),packs=validateCatalog(unpack(old)??[]),index=packs.findIndex(p=>p.id===pack.id);
   if(index<0)packs.push(pack);else packs[index]=pack;
   validateCatalog(packs);
-  if(await commit([{verify:root+"/users/"+uid,currentDocument:pre(account)},jsonWrite(root,path,packs,old)]))return {packs};
+  if(await commit([{verify:root+"/users/"+uid,currentDocument:pre(account)},jsonWrite(root,path,packs,old)]))return {packs:await catalog(read,mode)};
  }
  fail("Catalog changed. Reload and retry.",409);
 }
@@ -44,10 +50,10 @@ export async function digitalStart({read,commit,root,uid,input,stripe,origin,clo
  const user="users/"+uid,account=await read(user);if(!active(account))fail("Active verified account required.",403);
  const path=orderPath(input.id,mode);let doc=await read(path),order=unpack(doc);
  if(!order){
-  let configPath=catalogPath(mode),config=await read(configPath);if(!config&&mode==="test"){configPath=catalogPath("live");config=await read(configPath);}const pack=validateCatalog(unpack(config)||[]).find(p=>p.id===input.packId&&p.active);
+  let configPath=catalogPath(mode),config=await read(configPath),pack=validateCatalog(unpack(config)||[]).find(p=>p.id===input.packId);const guards=[{verify:root+"/"+configPath,currentDocument:pre(config)}];if(!pack&&mode==="test"){configPath=catalogPath("live");config=await read(configPath);pack=validateCatalog(unpack(config)||[]).find(p=>p.id===input.packId);guards.push({verify:root+"/"+configPath,currentDocument:pre(config)});}if(pack&&!pack.active)pack=null;
   if(!pack)fail("Pack no longer available.",404);
   order={id:input.id,uid,pack,created:clock(),status:"pending",sessionId:null,mode};
-  if(!await commit([{verify:root+"/"+user,currentDocument:pre(account)},{verify:root+"/"+configPath,currentDocument:pre(config)},jsonWrite(root,path,order,null)]))fail("Checkout changed. Retry the same reference.",409);
+  if(!await commit([{verify:root+"/"+user,currentDocument:pre(account)},...guards,jsonWrite(root,path,order,null)]))fail("Checkout changed. Retry the same reference.",409);
   doc=await read(path);order=unpack(doc);
  }
  if(order.uid!==uid||order.pack.id!==input.packId)fail("Checkout belongs to another purchase.",403);
