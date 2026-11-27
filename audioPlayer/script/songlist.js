@@ -73,7 +73,7 @@ import {songAlbums} from "../../script/song-albums.js";
   else dialog.setAttribute("open","");
 })();
 
-const SITE_URL = "https://princesstgcreations.pages.dev";
+const SITE_URL = "https://princesstg-creations.com";
 const LOGO_URL = `${SITE_URL}/images/logo%20avatar.png`;
 
 
@@ -97,7 +97,11 @@ const updateSongMeta = ({ title: songTitle, description, url }) => {
   setMetaContent('meta[name="description"]', metaDescription);
   setMetaContent('meta[property="og:title"]', pageTitle);
   setMetaContent('meta[property="og:description"]', metaDescription);
-  setMetaContent('meta[property="og:url"]', url);
+  const source=new URL(url);
+  const canonical=new URL(SITE_URL);
+  canonical.pathname=source.pathname.replace(/^\/PrincessTGMusic(?=\/|$)/,"")||"/";
+  canonical.search=source.search;
+  setMetaContent('meta[property="og:url"]', canonical.href);
   setMetaContent('meta[property="og:image"]', LOGO_URL);
   setMetaContent('meta[name="twitter:title"]', pageTitle);
   setMetaContent('meta[name="twitter:description"]', metaDescription);

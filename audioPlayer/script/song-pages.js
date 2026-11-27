@@ -319,11 +319,18 @@ function updateMetadata(song) {
   }
 
   // Open Graph and social metadata
+  const canonical = new URL("https://princesstg-creations.com/audioPlayer/pages/song.html");
+  const songId = new URLSearchParams(window.location.search).get("id");
+  if(songId)canonical.searchParams.set("id",songId);
+  let canonicalTag=document.querySelector('link[rel="canonical"]');
+  if(!canonicalTag){canonicalTag=document.createElement("link");canonicalTag.rel="canonical";document.head.appendChild(canonicalTag);}
+  canonicalTag.href=canonical.href;
   const metadata = {
     "og:title": pageTitle,
     "og:description": description,
     "og:type": "music.song",
-    "og:url": window.location.href
+    "og:url": canonical.href,
+    "og:image": "https://princesstg-creations.com/images/logo%20avatar.png"
   };
 
   for (const [property, content] of Object.entries(metadata)) {

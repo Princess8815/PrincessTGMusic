@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const siteUrl = "https://princess8815.github.io/PrincessTGMusic";
+const siteUrl = "https://princesstg-creations.com";
 const logoUrl = `${siteUrl}/images/logo%20avatar.png`;
 const audioPlayerDir = path.join(__dirname, "audioPlayer");
 const detailsFile = path.join(audioPlayerDir, "audio", "song-details.json");
