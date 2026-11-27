@@ -21,3 +21,6 @@ After all 15 lesson quizzes are passed, the final exam unlocks. The learner play
 
 ### In-game school navigation
 Chess School is a tab of pages/chess.html, not a separate game. The legacy learn-chess.html redirects to chess.html#school; Board Games lists only Axolotl Chess. Degree selection is independent of the Associate’s classroom; Professor Squiggles is assigned only to the Associate’s, and future instructors are unassigned. Switching to school pauses normal bot timers without resetting matches, and returning resumes normal scheduled play. Course state persists as before. No backend changes required for the navigation itself.
+
+### Begin practice troubleshooting
+The school validates the Worker response against the 15-lesson/exam contract before using saved state; legacy eight-lesson responses are rejected with a deploy instruction. Loading, save errors and timeouts appear in the classroom beside the action, with retry and explicit unsaved practice. Unsaved practice never writes rewards or overwrites saved course progress. Begin Practice hides the worked example and scrolls to the interactive exercise after the state transition. Existing live members must deploy the Worker from this branch before saved lessons can begin.
