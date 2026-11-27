@@ -35,7 +35,7 @@ export async function sendSiteVerification(user){
     const idToken=await user.getIdToken(true);
     if(auth.currentUser?.uid!==user.uid)throw Object.assign(Error("Account changed."),{code:"auth/account-mismatch"});
     const response=await fetch("https://princesstg-cd-store-live.transgirl1991.workers.dev/auth/email-verification",{
-      method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({idToken})
+      method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({idToken,actionPage:true})
     });
     const data=await response.json();
     if(!response.ok)throw Object.assign(Error("Verification email unavailable."),{code:response.status===429?"auth/too-many-requests":"PTG-108"});

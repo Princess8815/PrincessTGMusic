@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {deliverVerification,verificationMessage,verificationPreviewOrigin,RESERVE_SQL} from "../member-verification.mjs";
+import {deliverVerification,verificationMessage,verificationPreviewOrigin,memberActionLink,RESERVE_SQL} from "../member-verification.mjs";
 const link="https://music-and-poetry.firebaseapp.com/__/auth/action?mode=verifyEmail&oobCode=test";
 function setup(overrides={}){
  const calls=[];const account={email:"member@yahoo.com",emailVerified:false,validSince:"5"};
@@ -40,4 +40,14 @@ test("escape HTML and restrict preview origin",()=>{
  assert.equal(verificationPreviewOrigin(env,"https://other.example.com"),false);
  assert.equal(verificationPreviewOrigin({...env,STORE_MODE:"test"},env.VERIFICATION_PREVIEW_ORIGIN),false);
  assert.match(RESERVE_SQL,/INSERT INTO verification_sends/);
+});
+
+test("custom action links stay on trusted origins without query secrets",()=>{
+ const env={STORE_MODE:"live",VERIFICATION_PREVIEW_ORIGIN:"https://preview.example.com"};
+ const url=new URL(memberActionLink(link,env,"https://princesstg-creations.com",true));
+ assert.equal(url.origin,"https://princesstg-creations.com");assert.equal(url.pathname,"/pages/verify-email.html");
+ assert.equal(url.search,"");assert.equal(new URLSearchParams(url.hash.slice(1)).get("oobCode"),"test");
+ assert.equal(memberActionLink(link,env,"https://untrusted.example.com",true),link);
+ assert.equal(memberActionLink(link,env,env.VERIFICATION_PREVIEW_ORIGIN,false),link);
+ assert.equal(new URL(memberActionLink(link,env,env.VERIFICATION_PREVIEW_ORIGIN,true)).origin,env.VERIFICATION_PREVIEW_ORIGIN);
 });
