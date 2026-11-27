@@ -1,6 +1,6 @@
 import {gameCoinAward} from "./game-coin-rewards.mjs";
 import {accessToken,verifyFirebaseIdentity} from "./rewards.js";
-import {initialChess,botMove,playChess,initialRatings,recordRated,newTournament,tournamentMatch,recordTournamentResult,tournamentSimWinner,tournamentBotMatch,tournamentBotSeed,tournamentBotPly,playerColor,startPlayerChess,playerWon,other,chessUnlocks,validLevel,CHESS_TROPHY,captureCoins,chessMatchCoins,CHESS_CAPTURE_CAP,CHESS_TOURNAMENT_COINS} from "../../script/chess-core.mjs";
+import {initialChess,botMove,playChess,initialRatings,recordRated,newTournament,tournamentMatch,recordTournamentResult,tournamentSimWinner,tournamentBotMatch,tournamentBotSeed,tournamentBotPly,playerColor,startPlayerChess,playerWon,other,chessUnlocks,validLevel,CHESS_TROPHY,captureCoins,chessMatchCoins,CHESS_CAPTURE_CAP,CHESS_TOURNAMENT_COINS,chessDifficultyCoins} from "../../script/chess-core.mjs";
 const fail=(message,status=400)=>{throw Object.assign(Error(message),{status});};
 const str=stringValue=>({stringValue}),pre=d=>d?{updateTime:d.updateTime}:{exists:false};
 const idOK=s=>typeof s==="string"&&/^[a-z0-9-]{1,64}$/.test(s);
@@ -83,7 +83,7 @@ export async function chessWithStorage({read,commit,root,uid,input,preview=false
   for(const id of chessUnlocks(state.ratings,completedPlayerGame?state.game:null,state.level,champion,state.side||"w")){
    const p=user+"/"+(id===CHESS_TROPHY[0]?"trophies/":"axolotls/")+id;if(!await read(p))rewards.push(id);
   }
-  if(baseCoins){const award=await gameCoinAward({read,root,uid,account,coins:baseCoins,preview,clock});coinAward=award.coins;checks.push(...award.checks);if(completedPlayerGame)state.matchCoins=coinAward;}
+  if(baseCoins){const award=await gameCoinAward({read,root,uid,account,coins:chessDifficultyCoins(baseCoins,state.level),preview,clock});coinAward=award.coins;checks.push(...award.checks);if(completedPlayerGame)state.matchCoins=coinAward;}
   state.revision++;state.lastRequest=input.requestId;state.lastRewards=rewards;state.lastCoinAward=coinAward;
   const writes=[{verify:root+"/"+user,currentDocument:pre(account)},write(root,path,state,old),...checks];
   if(coinAward)writes.push({update:{name:root+"/"+user+"/wallets/starCoins",fields:{currency:str("starCoins")}},updateMask:{fieldPaths:["currency"]},updateTransforms:[{fieldPath:"balance",increment:{integerValue:String(coinAward)}}]});

@@ -118,3 +118,6 @@ export const CHESS_WIN_COINS=20;
 export const CHESS_TOURNAMENT_COINS=50;
 export const captureCoins=piece=>CHESS_CAPTURE_COINS[piece?.toLowerCase()]||0;
 export const chessMatchCoins=(pending,game,side)=>game?.winner&&game.reason!=="resigned"?Math.min(CHESS_CAPTURE_CAP,Math.max(0,pending||0))+(game.winner===side?CHESS_WIN_COINS:0):0;
+
+// Level 1 pays the base reward; each higher level adds 25% (level 10 = 3.25×).
+export function chessDifficultyCoins(base,level){if(!validLevel(level)||!Number.isSafeInteger(base)||base<0)throw Error("Invalid chess reward.");return Math.round(base*(level+3)/4);}
