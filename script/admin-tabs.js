@@ -27,6 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function activate(name, updateHash = true) {
     if (!panels.has(name)) return;
+    if(name==="games"&&document.getElementById("admin-main-tab-orange")?.getAttribute("aria-selected")==="true")document.dispatchEvent(new Event("ptg:orange-admin-open"));
 
     for (const tab of tabs) {
       const selected = tab.dataset.adminTab === name;
@@ -120,17 +121,20 @@ document.addEventListener("DOMContentLoaded", () => {
   for (const [group, entries] of subGroups) {
     for (const {button, action} of entries) {
       button.addEventListener("click", () => {
+        if(button.hidden)return;
         activateSub(group, action);
         history.replaceState(null, "", "#admin-" + group + "-" + action);
       });
     }
-    activateSub(group, "add");
+    activateSub(group, entries.find(x=>x.button.getAttribute("aria-selected")==="true")?.action||entries[0].action);
   }
   // Old links such as #admin-edit still open the correct song editor.
-  const requestedHash = location.hash.replace(/^#admin-/, "");
+  const rawHash = location.hash.replace(/^#admin-/, "");
+  const aliases={"albums-store":"store-cds","starlight":"store-starlight","digital":"store-digital","orange":"games-orange","shiny":"games-shiny"};
+  const requestedHash=aliases[rawHash]||rawHash;
   const legacyMusic = ["add", "edit", "delete"].includes(requestedHash)
     ? requestedHash : null;
-  const nestedMatch = requestedHash.match(/^(music|albums|genres)-(add|edit|delete|bulk)$/);
+  const nestedMatch = requestedHash.match(/^(music|albums|genres|store|games)-([a-z]+)$/);
   if (legacyMusic) activateSub("music", legacyMusic);
   if (nestedMatch) activateSub(nestedMatch[1], nestedMatch[2]);
 
@@ -220,10 +224,7 @@ document.addEventListener("DOMContentLoaded", () => {
   );
 
   // Restore an admin tab from the URL hash.
-  const initial = location.hash.replace(
-    /^#admin-/,
-    ""
-  );
+  const initial = requestedHash;
 
   activate(
     legacyMusic ? "music" : nestedMatch ? nestedMatch[1] : panels.has(initial) ? initial : "mail",

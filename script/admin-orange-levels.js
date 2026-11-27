@@ -10,5 +10,5 @@ async function load(){
  loaded=true;$("orange-unlock-save").disabled=false;$("orange-admin-status").textContent="Levels unlock upon completing the previous level. Wood starts at level 1.";
  }catch(e){$("orange-admin-status").textContent=e.message;}finally{busy=false;}
 }
-$("admin-main-tab-orange").addEventListener("click",load);if(location.hash==="#admin-orange")void load();
+$("admin-main-tab-orange").addEventListener("click",load);document.addEventListener("ptg:orange-admin-open",load);if(["#admin-orange","#admin-games","#admin-games-orange"].includes(location.hash))void load();
 $("orange-unlock-form").onsubmit=async e=>{e.preventDefault();if(!loaded||busy)return;busy=true;$("orange-unlock-save").disabled=true;try{const milestones=validateMilestones(Object.fromEntries([...fields].map(([id,i])=>[id,Number(i.value)])));if(!confirm("Save new campaign unlock levels? Existing attempts keep their current layout and schedule."))return;await editorRequest("milestones",{milestones},true);$("orange-admin-status").textContent="Unlock schedule saved.";}catch(e){$("orange-admin-status").textContent=e.message;}finally{busy=false;$("orange-unlock-save").disabled=false;}};
