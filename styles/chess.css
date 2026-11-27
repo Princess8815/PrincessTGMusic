@@ -16,9 +16,20 @@
 .ch-board-settings{display:flex;align-items:end;flex-wrap:wrap;gap:10px;margin:8px 0}.ch-board-settings label{font-size:.8rem;flex:1;min-width:70px}.ch-board-settings input[type=color]{width:100%;height:36px;padding:2px}
 #ch-black-player{order:0}.ch-board-settings{order:1}#ch-coins{order:2}#ch-turn{order:3}.ch-board{order:4}#ch-white-player{order:5}
 .ch-board-card.black-view #ch-white-player{order:0}.ch-board-card.black-view #ch-black-player{order:5}
-.ch-dialog-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;position:sticky;top:0;background:var(--ptg-secondary);z-index:2;padding:8px}
-#ch-bracket-dialog{width:min(92vw,1050px);max-height:85vh;overflow:auto;background:var(--ptg-secondary);color:var(--ptg-text);border:1px solid var(--ptg-border);border-radius:14px}
-#ch-full-bracket{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px}
 .ch-match-players{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.ch-match-person{display:flex;align-items:center;gap:5px}.ch-mini-avatar{display:block;width:32px;height:32px;flex:none}.ch-mini-avatar img,.ch-mini-avatar svg{width:100%;height:100%;object-fit:contain}
 .ch-match-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.ch-match-actions button{font-size:.8rem;padding:5px 8px}
 .ch-match.pending-feed{opacity:.68}.ch-match-result{font-size:.85rem;margin:5px 0}.ch-round h3{font-size:1rem;margin:0 0 8px}
+
+/* Keep the entire bracket in normal document flow, outside the board grid.
+   The scroll region is keyboard accessible and cannot be clipped by a modal. */
+.chess-main .ch-bracket-panel{width:100%;max-width:100%;box-sizing:border-box;min-width:0;scroll-margin-top:90px}
+.ch-bracket-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.ch-bracket-heading h2{margin:0}
+.ch-bracket-scroll{overflow-x:auto;max-width:100%;padding:5px 3px 16px;scrollbar-width:auto}
+#ch-full-bracket{display:flex;align-items:flex-start;gap:14px;width:max-content;min-width:100%;box-sizing:border-box}
+#ch-full-bracket .ch-round{flex:0 0 245px;width:245px;min-width:0;padding:12px;border:1px solid var(--ptg-border);border-radius:12px;box-sizing:border-box;margin:0}
+#ch-full-bracket .ch-match{min-height:88px;overflow-wrap:anywhere}
+#ch-full-bracket .ch-match-players{display:flex;flex-direction:column;align-items:flex-start}
+#ch-board-section{scroll-margin-top:90px}
+.ch-board .ch-square.in-check{box-shadow:inset 0 0 0 4px #dc2626!important}
+@media(max-width:600px){#ch-full-bracket .ch-round{flex-basis:220px;width:220px}}

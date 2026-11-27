@@ -3,7 +3,7 @@ import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/fire
 import {collection,onSnapshot} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 import {axolotlPortrait,axolotlName,axolotlIds} from "./reef-collection.js";
 import {validImage} from "./starlight-model.mjs";
-import {initialChess,moves,playChess,botMove,color,square,BOT_ELO,initialRatings,tournamentMatch,CHESS_UNLOCKS,CHESS_TROPHY,THREE_GG_LABELS,THREE_GG_WAVES,THREE_GG_FEEDS,playerColor,chessDifficultyCoins,CHESS_WIN_COINS,CHESS_TOURNAMENT_COINS} from "./chess-core.mjs";
+import {initialChess,moves,playChess,botMove,color,square,BOT_ELO,initialRatings,tournamentMatch,CHESS_UNLOCKS,CHESS_TROPHY,THREE_GG_LABELS,THREE_GG_WAVES,THREE_GG_FEEDS,playerColor,chessDifficultyCoins,CHESS_WIN_COINS,CHESS_TOURNAMENT_COINS,CHESS_CAPTURE_COINS,inCheck} from "./chess-core.mjs";
 const $=id=>document.getElementById(id),G={K:"♔",Q:"♕",R:"♖",B:"♗",N:"♘",P:"♙",k:"♚",q:"♛",r:"♜",b:"♝",n:"♞",p:"♟︎"};
 const endpoint="https://princesstg-cd-store-live.transgirl1991.workers.dev/games/chess",gameSources=new Set(["hanggirl","apple-catcher","cherry-empire","giving-tree","orange-knock-down","peach-panic","shiny-light","chess"]);
 let game=initialChess(),mode="pvp",level=1,whiteLevel=1,selected=-1,busy=false,paused=false,started=false,remote=null,seed=1,owned=[],items=[],trophies=[],unsubs=[],epoch=0,serial=0,botTimer=null,accountRatings=initialRatings(),selectedEntrants=new Set(),request=null,side="w",watching=false;
@@ -23,6 +23,8 @@ function tournamentRecords(t){
 function bracketPerson(id){const n=document.createElement("span");n.className="ch-match-person";const pic=document.createElement("span");pic.className="ch-mini-avatar";portraitBox(pic,id==="player"?$("ch-player-avatar").value:"ax:"+id);n.append(pic,document.createTextNode(label(id)));return n;}
 function renderBracket(){
  const t=remote?.tournament;
+ $("ch-bracket-panel").hidden=!t;
+ $("ch-bracket-summary").textContent=t?(t.format==="3gg"?"3-game guarantee":"Single elimination")+" · Difficulty "+t.level+" · "+(t.complete?"Champion: "+label(t.champion):"Round "+(t.round+1)):"";
  for(const el of [$("ch-bracket"),$("ch-full-bracket")]){
   el.replaceChildren();if(!t){el.textContent="Start a tournament to see the bracket.";continue;}
   for(const r of tournamentRecords(t)){
@@ -36,7 +38,7 @@ function renderBracket(){
      if(!t.complete&&r.round===t.round&&!m.winner&&m.a!=="player"&&m.b!=="player"){
       const actions=document.createElement("div");actions.className="ch-match-actions";
       for(const [action,title] of [["bot-watch","Watch"],["bot-simulate","Simulate"]]){
-       const button=document.createElement("button");button.type="button";button.textContent=title;button.disabled=busy;button.onclick=()=>{if(action==="bot-watch"){if(remote?.spectator&&!remote.spectator.game.winner&&remote.spectator.matchId!==m.id){message("Finish or simulate the currently watched bot game first.");return;}if($("ch-bracket-dialog").open)$("ch-bracket-dialog").close();watching=true;paused=false;}void send(action,{matchId:m.id});};actions.append(button);
+       const button=document.createElement("button");button.type="button";button.textContent=title;button.disabled=busy;button.onclick=()=>{if(action==="bot-watch"){if(remote?.spectator&&!remote.spectator.game.winner&&remote.spectator.matchId!==m.id){message("Finish or simulate the currently watched bot game first.");return;}watching=true;paused=false;$("ch-board-section").scrollIntoView({block:"start",behavior:"smooth"});}void send(action,{matchId:m.id});};actions.append(button);
       }row.append(actions);
      }
     }sec.append(row);
@@ -53,17 +55,17 @@ function render(){
  setup();
  const spectator=watching?remote?.spectator:null,shown=spectator?.game||game,flipped=!spectator&&(mode==="pvb"||isRemote())&&side==="b";
  document.querySelector(".ch-board-card").classList.toggle("black-view",flipped);
- const valid=moves(shown),targets=valid.filter(m=>m.from===selected);
+ const valid=moves(shown),targets=valid.filter(m=>m.from===selected),checkedKing=!shown.winner&&inCheck(shown)?shown.board.indexOf(shown.turn==="w"?"K":"k"):-1;
  const board=$("ch-board");board.replaceChildren();
  for(let pos=0;pos<64;pos++){
-  const i=flipped?63-pos:pos,p=shown.board[i],b=document.createElement("button");b.type="button";b.className="ch-square ptg-theme-exempt"+(((i>>3)+i%8)%2?" dark":"")+(color(p)==="b"?" black-piece":"")+(i===selected?" selected":"")+(shown.last&&(i===shown.last.from||i===shown.last.to)?" last-move":"")+(targets.some(m=>m.to===i)?p?" target capture":" target":"");
+  const i=flipped?63-pos:pos,p=shown.board[i],b=document.createElement("button");b.type="button";b.className="ch-square ptg-theme-exempt"+(((i>>3)+i%8)%2?" dark":"")+(color(p)==="b"?" black-piece":"")+(i===selected?" selected":"")+(i===checkedKing?" in-check":"")+(shown.last&&(i===shown.last.from||i===shown.last.to)?" last-move":"")+(targets.some(m=>m.to===i)?p?" target capture":" target":"");
   const piece=document.createElement("span");piece.className="ch-piece";piece.textContent=G[p]||"";b.append(piece);
   if(pos%8===0){const c=document.createElement("span");c.className="ch-coord ch-rank";c.textContent=square(i)[1];b.append(c);}
   if(pos>=56){const c=document.createElement("span");c.className="ch-coord ch-file";c.textContent=square(i)[0];b.append(c);}
   b.setAttribute("aria-label",square(i)+" "+(p||"empty"));b.disabled=!!spectator||!started||busy||!!game.winner||isBot()||(isRemote()&&game.turn!==side);b.onclick=()=>clickSquare(i);board.append(b);
  }
- const reason={"king-captured":"King captured",trapped:"Opponent trapped","move-limit":"Move-limit adjudication",resigned:"Resignation"};
- $("ch-turn").textContent=(spectator?"Watching game "+spectator.matchId+" · ":"")+(shown.winner?(shown.winner==="w"?"White":"Black")+" wins · "+(reason[shown.reason]||shown.reason):busy?"Saving / thinking…":(shown.turn==="w"?"White":"Black")+" to move");
+ const reason={"king-captured":"King captured",checkmate:"Checkmate · king captured",stalemate:"Trapped stalemate · king captured",trapped:"Opponent trapped","move-limit":"Move-limit adjudication",resigned:"Resignation"};
+ $("ch-turn").textContent=(spectator?"Watching game "+spectator.matchId+" · ":"")+(shown.winner?(shown.winner==="w"?"White":"Black")+" wins · "+(reason[shown.reason]||shown.reason):busy?"Saving / thinking…":(shown.turn==="w"?"White":"Black")+" to move"+(inCheck(shown)?" · Check!":""));
  const t=mode==="tournament"?remote?.tournament:null;
  const match=t&&[...t.history.flatMap(r=>r.matches),...t.matches].find(m=>m.id===remote?.playerMatchId);
  const opponent=match?(match.a==="player"?match.b:match.a):null;
@@ -77,11 +79,11 @@ function render(){
  $("ch-start").disabled=busy;$("ch-resume").disabled=busy;$("ch-pause").hidden=!(spectator||mode==="bvb"&&started)||!!shown.winner;$("ch-pause").textContent=paused?"Resume bots":"Pause bots";
  $("ch-back-player").hidden=!watching;$("ch-resign").hidden=watching||!started||!!game.winner||mode==="bvb";$("ch-next").hidden=watching||mode!=="tournament"||!game.winner||!tournamentMatch(t);
  const planned=$("ch-mode").value,chosen=Number($(planned==="tournament"?"ch-tournament-level":"ch-level").value)||1;
- $("ch-coins").textContent=spectator||mode==="bvb"||mode==="pvp"||mode==="pvb"&&started?"Practice / spectator: no coin rewards.":isRemote()&&started?"Pending capture base: "+chessDifficultyCoins(remote?.pendingCoins||0,level)+" · Win base bonus: "+chessDifficultyCoins(CHESS_WIN_COINS,level)+" · Last match credited: "+(remote?.matchCoins||0):"Base win bonus at level "+chosen+": "+chessDifficultyCoins(CHESS_WIN_COINS,chosen);
+ $("ch-coins").textContent=spectator||mode==="bvb"||mode==="pvp"||mode==="pvb"&&started?"Practice / spectator: no coin rewards.":isRemote()&&started?"Pending capture base: "+chessDifficultyCoins(remote?.pendingCoins||0,level)+" · Mate/stalemate base bonus: "+chessDifficultyCoins(CHESS_WIN_COINS+CHESS_CAPTURE_COINS.k,level)+" · Last match credited: "+(remote?.matchCoins||0):"Base mate/stalemate bonus at level "+chosen+": "+chessDifficultyCoins(CHESS_WIN_COINS+CHESS_CAPTURE_COINS.k,chosen);
  renderBracket();renderRatings();
 }
 function queueBot(){
- clearTimeout(botTimer);if(paused||busy||$("ch-bracket-dialog").open)return;
+ clearTimeout(botTimer);if(paused||busy)return;
  const spectator=watching?remote?.spectator:null;
  const delay=Number($("ch-speed").value)||2000,ticket=serial;
  if(spectator&&!spectator.game.winner){botTimer=setTimeout(()=>{if(ticket===serial&&!paused&&watching)void send("bot-step",{matchId:spectator.matchId});},delay);return;}
@@ -101,8 +103,8 @@ $("ch-back-player").onclick=()=>{watching=false;paused=true;clearTimeout(botTime
 $("ch-resign").onclick=()=>{if(isRemote())void send("resign");else{game={...game,winner:game.turn==="w"?"b":"w",reason:"resigned"};render();}};
 $("ch-pause").onclick=()=>{paused=!paused;render();queueBot();};
 $("ch-promotion-cancel").onclick=()=>$("ch-promotion").close();$("ch-mode").onchange=render;
-$("ch-show-bracket").onclick=()=>{clearTimeout(botTimer);renderBracket();$("ch-bracket-dialog").showModal();};
-$("ch-close-bracket").onclick=()=>$("ch-bracket-dialog").close();$("ch-bracket-dialog").addEventListener("close",queueBot);
+$("ch-show-bracket").onclick=()=>{if(!remote?.tournament){message("Start or resume a tournament to see the full bracket.");return;}renderBracket();$("ch-bracket-panel").scrollIntoView({block:"start",behavior:"smooth"});};
+$("ch-close-bracket").onclick=()=>$("ch-board-section").scrollIntoView({block:"start",behavior:"smooth"});
 $("ch-speed").onchange=queueBot;
 for(const [id,prop] of [["ch-light","--ch-light"],["ch-dark","--ch-dark"]])$(id).oninput=()=>$("ch-board").style.setProperty(prop,$(id).value);
 for(const id of ["ch-player-avatar","ch-bot-avatar","ch-white-avatar","ch-pvp-avatar","ch-level","ch-tournament-level"])$(id).onchange=render;
