@@ -65,7 +65,10 @@ export function verificationMessage(email,link,from){
 export function memberActionLink(link,env,origin,optIn){
  if(optIn!==true)return link;
  const approved=origin==="https://princesstg-creations.com"||origin==="https://princesstgcreations.pages.dev"||verificationPreviewOrigin(env,origin);
- if(!approved)return link;
+ // Request origins and email destinations have different requirements:
+ // localhost is useful for testing requests, but unreachable on other devices.
+ // Keep Firebase's original hosted action link for local development.
+ if(!approved||!origin.startsWith("https://"))return link;
  const original=new URL(link),code=original.searchParams.get("oobCode");
  if(original.protocol!=="https:"||original.searchParams.get("mode")!=="verifyEmail"||!code)fail("Verification link unavailable.",503);
  const destination=new URL("/pages/verify-email.html",origin);
