@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {defaultMilestones,validateDesign,proceduralDesign,initialBoard,settleLight,applyMove,slideDestination,difficulty,shinyChance,fruiterChance} from "../../../script/shiny-light-core.mjs";
+import {defaultMilestones,validateDesign,proceduralDesign,initialBoard,settleLight,applyMove,slideDestination,difficulty,shinyChance,fruiterChance,BANANA_TROPHY} from "../../../script/shiny-light-core.mjs";
 import {shinyGameAction,shinyEditorAction} from "../shiny-light.mjs";
 const tile=(i,type,more={})=>({i,type,...more});
 const map=(tiles,stars=[1,2,3],coin=null,w=5,h=5)=>validateDesign({title:"test",width:w,height:h,tiles,stars,coin},1000,defaultMilestones(),false);
@@ -62,7 +62,7 @@ test("trusted reward commits are idempotent, replay/reset cannot duplicate coins
  r=await call("resetCampaign",2,1);assert.equal(r.state.totalStars,0);assert.equal(r.wallet,11);
  r=await call("check",3,2);assert.equal(r.state.totalStars,2);assert.equal(r.coins,0);assert.equal(r.wallet,11);
  assert.equal(Number(docs.get(wp).fields.balance.integerValue),11);
- await assert.rejects(()=>shinyEditorAction({read,commit,root,uid,input:{action:"config"}}),/Administrator/);
+ await assert.rejects(()=>shinyEditorAction({read,commit,root,uid,input:{action:"publish",level:1,design}}),/Administrator/);
 });
 
 test("glass walls transmit beams but block sliding pieces and light-pushed ice",()=>{
@@ -79,4 +79,34 @@ test("glass walls transmit beams but block sliding pieces and light-pushed ice",
  const movable=map([tile(0,"source",{dir:1}),tile(2,"movingGlassWall",{axis:"h"}),tile(4,"fruit")],[1,2,3]);
  assert.equal(light(movable).won,true);
  assert.equal(applyMove(movable,initialBoard(movable),{kind:"move",i:2,to:3}).board.tiles.find(x=>x.type==="movingGlassWall").i,3);
+});
+
+test("community creators can share maps; promotion snapshots the saved original and requires staff",async()=>{
+ const root="docs",id="00000000-0000-4000-8000-000000000002",docs=new Map(),writes=[];
+ for(const [uid,role] of [["alice","user"],["bob","user"],["admin","admin"]])docs.set("users/"+uid,{updateTime:"0",fields:{role:{stringValue:role},status:{stringValue:"active"}}});
+ const read=async k=>docs.get(k)||null,commit=async batch=>{writes.push(batch);for(const w of batch){if(w.update)docs.set(w.update.name.slice(root.length+1),{fields:w.update.fields,updateTime:String(writes.length)});if(w.delete)docs.delete(w.delete.slice(root.length+1));}return true;};
+ const call=(uid,input)=>shinyEditorAction({root,uid,input,read,commit,makeId:()=>id,list:async()=>({documents:[{...docs.get("shinyLightCommunityLevels/"+id),name:root+"/shinyLightCommunityLevels/"+id}]})});
+ const d=map([tile(0,"source",{dir:1}),tile(2,"fruit")],[1,2,4],null,3,3);
+ assert.equal((await call("alice",{action:"saveCommunity",design:d})).id,id);
+ assert.equal((await call(null,{action:"loadCommunity",id})).authorUid,"alice");
+ assert.equal((await call(null,{action:"browse"})).levels[0].id,id);
+ await assert.rejects(()=>call("bob",{action:"saveCommunity",id,design:d}),/own levels/);
+ await assert.rejects(()=>call("alice",{action:"promote",id,level:1}),/Administrator/);
+ await assert.rejects(()=>call("alice",{action:"milestones",milestones:defaultMilestones()}),/Administrator/);
+ await call("admin",{action:"promote",id,level:1});
+ const official=docs.get("shinyLightLevels/1").fields;
+ assert.equal(official.authorUid.stringValue,"alice");assert.equal(official.sourceCommunityId.stringValue,id);
+ await call("alice",{action:"saveCommunity",id,design:{...d,title:"Changed"}});
+ assert.equal((await call(null,{action:"load",level:1})).design.title,d.title);
+ await call("alice",{action:"deleteCommunity",id});assert.ok(docs.has("shinyLightLevels/1"));
+});
+test("Banana trophy unlocks only after campaign level 1000 is cleared and survives reset",async()=>{
+ const root="docs",uid="player",user="users/"+uid,path=user+"/privateGames/shinyLight",tp=user+"/trophies/"+BANANA_TROPHY[0];
+ const d=map([tile(0,"source",{dir:1}),tile(2,"fruit")],[1,2,4],null,3,3),json=x=>({fields:{payload:{stringValue:JSON.stringify(x)}},updateTime:"0"});
+ const docs=new Map([[user,{updateTime:"0",fields:{role:{stringValue:"user"},status:{stringValue:"active"}}}],[path,json({state:{level:1000,cleared:999,revision:0,generation:0,totalStars:0,map:d,board:initialBoard(d),won:false,stars:[]}})]]);
+ let n=0;const read=async k=>docs.get(k)||null,commit=async batch=>{n++;for(const w of batch)if(w.update)docs.set(w.update.name.slice(root.length+1),{fields:w.update.fields,updateTime:String(n)});return true;};
+ const call=(kind,i,revision)=>shinyGameAction({root,uid,read,commit,rng:()=>.999,input:{kind,revision,requestId:"00000000-0000-4000-8000-"+String(i).padStart(12,"0")}});
+ await call("state",0,0);assert.equal(docs.has(tp),false);
+ let r=await call("check",1,0);assert.ok(r.rewards.includes(BANANA_TROPHY[0]));assert.ok(docs.has(tp));assert.equal(docs.has(user+"/axolotls/"+BANANA_TROPHY[0]),false);
+ r=await call("resetCampaign",2,1);assert.equal(r.state.cleared,0);assert.equal(r.state.totalStars,0);assert.ok(docs.has(tp));assert.equal(r.rewards.length,0);
 });

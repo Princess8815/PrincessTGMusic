@@ -14,3 +14,15 @@ test("built-in official levels load in editor and staff edits take precedence",a
 });
 
 test("glass starter levels are loadable and editable by staff",async()=>{const f=fixture();for(const level of [5,6,7,8,9]){const r=await f.call(null,{action:"official",level});assert.ok(r.design.pieces.some(p=>p.material==="glass"));await f.call("admin",{action:"publish",level,design:{...r.design,title:"Edited glass "+level}});assert.equal((await f.call(null,{action:"official",level})).design.title,"Edited glass "+level);}});
+
+test("staff can promote a saved community map as an independent official snapshot",async()=>{
+ const f=fixture();
+ await f.call("a",{action:"save",design});
+ await assert.rejects(()=>f.call("a",{action:"promote",id,level:1}));
+ await f.call("admin",{action:"promote",id,level:1});
+ const saved=f.store.get("orangeOfficialLevels/1").fields;
+ assert.equal(saved.authorUid.stringValue,"a");assert.equal(saved.sourceCommunityId.stringValue,id);assert.equal(saved.publishedBy.stringValue,"admin");
+ await f.call("a",{action:"save",id,design:{...design,title:"Changed later"}});
+ assert.equal((await f.call(null,{action:"official",level:1})).design.title,design.title);
+ await f.call("a",{action:"delete",id});assert.equal((await f.call(null,{action:"official",level:1})).design.title,design.title);
+});
