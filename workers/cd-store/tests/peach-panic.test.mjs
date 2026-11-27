@@ -78,3 +78,20 @@ test("Star Coin payout matches visual ripeness windows, regardless of blue color
  const list=orchard(42),log=[[0,list[0].born],[1,list[1].born+list[1].ripen],[2,list[2].born+list[2].ripen+500]].sort((a,b)=>a[1]-b[1]);
  assert.equal(replayPeaches(42,log).coins,3);
 });
+
+test("Paid Peach Panic doubles round payout and preserves it on retry",async()=>{
+ const root="documents",uid="test",user="users/test",path=user+"/privateGames/peachPanic";
+ const store=new Map([[user,{updateTime:"0",fields:{status:{stringValue:"active"}}}]]);store.set("memberships/test",{updateTime:"paid",fields:{expiresAt:{timestampValue:new Date(NOW+86400000).toISOString()}}});let clock=NOW,rev=0,commits=0,wallet=0;
+ const read=async p=>store.get(p)||null;
+ const commit=async writes=>{commits++;for(const w of writes){if(w.updateTransforms){assert.equal(w.update.name,root+"/"+user+"/wallets/starCoins");wallet+=Number(w.updateTransforms[0].increment.integerValue);}if(w.update)store.set(w.update.name.slice(root.length+1),{updateTime:String(++rev),fields:w.update.fields});}return true;};
+ const id=n=>"00000000-0000-4000-8000-"+String(n).padStart(12,"0");
+ const call=(action,n,picks)=>peachWithStorage({read,commit,root,uid,input:{action,runId:id(n),picks},clock:()=>clock,rng:()=>.000001,seed:()=>42});
+ const start=await call("start",1);assert.equal(start.startAt,NOW+1000);assert.equal(start.closed,false);
+ await assert.rejects(()=>call("finish",1,perfectLog(42)));await assert.rejects(()=>call("start",2));assert.equal(commits,1);
+ clock=start.startAt+ROUND_MS;
+ const result=await call("finish",1,perfectLog(42));assert.equal(result.closed,true);assert.equal(result.best,result.result.score);assert.ok(result.rewards.includes("fruiter"));assert.ok(result.rewards.includes("peachiboo"));assert.ok(store.has(user+"/trophies/"+PEACH_TROPHY[0]));assert.ok(store.has(user+"/axolotls/peachiboo"));assert.equal(commits,2);assert.equal(wallet,208);
+ store.delete("memberships/test");
+ const again=await call("finish",1,[]);assert.deepEqual(again,result);assert.equal(commits,2);assert.equal(wallet,208);
+ const next=await call("start",2);assert.equal(next.best,result.best);clock=next.startAt+ROUND_MS;
+ const last=await call("finish",2,perfectLog(42));assert.deepEqual(last.rewards,[]);assert.equal(commits,4);assert.equal(wallet,312);assert.ok(store.has(path));
+});

@@ -192,3 +192,19 @@ test("offline auto multiplier settlement matches individual harvest events and p
  const next=advance(upgraded,NOW+60000,n=>n).state;
  assert.equal(next.trees[0].pendingStars*STAR_SCALE+next.trees[0].pendingStarMicros,before+starMultiplierUnits(upgraded.trees[0]));
 });
+
+test("Paid Cherry Empire doubles harvest payouts and never credits a retry",async()=>{
+ const uid="test",root="documents",user="users/test",path=user+"/privateGames/cherryEmpire";
+ const store=new Map([[user,{updateTime:"0",fields:{status:{stringValue:"active"}}}]]);store.set("memberships/test",{updateTime:"paid",fields:{expiresAt:{timestampValue:new Date(NOW+86400000).toISOString()}}});let writes=0,coins=0,clock=NOW,rev=0;
+ const read=async p=>store.get(p)||null;
+ const commit=async batch=>{writes++;for(const w of batch){if(!w.update)continue;const p=w.update.name.slice(root.length+1);
+ if(w.updateTransforms){coins+=Number(w.updateTransforms[0].increment.integerValue);continue;}
+ store.set(p,{updateTime:String(++rev),fields:w.update.fields});}return true;};
+ const id=n=>"00000000-0000-4000-8000-"+String(n).padStart(12,"0");
+ const call=(kind,n,revision,treeId)=>orchardWithStorage({read,commit,root,uid,input:{kind,requestId:id(n),revision,treeId},clock:()=>clock,rng:()=>.000001});
+ const start=await call("sync",1,0);clock+=30000;
+ const first=await call("harvest",2,start.state.revision,1);assert.equal(first.state.cherries,1);assert.equal(coins,2);assert.ok(first.rewards.includes("fruiter"));
+ store.delete("memberships/test");
+ const again=await call("harvest",2,start.state.revision,1);assert.deepEqual(first.state,again.state);assert.equal(coins,2);assert.equal(writes,2);
+ const stale=await call("harvest",3,start.state.revision,1);assert.equal(stale.conflict,true);assert.equal(writes,2);assert.ok(store.has(path));assert.ok(store.has(user+"/axolotls/fruiter"));
+});
