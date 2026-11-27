@@ -9,3 +9,6 @@ Run `node tests/banner-ads.test.cjs`. This phase uses existing membership rules;
 
 ## Before activating real ads
 Real ads are not implemented or loaded in this phase. Confirm AdSense site approval, disable Auto ads, arrange applicable consent/privacy controls (including a Google-certified CMP where required), review age eligibility, update the privacy notice, and then add an owner-controlled master switch and per-page live configuration. Never reward banner clicks or reload banners to generate impressions. Keep real ad requests off previews/local development and ensure Paid membership suppresses requests, not merely the displayed element. Review gameplay ad placements separately.
+
+## Troubleshooting
+If banners do not appear, confirm the current branch is deployed and Admin > Accounts reports Free (not Paid or Unavailable). The auth dialog exists in the DOM even when its outer wrapper is hidden: only a visibly rendered dialog suppresses a mock banner. On localhost, use the same Firebase environment and account as the membership toggle. Production mock banners remain restricted to staff testing Free; guests and normal Free users can test on previews.

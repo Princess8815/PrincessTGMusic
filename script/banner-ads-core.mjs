@@ -30,3 +30,12 @@ export function showTestBanner({origin,path,state,status}){
  return state.ready===true&&status==="free"&&(!live||state.staff===true);
 }
 export const showAdminTestBanner=(state,status)=>state?.ready===true&&state.staff===true&&status==="free";
+
+// A modal may be nested inside a hidden wrapper (the site's auth dialog is).
+// Match actual rendered visibility, not just a dialog node's own hidden flag.
+export function renderedElement(el){
+ return !!el&&!el.hidden&&!el.closest("[hidden], [aria-hidden='true']")&&el.getClientRects().length>0;
+}
+export function hasVisibleDialog(root){
+ return Array.from(root.querySelectorAll('dialog[open], [role="dialog"][aria-modal="true"]')).some(renderedElement);
+}

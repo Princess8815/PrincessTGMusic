@@ -1,6 +1,6 @@
 const assert=require("node:assert/strict");
 (async()=>{
- const {showTestBanner,showAdminTestBanner,bannerPage,bannerPlacement,bannerSuppressed,PRODUCTION_ORIGIN,AD_CLIENT,AD_SLOT}=await import("../script/banner-ads-core.mjs");
+ const {showTestBanner,showAdminTestBanner,bannerPage,bannerPlacement,bannerSuppressed,renderedElement,hasVisibleDialog,PRODUCTION_ORIGIN,AD_CLIENT,AD_SLOT}=await import("../script/banner-ads-core.mjs");
  const {effectiveMembership}=await import("../script/staff-membership-core.mjs");
  const preview="http://127.0.0.1:5501";
  const paid={ready:true,staff:true,uid:"owner",expiresAt:null,override:"actual"},free={...paid,override:"free"};
@@ -21,6 +21,15 @@ const assert=require("node:assert/strict");
  assert.equal(bannerSuppressed({placement:"challenge",formActive:true}),true);
  assert.equal(bannerSuppressed({placement:"game",dialog:true}),true);
  assert.equal(bannerSuppressed({placement:"game"}),false);
+ // Auth dialog itself has no hidden attribute, but its wrapper does.
+ const modal=(ancestorHidden=false,ownHidden=false,rects=1)=>({hidden:ownHidden,closest:()=>ancestorHidden?{}:null,getClientRects:()=>Array(rects)});
+ const closed=modal(true),open=modal(false),cssHidden=modal(false,false,0);
+ const root=(...nodes)=>({querySelectorAll:()=>nodes});
+ assert.equal(renderedElement(closed),false);
+ assert.equal(hasVisibleDialog(root(closed,cssHidden,modal(false,true))),false);
+ assert.equal(hasVisibleDialog(root(closed,open)),true);
+ assert.equal(bannerSuppressed({placement:"home",dialog:hasVisibleDialog(root(closed))}),false);
+ assert.equal(bannerSuppressed({placement:"home",dialog:hasVisibleDialog(root(open))}),true);
  assert.equal(AD_CLIENT,"ca-pub-9671323559975419");assert.equal(AD_SLOT,"8870216368");
  console.log("Banner test assertions passed");
 })().catch(error=>{console.error(error);process.exitCode=1;});

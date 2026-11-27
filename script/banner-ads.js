@@ -1,7 +1,6 @@
 import {watchSelfMembership,selfMembership} from "./staff-membership.js";
-import {bannerPlacement,showTestBanner,bannerSuppressed} from "./banner-ads-core.mjs";
+import {bannerPlacement,showTestBanner,bannerSuppressed,renderedElement,hasVisibleDialog} from "./banner-ads-core.mjs";
 let started=false;
-const active=el=>!!el&&!el.hidden&&!el.closest("[hidden]")&&el.getClientRects().length>0;
 export function placeTestBanner(main,banner,placement){
  // Home: between streaming and albums. Browse: below the intro/header,
  // except the music catalog where all player controls remain together.
@@ -32,9 +31,9 @@ export function initTestBanner(){
  let state=null;
  function render(){
   const status=state?.ready?selfMembership(state).status:null;
-  const dialog=!!document.querySelector("dialog[open], [role=dialog][aria-modal=true]:not([hidden])");
+  const dialog=hasVisibleDialog(document);
   const transaction=placement==="shop"&&(
-   ["checkout-panel","payment-panel","receipt-panel","digital-recovery"].some(id=>active(document.getElementById(id)))||
+   ["checkout-panel","payment-panel","receipt-panel","digital-recovery"].some(id=>renderedElement(document.getElementById(id)))||
    [...new URLSearchParams(location.search).keys()].some(key=>/checkout|receipt|session|payment|order|success|cancel/i.test(key))
   );
   const formActive=placement==="challenge"&&!!document.activeElement?.closest("form");
@@ -42,6 +41,9 @@ export function initTestBanner(){
   if(banner.hidden===visible)banner.hidden=!visible;
  }
  watchSelfMembership(next=>{state=next;render();});
+ // Observe the shared auth wrapper separately; it lives outside the main area.
+ const authRoot=document.getElementById("auth-container");
+ if(authRoot){const authObserver=new MutationObserver(render);authObserver.observe(authRoot,{subtree:true,childList:true,attributes:true,attributeFilter:["hidden","open","aria-hidden","aria-modal"]});}
  // Monitor modal and checkout state without watching rapidly changing game canvases.
  if(placement==="shop"||placement==="challenge"){
   const observer=new MutationObserver(render);
