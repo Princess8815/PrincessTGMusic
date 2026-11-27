@@ -1,5 +1,6 @@
 // Shared deterministic, bounded grid light simulation. 0=N,1=E,2=S,3=W.
 export const MAX_LEVEL=1000000, MAX_POWER=9;
+export const BANANA_TROPHY=["banana-beams-mastery","Banana Beams Mastery","Complete level 1,000 in Shiny’s Banana Beams."];
 export const SHINY_AXOLOTLS=[["shiny","Shiny","#fff2a0","#f9b64c","star"]];
 export const FEATURES=[
  ["source","Light source",1],["fruit","Banana",1],["mirror","Mirror",1],["barrier","Barrier",2],["glassWall","Clear glass wall",3],["movingGlassWall","Movable glass wall",7],

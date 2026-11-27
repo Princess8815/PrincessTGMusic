@@ -1,5 +1,5 @@
 import {accessToken,verifyFirebaseIdentity} from "./rewards.js";
-import {MAX_LEVEL,defaultMilestones,validateMilestones,validateDesign,proceduralDesign,initialBoard,settleLight,applyMove,shinyChance,fruiterChance} from "../../script/shiny-light-core.mjs";
+import {MAX_LEVEL,defaultMilestones,validateMilestones,validateDesign,proceduralDesign,initialBoard,settleLight,applyMove,shinyChance,fruiterChance,BANANA_TROPHY} from "../../script/shiny-light-core.mjs";
 const fail=(message,status=400)=>{throw Object.assign(Error(message),{status});};
 const str=stringValue=>({stringValue}),num=n=>({integerValue:String(n)});
 const get=(d,k)=>d?.fields?.[k]?.stringValue;
@@ -52,7 +52,17 @@ export async function shinyGameAction({read,commit,root,uid,input,rng=random,clo
    }));
    return {levels,unlocked,totalStars:record.state.totalStars};
   }
-  if(record&&kind==="state")return response(record.state,wallet);
+  if(record&&kind==="state"){
+   if(Math.max(record.state.cleared||0,record.state.highestEverCleared||0)>=1000&&!record.state.bananaTrophyAwarded){
+    const trophy=user+"/trophies/"+BANANA_TROPHY[0],owned=await read(trophy);
+    const next={...record,state:{...record.state,bananaTrophyAwarded:true}};
+    const writes=[{verify:root+"/"+user,currentDocument:pre(account)},write(root,path,next,recordDoc)];
+    if(!owned)writes.push({update:{name:root+"/"+trophy,fields:{source:str("shiny-light"),foundAt:{timestampValue:new Date(clock()).toISOString()}}},currentDocument:{exists:false}});
+    if(!await commit(writes))continue;
+    return response(next.state,wallet,{rewards:owned?[]:[BANANA_TROPHY[0]]});
+   }
+   return response(record.state,wallet);
+  }
   if(!record&&kind!=="state")fail("Load your game first.",409);
   if(record&&record.lastRequest===input.requestId)return response(record.state,wallet,record.lastResult);
   if(record&&record.state.revision!==input.revision)return response(record.state,wallet,{conflict:true,message:"Game changed in another tab. Review the board."});
@@ -61,7 +71,7 @@ export async function shinyGameAction({read,commit,root,uid,input,rng=random,clo
   if(kind==="retry"){
    const first=settleLight(state.map,initialBoard(state.map));state.board=first.board;state.won=false;state.stars=[];state.lastBlack=!!first.black;message="Level reset.";
   }else if(kind==="resetCampaign"){
-   state.cleared=0;state.totalStars=0;state.generation++;await startLevel(read,state,1);message="Campaign and stars reset. Wallet and previously earned collectibles kept.";
+   state.highestEverCleared=Math.max(state.highestEverCleared||0,state.cleared||0);state.cleared=0;state.totalStars=0;state.generation++;await startLevel(read,state,1);message="Campaign and stars reset. Wallet and previously earned collectibles kept.";
   }else if(kind==="next"||kind==="selectLevel"){
    const target=kind==="next"?state.level+1:input.level;
    if(kind==="next"&&!state.won)fail("Illuminate every banana first.");
@@ -80,7 +90,7 @@ export async function shinyGameAction({read,commit,root,uid,input,rng=random,clo
      const hp=history(state.level),old=await read(hp),prior=unpack(old)||{},h={cleared:!!prior.cleared,coin:!!prior.coin,generation:state.generation,stars:prior.generation===state.generation?(prior.stars||0):0};
      if(result.coin&&!h.coin){coins++;h.coin=true;}
      if(result.won){
-      state.cleared=Math.max(state.cleared,state.level);
+      state.cleared=Math.max(state.cleared,state.level);state.highestEverCleared=Math.max(state.highestEverCleared||0,state.cleared);
       const best=Math.max(h.stars,result.stars.length);state.totalStars+=best-h.stars;h.stars=best;
       if(!h.cleared){
        h.cleared=true;coins+=10;
@@ -94,6 +104,10 @@ export async function shinyGameAction({read,commit,root,uid,input,rng=random,clo
     if(coins)message+=" +"+coins+" Star Coins.";
    }
   }
+  if(Math.max(state.highestEverCleared||0,state.cleared||0)>=1000&&!state.bananaTrophyAwarded){
+   if(!await read(user+"/trophies/"+BANANA_TROPHY[0]))rewards.push(BANANA_TROPHY[0]);
+   state.bananaTrophyAwarded=true;
+  }
   if(kind!=="state")state.revision++;
   const lastResult={coins,rewards,message},writes=[
    {verify:root+"/"+user,currentDocument:pre(account)},
@@ -101,44 +115,84 @@ export async function shinyGameAction({read,commit,root,uid,input,rng=random,clo
   ];
   if(historyWrite)writes.push(historyWrite);
   if(coins){if(!Number.isSafeInteger(wallet+coins))fail("Wallet limit reached.",503);writes.push({update:{name:root+"/"+walletPath,fields:{currency:str("starCoins"),balance:num(wallet+coins)}},updateMask:{fieldPaths:["currency","balance"]},currentDocument:pre(walletDoc)});}
-  for(const id of rewards)writes.push({update:{name:root+"/"+user+"/axolotls/"+id,fields:{source:str("shiny-light"),foundAt:{timestampValue:new Date(clock()).toISOString()}}},currentDocument:{exists:false}});
+  for(const id of rewards)writes.push({update:{name:root+"/"+user+"/"+(id===BANANA_TROPHY[0]?"trophies":"axolotls")+"/"+id,fields:{source:str("shiny-light"),foundAt:{timestampValue:new Date(clock()).toISOString()}}},currentDocument:{exists:false}});
   if(await commit(writes))return response(state,wallet+coins,{...lastResult,...(rendered?{view:rendered}:{})});
  }
  fail("Game changed during save. Retry the same action.",409);
 }
-export async function shinyEditorAction({read,commit,root,uid,input}){
- const account=await read("users/"+uid);
- if(!active(account)||!["owner","admin"].includes(get(account,"role")))fail("Administrator access required.",403);
+export async function shinyEditorAction({read,commit,root,uid,input,list,makeId=()=>crypto.randomUUID(),clock=Date.now}){
  const action=input?.action;
+ if(!["config","load","browse","loadCommunity","saveCommunity","deleteCommunity","publish","promote","delete","milestones"].includes(action))fail("Unknown editor action.");
+ const publicAction=["config","load","browse","loadCommunity"].includes(action);
+ let account=null,staff=false;
+ if(!publicAction){
+  if(!uid)fail("Sign in to save community maps.",401);
+  account=await read("users/"+uid);
+  if(!active(account))fail("Active verified account required.",403);
+  staff=["owner","admin"].includes(get(account,"role"));
+  if(["publish","promote","delete","milestones"].includes(action)&&!staff)fail("Administrator access required.",403);
+ }
  if(action==="config")return {milestones:await schedule(read)};
  if(action==="load"){
   if(!levelOK(input.level))fail("Invalid level.");
   const [milestones,doc]=await Promise.all([schedule(read),read("shinyLightLevels/"+input.level)]);
   return {design:doc?validateDesign(unpack(doc),input.level,milestones,false):proceduralDesign(input.level,milestones),official:!!doc,milestones};
  }
- let path,old,writes=[{verify:root+"/users/"+uid,currentDocument:pre(account)}];
- if(action==="milestones"){
+ if(action==="browse"){
+  const result=await list("shinyLightCommunityLevels",typeof input.cursor==="string"?input.cursor.slice(0,1000):"");
+  return {levels:result.documents.map(d=>({id:d.name.split("/").at(-1),title:get(d,"title")||"Banana puzzle"})),cursor:result.nextPageToken||null};
+ }
+ if(action==="loadCommunity"){
+  if(!uuid.test(input.id||""))fail("Invalid community level ID.");
+  const d=await read("shinyLightCommunityLevels/"+input.id);
+  if(!d)fail("Community level not found.",404);
+  return {id:input.id,design:validateDesign(unpack(d),1,defaultMilestones(),false),authorUid:get(d,"authorUid")};
+ }
+ let path,old,writes=[{verify:root+"/users/"+uid,currentDocument:pre(account)}],id=null;
+ if(action==="saveCommunity"||action==="deleteCommunity"){
+  id=input.id||makeId();if(!uuid.test(id))fail("Invalid community level ID.");
+  path="shinyLightCommunityLevels/"+id;old=await read(path);
+  if(old&&get(old,"authorUid")!==uid&&!staff)fail("You can only edit your own levels. Save a new copy instead.",403);
+  if(action==="deleteCommunity"){
+   if(!old)fail("Community level not found.",404);
+   writes.push({delete:root+"/"+path,currentDocument:pre(old)});
+  }else{
+   const design=validateDesign(input.design,1,defaultMilestones(),false);
+   writes.push({update:{name:root+"/"+path,fields:{payload:str(JSON.stringify(design)),title:str(design.title),authorUid:str(old?get(old,"authorUid"):uid),updatedAt:{timestampValue:new Date(clock()).toISOString()}}},currentDocument:pre(old)});
+  }
+ }else if(action==="milestones"){
   path="shinyLightConfig/milestones";old=await read(path);
   writes.push(write(root,path,validateMilestones(input.milestones),old));
- }else if(action==="publish"||action==="delete"){
+ }else{
   if(!levelOK(input.level))fail("Invalid level.");
   path="shinyLightLevels/"+input.level;old=await read(path);
   if(action==="delete"){
    if(!old)return {ok:true};writes.push({delete:root+"/"+path,currentDocument:pre(old)});
   }else{
    const cfg=await read("shinyLightConfig/milestones"),milestones=cfg?validateMilestones(unpack(cfg)):defaultMilestones();
-   const design=validateDesign(input.design,input.level,milestones);
-   writes.push({verify:root+"/shinyLightConfig/milestones",currentDocument:pre(cfg)},write(root,path,design,old));
+   let raw=input.design,author=uid,sourceId=null;
+   if(action==="promote"){
+    if(!uuid.test(input.id||""))fail("Select a saved community map.");
+    sourceId=input.id;const sourcePath="shinyLightCommunityLevels/"+sourceId,source=await read(sourcePath);
+    if(!source)fail("Community level not found.",404);
+    raw=unpack(source);author=get(source,"authorUid")||uid;
+    writes.push({verify:root+"/"+sourcePath,currentDocument:pre(source)});
+   }else if(old){author=get(old,"authorUid")||uid;sourceId=get(old,"sourceCommunityId")||null;}
+   const design=validateDesign(raw,input.level,milestones);
+   writes.push({verify:root+"/shinyLightConfig/milestones",currentDocument:pre(cfg)},
+    {update:{name:root+"/"+path,fields:{payload:str(JSON.stringify(design)),title:str(design.title),authorUid:str(author),publishedBy:str(uid),...(sourceId?{sourceCommunityId:str(sourceId)}:{}),updatedAt:{timestampValue:new Date(clock()).toISOString()}}},currentDocument:pre(old)});
   }
- }else fail("Unknown editor action.");
+ }
  if(!await commit(writes))fail("Level changed during save. Reload and retry.",409);
- return {ok:true};
+ return {ok:true,id};
 }
 export async function shinyService(env,input,editor=false){
  if(env.STORE_MODE!=="live"||!env.FIREBASE_PROJECT||env.REWARD_FIREBASE_PROJECT!==env.FIREBASE_PROJECT)fail("Puzzle service unavailable.",503);
- const uid=await verifyFirebaseIdentity(env.FIREBASE_PROJECT,input?.idToken,true),token=await accessToken(env,env.FIREBASE_PROJECT);
+ const publicAction=editor&&["config","load","browse","loadCommunity"].includes(input?.action);
+ const uid=publicAction?null:await verifyFirebaseIdentity(env.FIREBASE_PROJECT,input?.idToken,true),token=await accessToken(env,env.FIREBASE_PROJECT);
  const root="projects/"+env.FIREBASE_PROJECT+"/databases/(default)/documents",url="https://firestore.googleapis.com/v1/"+root,headers={Authorization:"Bearer "+token,"Content-Type":"application/json"};
  const read=async p=>{const r=await fetch(url+"/"+p.split("/").map(encodeURIComponent).join("/"),{headers});if(r.status===404)return null;if(!r.ok)fail("Puzzle storage unavailable.",503);return r.json();};
  const commit=async writes=>{const r=await fetch(url+":commit",{method:"POST",headers,body:JSON.stringify({writes})});if(r.ok)return true;const e=await r.json().catch(()=>({}));if([409,412].includes(r.status)||["ABORTED","FAILED_PRECONDITION","ALREADY_EXISTS"].includes(e.error?.status))return false;fail("Puzzle save not confirmed. Retry the same action.",503);};
- try{return await (editor?shinyEditorAction:shinyGameAction)({read,commit,root,uid,input});}catch(e){if(e.status)throw e;throw Object.assign(Error(e.message),{status:400});}
+ const list=async(p,cursor)=>{const q=new URLSearchParams({pageSize:"20","mask.fieldPaths":"title"});if(cursor)q.set("pageToken",cursor);const r=await fetch(url+"/"+p+"?"+q,{headers});if(!r.ok)fail("Community levels unavailable.",503);const d=await r.json();return {...d,documents:d.documents||[]};};
+ try{return await (editor?shinyEditorAction:shinyGameAction)({read,commit,root,uid,input,list});}catch(e){if(e.status)throw e;throw Object.assign(Error(e.message),{status:400});}
 }

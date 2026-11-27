@@ -5,6 +5,7 @@ import {CHERRY_TROPHY} from "./cherry-empire-core.mjs";
 import {PEACH_TROPHY} from "./peach-panic-core.mjs";
 import {GIVING_TREE_TROPHY} from "./giving-tree-core.mjs";
 import {ORANGE_TROPHY} from "./orange-knock-down-core.mjs";
+import {BANANA_TROPHY} from "./shiny-light-core.mjs";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {collection,onSnapshot} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 export const GAME_AXOLOTLS=[
@@ -17,7 +18,7 @@ export const GAME_AXOLOTLS=[
 export const GAME_TROPHIES=[
  ["hang-girl-mastery","Hang Girl Mastery","Win 1,000 Hanggirl games on any difficulty."],
  ["hang-girl-god","Hang Girl God","Win 100 Hard games in a row."],
- TROPHY,CHERRY_TROPHY,PEACH_TROPHY,GIVING_TREE_TROPHY,ORANGE_TROPHY
+ TROPHY,CHERRY_TROPHY,PEACH_TROPHY,GIVING_TREE_TROPHY,ORANGE_TROPHY,BANANA_TROPHY
 ];
 const grid=document.getElementById("trophy-grid"),status=document.getElementById("trophy-status");
 if(grid&&status){
@@ -33,6 +34,7 @@ if(grid&&status){
    if(id==="peach-panic-mastery")art.innerHTML='<svg viewBox="0 0 100 100" width="100" height="100"><g stroke="#8e6332" stroke-width="2" stroke-linejoin="round"><circle cx="50" cy="42" r="35" fill="#f8d67d"/><circle cx="50" cy="42" r="29" fill="#fff0ba"/><path d="M36 69H64L60 82H71V92H29V82H40Z" fill="#d5a14f"/><path d="M50 26Q46 12 53 8" stroke="#895b40" fill="none" stroke-width="4"/><path d="M51 21Q62 7 77 15Q68 26 51 21Z" fill="#82b968" stroke="#477747"/><path d="M50 29C35 18 20 31 24 46Q27 63 50 69Q72 63 76 46C80 30 65 18 50 29Z" fill="#ffb27e" stroke="#c66f57"/><path d="M50 30Q44 47 50 63" fill="none" stroke="#d48169"/><ellipse cx="36" cy="39" rx="6" ry="9" fill="#ffe5c0" stroke="none"/><path d="M50 13V7M79 41H85M21 41H15" stroke="#9a6b39" stroke-width="3"/><path d="M43 86H57" stroke="#ffedba" stroke-width="3"/></g></svg>';
    if(id===GIVING_TREE_TROPHY[0])art.innerHTML='<svg viewBox="0 0 100 100" width="100" height="100"><g stroke="#74562d" stroke-width="2"><path d="M28 80H72L81 94H19Z" fill="#d9a849"/><path d="M45 78V41H55V78" fill="#ac7544"/><path d="M50 58L29 38M50 49L72 30" fill="none" stroke="#90603b" stroke-width="6"/><g fill="#81b967" stroke="#436f42"><circle cx="31" cy="35" r="20"/><circle cx="54" cy="25" r="22"/><circle cx="71" cy="42" r="17"/></g><g fill="#d9ef9c" stroke="#78964b"><path d="M30 32Q25 42 21 46Q18 57 30 59Q43 58 39 46Q34 42 32 32Z"/><path d="M63 34Q59 43 55 48Q51 60 64 62Q77 60 73 48Q68 43 65 34Z"/></g><path d="M35 20L31 7L43 13L50 2L57 13L69 7L65 20Z" fill="#f8d264"/><text x="50" y="91" text-anchor="middle" fill="#593b23" stroke="none" font-size="12" font-weight="bold">50</text></g></svg>';
    if(id===ORANGE_TROPHY[0])art.innerHTML='<svg viewBox="0 0 100 100" width="100" height="100"><g stroke="#8c622d" stroke-width="2"><path d="M28 77H72L81 94H19Z" fill="#e1ae52"/><circle cx="50" cy="42" r="33" fill="#f7ce65"/><circle cx="50" cy="42" r="27" fill="#fff1b9"/><circle cx="50" cy="44" r="20" fill="#f6a12d" stroke="#c47129"/><ellipse cx="43" cy="36" rx="5" ry="7" fill="#ffda87" stroke="none"/><path d="M50 25Q47 14 56 11" fill="none" stroke="#6d5535" stroke-width="4"/><path d="M52 23Q64 7 77 18Q65 30 52 23Z" fill="#78ac56" stroke="#447943"/><path d="M27 67L20 72M73 67L80 72M50 6V1" stroke="#e1ae52" stroke-width="4"/><text x="50" y="89" text-anchor="middle" fill="#593b23" stroke="none" font-size="12" font-weight="bold">1000</text></g></svg>';
+   if(id===BANANA_TROPHY[0])art.innerHTML='<svg viewBox="0 0 100 100" width="100" height="100"><g stroke="#88622a" stroke-width="2"><path d="M28 77H72L81 94H19Z" fill="#d9a849"/><circle cx="50" cy="42" r="33" fill="#f7ce65"/><circle cx="50" cy="42" r="27" fill="#fff1b9"/><path d="M29 24Q23 54 50 64Q72 66 78 37Q65 48 51 46Q36 42 35 24Z" fill="#ffdf45"/><path d="M35 24L32 18L27 20L29 24M78 37L81 32" stroke="#6e7535" stroke-width="4"/><path d="M35 36Q42 58 62 55" fill="none" stroke="#e4a635"/><text x="50" y="89" text-anchor="middle" fill="#593b23" stroke="none" font-size="12" font-weight="bold">1000</text></g></svg>';
    if(!found.has(id))art.style.opacity=".35";
    const title=document.createElement("h3");title.textContent=name;
    const hint=document.createElement("p");hint.textContent=requirement;

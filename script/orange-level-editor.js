@@ -39,6 +39,7 @@ function preview(d){
 }
 function clearGhost(){ghost?.remove();ghost=null;ghostKey="";}
 function render(){
+ $("oe-promote").disabled=busy||!staff||!id;
  $("oe-official-editing").textContent=editingOfficial?"Editing official level "+editingOfficial+" · Save official level to update it.":"Choose a level to edit.";
  clearGhost();displayed=preview(design);renderPalette();
  grid.replaceChildren();svg("rect",{width:WIDTH,height:HEIGHT,fill:"#d5e9e6"});svg("rect",{x:0,y:GROUND,width:WIDTH,height:HEIGHT-GROUND,fill:"#77a45d"});svg("rect",{x:0,y:0,width:160,height:GROUND,fill:"#b4c8cb",opacity:.65});
@@ -149,7 +150,8 @@ $("oe-browse").onclick=()=>perform(()=>browse(true));$("oe-more").onclick=()=>pe
 function openOfficial(level){return perform(async()=>{if(!staff)throw Error("Staff only.");const r=await editorRequest("official",{level});$("oe-level").value=level;loadDesign(r.design,null,level);status("Editing official level "+level+(r.builtIn?" (starter design).":" (published design)."));});}
 $("oe-official-load").onclick=()=>openOfficial(number("oe-level"));
 for(const b of document.querySelectorAll("[data-oe-official]"))b.onclick=()=>openOfficial(Number(b.dataset.oeOfficial));
+$("oe-promote").onclick=()=>perform(async()=>{if(!staff||!id)throw Error("Load a saved community map first.");const level=number("oe-level");if(!confirm("Copy the saved community map to official level "+level+"? Unsaved changes are not included."))return;await editorRequest("promote",{id,level},true);const r=await editorRequest("official",{level});loadDesign(r.design,null,level);status("Community map promoted to official level "+level+".");});
 $("oe-publish").onclick=()=>perform(async()=>{if(!staff)throw Error("Staff only.");const level=number("oe-level"),d=validated();if(!confirm("Save official level "+level+"? Future attempts entering this level will use this layout."))return;await editorRequest("publish",{level,design:d},true);editingOfficial=level;id=null;$("oe-id").value="";status("Official level "+level+" saved.");});
-onAuthStateChanged(auth,async user=>{staff=false;$("oe-official").hidden=true;if(!user||usingLocalFirebaseEmulators)return;try{const s=await getDocFromServer(doc(db,"users",user.uid));if(auth.currentUser?.uid!==user.uid)return;const a=s.data();staff=!!a&&["owner","admin"].includes(a.role)&&(a.status||"active")==="active";$("oe-official").hidden=!staff;if(staff&&new URLSearchParams(location.search).has("official"))$("oe-official").scrollIntoView({block:"nearest"});}catch{}});
+onAuthStateChanged(auth,async user=>{staff=false;$("oe-official").hidden=true;if(!user||usingLocalFirebaseEmulators)return;try{const s=await getDocFromServer(doc(db,"users",user.uid));if(auth.currentUser?.uid!==user.uid)return;const a=s.data();staff=!!a&&["owner","admin"].includes(a.role)&&(a.status||"active")==="active";$("oe-official").hidden=!staff;render();if(staff&&new URLSearchParams(location.search).has("official"))$("oe-official").scrollIntoView({block:"nearest"});}catch{}});
 try{const saved=JSON.parse(localStorage.getItem(draftKey)||"null");if(saved?.design&&Array.isArray(saved.design.pieces)&&Array.isArray(saved.design.oranges)){design={...saved.design,gravity:true,physics:2};id=saved.id||null;editingOfficial=Number.isInteger(saved.editingOfficial)?saved.editingOfficial:null;}}catch{}
 writeMeta();render();$("oe-id").value=id||"";const shared=new URLSearchParams(location.search).get("level");if(shared){$("oe-id").value=shared;void perform(async()=>{const r=await editorRequest("load",{id:shared});loadDesign(r.design,r.id);});}

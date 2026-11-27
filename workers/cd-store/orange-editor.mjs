@@ -8,7 +8,7 @@ const idOK=id=>typeof id==="string"&&/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89a
 const levelOK=n=>Number.isInteger(n)&&n>=1&&n<=1000000;
 export async function editorAction({input,uid,read,commit,list,root,clock=Date.now,makeId=()=>crypto.randomUUID()}){
  const action=input?.action;
- if(!["config","load","official","browse","save","publish","milestones","delete"].includes(action))fail("Unknown editor action.");
+ if(!["config","load","official","browse","save","publish","promote","milestones","delete"].includes(action))fail("Unknown editor action.");
  const publicAction=["config","load","official","browse"].includes(action);
  let account,staff=false;
  if(!publicAction){
@@ -16,7 +16,7 @@ export async function editorAction({input,uid,read,commit,list,root,clock=Date.n
   account=await read("users/"+uid);
   if(!account?.updateTime||(value(account,"status")||"active")!=="active"||value(account,"role")==="banned")fail("Active account required.",403);
   staff=["owner","admin"].includes(value(account,"role"));
-  if(["publish","milestones"].includes(action)&&!staff)fail("Administrator access required.",403);
+  if(["publish","promote","milestones"].includes(action)&&!staff)fail("Administrator access required.",403);
  }
  const config=async()=>{const d=await read("orangeConfig/milestones");return d?validateMilestones(parse(d)):Object.fromEntries(FEATURES.map(f=>[f.id,f.level]));};
  if(action==="config")return {milestones:await config()};
@@ -31,10 +31,19 @@ export async function editorAction({input,uid,read,commit,list,root,clock=Date.n
  try{
   if(action==="milestones"){
    path="orangeConfig/milestones";fields={payload:str(JSON.stringify(validateMilestones(input.milestones)))};
-  }else if(action==="publish"){
+  }else if(action==="publish"||action==="promote"){
    if(!levelOK(input.level))fail("Choose an official level number.");
-   const d=validateDesign(input.design);
-   path="orangeOfficialLevels/"+input.level;fields={title:str(d.title),payload:str(JSON.stringify(d)),authorUid:str(uid)};
+   path="orangeOfficialLevels/"+input.level;previous=await read(path);
+   let raw=input.design,author=value(previous,"authorUid")||uid,sourceId=value(previous,"sourceCommunityId")||null;
+   if(action==="promote"){
+    if(!idOK(input.id))fail("Select a saved community map.");
+    sourceId=input.id;const sourcePath="orangeCommunityLevels/"+sourceId,source=await read(sourcePath);
+    if(!source)fail("Community level not found.",404);
+    raw=parse(source);author=value(source,"authorUid")||uid;
+    extra.push({verify:root+"/"+sourcePath,currentDocument:{updateTime:source.updateTime}});
+   }
+   const d=validateDesign(raw);
+   fields={title:str(d.title),payload:str(JSON.stringify(d)),authorUid:str(author),publishedBy:str(uid),...(sourceId?{sourceCommunityId:str(sourceId)}:{})};
    // Make sure a concurrent milestone edit cannot invalidate this publication.
    const cfg=await read("orangeConfig/milestones");const actual=cfg?validateMilestones(parse(cfg)):null;checkDesignUnlocks(d,input.level,actual);
    extra.push({verify:root+"/orangeConfig/milestones",currentDocument:cfg?{updateTime:cfg.updateTime}:{exists:false}});
@@ -55,7 +64,7 @@ export async function editorAction({input,uid,read,commit,list,root,clock=Date.n
 }
 export async function orangeEditor(env,input){
  if(env.STORE_MODE!=="live"||!env.FIREBASE_PROJECT||env.REWARD_FIREBASE_PROJECT!==env.FIREBASE_PROJECT)fail("Editor unavailable.",503);
- const uid=["config","load","official","browse"].includes(input?.action)?null:await verifyFirebaseIdentity(env.FIREBASE_PROJECT,input?.idToken,["publish","milestones"].includes(input?.action));
+ const uid=["config","load","official","browse"].includes(input?.action)?null:await verifyFirebaseIdentity(env.FIREBASE_PROJECT,input?.idToken,["publish","promote","milestones"].includes(input?.action));
  const token=await accessToken(env,env.FIREBASE_PROJECT),root="projects/"+env.FIREBASE_PROJECT+"/databases/(default)/documents",url="https://firestore.googleapis.com/v1/"+root,headers={Authorization:"Bearer "+token,"Content-Type":"application/json"};
  const read=async p=>{const r=await fetch(url+"/"+p,{headers});if(r.status===404)return null;if(!r.ok)fail("Level storage unavailable.",503);return r.json();};
  const list=async(p,cursor)=>{const q=new URLSearchParams({pageSize:"20","mask.fieldPaths":"title"});if(cursor)q.set("pageToken",cursor);const r=await fetch(url+"/"+p+"?"+q,{headers});if(!r.ok)fail("Level list unavailable.",503);const d=await r.json();return {...d,documents:d.documents||[]};};

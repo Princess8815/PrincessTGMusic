@@ -100,6 +100,7 @@ service cloud.firestore {
     // Shiny puzzle maps, history and rewards are Worker-authoritative.
     match /shinyLightConfig/{id} { allow read, write: if false; }
     match /shinyLightLevels/{id} { allow read, write: if false; }
+    match /shinyLightCommunityLevels/{id} { allow read, write: if false; }
     match /users/{uid}/shinyLightHistory/{id} { allow read, write: if false; }
     // Hanggirl axolotl IDs deliberately remain absent from the existing client-create allowlist.
 
