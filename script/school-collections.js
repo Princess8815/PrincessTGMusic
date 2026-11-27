@@ -16,11 +16,12 @@ if($("medal-grid")&&$("diploma-grid")){
   const owned=id=>medals.has(id)||legacy.has(id);
   $("medal-grid").replaceChildren(...SCHOOL_MEDALS.map(([id,name,hint])=>card(name,medalArt(id),owned(id),hint)));
   const highest=validDiplomaRank(rank)?rank:legacy.has(LEGACY_CHESS_DIPLOMA)?1:0;
-  $("diploma-grid").replaceChildren();
-  if(highest)$("diploma-grid").append(card(diplomaTitle(highest),diplomaArt(highest),true,"Highest completed chess degree."));
+  const diploma=card(diplomaTitle(highest||1),diplomaArt(highest||1),!!highest,"Chess School");
+  if(!highest){diploma.style.filter="grayscale(1)";diploma.style.opacity=".65";diploma.querySelector(".reef-card-art").style.opacity="1";}
+  $("diploma-grid").replaceChildren(diploma);
   const status=(type,done)=>!auth.currentUser?"Sign in to view your "+type+".":errors.has(type)?"Could not load "+type+". Check Firestore rules or reload.":!loaded.has(type)||!loaded.has("trophies")&&!errors.has("trophies")?"Loading "+type+"…":done;
   $("medal-status").textContent=status("medals",SCHOOL_MEDALS.filter(m=>owned(m[0])).length+" / "+SCHOOL_MEDALS.length+" medals earned");
-  $("diploma-status").textContent=status("diplomas",highest?"1 diploma earned":"No diplomas earned yet. Graduate from Chess School to receive your first.");
+  $("diploma-status").textContent=status("diplomas",highest?"1 diploma earned":"0 / 1 diplomas earned");
  }
  onAuthStateChanged(auth,user=>{
   const current=++epoch;stops.forEach(stop=>stop());stops=[];medals=new Set();legacy=new Set();rank=0;loaded=new Set();errors=new Set();render();if(!user)return;
