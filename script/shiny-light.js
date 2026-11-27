@@ -1,6 +1,5 @@
 import {auth,usingLocalFirebaseEmulators} from "./firebase.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-import {watchStaffRole} from "./staff-auth.js";
 import {MAX_LEVEL,MOVABLE,ROTATABLE,difficulty} from "./shiny-light-core.mjs";
 import {$,callShiny,renderGrid,renderGuide,tileLabel} from "./shiny-light-ui.js";
 let state=null,wallet=0,view=null,selected=-1,busy=false,failed=null,epoch=0,page=0,pickerBusy=false;
@@ -72,6 +71,6 @@ async function pick(p){
 }
 $("sl-picker").onclick=()=>{if(!ready())return;$("sl-dialog").showModal();$("sl-jump").value=state.level;pick(Math.floor((state.level-1)/30));};
 $("sl-prev-page").onclick=()=>pick(page-1);$("sl-next-page").onclick=()=>pick(page+1);$("sl-close").onclick=()=>$("sl-dialog").close();$("sl-go").onclick=()=>{const n=Number($("sl-jump").value);if(Number.isInteger(n)&&n>=1&&n<=MAX_LEVEL)pick(Math.floor((n-1)/30));};
-renderGuide($("sl-guide"));watchStaffRole(ok=>$("sl-editor").hidden=ok!==true);
+renderGuide($("sl-guide"));
 function sync(){epoch++;state=null;view=null;wallet=0;selected=-1;busy=false;failed=null;if($("sl-dialog").open)$("sl-dialog").close();draw();if(!eligible()){status(usingLocalFirebaseEmulators?"Switch to live Firebase to play.":"Sign in and verify your email to play.");return;}const p=restore(auth.currentUser.uid);if(p){failed=p;send(p.kind,{},true);}else send("state");}
 onAuthStateChanged(auth,sync);window.addEventListener("princesstg:email-verified",sync);draw();

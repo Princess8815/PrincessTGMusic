@@ -3,8 +3,9 @@ import {FEATURES,MOVABLE,ROTATABLE,COLORS,COLOR_HEX,neighbor,slideDestination} f
 export const $=id=>document.getElementById(id);
 const endpoint="https://princesstg-cd-store-live.transgirl1991.workers.dev/games/";
 export async function callShiny(action,editor=false,uid=auth.currentUser?.uid){
- const user=auth.currentUser;if(!user||user.uid!==uid||!user.emailVerified||usingLocalFirebaseEmulators)throw Error("Sign in with a verified live account.");
- const idToken=await user.getIdToken();if(auth.currentUser?.uid!==uid)throw Error("Account changed.");
+ const publicAction=editor&&["config","load","browse","loadCommunity"].includes(action.action);
+ const user=auth.currentUser;let idToken;
+ if(!publicAction){if(!user||user.uid!==uid||!user.emailVerified||usingLocalFirebaseEmulators)throw Error("Sign in with a verified live account.");idToken=await user.getIdToken();if(auth.currentUser?.uid!==uid)throw Error("Account changed.");}
  const res=await fetch(endpoint+(editor?"shiny-light-editor":"shiny-light"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({idToken,...action})});
  const data=await res.json().catch(()=>({}));if(!res.ok)throw Object.assign(Error(data.error||"Puzzle service unavailable."),{status:res.status});return data;
 }
