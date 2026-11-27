@@ -128,3 +128,8 @@ body.ptg-shell-ready > main:has(#profile-app) .profile-card {
 .ptg-test-banner{box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:106px;padding:14px;border:2px dashed var(--ptg-border,#8d7da7);border-radius:10px;background:var(--ptg-secondary,#1f2937);color:var(--ptg-text,#f3f4f6);font-family:system-ui,sans-serif;text-align:center;pointer-events:none}
 .ptg-test-banner strong{font-size:1.35rem;letter-spacing:.15em}.ptg-test-banner small{font-size:.78rem;opacity:.85}.ptg-test-banner[hidden]{display:none!important}
 body.ptg-shell-ready>.ptg-public-test-banner{width:min(94%,970px);max-width:970px;margin:24px auto;flex-shrink:0}.dp-self-test .ptg-test-banner{width:100%;max-width:970px;margin:18px auto 0}
+
+/* Page-aware mock banner placement: normal flow, never fixed over content. */
+main>.ptg-public-test-banner{width:100%;max-width:970px;margin:24px auto;min-width:0;grid-column:1/-1;flex-shrink:0}
+.ptg-public-test-banner[data-placement="game"],.ptg-public-test-banner[data-placement="shop"],.ptg-public-test-banner[data-placement="challenge"]{min-height:90px;margin-top:32px!important}
+@media(max-width:850px){.ptg-public-test-banner{min-height:82px;margin-block:18px!important}.ptg-public-test-banner strong{font-size:1.15rem}body.ptg-shell-ready>.ptg-public-test-banner{width:min(94%,970px)}}
