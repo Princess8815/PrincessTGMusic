@@ -13,6 +13,7 @@ import {playPeachPanic} from "./peach-panic.mjs";
 import {playGivingTree} from "./giving-tree.mjs";
 import {playOrangeKnockDown} from "./orange-knock-down.mjs";
 import {orangeEditor} from "./orange-editor.mjs";
+import {shinyService} from "./shiny-light.mjs";
 import {buyStarlight,starlightOrigin} from "./starlight.mjs";
 import {publicError,errorCode} from "../../script/site-errors.js";
 import {ownerTools} from "./owner-tools.js";
@@ -275,7 +276,7 @@ async function status(env,b,ctx){
 async function body(req,max=20000){const raw=await req.text();if(raw.length>max)fail("Request too large.",413);try{return JSON.parse(raw);}catch{fail("Invalid JSON.");}}
 export default {
  async fetch(req,env,ctx){
-  const url=new URL(req.url),origin=req.headers.get("Origin")||"",allowed=(env.ALLOWED_ORIGINS||"").split(",").map(x=>x.trim()).includes(origin)||(["/surveys/submit","/owner/terminal-commands"].includes(url.pathname)&&surveyPreviewOrigin(env,origin))||(["/games/hanggirl","/games/apple-catcher","/games/cherry-empire","/games/peach-panic","/games/giving-tree","/games/orange-knock-down","/games/orange-editor"].includes(url.pathname)&&hanggirlOrigin(env,origin))||(url.pathname==="/starlight/buy"&&starlightOrigin(env,origin))||(url.pathname==="/owner/email-verification"&&ownerVerificationOrigin(env,origin));
+  const url=new URL(req.url),origin=req.headers.get("Origin")||"",allowed=(env.ALLOWED_ORIGINS||"").split(",").map(x=>x.trim()).includes(origin)||(["/surveys/submit","/owner/terminal-commands"].includes(url.pathname)&&surveyPreviewOrigin(env,origin))||(["/games/hanggirl","/games/apple-catcher","/games/cherry-empire","/games/peach-panic","/games/giving-tree","/games/orange-knock-down","/games/orange-editor","/games/shiny-light","/games/shiny-light-editor"].includes(url.pathname)&&hanggirlOrigin(env,origin))||(url.pathname==="/starlight/buy"&&starlightOrigin(env,origin))||(url.pathname==="/owner/email-verification"&&ownerVerificationOrigin(env,origin));
   const headers={"Content-Type":"application/json","Cache-Control":"no-store","Vary":"Origin"};
   if(allowed)Object.assign(headers,{"Access-Control-Allow-Origin":origin,"Access-Control-Allow-Methods":"GET, POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type"});
   const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers});
@@ -286,7 +287,7 @@ export default {
    if(url.pathname==="/catalog"&&req.method==="GET")return json({...await catalog(env),inventory:await inventoryList(env)});
    if(url.pathname==="/config"&&req.method==="GET"){configured(env);return json({mode:env.STORE_MODE,carrierShipping:shippingEnabled(env),zones:shippingEnabled(env)?shippingSettings(env).countries.map(country=>({country,state:"*",city:"*"})):zones(env).map(({country,state,city})=>({country,state,city}))});}
    if(req.method!=="POST")fail("Not found.",404);
-   const b=await body(req,url.pathname==="/surveys/submit"?80000:20000);
+   const b=await body(req,url.pathname==="/surveys/submit"?80000:url.pathname==="/games/shiny-light-editor"?60000:20000);
    if(url.pathname==="/surveys/submit")return json(await submitSurvey(env,b));
    if(url.pathname==="/games/hanggirl")return json(await playHanggirl(env,b));
    if(url.pathname==="/games/apple-catcher")return json(await playAppleCatcher(env,b));
@@ -295,6 +296,8 @@ export default {
    if(url.pathname==="/games/giving-tree")return json(await playGivingTree(env,b));
    if(url.pathname==="/games/orange-knock-down")return json(await playOrangeKnockDown(env,b));
    if(url.pathname==="/games/orange-editor")return json(await orangeEditor(env,b));
+    if(url.pathname==="/games/shiny-light")return json(await shinyService(env,b));
+    if(url.pathname==="/games/shiny-light-editor")return json(await shinyService(env,b,true));
    if(url.pathname==="/starlight/buy")return json(await buyStarlight(env,b));
    if(url.pathname==="/owner/terminal-commands")return json(await ownerTools(env,b));
    if(url.pathname==="/owner/email-verification")return json(await ownerVerification(env,b));
