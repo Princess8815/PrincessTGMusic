@@ -1,9 +1,7 @@
 import {publicError} from "./site-errors.js";
-// Shared Firebase email-verification flow for registration, login and Site Mail.
-// Firebase's own hosted action handler processes the emailed link.
-// Do not specify a custom continue URL: it can make mail sending fail when
-// the GitHub Pages domain isn't in the Firebase authorized-domain list.
-import {auth} from "./firebase.js";
+// Shared verification flow. Firebase still validates the action link;
+// production delivery is handled by the trusted Cloudflare Worker and Resend.
+import {auth,usingLocalFirebaseEmulators} from "./firebase.js";
 import {sendEmailVerification,reload} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 
 const checks=new Map();
@@ -30,9 +28,19 @@ export async function sendSiteVerification(user){
   // simultaneous requests for this UID to avoid accidental rapid repeats.
   if(sends.has(user.uid))return sends.get(user.uid);
   const pending=(async()=>{
-    // Firebase Auth sends to user.email, not an arbitrary entered address.
-    // No Cloud Function or Firestore permission is involved in delivery.
-    await sendEmailVerification(user);
+    if(usingLocalFirebaseEmulators){
+      await sendEmailVerification(user);
+      return {alreadyVerified:false,usedReturnLink:false,recipient:user.email};
+    }
+    const idToken=await user.getIdToken(true);
+    if(auth.currentUser?.uid!==user.uid)throw Object.assign(Error("Account changed."),{code:"auth/account-mismatch"});
+    const response=await fetch("https://princesstg-cd-store-live.transgirl1991.workers.dev/auth/email-verification",{
+      method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({idToken})
+    });
+    const data=await response.json();
+    if(!response.ok)throw Object.assign(Error("Verification email unavailable."),{code:response.status===429?"auth/too-many-requests":"PTG-108"});
+    if(data.alreadyVerified===true){await refreshSiteVerification(user);return {alreadyVerified:true,usedReturnLink:false};}
+    if(data.accepted!==true)throw Error("Verification email unavailable.");
     return {alreadyVerified:false,usedReturnLink:false,recipient:user.email};
   })();
   sends.set(user.uid,pending);
