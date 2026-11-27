@@ -1,0 +1,37 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {LESSONS,DEGREES,SCHOOL_TROPHIES,PROFESSOR_ID,position,coach,initialCourse,courseAction,publicCourse,quizView} from "../../../script/chess-school-core.mjs";
+import {moves,moveKey,playChess} from "../../../script/chess-core.mjs";
+import {schoolWithStorage} from "../chess-school.mjs";
+const answers=s=>quizView(s).map(q=>q.options.findIndex(o=>o.id===0));
+test("four degrees, only Associate’s open; all examples and exercises use legal moves",()=>{
+ assert.equal(DEGREES.length,4);assert.equal(DEGREES.filter(x=>x[2]).length,1);assert.equal(LESSONS.length,15);
+ for(const l of LESSONS)for(const e of [l.example,...l.exercises])assert.ok(moves(position(e[0])).some(m=>moveKey(m)===e[2]),l.title+": "+e[2]);
+ assert.ok(LESSONS.every(l=>l.quiz.every(q=>q.length===5)));
+});
+test("study, practice, quiz and grade gates",()=>{
+ let s=initialCourse();assert.throws(()=>courseAction(s,{action:"lesson",lesson:1}));assert.throws(()=>courseAction(s,{action:"move",move:"e2e3"}));
+ s=courseAction(s,{action:"begin"});s=courseAction(s,{action:"move",move:"a2a3"});assert.equal(s.exercise,0);
+ for(const e of LESSONS[0].exercises)s=courseAction(s,{action:"move",move:e[2]});
+ assert.equal(s.phase,"quiz");assert.ok(publicCourse(s).quiz.every(q=>q.options.every(o=>!("id" in o))));
+ s=courseAction(s,{action:"quiz",answers:answers(s).map(x=>(x+1)%4)});assert.equal(s.unlocked,0);
+ s=courseAction(s,{action:"retry-quiz"});s=courseAction(s,{action:"quiz",answers:answers(s)});assert.equal(s.best[0],100);assert.equal(s.unlocked,1);
+});
+test("graduation earns three trophies and professor once, with old course preserved",async()=>{
+ const root="docs",uid="u",user="users/u",path=user+"/privateGames/chess-school-associates",legacy=user+"/privateGames/chess-academy";
+ const data=new Map([[user,{updateTime:"a",fields:{role:{stringValue:"user"}}}],[legacy,{updateTime:"legacy",fields:{payload:{stringValue:"old progress"}}}]]);let version=0,req=0,grants=0;
+ const read=async p=>data.get(p)||null;
+ const commit=async writes=>{for(const w of writes){if(w.verify)continue;const p=w.update.name.slice(root.length+1);if(p.includes("/trophies/")||p.includes("/axolotls/")){assert.ok(!data.has(p));grants++;}data.set(p,{fields:w.update.fields,updateTime:String(++version)});}return true;};
+ const call=input=>schoolWithStorage({read,commit,root,uid,input});
+ let d=await call({action:"state"}),last;
+ const send=async(action,extra={})=>{last={action,revision:d.revision,requestId:"req-"+(++req),...extra};d=await call(last);};
+ for(let i=0;i<LESSONS.length;i++){
+  if(i)await send("lesson",{lesson:i});await send("begin");
+  for(const e of LESSONS[i].exercises)await send("move",{move:e[2]});
+  let tries=0;while(d.phase==="match"||d.phase==="match-retry"){if(d.phase==="match-retry")await send("retry-match");else await send("move",{move:moveKey(coach(d.board,LESSONS[i].match.opening)[0].m)});assert.ok(++tries<=80);}
+  const saved=JSON.parse(data.get(path).fields.payload.stringValue);await send("quiz",{answers:answers(saved)});
+  assert.equal(d.best[i],100);assert.equal(grants,SCHOOL_TROPHIES.filter(t=>t[3]<=i+1).length+(i===LESSONS.length-1?1:0));
+ }
+ assert.equal(d.completed,true);assert.equal(grants,4);assert.ok(data.has(user+"/axolotls/"+PROFESSOR_ID));assert.equal(data.get(legacy).fields.payload.stringValue,"old progress");
+ await call(last);assert.equal(grants,4);
+});

@@ -1,6 +1,7 @@
 
 import {auth,db} from "./firebase.js";
 import {CHESS_TROPHY} from "./chess-core.mjs";
+import {SCHOOL_TROPHIES} from "./chess-school-core.mjs";
 import {TROPHY} from "./apple-catcher-core.mjs";
 import {CHERRY_TROPHY} from "./cherry-empire-core.mjs";
 import {PEACH_TROPHY} from "./peach-panic-core.mjs";
@@ -19,7 +20,7 @@ export const GAME_AXOLOTLS=[
 export const GAME_TROPHIES=[
  ["hang-girl-mastery","Hang Girl Mastery","Win 1,000 Hanggirl games on any difficulty."],
  ["hang-girl-god","Hang Girl God","Win 100 Hard games in a row."],
- TROPHY,CHERRY_TROPHY,PEACH_TROPHY,GIVING_TREE_TROPHY,ORANGE_TROPHY,BANANA_TROPHY,CHESS_TROPHY
+ TROPHY,CHERRY_TROPHY,PEACH_TROPHY,GIVING_TREE_TROPHY,ORANGE_TROPHY,BANANA_TROPHY,CHESS_TROPHY,...SCHOOL_TROPHIES
 ];
 const grid=document.getElementById("trophy-grid"),status=document.getElementById("trophy-status");
 if(grid&&status){
@@ -36,6 +37,8 @@ if(grid&&status){
    if(id===GIVING_TREE_TROPHY[0])art.innerHTML='<svg viewBox="0 0 100 100" width="100" height="100"><g stroke="#74562d" stroke-width="2"><path d="M28 80H72L81 94H19Z" fill="#d9a849"/><path d="M45 78V41H55V78" fill="#ac7544"/><path d="M50 58L29 38M50 49L72 30" fill="none" stroke="#90603b" stroke-width="6"/><g fill="#81b967" stroke="#436f42"><circle cx="31" cy="35" r="20"/><circle cx="54" cy="25" r="22"/><circle cx="71" cy="42" r="17"/></g><g fill="#d9ef9c" stroke="#78964b"><path d="M30 32Q25 42 21 46Q18 57 30 59Q43 58 39 46Q34 42 32 32Z"/><path d="M63 34Q59 43 55 48Q51 60 64 62Q77 60 73 48Q68 43 65 34Z"/></g><path d="M35 20L31 7L43 13L50 2L57 13L69 7L65 20Z" fill="#f8d264"/><text x="50" y="91" text-anchor="middle" fill="#593b23" stroke="none" font-size="12" font-weight="bold">50</text></g></svg>';
    if(id===ORANGE_TROPHY[0])art.innerHTML='<svg viewBox="0 0 100 100" width="100" height="100"><g stroke="#8c622d" stroke-width="2"><path d="M28 77H72L81 94H19Z" fill="#e1ae52"/><circle cx="50" cy="42" r="33" fill="#f7ce65"/><circle cx="50" cy="42" r="27" fill="#fff1b9"/><circle cx="50" cy="44" r="20" fill="#f6a12d" stroke="#c47129"/><ellipse cx="43" cy="36" rx="5" ry="7" fill="#ffda87" stroke="none"/><path d="M50 25Q47 14 56 11" fill="none" stroke="#6d5535" stroke-width="4"/><path d="M52 23Q64 7 77 18Q65 30 52 23Z" fill="#78ac56" stroke="#447943"/><path d="M27 67L20 72M73 67L80 72M50 6V1" stroke="#e1ae52" stroke-width="4"/><text x="50" y="89" text-anchor="middle" fill="#593b23" stroke="none" font-size="12" font-weight="bold">1000</text></g></svg>';
    if(id===BANANA_TROPHY[0])art.innerHTML='<svg viewBox="0 0 100 100" width="100" height="100"><g stroke="#88622a" stroke-width="2"><path d="M28 77H72L81 94H19Z" fill="#d9a849"/><circle cx="50" cy="42" r="33" fill="#f7ce65"/><circle cx="50" cy="42" r="27" fill="#fff1b9"/><path d="M29 24Q23 54 50 64Q72 66 78 37Q65 48 51 46Q36 42 35 24Z" fill="#ffdf45"/><path d="M35 24L32 18L27 20L29 24M78 37L81 32" stroke="#6e7535" stroke-width="4"/><path d="M35 36Q42 58 62 55" fill="none" stroke="#e4a635"/><text x="50" y="89" text-anchor="middle" fill="#593b23" stroke="none" font-size="12" font-weight="bold">1000</text></g></svg>';
+   if(id==="chess-associates-diploma")art.innerHTML='<svg viewBox="0 0 100 100" width="100" height="100"><rect x="8" y="18" width="84" height="60" rx="5" fill="#fff2ce" stroke="#b48b42" stroke-width="3"/><rect x="14" y="24" width="72" height="48" fill="none" stroke="#b48b42"/><text x="50" y="39" text-anchor="middle" font-size="9" fill="#503d69" font-weight="bold">CHESS SCHOOL</text><path d="M23 47H77M30 54H70M34 61H66" stroke="#9c825b" stroke-width="2"/><path d="M64 70l-5 20 8-3 5 4 3-20" fill="#8863ba"/><circle cx="69" cy="72" r="10" fill="#e4b651" stroke="#a47b32"/><text x="69" y="76" text-anchor="middle" font-size="11">A</text></svg>';
+   if(id==="chess-school-foundations"||id==="chess-school-rulebook")art.innerHTML='<svg viewBox="0 0 100 100" width="100" height="100"><path d="M25 8H46L50 38 31 52ZM75 8H54L50 38 69 52Z" fill="#9b7bd1"/><circle cx="50" cy="62" r="29" fill="#f7d986" stroke="#a78035" stroke-width="3"/><circle cx="50" cy="62" r="22" fill="#fff1b8" stroke="#a78035"/><text x="50" y="72" font-size="30" text-anchor="middle" fill="#503d69">'+(id==="chess-school-foundations"?"♞":"♜")+'</text></svg>';
    if(!found.has(id))art.style.opacity=".35";
    const title=document.createElement("h3");title.textContent=name;
    const hint=document.createElement("p");hint.textContent=requirement;

@@ -1,0 +1,24 @@
+import {initialCourse,courseAction,publicCourse,PROFESSOR_ID,SCHOOL_TROPHIES,passed} from "../../script/chess-school-core.mjs";
+const fail=(message,status=400)=>{throw Object.assign(Error(message),{status});};
+const pre=d=>d?{updateTime:d.updateTime}:{exists:false};
+const str=stringValue=>({stringValue});
+export async function schoolWithStorage({read,commit,root,uid,input}){
+ const user="users/"+uid,path=user+"/privateGames/chess-school-associates";
+ for(let i=0;i<4;i++){
+  const [account,old]=await Promise.all([read(user),read(path)]);
+  if(!account?.updateTime||(account.fields?.status?.stringValue||"active")!=="active"||account.fields?.role?.stringValue==="banned")fail("Active verified account required.",403);
+  const s=old?JSON.parse(old.fields.payload.stringValue):initialCourse();
+  if(input.action==="state")return publicCourse(s);
+  if(typeof input.requestId!=="string"||!/^[a-z0-9-]{1,64}$/.test(input.requestId)||!Number.isInteger(input.revision))fail("Refresh the course first.");
+  if(s.lastRequest===input.requestId)return {...publicCourse(s),discovered:!!s.lastDiscovery};
+  if(s.revision!==input.revision)fail("Course changed in another tab. Reload your progress.",409);
+  const next=courseAction(s,input);next.lastRequest=input.requestId;next.lastDiscovery=false;
+  const writes=[{verify:root+"/"+user,currentDocument:pre(account)},{update:{name:root+"/"+path,fields:{payload:str("")}},currentDocument:pre(old)}];
+  const rewards=SCHOOL_TROPHIES.filter(t=>passed(next,t[3])).map(t=>"trophies/"+t[0]);
+  if(passed(next))rewards.push("axolotls/"+PROFESSOR_ID);
+  for(const reward of rewards){const p=user+"/"+reward;if(!await read(p)){next.lastDiscovery=true;writes.push({update:{name:root+"/"+p,fields:{source:str("chess"),foundAt:{timestampValue:new Date().toISOString()}}},currentDocument:{exists:false}});}}
+  writes[1].update.fields.payload=str(JSON.stringify(next));
+  if(await commit(writes))return {...publicCourse(next),discovered:next.lastDiscovery};
+ }
+ fail("Course save not confirmed. Retry.",409);
+}
