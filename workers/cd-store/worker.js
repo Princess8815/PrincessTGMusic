@@ -311,7 +311,7 @@ export default {
    if(url.pathname==="/starlight/buy")return json(await buyStarlight(env,b));
    if(url.pathname==="/owner/terminal-commands")return json(await ownerTools(env,b));
    if(url.pathname==="/owner/email-verification")return json(await ownerVerification(env,b));
-   if(url.pathname==="/auth/email-verification")return json(await sendMemberVerification(env,b,req.headers.get("CF-Connecting-IP")||""));
+   if(url.pathname==="/auth/email-verification")return json(await sendMemberVerification(env,b,req.headers.get("CF-Connecting-IP")||"",origin));
    if(url.pathname==="/shipping-quotes")return json(await shippingQuote(env,b));
    if(url.pathname==="/shipping-admin")return json(await shippingAdmin(env,b));
    if(url.pathname==="/inventory-admin"){if(!await verifiedShippingStaff(env,b.idToken))fail("Administrator access required.",403);if(b.action==="save")await saveInventory(env,b.inventory);else if(b.action==="stage")await orderStage(env,b);else if(b.action!=="list")fail("Unknown inventory action.");return json({mode:env.STORE_MODE,inventory:await inventoryList(env),orders:await fulfillmentOrders(env),products:(await catalog(env,true)).products});}

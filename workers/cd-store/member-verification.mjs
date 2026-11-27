@@ -44,7 +44,18 @@ export function verificationMessage(email,link,from){
  text:"Welcome to PrincessTG Creations!\n\nVerify your email address by opening this secure link:\n"+link+"\n\nIf you didn't request this, you can ignore this email.\n\nPrincessTG Creations",
  html:"<h1 style=\"color:#7651bf\">Welcome to PrincessTG Creations!</h1><p>One more step before you can explore member features. Verify your email address using the secure button below.</p><p><a style=\"display:inline-block;background:#7651bf;color:white;padding:12px 20px;border-radius:8px;text-decoration:none\" href=\""+escapeHTML(link)+"\">Verify my email</a></p><p>If you didn't request this, you can ignore this email.</p><p>PrincessTG Creations</p>"};
 }
-export async function sendMemberVerification(env,input,ip){
+// Fixed trusted site destinations only. Older clients retain Firebase's hosted handler.
+export function memberActionLink(link,env,origin,optIn){
+ if(optIn!==true)return link;
+ const approved=origin==="https://princesstg-creations.com"||origin==="https://princesstgcreations.pages.dev"||verificationPreviewOrigin(env,origin);
+ if(!approved)return link;
+ const original=new URL(link),code=original.searchParams.get("oobCode");
+ if(original.protocol!=="https:"||original.searchParams.get("mode")!=="verifyEmail"||!code)fail("Verification link unavailable.",503);
+ const destination=new URL("/pages/verify-email.html",origin);
+ destination.hash=new URLSearchParams({oobCode:code}).toString();
+ return destination.href;
+}
+export async function sendMemberVerification(env,input,ip,origin=""){
  if(env.STORE_MODE!=="live"||!env.FIREBASE_PROJECT||env.REWARD_FIREBASE_PROJECT!==env.FIREBASE_PROJECT||!env.RESEND_API_KEY||!env.VERIFICATION_FROM||!env.ORDERS)fail("Email verification is temporarily unavailable.",503);
  const project=env.FIREBASE_PROJECT,idToken=input?.idToken;
  const uid=await verifyFirebaseIdentity(project,idToken);
@@ -63,7 +74,7 @@ console.warn("Verification Firebase API failed", action, response.status, reason
  reserve:(uid,email,ip)=>reserveVerification(env.ORDERS,uid,email,ip),
  generate:async email=>(await call("sendOobCode",{requestType:"VERIFY_EMAIL",email,returnOobLink:true})).oobLink,
  send:async(email,link)=>{
-  const response=await fetch("https://api.resend.com/emails",{method:"POST",headers:{Authorization:"Bearer "+env.RESEND_API_KEY,"Content-Type":"application/json"},body:JSON.stringify(verificationMessage(email,link,env.VERIFICATION_FROM))});
+  const response=await fetch("https://api.resend.com/emails",{method:"POST",headers:{Authorization:"Bearer "+env.RESEND_API_KEY,"Content-Type":"application/json"},body:JSON.stringify(verificationMessage(email,memberActionLink(link,env,origin,input.actionPage),env.VERIFICATION_FROM))});
   if(!response.ok){console.warn("Verification Resend API failed",response.status);fail("Email delivery is temporarily unavailable.",503);}
   const receipt=await response.json();if(typeof receipt.id!=="string")fail("Email delivery could not be confirmed.",503);
   console.info("Verification email accepted by Resend",receipt.id);

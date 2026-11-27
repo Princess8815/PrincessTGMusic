@@ -146,8 +146,8 @@ if (!container) {
           <p class="auth-verify-address">Verification email: <strong id="auth-verify-email"></strong></p>
           <p id="auth-verify-message" role="status" aria-live="polite"></p>
           <div class="auth-verify-actions">
-            <button type="button" id="auth-resend-verification" class="auth-primary">Resend verification email</button>
-            <button type="button" id="auth-check-verification" class="auth-primary">I've verified my email</button>
+            <button type="button" id="auth-resend-verification" class="auth-primary">Send / resend verification email</button>
+            <button type="button" id="auth-verify-later" class="auth-text-button">Verify later</button>
             <button type="button" id="auth-use-another" class="auth-text-button">Use another account</button>
           </div>
         </section>
@@ -338,6 +338,7 @@ adminButton.addEventListener("click", async () => {
     $("auth-heading").textContent = "Verify Your Email";
     $("auth-verify-email").textContent = user.email || "your email address";
     if (text) $("auth-verify-message").textContent = text;
+    else if(!$("auth-verify-message").textContent)$("auth-verify-message").textContent="Check your inbox or spam folder. Your account will update automatically after verification. You can verify later.";
     $("auth-open").hidden = false;
     $("auth-open").textContent = "Verify Email";
   }
@@ -358,7 +359,7 @@ adminButton.addEventListener("click", async () => {
       });
       return;
     }
-    if(!user){setRegistrationStatus(null,"unknown");registrationForm.reset();registrationPanel.hidden=true;}
+    if(!user){setRegistrationStatus(null,"unknown");registrationForm.reset();registrationPanel.hidden=true;$("auth-verify-message").textContent="";}
     else registrationPanel.hidden=true;
     const verified=hasSiteVerificationAccess(user);
     $("auth-open").hidden = loggedIn && verified;
@@ -369,7 +370,10 @@ adminButton.addEventListener("click", async () => {
         ? `Welcome, ${user.displayName || user.email || "Member"}!`
         : "Email verification required"
       : "";
-    if (loggedIn && !verified) showVerification(user);
+    if (loggedIn && !verified) {
+      // Only open the dialog on explicit user request.
+      if(verifyPanel.hidden)modal.hidden=true;
+    }
     else if (verified) {
       verifyPanel.hidden = true;
       modal.hidden = true;
@@ -417,8 +421,8 @@ adminButton.addEventListener("click", async () => {
       lastVerificationEmailAt=Date.now();
       lastVerificationUid=user.uid;
       $("auth-verify-message").textContent = sent.alreadyVerified
-        ? "This account is already verified. Select I've verified my email to continue."
-        : "Verification email requested. Check your inbox and spam folder.";
+        ? "This account is already verified. Your access will refresh automatically."
+        : "Verification email requested. Check your inbox and spam folder. Your access will update automatically.";
     } catch (error) {
       console.error("Firebase verification request rejected:",error?.code||"unknown",error);
       if(auth.currentUser?.uid!==user.uid)return;
@@ -436,6 +440,7 @@ adminButton.addEventListener("click", async () => {
     const clean=new URL(location.href);clean.searchParams.delete("reefSignIn");clean.searchParams.delete("reefEncounter");history.replaceState(null,"",clean.href);
   });
   $("auth-close").addEventListener("click", closeModal);
+  $("auth-verify-later").addEventListener("click",closeModal);
   modal.addEventListener("click", event=>{
     if(event.target===modal)closeModal();
   });
@@ -479,8 +484,8 @@ adminButton.addEventListener("click", async () => {
         void claimPendingAxolotls(credential.user);
         // Request verification FIRST. A slow/denied Firestore profile write
         // or display-name update must never delay the new user's email.
-        showVerification(credential.user,
-          "Requesting your verification email for "+(credential.user.email||"this account")+"...");
+        modal.hidden=true;
+        $("auth-verify-message").textContent="Requesting your verification email...";
         await sendVerification(credential.user,true);
         // Profile metadata is optional for Firebase Auth verification.
         try{
@@ -499,9 +504,8 @@ adminButton.addEventListener("click", async () => {
         void claimPendingAxolotls(credential.user);
         const verified=await refreshSiteVerificationAccess(credential.user)
           || await refreshSiteVerification(credential.user);
-        if(verified)modal.hidden=true;
-        else showVerification(credential.user,
-          "Your address is still unverified. Open the email link to confirm it, then come back here.");
+        modal.hidden=true;
+        if(!verified)$("auth-verify-message").textContent="Your address is still unverified. Check your email or request a new link.";
       }
       syncAuthBar(auth.currentUser);
     }catch(error){
@@ -524,8 +528,8 @@ adminButton.addEventListener("click", async () => {
         modal.hidden=true;
         window.dispatchEvent(new CustomEvent("princesstg:email-verified"));
       }else{
-        showVerification(credential.user,
-          "Google hasn't confirmed this email as verified yet. Verify it to continue.");
+        modal.hidden=true;
+        $("auth-verify-message").textContent="Google has not confirmed this email. Use Verify Email when you are ready.";
       }
       syncAuthBar(credential.user);
     }catch(error){
@@ -541,30 +545,6 @@ adminButton.addEventListener("click", async () => {
     button.disabled=true;
     try{await sendVerification(user);}
     finally{button.disabled=false;}
-  });
-
-  $("auth-check-verification").addEventListener("click",async()=>{
-    const user=auth.currentUser;
-    if(!user)return;
-    const button=$("auth-check-verification");
-    button.disabled=true;
-    $("auth-verify-message").textContent="Checking verification...";
-    try{
-      const verified=await refreshSiteVerification(user);
-      if(!verified){
-        $("auth-verify-message").textContent =
-          publicError(null,"PTG-109");
-        return;
-      }
-      verifyPanel.hidden=true;
-      modal.hidden=true;
-      syncAuthBar(user);
-      try { await saveUserIfChanged(); }
-      catch (error) { console.warn("Verified status sync deferred:",error); }
-    }catch(error){
-      $("auth-verify-message").textContent =
-        "Could not check verification: "+verificationError(error);
-    }finally{button.disabled=false;}
   });
 
   $("auth-use-another").addEventListener("click",async()=>{
@@ -632,10 +612,11 @@ $("auth-logout").addEventListener("click", async () => {
   // Firebase's default email handler verifies the address in another tab.
   // Refresh automatically when the member returns instead of forcing them
   // to know which button to click. Throttle to avoid repeated auth requests.
-  async function refreshOnReturn(){
+  async function refreshOnReturn(force=false){
     const user=auth.currentUser;
-    if(!user||user.emailVerified||automaticCheckPending)return;
-    if(Date.now()-lastAutomaticCheckAt<8000)return;
+    if(!user||user.emailVerified)return;
+    if(automaticCheckPending){if(force)setTimeout(()=>void refreshOnReturn(true),1000);return;}
+    if(!force&&Date.now()-lastAutomaticCheckAt<8000)return;
     lastAutomaticCheckAt=Date.now();
     automaticCheckPending=true;
     try{
@@ -651,9 +632,16 @@ $("auth-logout").addEventListener("click", async () => {
           "Verification status could not refresh: "+verificationError(error);
     }finally{automaticCheckPending=false;}
   }
-  window.addEventListener("focus",()=>void refreshOnReturn());
+  window.addEventListener("focus",()=>void refreshOnReturn(true));
+  window.addEventListener("storage",event=>{
+    if(event.key==="princesstg:verification-complete"&&event.newValue)void refreshOnReturn(true);
+  });
+  const verificationPoll=setInterval(()=>{
+    if(document.visibilityState==="visible"&&auth.currentUser&&!auth.currentUser.emailVerified&&((!modal.hidden&&!verifyPanel.hidden)||(auth.currentUser.uid===lastVerificationUid&&Date.now()-lastVerificationEmailAt<600000)))void refreshOnReturn();
+  },30000);
+  window.addEventListener("pagehide",event=>{if(!event.persisted)clearInterval(verificationPoll);});
   document.addEventListener("visibilitychange",()=>{
-    if(document.visibilityState==="visible")void refreshOnReturn();
+    if(document.visibilityState==="visible")void refreshOnReturn(true);
   });
   // On navigation Firebase Auth restores the user BEFORE the Firestore
   // owner-bypass record is available. Resolve the server-side exception
