@@ -7,7 +7,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {
-  sendSiteVerification,refreshSiteVerification,verificationError
+  sendSiteVerification,verificationError
 } from "./email-verification.js";
 import {getPlaylists,ensurePlaylists,createPlaylist,addToPlaylistControl,songLink} from "./music-playlists.js";
 import {loadAllSongs} from "./song-data.js";
@@ -707,32 +707,13 @@ $("mail-send-verification").addEventListener("click",async()=>{
     const result=await sendSiteVerification(user);
     if(auth.currentUser?.uid!==user.uid)return;
     $("mail-verification-status").textContent=result.alreadyVerified
-      ? "Your email is already verified. Click I've verified my email to unlock Site Mail."
-      : "Verification email requested. Check your inbox and spam folder.";
+      ? "Your email is already verified. Site Mail access will update automatically."
+      : "Verification email requested. Check your inbox and spam folder. Site Mail access will update automatically.";
   }catch(error){
     if(auth.currentUser?.uid!==user.uid)return;
     console.error("Site Mail verification request rejected:",error?.code||"unknown",error);
     $("mail-verification-status").textContent=verificationError(error);
   }finally{$("mail-send-verification").disabled=false;}
-});
-$("mail-check-verification").addEventListener("click",async()=>{
-  const user=auth.currentUser;
-  if(!user)return;
-  $("mail-check-verification").disabled=true;
-  try{
-    const verified=await refreshSiteVerification(user);
-    if(!verified){
-      $("mail-verification-status").textContent=
-        publicError(null,"PTG-109");
-      return;
-    }
-    updateMailVerification(user);
-    setStatus("Email verified. Welcome to Site Mail!");
-    void refreshFolder("inbox");
-    applyShareIntent();
-  }catch(error){
-    $("mail-verification-status").textContent="Could not check verification: "+verificationError(error);
-  }finally{$("mail-check-verification").disabled=false;}
 });
 tab.addEventListener("click",()=>{
   if(view!=="compose"&&auth.currentUser&&isMailVerified(auth.currentUser))

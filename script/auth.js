@@ -147,7 +147,6 @@ if (!container) {
           <p id="auth-verify-message" role="status" aria-live="polite"></p>
           <div class="auth-verify-actions">
             <button type="button" id="auth-resend-verification" class="auth-primary">Send / resend verification email</button>
-            <button type="button" id="auth-check-verification" class="auth-primary">I've verified my email</button>
             <button type="button" id="auth-verify-later" class="auth-text-button">Verify later</button>
             <button type="button" id="auth-use-another" class="auth-text-button">Use another account</button>
           </div>
@@ -339,7 +338,7 @@ adminButton.addEventListener("click", async () => {
     $("auth-heading").textContent = "Verify Your Email";
     $("auth-verify-email").textContent = user.email || "your email address";
     if (text) $("auth-verify-message").textContent = text;
-    else if(!$("auth-verify-message").textContent)$("auth-verify-message").textContent="Check your inbox or spam folder, or request a new email. You can verify later.";
+    else if(!$("auth-verify-message").textContent)$("auth-verify-message").textContent="Check your inbox or spam folder. Your account will update automatically after verification. You can verify later.";
     $("auth-open").hidden = false;
     $("auth-open").textContent = "Verify Email";
   }
@@ -423,7 +422,7 @@ adminButton.addEventListener("click", async () => {
       lastVerificationUid=user.uid;
       $("auth-verify-message").textContent = sent.alreadyVerified
         ? "This account is already verified. Your access will refresh automatically."
-        : "Verification email requested. Check your inbox and spam folder.";
+        : "Verification email requested. Check your inbox and spam folder. Your access will update automatically.";
     } catch (error) {
       console.error("Firebase verification request rejected:",error?.code||"unknown",error);
       if(auth.currentUser?.uid!==user.uid)return;
@@ -548,30 +547,6 @@ adminButton.addEventListener("click", async () => {
     finally{button.disabled=false;}
   });
 
-  $("auth-check-verification").addEventListener("click",async()=>{
-    const user=auth.currentUser;
-    if(!user)return;
-    const button=$("auth-check-verification");
-    button.disabled=true;
-    $("auth-verify-message").textContent="Checking verification...";
-    try{
-      const verified=await refreshSiteVerification(user);
-      if(!verified){
-        $("auth-verify-message").textContent =
-          publicError(null,"PTG-109");
-        return;
-      }
-      verifyPanel.hidden=true;
-      modal.hidden=true;
-      syncAuthBar(user);
-      try { await saveUserIfChanged(); }
-      catch (error) { console.warn("Verified status sync deferred:",error); }
-    }catch(error){
-      $("auth-verify-message").textContent =
-        "Could not check verification: "+verificationError(error);
-    }finally{button.disabled=false;}
-  });
-
   $("auth-use-another").addEventListener("click",async()=>{
     if(busy)return;
     busy=true;
@@ -657,16 +632,16 @@ $("auth-logout").addEventListener("click", async () => {
           "Verification status could not refresh: "+verificationError(error);
     }finally{automaticCheckPending=false;}
   }
-  window.addEventListener("focus",()=>void refreshOnReturn());
+  window.addEventListener("focus",()=>void refreshOnReturn(true));
   window.addEventListener("storage",event=>{
     if(event.key==="princesstg:verification-complete"&&event.newValue)void refreshOnReturn(true);
   });
   const verificationPoll=setInterval(()=>{
-    if(document.visibilityState==="visible"&&auth.currentUser?.uid===lastVerificationUid&&Date.now()-lastVerificationEmailAt<600000)void refreshOnReturn();
+    if(document.visibilityState==="visible"&&auth.currentUser&&!auth.currentUser.emailVerified&&((!modal.hidden&&!verifyPanel.hidden)||(auth.currentUser.uid===lastVerificationUid&&Date.now()-lastVerificationEmailAt<600000)))void refreshOnReturn();
   },30000);
   window.addEventListener("pagehide",event=>{if(!event.persisted)clearInterval(verificationPoll);});
   document.addEventListener("visibilitychange",()=>{
-    if(document.visibilityState==="visible")void refreshOnReturn();
+    if(document.visibilityState==="visible")void refreshOnReturn(true);
   });
   // On navigation Firebase Auth restores the user BEFORE the Firestore
   // owner-bypass record is available. Resolve the server-side exception
