@@ -9,10 +9,10 @@ function render(){
  if(!state.ready){status.textContent=state.error?"Unavailable":"Checking…";delete status.dataset.membership;remaining.textContent=state.error?"Refresh to retry.":"";end.textContent="";note.hidden=true;return;}
  const m=selfMembership(state);
  status.textContent=m.status==="paid"?"Paid":"Free";status.dataset.membership=m.status;
- if(m.actualStatus==="paid"){const seconds=Math.ceil(m.remainingMs/1000),days=Math.floor(seconds/86400),hours=Math.floor(seconds%86400/3600),minutes=Math.floor(seconds%3600/60);remaining.textContent=(m.override!=="actual"?"Purchased time: ":"")+days+"d "+hours+"h "+minutes+"m "+seconds%60+"s remaining";end.textContent="Expires "+new Date(m.expiresAt).toLocaleString();}
- else{remaining.textContent="No active purchased membership.";end.textContent=m.expiresAt?"Expired "+new Date(m.expiresAt).toLocaleString():"";}
- note.hidden=m.override==="actual";
- if(!note.hidden)note.textContent=(previewMembership()?"Preview-only ":"")+"Admin test override: "+m.status.toUpperCase()+". Actual membership: "+(m.actualStatus==="paid"?"Paid":"Free")+". Restore actual membership in Admin → Accounts.";
+ if(m.actualStatus==="paid"){const seconds=Math.ceil(m.remainingMs/1000),days=Math.floor(seconds/86400),hours=Math.floor(seconds%86400/3600),minutes=Math.floor(seconds%3600/60);remaining.textContent=(state.staff?"Purchased time: ":"")+days+"d "+hours+"h "+minutes+"m "+seconds%60+"s remaining";end.textContent=(state.staff?"Purchased time expires ":"Expires ")+new Date(m.expiresAt).toLocaleString();}
+ else{remaining.textContent=m.complimentary?"Complimentary staff membership. No expiration while active staff.":"No active purchased membership.";end.textContent=m.expiresAt?"Purchased membership expired "+new Date(m.expiresAt).toLocaleString():"";}
+ note.hidden=!state.staff;
+ if(!note.hidden)note.textContent=m.complimentary?(m.actualStatus==="paid"?"Complimentary staff membership remains active while you are staff.":"Included with your admin or owner role."):(previewMembership()?"Preview only: ":"")+"Free member view. Switch back to complimentary Paid membership in Admin → Accounts.";
 }
 watchSelfMembership(next=>{state=next;render();});
 setInterval(()=>{if(state.ready)render();},1000);window.addEventListener("focus",render);

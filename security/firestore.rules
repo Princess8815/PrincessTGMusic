@@ -152,21 +152,22 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    // Membership purchase expiry stays Worker-authoritative. Staff can test
-    // their own effective membership without editing payment records.
+    // Active staff receive complimentary Paid membership unless they choose
+    // to experience the Free tier. Purchase expiry remains Worker-authoritative.
     function purchasedMembershipActive(uid) {
       return exists(/databases/$(database)/documents/memberships/$(uid))
         && get(/databases/$(database)/documents/memberships/$(uid)).data.expiresAt is timestamp
         && get(/databases/$(database)/documents/memberships/$(uid)).data.expiresAt > request.time;
     }
     function staffMembershipMode(uid) {
-      return isStaff() && exists(/databases/$(database)/documents/staffMembershipOverrides/$(uid))
+      return exists(/databases/$(database)/documents/staffMembershipOverrides/$(uid))
         ? get(/databases/$(database)/documents/staffMembershipOverrides/$(uid)).data.get("mode", "actual")
         : "actual";
     }
     function isPaidMember(uid) {
-      let mode = staffMembershipMode(uid);
-      return isOwner(uid) && (mode == "paid" || (mode != "free" && purchasedMembershipActive(uid)));
+      return isOwner(uid) && (isStaff()
+        ? staffMembershipMode(uid) != "free"
+        : purchasedMembershipActive(uid));
     }
     function validStaffMembershipOverride(uid) {
       return isOwner(uid) && isStaff()
