@@ -350,8 +350,6 @@ function init(){
   // Firebase may be slow or blocked. The public menu should still work.
   // Keep account-only links hidden until authentication is verified.
   void attachAccountVisibility(special);
-  // Test-only banner; an ad failure must never break the site shell.
-  void import("./banner-ads.js").then(m=>m.initTestBanner()).catch(error=>console.warn("Test banner unavailable",error));
 }
 async function attachAccountVisibility(special){
   if(!special.profile && !special.admin)return;
@@ -380,3 +378,6 @@ async function attachAccountVisibility(special){
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});
 else init();
+
+// Start mock placements independently of navigation initialization.
+void import("./banner-ads.js").then(m=>m.startTestBanner()).catch(error=>console.warn("[PTG test banner] load failed",error));

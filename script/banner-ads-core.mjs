@@ -39,3 +39,24 @@ export function renderedElement(el){
 export function hasVisibleDialog(root){
  return Array.from(root.querySelectorAll('dialog[open], [role="dialog"][aria-modal="true"]')).some(renderedElement);
 }
+
+export function placeTestBanner(main,banner,placement){
+ // Keep the home placement outside dynamically hidden tab panels.
+ if(placement==="home"){
+  const intro=main.querySelector(":scope > .ptg-page-intro");
+  if(intro){intro.after(banner);return;}
+  main.prepend(banner);return;
+ }
+ if(placement==="browse"){
+  if(main.classList.contains("audio-app")){
+   const catalog=main.querySelector(":scope > .catalog");
+   if(catalog){catalog.before(banner);return;}
+  }else{
+   const header=main.querySelector(":scope > header, :scope > section");
+   if(header){header.after(banner);return;}
+  }
+ }
+ // Read/play/game/shop/challenge: below the whole main content; no changes
+ // to internal gameplay layout or active form/purchase controls.
+ main.after(banner);
+}

@@ -1,26 +1,6 @@
 import {watchSelfMembership,selfMembership} from "./staff-membership.js";
-import {bannerPlacement,showTestBanner,bannerSuppressed,renderedElement,hasVisibleDialog} from "./banner-ads-core.mjs";
+import {bannerPlacement,showTestBanner,bannerSuppressed,renderedElement,hasVisibleDialog,placeTestBanner} from "./banner-ads-core.mjs";
 let started=false;
-export function placeTestBanner(main,banner,placement){
- // Home: between streaming and albums. Browse: below the intro/header,
- // except the music catalog where all player controls remain together.
- if(placement==="home"){
-  const albums=main.querySelector(":scope > .albums");
-  if(albums){albums.before(banner);return;}
- }
- if(placement==="browse"){
-  if(main.classList.contains("audio-app")){
-   const catalog=main.querySelector(":scope > .catalog");
-   if(catalog){catalog.before(banner);return;}
-  }else{
-   const header=main.querySelector(":scope > header, :scope > section");
-   if(header){header.after(banner);return;}
-  }
- }
- // Read/play/game/shop/challenge: below the whole main content; no changes
- // to internal gameplay layout or active form/purchase controls.
- main.after(banner);
-}
 export function initTestBanner(){
  if(started)return;
  const placement=bannerPlacement(location.pathname);if(!placement)return;
@@ -38,6 +18,8 @@ export function initTestBanner(){
   );
   const formActive=placement==="challenge"&&!!document.activeElement?.closest("form");
   const visible=showTestBanner({origin:location.origin,path:location.pathname,state,status})&&!bannerSuppressed({placement,transaction,dialog,formActive});
+  const reason=visible?"visible":!state?"checking-auth":state.error?"membership-error":state.uid&&!state.ready?"checking-membership":dialog?"dialog-open":transaction?"checkout-active":formActive?"form-active":status==="paid"?"paid":"not-eligible";
+  if(banner.dataset.state!==reason){banner.dataset.state=reason;console.info("[PTG test banner]",reason);}
   if(banner.hidden===visible)banner.hidden=!visible;
  }
  watchSelfMembership(next=>{state=next;render();});
@@ -51,4 +33,9 @@ export function initTestBanner(){
   document.addEventListener("focusin",render);document.addEventListener("focusout",()=>queueMicrotask(render));
  }
  window.addEventListener("popstate",render);setInterval(render,1000);
+}
+
+export function startTestBanner(){
+ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",initTestBanner,{once:true});
+ else initTestBanner();
 }

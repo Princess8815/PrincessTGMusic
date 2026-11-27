@@ -1,6 +1,6 @@
 const assert=require("node:assert/strict");
 (async()=>{
- const {showTestBanner,showAdminTestBanner,bannerPage,bannerPlacement,bannerSuppressed,renderedElement,hasVisibleDialog,PRODUCTION_ORIGIN,AD_CLIENT,AD_SLOT}=await import("../script/banner-ads-core.mjs");
+ const {showTestBanner,showAdminTestBanner,bannerPage,bannerPlacement,bannerSuppressed,renderedElement,hasVisibleDialog,placeTestBanner,PRODUCTION_ORIGIN,AD_CLIENT,AD_SLOT}=await import("../script/banner-ads-core.mjs");
  const {effectiveMembership}=await import("../script/staff-membership-core.mjs");
  const preview="http://127.0.0.1:5501";
  const paid={ready:true,staff:true,uid:"owner",expiresAt:null,override:"actual"},free={...paid,override:"free"};
@@ -30,6 +30,13 @@ const assert=require("node:assert/strict");
  assert.equal(hasVisibleDialog(root(closed,open)),true);
  assert.equal(bannerSuppressed({placement:"home",dialog:hasVisibleDialog(root(closed))}),false);
  assert.equal(bannerSuppressed({placement:"home",dialog:hasVisibleDialog(root(open))}),true);
+ // Homepage must remain visible outside hidden tab panels.
+ for(const tabsReady of [true,false]){
+  let inserted="";
+  const intro={after:()=>{inserted="after-intro";}};
+  const main={querySelector:selector=>selector===":scope > .ptg-page-intro"&&tabsReady?intro:null,prepend:()=>{inserted="before-sections";},after:()=>{inserted="below-main";}};
+  placeTestBanner(main,{},"home");assert.equal(inserted,tabsReady?"after-intro":"before-sections");
+ }
  assert.equal(AD_CLIENT,"ca-pub-9671323559975419");assert.equal(AD_SLOT,"8870216368");
  console.log("Banner test assertions passed");
 })().catch(error=>{console.error(error);process.exitCode=1;});
