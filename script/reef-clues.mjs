@@ -1,8 +1,13 @@
 // Clues are cosmetic only. Never use this mapping to grant ownership.
-import {CHESS_UNLOCKS} from "./chess-core.mjs";
 export const STORE_AXOLOTL_CLUE="show me your wallet";
 export const REEF_CLUES=Object.freeze({
- ...CHESS_UNLOCKS,
+ rookie:"A crown is waiting at the end of the road.",
+ bishell:"Every great voyage begins with a single triumph.",
+ pawny:"Little victories make a mighty army.",
+ ninite:"An unusual leap can close the final door.",
+ "king-of-the-sea":"One crown is not enough for these waters.",
+ quensy:"Royal grace is most impressive when the waters grow rough.",
+ "professor-squiggles":"My classroom has room for curious minds.",
  hangy:"Every long chain begins with a single link. Mine is made of letters.",
  flippy:"A quarter of a century, but nobody is getting older.",
  magica:"My magic awakens when two digits are no longer enough.",

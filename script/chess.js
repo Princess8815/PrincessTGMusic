@@ -3,7 +3,7 @@ import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/fire
 import {collection,onSnapshot} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 import {axolotlPortrait,axolotlName,axolotlIds} from "./reef-collection.js";
 import {validImage} from "./starlight-model.mjs";
-import {initialChess,moves,playChess,botMove,color,square,BOT_ELO,initialRatings,tournamentMatch,CHESS_UNLOCKS,CHESS_TROPHY,THREE_GG_LABELS,THREE_GG_WAVES,THREE_GG_FEEDS,playerColor,chessDifficultyCoins,CHESS_WIN_COINS,CHESS_TOURNAMENT_COINS,CHESS_CAPTURE_COINS,inCheck} from "./chess-core.mjs";
+import {initialChess,moves,playChess,botMove,color,square,BOT_ELO,initialRatings,tournamentMatch,CHESS_TROPHY,THREE_GG_LABELS,THREE_GG_WAVES,THREE_GG_FEEDS,playerColor,chessDifficultyCoins,CHESS_WIN_COINS,CHESS_TOURNAMENT_COINS,CHESS_CAPTURE_COINS,inCheck} from "./chess-core.mjs";
 const $=id=>document.getElementById(id),G={K:"♔",Q:"♕",R:"♖",B:"♗",N:"♘",P:"♙",k:"♚",q:"♛",r:"♜",b:"♝",n:"♞",p:"♟︎"};
 const endpoint="https://princesstg-cd-store-live.transgirl1991.workers.dev/games/chess",gameSources=new Set(["hanggirl","apple-catcher","cherry-empire","giving-tree","orange-knock-down","peach-panic","shiny-light","chess"]);
 let game=initialChess(),mode="pvp",level=1,whiteLevel=1,selected=-1,busy=false,paused=false,started=false,remote=null,seed=1,owned=[],items=[],trophies=[],unsubs=[],epoch=0,serial=0,botTimer=null,accountRatings=initialRatings(),selectedEntrants=new Set(),request=null,side="w",watching=false;
@@ -108,6 +108,6 @@ $("ch-close-bracket").onclick=()=>$("ch-board-section").scrollIntoView({block:"s
 $("ch-speed").onchange=queueBot;
 for(const [id,prop] of [["ch-light","--ch-light"],["ch-dark","--ch-dark"]])$(id).oninput=()=>$("ch-board").style.setProperty(prop,$(id).value);
 for(const id of ["ch-player-avatar","ch-bot-avatar","ch-white-avatar","ch-pvp-avatar","ch-level","ch-tournament-level"])$(id).onchange=render;
-for(const [id,req] of Object.entries({...CHESS_UNLOCKS,[CHESS_TROPHY[0]]:CHESS_TROPHY[2]})){const li=document.createElement("li");li.textContent=(id===CHESS_TROPHY[0]?CHESS_TROPHY[1]:axolotlName(id))+": "+req;$("ch-unlocks").append(li);}
+const trophyLi=document.createElement("li");trophyLi.textContent=CHESS_TROPHY[1]+": "+CHESS_TROPHY[2];$("ch-unlocks").append(trophyLi);
 onAuthStateChanged(auth,user=>{epoch++;busy=false;watching=false;clearTimeout(botTimer);remote=null;accountRatings=initialRatings();owned=[];items=[];trophies=[];selectedEntrants.clear();unsubs.forEach(fn=>fn());unsubs=[];if(isRemote()){game=initialChess();started=false;mode="pvp";}avatars();if(!user)return;const uid=user.uid;for(const [name,update] of [["axolotls",d=>{owned=d;}],["starlightCollectibles",d=>{items=d;}],["trophies",d=>{trophies=d;}]])unsubs.push(onSnapshot(collection(db,"users",uid,name),snap=>{if(auth.currentUser?.uid!==uid||snap.metadata.hasPendingWrites)return;update(snap.docs.map(x=>({id:x.id,...x.data()})));avatars();},()=>message("Collection unavailable. Local matches are still playable.")));if(user.emailVerified&&!usingLocalFirebaseEmulators){const gen=epoch;api({action:"state"}).then(d=>{if(gen===epoch&&!busy&&(!remote||d.revision>=remote.revision)){remote=d;accountRatings=d.ratings;render();}}).catch(()=>{});}});
 avatars();
