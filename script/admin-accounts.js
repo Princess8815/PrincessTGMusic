@@ -1,5 +1,6 @@
 import {publicError,withErrorCode} from "./site-errors.js";
 import {ageStatus} from "./account-registration.mjs";
+import {memberStatus} from "./digital-packs-core.mjs";
 
 import { auth, db, usingLocalFirebaseEmulators } from "./firebase.js";
 
@@ -45,7 +46,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!section) return;
 
   let accounts = [];
-  let registrations=new Map();
+  let registrations=new Map(),memberships=new Map(),membershipKnown=false;
+  function membershipLabel(uid){if(!membershipKnown)return "Membership unknown";return memberStatus(memberships.get(uid)?.expiresAt?.toMillis?.()??null).status==="paid"?"Paid":"Free";}
   function ageLabel(uid){
     const date=registrations.get(uid)?.birthDate?.toDate?.();
     return ageStatus(date?date.toISOString().slice(0,10):null);
@@ -247,6 +249,7 @@ async function verifyManager() {
       const ageRecords=await getDocsFromServer(collection(db,"accountRegistration"));
       registrations=new Map(ageRecords.docs.map(d=>[d.id,d.data()]));
     }catch(error){registrations.clear();console.warn("Age flags unavailable",error?.code);}
+    try{const records=await getDocsFromServer(collection(db,"memberships"));memberships=new Map(records.docs.map(d=>[d.id,d.data()]));membershipKnown=true;}catch(error){memberships.clear();membershipKnown=false;}
     accounts = snapshot.docs.map(userDoc => ({
       uid: userDoc.id,
       ...userDoc.data()
@@ -300,7 +303,7 @@ async function verifyManager() {
 
       const details = document.createElement("small");
       details.textContent =
-        `${getEmail(data)} | ${describeStatus(data)} | ${ageLabel(data.uid)}`;
+        `${getEmail(data)} | ${describeStatus(data)} | ${ageLabel(data.uid)} | ${membershipLabel(data.uid)}`;
       if(ageLabel(data.uid)==="Under 18")details.style.fontWeight="bold";
 
       button.append(title, details);
@@ -341,7 +344,7 @@ async function verifyManager() {
 
     selectedName.textContent = getName(data);
     selectedEmail.textContent = getEmail(data);
-    currentStatus.textContent = describeStatus(data)+" | "+ageLabel(uid);
+    currentStatus.textContent = describeStatus(data)+" | "+ageLabel(uid)+" | "+membershipLabel(uid);
 
     if (isBanActive(data)) {
       roleSelect.value = "banned";
@@ -620,7 +623,7 @@ await updateDoc(targetRef, {
     const today=new Date().toISOString().slice(0,10);
     if(today===lastAgeDate)return;lastAgeDate=today;renderSearch();
     const selected=accounts.find(a=>a.uid===selectedUid);
-    if(selected)currentStatus.textContent=describeStatus(selected)+" | "+ageLabel(selectedUid);
+    if(selected)currentStatus.textContent=describeStatus(selected)+" | "+ageLabel(selectedUid)+" | "+membershipLabel(selectedUid);
   }
   setInterval(refreshAgeFlags,60000);
   window.addEventListener("focus",refreshAgeFlags);
