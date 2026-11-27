@@ -61,3 +61,11 @@ test("cooldown reflects the longest active rolling limit",()=>{
  assert.equal(verificationWait({ip_hourly:now-3600000+70000,global_daily:now-86400000+90000},now),90000);
  assert.match(STATUS_SQL,/OFFSET 79/);
 });
+
+test("localhost requests retain the public Firebase action link for cross-device verification",()=>{
+ for(const origin of ["http://127.0.0.1:5501","http://localhost:5501"]){
+  const env={STORE_MODE:"live",VERIFICATION_PREVIEW_ORIGIN:origin};
+  assert.equal(verificationPreviewOrigin(env,origin),true);
+  assert.equal(memberActionLink(link,env,origin,true),link);
+ }
+});

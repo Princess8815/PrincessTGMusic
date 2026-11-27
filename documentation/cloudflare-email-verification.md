@@ -19,3 +19,6 @@ The frontend does not force the verification dialog on registration/login or nav
 
 ## Resend countdown
 The disabled Resend verification email button displays a local countdown. A read-only authenticated status endpoint checks the same rolling D1 limits as sending when the verification UI opens, when the countdown expires, or after a failed send. The atomic reservation remains the authority on each send. No per-second database reads, new tables, or IAM permissions are needed. Deploy the Worker before the new frontend; ensure the current preview origin is allowed. Test opening and reopening the dialog, page reload, expiry, and rate limiting across tabs. The local Firebase emulator uses an in-memory cooldown only.
+
+## Local development and cross-device email links
+A localhost verification request can be authorized using the exact VERIFICATION_PREVIEW_ORIGIN, but outgoing email must not use that local address. For HTTP localhost requests the Worker retains Firebase's original public HTTPS verification link, which can be opened from a phone or another computer. Refresh the local website after verification. HTTPS site and authorized preview requests continue using their custom action pages. No additional IAM permissions, migration or secrets are required. Reissue any email sent with a localhost action link after deploying the fix.
