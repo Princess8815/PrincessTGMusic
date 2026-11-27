@@ -41,11 +41,59 @@ export function eloUpdate(a,b,score,k=32){if(![a,b,k].every(Number.isFinite)||![
 export const onlinePvpElo=(a,b,score)=>eloUpdate(a,b,score);
 export const initialRatings=()=>({pvb:1000,pvpOnline:1000,bots:[...BOT_ELO],wins:0,losses:0,tournaments:0});
 export function recordRated(r,level,won){const next={...r,bots:[...r.bots]},e=eloUpdate(r.pvb,r.bots[level-1],won?1:0);next.pvb=e.a;next.bots[level-1]=e.b;next.wins+=won?1:0;next.losses+=won?0:1;return next;}
-export function newTournament(owned,level,format,seed){if(!Array.isArray(owned)||owned.length!==7||new Set(owned).size!==7||owned.some(x=>typeof x!=="string"||!/^[a-z0-9-]{1,64}$/.test(x))||!validLevel(level)||!["single","3gg"].includes(format))throw Error("Choose seven distinct owned game axolotls.");const entrants=["player",...owned],random=rng32(seed);for(let i=entrants.length-1;i>1;i--){const j=1+Math.floor(random()*i);[entrants[i],entrants[j]]=[entrants[j],entrants[i]];}return {level,format,seed,entrants,round:0,matches:[0,2,4,6].map(i=>({a:entrants[i],b:entrants[i+1],winner:null})),history:[],champion:null,complete:false};}
-export function tournamentMatch(t){return t.complete?null:t.matches.find(m=>!m.winner&&(m.a==="player"||m.b==="player"))||null;}
+// Eight-entrant 3GG bracket: opening losers receive another championship-path
+// opportunity even after two losses. Championship reset if the unbeaten finalist loses.
+// Match graph follows the published eight-team seeded three-game-guarantee bracket.
+export const THREE_GG_WAVES=[[1,2,3,4],[5,6,7,8],[9,10,13],[11,12],[14],[15],[16],[17]];
+export const THREE_GG_LABELS=["Opening round","Winners / losers brackets","Winners final / guarantee round","Losers bracket","Losers semifinal","Losers final","Championship","Championship reset"];
+const THREE_GG_FEEDS={
+ 5:["L1","L2"],6:["L3","L4"],7:["W1","W2"],8:["W3","W4"],
+ 9:["L6","W5"],10:["L5","W6"],13:["W7","W8"],
+ 11:["L8","W9"],12:["L7","W10"],14:["W11","W12"],
+ 15:["L13","W14"],16:["W13","W15"],17:["W13","W15"]
+};
+export function newTournament(owned,level,format,seed){
+ if(!Array.isArray(owned)||owned.length!==7||new Set(owned).size!==7||owned.some(x=>typeof x!=="string"||x==="player"||!/^[a-z0-9-]{1,64}$/.test(x))||!validLevel(level)||!["single","3gg"].includes(format))throw Error("Choose seven distinct owned game axolotls.");
+ const entrants=["player",...owned],random=rng32(seed);
+ for(let i=entrants.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[entrants[i],entrants[j]]=[entrants[j],entrants[i]];}
+ return {version:2,level,format,seed,entrants,round:0,matches:[0,2,4,6].map(i=>({id:1+i/2,a:entrants[i],b:entrants[i+1],winner:null})),history:[],champion:null,complete:false};
+}
+export function tournamentMatch(t){return !t||t.complete?null:t.matches.find(m=>!m.winner&&(m.a==="player"||m.b==="player"))||null;}
 const loser=m=>m.winner===m.a?m.b:m.a;
-export function advanceTournament(t,playerWon){if(t.complete)throw Error("Tournament finished.");const next=JSON.parse(JSON.stringify(t)),random=rng32(t.seed+100+t.round);while(!next.complete){const player=tournamentMatch(next);if(player&&typeof playerWon!=="boolean")return next;for(const m of next.matches){if(m.winner)continue;if(m===player){m.winner=playerWon?"player":m.a==="player"?m.b:m.a;m.simulated=false;}else{m.winner=random()<.5?m.a:m.b;m.simulated=true;}}next.history.push({round:next.round,matches:JSON.parse(JSON.stringify(next.matches))});if(next.round===2){next.complete=true;next.champion=next.matches[0].winner;return next;}const ms=next.matches;next.round++;if(next.format==="single"){next.matches=[];for(let i=0;i<ms.length;i+=2)next.matches.push({a:ms[i].winner,b:ms[i+1].winner,winner:null});}
- else if(next.round===1)next.matches=[{a:ms[0].winner,b:ms[1].winner},{a:ms[2].winner,b:ms[3].winner},{a:loser(ms[0]),b:loser(ms[1])},{a:loser(ms[2]),b:loser(ms[3])}];
- else next.matches=[{a:ms[0].winner,b:ms[1].winner},{a:loser(ms[0]),b:loser(ms[1])},{a:ms[2].winner,b:ms[3].winner},{a:loser(ms[2]),b:loser(ms[3])}];
- playerWon=undefined;if(tournamentMatch(next))return next;}return next;}
+function make3ggWave(t){
+ const done=new Map(t.history.flatMap(r=>r.matches).map(m=>[m.id,m]));
+ const resolve=feed=>{const m=done.get(Number(feed.slice(1)));if(!m?.winner)throw Error("Bracket dependency missing.");return feed[0]==="W"?m.winner:loser(m);};
+ return THREE_GG_WAVES[t.round].map(id=>{const [a,b]=THREE_GG_FEEDS[id].map(resolve);if(a===b)throw Error("Duplicate entrant in match.");return {id,a,b,winner:null};});
+}
+export function advanceTournament(t,playerWon){
+ if(t.complete)throw Error("Tournament finished.");
+ const next=JSON.parse(JSON.stringify(t));
+ // Older preview-only 3GG saves had a different structure; do not silently award
+ // a title from those incorrect brackets. They can be explicitly restarted.
+ if(next.format==="3gg"&&next.version!==2)throw Error("This older 3GG bracket needs restarting.");
+ while(!next.complete){
+  const player=tournamentMatch(next);
+  if(player&&typeof playerWon!=="boolean")return next;
+  for(const m of next.matches){
+   if(m.winner)continue;
+   if(m===player){m.winner=playerWon?"player":m.a==="player"?m.b:m.a;m.simulated=false;}
+   else{const random=rng32((next.seed+Math.imul(m.id||next.round+1,0x9e3779b1))>>>0);m.winner=random()<.5?m.a:m.b;m.simulated=true;}
+  }
+  next.history.push({round:next.round,matches:JSON.parse(JSON.stringify(next.matches))});
+  if(next.format==="single"){
+   if(next.round===2){next.complete=true;next.champion=next.matches[0].winner;return next;}
+   const ms=next.matches;next.round++;next.matches=[];
+   for(let i=0;i<ms.length;i+=2)next.matches.push({id:(next.round===1?5:7)+i/2,a:ms[i].winner,b:ms[i+1].winner,winner:null});
+  }else{
+   const last=next.matches[0];
+   // Match 16 pairs the undefeated winners-bracket finalist with the challenger.
+   // Only the challenger winning triggers a reset. Match 17 is decisive.
+   if(last.id===17||last.id===16&&last.winner===last.a){next.complete=true;next.champion=last.winner;return next;}
+   next.round++;next.matches=make3ggWave(next);
+  }
+  playerWon=undefined;
+  if(tournamentMatch(next))return next;
+ }
+ return next;
+}
 export function chessUnlocks(r,game,level,tournamentChampion=false){const ids=[];if(game?.winner==="w"){ids.push("bishell");if(r.wins>=10)ids.push("pawny");if(game.last?.captured==="k"&&game.last.piece==="N")ids.push("ninite");if(level>=5&&game.last?.captured==="k"&&game.last.piece==="Q")ids.push("quensy");}if(tournamentChampion){ids.push("rookie");if(r.tournaments>=10)ids.push("king-of-the-sea");if(level===10)ids.push(CHESS_TROPHY[0]);}return ids;}
