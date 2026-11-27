@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {rewardMultiplier,multiplyGameCoins,gameCoinAward} from "../game-coin-rewards.mjs";
+import {rewardMultiplier,multiplyGameCoins,gameCoinAward,gameRewardPreview} from "../game-coin-rewards.mjs";
 import {initialState,begin,guess,COINS} from "../hanggirl-core.mjs";
 const now=1800000000000;
 const account=(role="user",status="active")=>({updateTime:"account-v1",fields:{role:{stringValue:role},status:{stringValue:status}}});
@@ -28,4 +28,19 @@ test("Hanggirl new base amounts and verified Paid amounts; old completed rounds 
   assert.equal(s.round.awarded,COINS[d]);
   const r=await gameCoinAward({read:async()=>membership(now+1000),root:"documents",uid:"u",account:account(),coins:s.round.awarded,clock:()=>now});assert.equal(r.coins,2*COINS[d]);assert.equal(guess(s,"a"),s);
  }
+});
+
+test("preview Free toggle earns base, preview Paid doubles, live and ordinary purchases remain separate",async()=>{
+ const docs=new Map([["staffTestMembershipOverrides/test",override("free")],["staffMembershipOverrides/test",override("actual")],["memberships/test",membership(now+1000)]]);
+ const ctx={read:async p=>docs.get(p)||null,root:"documents",uid:"test",clock:()=>now,account:account("owner"),coins:10};
+ for(const origin of ["http://127.0.0.1:5501","https://branch.princesstgcreations.pages.dev","https://princess8815.github.io"]){
+  const r=await gameCoinAward({...ctx,preview:gameRewardPreview(origin)});assert.equal(r.coins,10);assert.equal(r.checks[0].verify,"documents/staffTestMembershipOverrides/test");
+ }
+ assert.equal((await gameCoinAward({...ctx,preview:gameRewardPreview("https://princesstgcreations.pages.dev")})).coins,20);
+ docs.set("staffTestMembershipOverrides/test",override("actual"));
+ assert.equal((await gameCoinAward({...ctx,preview:true})).coins,20);
+ docs.set("staffMembershipOverrides/test",override("free"));
+ assert.equal((await gameCoinAward({...ctx,preview:false})).coins,10);
+ assert.equal((await gameCoinAward({...ctx,account:account(),preview:true})).coins,20);
+ docs.delete("memberships/test");assert.equal((await gameCoinAward({...ctx,account:account(),preview:true})).coins,10);
 });

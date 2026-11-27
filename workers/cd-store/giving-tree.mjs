@@ -10,7 +10,7 @@ function validate(input){
  if(!input||!uuid.test(input.requestId||"")||!["sync","plant","water","fertilize","cut","discard","discardMany","clearInventory","throw","upgradeInventory"].includes(input.kind))fail("Invalid garden action.");
  if(input.kind!=="sync"&&(!Number.isSafeInteger(input.revision)||input.revision<0))fail("Refresh your garden first.");
 }
-export async function gardenWithStorage({read,commit,root,uid,input,clock=Date.now,rng=random}){
+export async function gardenWithStorage({read,commit,root,uid,input,clock=Date.now,rng=random,preview=false}){
  validate(input);const user="users/"+uid,path=user+"/privateGames/givingTree",walletPath=user+"/wallets/starCoins";
  for(let attempt=0;attempt<5;attempt++){
   const [account,stored,walletDoc]=await Promise.all([read(user),read(path),read(walletPath)]);
@@ -30,7 +30,7 @@ export async function gardenWithStorage({read,commit,root,uid,input,clock=Date.n
    next.boss50TrophyAwarded=true;
   }
   next.revision=state.revision+1;
-  const baseCoins=fx.coins,award=await gameCoinAward({read,root,uid,account,coins:baseCoins,clock});
+  const baseCoins=fx.coins,award=await gameCoinAward({read,root,uid,account,coins:baseCoins,clock,preview});
   fx.coins=award.coins;next.totalCoins=(next.totalCoins||0)+fx.coins-baseCoins;
   const balance=wallet+fx.coins-fx.spent;
   if(!Number.isSafeInteger(balance)||balance<0)fail("Wallet balance exceeds the supported range.",409);
@@ -45,12 +45,12 @@ export async function gardenWithStorage({read,commit,root,uid,input,clock=Date.n
  }
  fail("Your garden changed while saving. Retry.",409);
 }
-export async function playGivingTree(env,input){
+export async function playGivingTree(env,input,preview=false){
  if(env.STORE_MODE!=="live"||!env.FIREBASE_PROJECT||env.REWARD_FIREBASE_PROJECT!==env.FIREBASE_PROJECT)fail("The Giving Tree service unavailable.",503);
  validate(input);
  const uid=await verifyFirebaseIdentity(env.FIREBASE_PROJECT,input.idToken,true),token=await accessToken(env,env.FIREBASE_PROJECT);
  const root="projects/"+env.FIREBASE_PROJECT+"/databases/(default)/documents",url="https://firestore.googleapis.com/v1/"+root,headers={Authorization:"Bearer "+token,"Content-Type":"application/json"};
  const read=async p=>{const r=await fetch(url+"/"+p.split("/").map(encodeURIComponent).join("/"),{headers});if(r.status===404)return null;if(!r.ok)fail("Garden storage unavailable.",503);return r.json();};
  const commit=async writes=>{const r=await fetch(url+":commit",{method:"POST",headers,body:JSON.stringify({writes})});if(r.ok)return true;const e=await r.json().catch(()=>({}));if([409,412].includes(r.status)||["ABORTED","FAILED_PRECONDITION","ALREADY_EXISTS"].includes(e.error?.status))return false;fail("Garden save not confirmed. Retry to recover your progress.",503);};
- return gardenWithStorage({read,commit,root,uid,input});
+ return gardenWithStorage({read,commit,root,uid,input,preview});
 }

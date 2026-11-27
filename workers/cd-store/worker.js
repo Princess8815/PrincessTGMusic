@@ -1,3 +1,4 @@
+import {gameRewardPreview} from "./game-coin-rewards.mjs";
 // Authoritative CD checkout. No Firebase Admin credentials, no Blaze functions.
 import {storeProducts} from "../../script/store-catalog.js";
 import {rewardProject,rewardAvailable,adminSandboxRewards,verifiedBuyer,verifiedShippingStaff,awardPaidOrder} from "./rewards.js";
@@ -295,14 +296,14 @@ export default {
    if(req.method!=="POST")fail("Not found.",404);
    const b=await body(req,url.pathname==="/surveys/submit"?80000:url.pathname==="/games/shiny-light-editor"?60000:20000);
    if(url.pathname==="/surveys/submit")return json(await submitSurvey(env,b));
-   if(url.pathname==="/games/hanggirl")return json(await playHanggirl(env,b));
-   if(url.pathname==="/games/apple-catcher")return json(await playAppleCatcher(env,b));
-   if(url.pathname==="/games/cherry-empire")return json(await playCherryEmpire(env,b));
-   if(url.pathname==="/games/peach-panic")return json(await playPeachPanic(env,b));
-   if(url.pathname==="/games/giving-tree")return json(await playGivingTree(env,b));
-   if(url.pathname==="/games/orange-knock-down")return json(await playOrangeKnockDown(env,b));
+   if(url.pathname==="/games/hanggirl")return json(await playHanggirl(env,b,gameRewardPreview(origin)));
+   if(url.pathname==="/games/apple-catcher")return json(await playAppleCatcher(env,b,gameRewardPreview(origin)));
+   if(url.pathname==="/games/cherry-empire")return json(await playCherryEmpire(env,b,gameRewardPreview(origin)));
+   if(url.pathname==="/games/peach-panic")return json(await playPeachPanic(env,b,gameRewardPreview(origin)));
+   if(url.pathname==="/games/giving-tree")return json(await playGivingTree(env,b,gameRewardPreview(origin)));
+   if(url.pathname==="/games/orange-knock-down")return json(await playOrangeKnockDown(env,b,gameRewardPreview(origin)));
    if(url.pathname==="/games/orange-editor")return json(await orangeEditor(env,b));
-    if(url.pathname==="/games/shiny-light")return json(await shinyService(env,b));
+    if(url.pathname==="/games/shiny-light")return json(await shinyService(env,b,false,gameRewardPreview(origin)));
     if(url.pathname==="/games/shiny-light-editor")return json(await shinyService(env,b,true));
    if(url.pathname==="/starlight/buy")return json(await buyStarlight(env,b));
    if(url.pathname==="/owner/terminal-commands")return json(await ownerTools(env,b));

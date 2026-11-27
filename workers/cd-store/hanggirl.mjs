@@ -10,7 +10,7 @@ const decode=v=>v?.mapValue?Object.fromEntries(Object.entries(v.mapValue.fields|
 const unpack=doc=>doc?decode({mapValue:{fields:doc.fields}}):null;
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 // Only the live game service can change real balances, including from approved previews.
-export async function playHanggirl(env,input){
+export async function playHanggirl(env,input,preview=false){
  if(env.STORE_MODE!=="live"||!env.FIREBASE_PROJECT||env.REWARD_FIREBASE_PROJECT!==env.FIREBASE_PROJECT)fail("Hanggirl reward service is not configured.",503);
  if(!input||!["state","start","guess","abandon"].includes(input.action))fail("Unknown game action.");
  const {action,roundId,letter,difficulty}=input;
@@ -48,7 +48,7 @@ export async function playHanggirl(env,input){
    {update:{name:root+"/"+accountPath,fields:{}},updateMask:{fieldPaths:[]},currentDocument:{updateTime:account.updateTime}}
   ];
   if(next.round.status==="won"&&state.round.status==="playing"){
-   const award=await gameCoinAward({read,root,uid,account,coins:next.round.awarded});
+   const award=await gameCoinAward({read,root,uid,account,coins:next.round.awarded,preview});
    next.round.awarded=award.coins;writes.push(...award.checks);
    writes.push({update:{name:root+"/"+accountPath+"/wallets/starCoins",fields:fields({currency:"starCoins"})},updateMask:{fieldPaths:["currency"]},updateTransforms:[{fieldPath:"balance",increment:{integerValue:String(next.round.awarded)}}]});
    for(const item of next.round.unlocks){

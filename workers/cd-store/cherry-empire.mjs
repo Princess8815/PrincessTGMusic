@@ -15,7 +15,7 @@ function validate(input){
  if(["harvest","upgrade","prestige"].includes(input.kind)&&(!Number.isInteger(input.treeId)||input.treeId<1||input.treeId>12))fail("Invalid tree.");
  if(input.kind==="upgrade"&&!["speed","yield","auto","capacity","star","starMultiplier"].includes(input.upgrade))fail("Invalid upgrade.");
 }
-export async function orchardWithStorage({read,commit,root,uid,input,clock=Date.now,rng=secureRandom}){
+export async function orchardWithStorage({read,commit,root,uid,input,clock=Date.now,rng=secureRandom,preview=false}){
  validate(input);
  const user="users/"+uid,path=user+"/privateGames/cherryEmpire";
  for(let attempt=0;attempt<5;attempt++){
@@ -27,7 +27,7 @@ export async function orchardWithStorage({read,commit,root,uid,input,clock=Date.
   if(input.kind!=="sync"&&input.revision!==state.revision)return {state,serverNow:now,conflict:true,message:"Your orchard changed in another tab. Review the updated state and try again.",rewards:[],effects:{cherries:0,coins:0,harvests:0},applied:false};
   const result=applyAction(state,input,now,(n,p)=>binomial(n,p,rng));
   const next=result.state,fx=result.effects,rewards=[];
-  const award=await gameCoinAward({read,root,uid,account,coins:fx.coins,clock});
+  const award=await gameCoinAward({read,root,uid,account,coins:fx.coins,clock,preview});
   for(const id of rewardCandidates(fx,rng)){
    if(!await read(user+"/axolotls/"+id))rewards.push(id);
   }
@@ -50,12 +50,12 @@ export async function orchardWithStorage({read,commit,root,uid,input,clock=Date.
  }
  fail("Orchard changed while saving. Retry to refresh.",409);
 }
-export async function playCherryEmpire(env,input){
+export async function playCherryEmpire(env,input,preview=false){
  if(env.STORE_MODE!=="live"||!env.FIREBASE_PROJECT||env.REWARD_FIREBASE_PROJECT!==env.FIREBASE_PROJECT)fail("Cherry Empire service is not configured.",503);
  validate(input);
  const uid=await verifyFirebaseIdentity(env.FIREBASE_PROJECT,input.idToken,true),token=await accessToken(env,env.FIREBASE_PROJECT);
  const root="projects/"+env.FIREBASE_PROJECT+"/databases/(default)/documents",url="https://firestore.googleapis.com/v1/"+root,headers={Authorization:"Bearer "+token,"Content-Type":"application/json"};
  const read=async p=>{const r=await fetch(url+"/"+p.split("/").map(encodeURIComponent).join("/"),{headers});if(r.status===404)return null;if(!r.ok)fail("Orchard storage unavailable.",503);return r.json();};
  const commit=async writes=>{const r=await fetch(url+":commit",{method:"POST",headers,body:JSON.stringify({writes})});if(r.ok)return true;const e=await r.json().catch(()=>({}));if([409,412].includes(r.status)||["ABORTED","FAILED_PRECONDITION","ALREADY_EXISTS"].includes(e.error?.status))return false;fail("Orchard save not confirmed. Retry to recover your progress.",503);};
- return orchardWithStorage({read,commit,root,uid,input});
+ return orchardWithStorage({read,commit,root,uid,input,preview});
 }

@@ -7,7 +7,7 @@ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
 const secureRandom=()=>(crypto.getRandomValues(new Uint32Array(1))[0]+.5)/4294967296;
 const str=v=>({stringValue:v});
 const present=(run,now)=>run?{...run,serverNow:now}:{best:0,serverNow:now,closed:true};
-export async function peachWithStorage({read,commit,root,uid,input,clock=Date.now,rng=secureRandom,seed=()=>crypto.getRandomValues(new Uint32Array(1))[0]}){
+export async function peachWithStorage({read,commit,root,uid,input,clock=Date.now,rng=secureRandom,seed=()=>crypto.getRandomValues(new Uint32Array(1))[0],preview=false}){
  if(!input||!["start","state","finish"].includes(input.action)||input.action!=="state"&&!uuid.test(input.runId||""))fail("Invalid Peach Panic request.");
  const user="users/"+uid,path=user+"/privateGames/peachPanic";
  for(let attempt=0;attempt<5;attempt++){
@@ -30,7 +30,7 @@ export async function peachWithStorage({read,commit,root,uid,input,clock=Date.no
     const dest=user+"/"+(id===PEACH_TROPHY[0]?"trophies":"axolotls")+"/"+id;
     if(!await read(dest))rewards.push(id);
    }
-   const award=await gameCoinAward({read,root,uid,account,coins:result.coins,clock});result.coins=award.coins;checks=award.checks;
+   const award=await gameCoinAward({read,root,uid,account,coins:result.coins,clock,preview});result.coins=award.coins;checks=award.checks;
    run={...previous,closed:true,best:Math.max(previous.best,result.score),result,rewards};
   }
   const writes=[{verify:root+"/"+user,currentDocument:{updateTime:account.updateTime}},
@@ -47,11 +47,11 @@ export async function peachWithStorage({read,commit,root,uid,input,clock=Date.no
  }
  fail("Your game changed in another tab. Retry.",409);
 }
-export async function playPeachPanic(env,input){
+export async function playPeachPanic(env,input,preview=false){
  if(env.STORE_MODE!=="live"||!env.FIREBASE_PROJECT||env.REWARD_FIREBASE_PROJECT!==env.FIREBASE_PROJECT)fail("Peach Panic service unavailable.",503);
  const uid=await verifyFirebaseIdentity(env.FIREBASE_PROJECT,input?.idToken,true),token=await accessToken(env,env.FIREBASE_PROJECT);
  const root="projects/"+env.FIREBASE_PROJECT+"/databases/(default)/documents",url="https://firestore.googleapis.com/v1/"+root,headers={Authorization:"Bearer "+token,"Content-Type":"application/json"};
  const read=async p=>{const res=await fetch(url+"/"+p.split("/").map(encodeURIComponent).join("/"),{headers});if(res.status===404)return null;if(!res.ok)fail("Game storage unavailable.",503);return res.json();};
  const commit=async writes=>{const res=await fetch(url+":commit",{method:"POST",headers,body:JSON.stringify({writes})});if(res.ok)return true;const e=await res.json().catch(()=>({}));if([409,412].includes(res.status)||["ABORTED","FAILED_PRECONDITION","ALREADY_EXISTS"].includes(e.error?.status))return false;fail("Game save not confirmed. Retry to recover your result.",503);};
- return peachWithStorage({read,commit,root,uid,input});
+ return peachWithStorage({read,commit,root,uid,input,preview});
 }

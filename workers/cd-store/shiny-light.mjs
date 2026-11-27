@@ -32,7 +32,7 @@ function view(state){
 function response(state,wallet,extra={}){
  return {state,wallet,view:extra.view??view(state),coins:0,rewards:[],...extra};
 }
-export async function shinyGameAction({read,commit,root,uid,input,rng=random,clock=Date.now}){
+export async function shinyGameAction({read,commit,root,uid,input,rng=random,clock=Date.now,preview=false}){
  const kind=input?.kind;
  if(!["state","check","rotate","move","retry","next","selectLevel","resetCampaign","levels"].includes(kind))fail("Unknown puzzle action.");
  if(kind==="levels"&&(!Number.isInteger(input.page)||input.page<0||input.page>Math.floor((MAX_LEVEL-1)/30)))fail("Invalid level page.");
@@ -110,7 +110,7 @@ export async function shinyGameAction({read,commit,root,uid,input,rng=random,clo
    state.bananaTrophyAwarded=true;
   }
   if(kind!=="state")state.revision++;
-  const award=await gameCoinAward({read,root,uid,account,coins,clock});coins=award.coins;
+  const award=await gameCoinAward({read,root,uid,account,coins,clock,preview});coins=award.coins;
   if(coins)message+=" +"+coins+" Star Coins.";
   const lastResult={coins,rewards,message},writes=[
    {verify:root+"/"+user,currentDocument:pre(account)},
@@ -189,7 +189,7 @@ export async function shinyEditorAction({read,commit,root,uid,input,list,makeId=
  if(!await commit(writes))fail("Level changed during save. Reload and retry.",409);
  return {ok:true,id};
 }
-export async function shinyService(env,input,editor=false){
+export async function shinyService(env,input,editor=false,preview=false){
  if(env.STORE_MODE!=="live"||!env.FIREBASE_PROJECT||env.REWARD_FIREBASE_PROJECT!==env.FIREBASE_PROJECT)fail("Puzzle service unavailable.",503);
  const publicAction=editor&&["config","load","browse","loadCommunity"].includes(input?.action);
  const uid=publicAction?null:await verifyFirebaseIdentity(env.FIREBASE_PROJECT,input?.idToken,true),token=await accessToken(env,env.FIREBASE_PROJECT);
@@ -197,5 +197,5 @@ export async function shinyService(env,input,editor=false){
  const read=async p=>{const r=await fetch(url+"/"+p.split("/").map(encodeURIComponent).join("/"),{headers});if(r.status===404)return null;if(!r.ok)fail("Puzzle storage unavailable.",503);return r.json();};
  const commit=async writes=>{const r=await fetch(url+":commit",{method:"POST",headers,body:JSON.stringify({writes})});if(r.ok)return true;const e=await r.json().catch(()=>({}));if([409,412].includes(r.status)||["ABORTED","FAILED_PRECONDITION","ALREADY_EXISTS"].includes(e.error?.status))return false;fail("Puzzle save not confirmed. Retry the same action.",503);};
  const list=async(p,cursor)=>{const q=new URLSearchParams({pageSize:"20","mask.fieldPaths":"title"});if(cursor)q.set("pageToken",cursor);const r=await fetch(url+"/"+p+"?"+q,{headers});if(!r.ok)fail("Community levels unavailable.",503);const d=await r.json();return {...d,documents:d.documents||[]};};
- try{return await (editor?shinyEditorAction:shinyGameAction)({read,commit,root,uid,input,list});}catch(e){if(e.status)throw e;throw Object.assign(Error(e.message),{status:400});}
+ try{return await (editor?shinyEditorAction:shinyGameAction)({read,commit,root,uid,input,list,preview});}catch(e){if(e.status)throw e;throw Object.assign(Error(e.message),{status:400});}
 }

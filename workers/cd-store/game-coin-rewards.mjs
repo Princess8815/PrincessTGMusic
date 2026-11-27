@@ -1,5 +1,6 @@
 // Only trusted server-side documents determine game reward membership.
-// Preview staff overrides never affect real wallets.
+// Browser previews use their matching staff self-test override. Regular accounts
+// always use the real purchased membership; a preview flag cannot grant Paid.
 export function rewardMultiplier(account,membership,override,now=Date.now()){
  const role=account?.fields?.role?.stringValue,status=account?.fields?.status?.stringValue??"active";
  if(!account||status!=="active"||role==="banned")return 1;
@@ -13,10 +14,12 @@ export function multiplyGameCoins(coins,multiplier){
  if(!Number.isSafeInteger(result))throw Error("Game reward exceeds supported range.");
  return result;
 }
-export async function gameCoinAward({read,root,uid,account,coins,clock=Date.now}){
+// The HTTP router passes the already-allowed Origin separately from JSON input.
+export const gameRewardPreview=origin=>!!origin&&origin!=="https://princesstgcreations.pages.dev";
+export async function gameCoinAward({read,root,uid,account,coins,clock=Date.now,preview=false}){
  if(coins<=0)return {coins:multiplyGameCoins(coins,1),checks:[]};
  const staff=["admin","owner"].includes(account?.fields?.role?.stringValue);
- const path=(staff?"staffMembershipOverrides/":"memberships/")+encodeURIComponent(uid);
+ const path=(staff?(preview?"staffTestMembershipOverrides/":"staffMembershipOverrides/"):"memberships/")+encodeURIComponent(uid);
  const doc=await read(path);
  const multiplier=rewardMultiplier(account,staff?null:doc,staff?doc:null,clock());
  // A concurrent renewal or staff toggle causes the existing game transaction

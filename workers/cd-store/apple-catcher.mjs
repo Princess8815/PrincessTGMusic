@@ -8,7 +8,7 @@ const str=v=>({stringValue:v}),integer=v=>({integerValue:String(v)});
 const randomInt=n=>{const max=Math.floor(4294967296/n)*n;let v;do{v=crypto.getRandomValues(new Uint32Array(1))[0];}while(v>=max);return v%n;};
 function unpack(d){return d?JSON.parse(d.fields.payload.stringValue):null;}
 const present=(run,rewards=[])=>({runId:run.id,state:run.game,best:run.best,credited:run.creditedCoins??run.game.score,rewards,closed:run.closed});
-export async function playAppleCatcher(env,input){
+export async function playAppleCatcher(env,input,preview=false){
  if(env.STORE_MODE!=="live"||!env.FIREBASE_PROJECT||env.REWARD_FIREBASE_PROJECT!==env.FIREBASE_PROJECT)fail("Apple Catcher service unavailable.",503);
  if(!input||!["start","state","checkpoint","finish"].includes(input.action))fail("Invalid game action.");
  if(input.action!=="state"&&!idPattern.test(input.runId||""))fail("Invalid run.");
@@ -34,7 +34,7 @@ export async function playAppleCatcher(env,input){
    if(!Number.isInteger(input.to)||input.to-prev.game.tick>MAX_BATCH)fail("Invalid checkpoint.");
    if((input.to-prev.game.tick)*TICK_MS>Date.now()-prev.savedAt+1200)fail("Checkpoint arrived too soon. Retry.",409);
    let result;try{result=replay(prev.game,input.to,input.moves);}catch(e){fail(e.message);}
-   const award=await gameCoinAward({read,root,uid,account,coins:result.catches.length});coins=award.coins;checks=award.checks;
+   const award=await gameCoinAward({read,root,uid,account,coins:result.catches.length,preview});coins=award.coins;checks=award.checks;
    const candidates=rollRewards(result.catches,randomInt);
    for(const id of candidates){
     const dest=user+"/"+(id==="apple-tree-basket"?"trophies":"axolotls")+"/"+id;

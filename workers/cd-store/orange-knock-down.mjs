@@ -36,7 +36,7 @@ export async function configuredOrangeLevel(read,state){
  state.board=boardFromMap(state.levelMap);
  return state;
 }
-export async function orangeWithStorage({read,commit,root,uid,input,clock=Date.now,rng=secureRandom,seed=()=>crypto.getRandomValues(new Uint32Array(1))[0],configure=null}){
+export async function orangeWithStorage({read,commit,root,uid,input,clock=Date.now,rng=secureRandom,seed=()=>crypto.getRandomValues(new Uint32Array(1))[0],configure=null,preview=false}){
  if(!input||!["state","shot","buy","retry","next","resetCampaign","selectLevel","levels"].includes(input.kind))fail("Invalid game action.");
  if(input.kind==="levels"&&(!Number.isInteger(input.page)||input.page<0||input.page>pageFor(1000000)))fail("Invalid level page.");
  if(!["state","levels"].includes(input.kind)&&(!uuid.test(input.requestId||"")||!Number.isSafeInteger(input.revision)||input.revision<0))fail("Refresh your game first.");
@@ -80,7 +80,7 @@ export async function orangeWithStorage({read,commit,root,uid,input,clock=Date.n
    if(!await read(user+"/trophies/"+ORANGE_TROPHY[0]))rewards.push(ORANGE_TROPHY[0]);
    next.level1000TrophyAwarded=true;
   }
-  const baseCoins=result.coins,award=await gameCoinAward({read,root,uid,account,coins:baseCoins,clock});
+  const baseCoins=result.coins,award=await gameCoinAward({read,root,uid,account,coins:baseCoins,clock,preview});
   result.coins=award.coins;
   if(award.coins>baseCoins)result.message=result.message.replace(/\+\d+ Star Coins\./,"+"+award.coins+" Star Coins (Paid 2×).");
   const balance=wallet+result.coins;if(!Number.isSafeInteger(balance)||balance<0)fail("Wallet unavailable.",409);
@@ -95,11 +95,11 @@ export async function orangeWithStorage({read,commit,root,uid,input,clock=Date.n
  }
  fail("Game changed while saving. Retry.",409);
 }
-export async function playOrangeKnockDown(env,input){
+export async function playOrangeKnockDown(env,input,preview=false){
  if(env.STORE_MODE!=="live"||!env.FIREBASE_PROJECT||env.REWARD_FIREBASE_PROJECT!==env.FIREBASE_PROJECT)fail("Orange Knock Down service unavailable.",503);
  const uid=await verifyFirebaseIdentity(env.FIREBASE_PROJECT,input?.idToken,true),token=await accessToken(env,env.FIREBASE_PROJECT);
  const root="projects/"+env.FIREBASE_PROJECT+"/databases/(default)/documents",url="https://firestore.googleapis.com/v1/"+root,headers={Authorization:"Bearer "+token,"Content-Type":"application/json"};
  const read=async p=>{const r=await fetch(url+"/"+p.split("/").map(encodeURIComponent).join("/"),{headers});if(r.status===404)return null;if(!r.ok)fail("Game storage unavailable.",503);return r.json();};
  const commit=async writes=>{const r=await fetch(url+":commit",{method:"POST",headers,body:JSON.stringify({writes})});if(r.ok)return true;const e=await r.json().catch(()=>({}));if([409,412].includes(r.status)||["ABORTED","FAILED_PRECONDITION","ALREADY_EXISTS"].includes(e.error?.status))return false;fail("Game save not confirmed. Retry to recover your result.",503);};
- return orangeWithStorage({read,commit,root,uid,input,configure:configuredOrangeLevel});
+ return orangeWithStorage({read,commit,root,uid,input,configure:configuredOrangeLevel,preview});
 }
