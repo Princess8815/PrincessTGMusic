@@ -110,3 +110,11 @@ export function tournamentBotMatch(t,id){return !t||t.complete?null:t.matches.fi
 export const tournamentBotSeed=(t,m)=>(t.seed+Math.imul(m.id,0x9e3779b1))>>>0;
 export function tournamentBotPly(game,level,seed){if(game.winner)return game;const m=botMove(game,level,seed+(game.turn==="w"?91:0));return m?playChess(game,m):game;}
 export function chessUnlocks(r,game,level,tournamentChampion=false,side="w"){const ids=[];if(playerWon(game,side)){ids.push("bishell");if(r.wins>=10)ids.push("pawny");if(game.last?.captured?.toLowerCase()==="k"&&game.last.piece?.toLowerCase()==="n")ids.push("ninite");if(level>=5&&game.last?.captured?.toLowerCase()==="k"&&game.last.piece?.toLowerCase()==="q")ids.push("quensy");}if(tournamentChampion){ids.push("rookie");if(r.tournaments>=10)ids.push("king-of-the-sea");if(level===10)ids.push(CHESS_TROPHY[0]);}return ids;}
+
+// Capture earnings are capped per naturally completed rated game. A resignation forfeits pending captures.
+export const CHESS_CAPTURE_COINS=Object.freeze({p:1,n:3,b:3,r:5,q:9,k:10});
+export const CHESS_CAPTURE_CAP=60;
+export const CHESS_WIN_COINS=20;
+export const CHESS_TOURNAMENT_COINS=50;
+export const captureCoins=piece=>CHESS_CAPTURE_COINS[piece?.toLowerCase()]||0;
+export const chessMatchCoins=(pending,game,side)=>game?.winner&&game.reason!=="resigned"?Math.min(CHESS_CAPTURE_CAP,Math.max(0,pending||0))+(game.winner===side?CHESS_WIN_COINS:0):0;

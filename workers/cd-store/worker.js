@@ -297,7 +297,7 @@ export default {
    if(req.method!=="POST")fail("Not found.",404);
    const b=await body(req,url.pathname==="/surveys/submit"?80000:url.pathname==="/games/shiny-light-editor"?60000:20000);
    if(url.pathname==="/surveys/submit")return json(await submitSurvey(env,b));
-   if(url.pathname==="/games/chess")return json(await chessService(env,b));
+   if(url.pathname==="/games/chess")return json(await chessService(env,b,gameRewardPreview(origin)));
    if(url.pathname==="/games/hanggirl")return json(await playHanggirl(env,b,gameRewardPreview(origin)));
    if(url.pathname==="/games/apple-catcher")return json(await playAppleCatcher(env,b,gameRewardPreview(origin)));
    if(url.pathname==="/games/cherry-empire")return json(await playCherryEmpire(env,b,gameRewardPreview(origin)));
