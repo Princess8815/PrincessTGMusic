@@ -215,5 +215,5 @@ export function proceduralDesign(level,milestones=defaultMilestones(),solution=f
  if(allowBranch&&branchTargets.length){const solved={...design,tiles:design.tiles.map(t=>{const turn=turns.find(x=>x.i===t.i);return turn?{...t,dir:t.type==="oneWay"?turn.incoming:turn.solutionDir}:t;})};const result=settleLight(solved,initialBoard(solved));if(!result.won||result.stars.length!==3)return proceduralDesign(level,milestones,solution,false);}
  return design;
 }
-export const shinyChance=level=>level>10?.01:0;
+export const shinyChance=level=>level>10?.05:0;
 export const fruiterChance=level=>Math.min(1,(1+.25*(level-1))/10000);

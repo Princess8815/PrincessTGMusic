@@ -46,7 +46,7 @@ test("procedural fallback solvability, grid range and difficulty schedule",()=>{
   const solved=proceduralDesign(l,defaultMilestones(),true),r=light(solved);assert.ok(solved.width>=3&&solved.width<=15);assert.equal(r.won,true);assert.equal(r.stars.length,3);assert.equal(light(proceduralDesign(l)).won,false);
  }
  assert.equal(difficulty(14),"normal");assert.equal(difficulty(24),"hard");assert.equal(difficulty(29),"super-hard");assert.equal(difficulty(34),"hard");assert.equal(difficulty(39),"super-hard");
- assert.equal(shinyChance(10),0);assert.ok(shinyChance(11)>0);assert.ok(fruiterChance(2)>fruiterChance(1));
+ assert.equal(shinyChance(10),0);assert.equal(shinyChance(11),.05);assert.equal(shinyChance(100),.05);assert.ok(fruiterChance(2)>fruiterChance(1));
 });
 test("trusted reward commits are idempotent, replay/reset cannot duplicate coins and stars reset",async()=>{
  const uid="test-user",user="users/"+uid,root="docs",wp=user+"/wallets/starCoins";
