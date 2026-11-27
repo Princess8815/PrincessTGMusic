@@ -46,7 +46,7 @@ export function recordRated(r,level,won){const next={...r,bots:[...r.bots]},e=el
 // Match graph follows the published eight-team seeded three-game-guarantee bracket.
 export const THREE_GG_WAVES=[[1,2,3,4],[5,6,7,8],[9,10,13],[11,12],[14],[15],[16],[17]];
 export const THREE_GG_LABELS=["Opening round","Winners / losers brackets","Winners final / guarantee round","Losers bracket","Losers semifinal","Losers final","Championship","Championship reset"];
-const THREE_GG_FEEDS={
+export const THREE_GG_FEEDS={
  5:["L1","L2"],6:["L3","L4"],7:["W1","W2"],8:["W3","W4"],
  9:["L6","W5"],10:["L5","W6"],13:["W7","W8"],
  11:["L8","W9"],12:["L7","W10"],14:["W11","W12"],
@@ -65,35 +65,48 @@ function make3ggWave(t){
  const resolve=feed=>{const m=done.get(Number(feed.slice(1)));if(!m?.winner)throw Error("Bracket dependency missing.");return feed[0]==="W"?m.winner:loser(m);};
  return THREE_GG_WAVES[t.round].map(id=>{const [a,b]=THREE_GG_FEEDS[id].map(resolve);if(a===b)throw Error("Duplicate entrant in match.");return {id,a,b,winner:null};});
 }
-export function advanceTournament(t,playerWon){
- if(t.complete)throw Error("Tournament finished.");
+export function tournamentSimWinner(t,m){const random=rng32((t.seed+Math.imul(m.id||t.round+1,0x9e3779b1))>>>0);return random()<.5?m.a:m.b;}
+export function recordTournamentResult(t,id,winner,simulated=false){
+ if(!t||t.complete)throw Error("Tournament finished.");
  const next=JSON.parse(JSON.stringify(t));
- // Older preview-only 3GG saves had a different structure; do not silently award
- // a title from those incorrect brackets. They can be explicitly restarted.
  if(next.format==="3gg"&&next.version!==2)throw Error("This older 3GG bracket needs restarting.");
- while(!next.complete){
-  const player=tournamentMatch(next);
-  if(player&&typeof playerWon!=="boolean")return next;
-  for(const m of next.matches){
-   if(m.winner)continue;
-   if(m===player){m.winner=playerWon?"player":m.a==="player"?m.b:m.a;m.simulated=false;}
-   else{const random=rng32((next.seed+Math.imul(m.id||next.round+1,0x9e3779b1))>>>0);m.winner=random()<.5?m.a:m.b;m.simulated=true;}
-  }
-  next.history.push({round:next.round,matches:JSON.parse(JSON.stringify(next.matches))});
-  if(next.format==="single"){
-   if(next.round===2){next.complete=true;next.champion=next.matches[0].winner;return next;}
-   const ms=next.matches;next.round++;next.matches=[];
-   for(let i=0;i<ms.length;i+=2)next.matches.push({id:(next.round===1?5:7)+i/2,a:ms[i].winner,b:ms[i+1].winner,winner:null});
-  }else{
-   const last=next.matches[0];
-   // Match 16 pairs the undefeated winners-bracket finalist with the challenger.
-   // Only the challenger winning triggers a reset. Match 17 is decisive.
-   if(last.id===17||last.id===16&&last.winner===last.a){next.complete=true;next.champion=last.winner;return next;}
-   next.round++;next.matches=make3ggWave(next);
-  }
-  playerWon=undefined;
-  if(tournamentMatch(next))return next;
+ const match=next.matches.find(m=>m.id===id);
+ if(!match||match.winner||![match.a,match.b].includes(winner))throw Error("Invalid tournament result.");
+ match.winner=winner;match.simulated=simulated;
+ if(next.matches.some(m=>!m.winner))return next;
+ next.history.push({round:next.round,matches:JSON.parse(JSON.stringify(next.matches))});
+ if(next.format==="single"){
+  if(next.round===2){next.complete=true;next.champion=next.matches[0].winner;return next;}
+  const ms=next.matches;next.round++;next.matches=[];
+  for(let i=0;i<ms.length;i+=2)next.matches.push({id:(next.round===1?5:7)+i/2,a:ms[i].winner,b:ms[i+1].winner,winner:null});
+ }else{
+  const last=next.matches[0];
+  if(last.id===17||last.id===16&&last.winner===last.a){next.complete=true;next.champion=last.winner;return next;}
+  next.round++;next.matches=make3ggWave(next);
  }
  return next;
 }
-export function chessUnlocks(r,game,level,tournamentChampion=false){const ids=[];if(game?.winner==="w"){ids.push("bishell");if(r.wins>=10)ids.push("pawny");if(game.last?.captured==="k"&&game.last.piece==="N")ids.push("ninite");if(level>=5&&game.last?.captured==="k"&&game.last.piece==="Q")ids.push("quensy");}if(tournamentChampion){ids.push("rookie");if(r.tournaments>=10)ids.push("king-of-the-sea");if(level===10)ids.push(CHESS_TROPHY[0]);}return ids;}
+// Compatibility helper for automated bracket scenarios. Interactive play uses
+// recordTournamentResult and waits for explicit bot-game choices.
+export function advanceTournament(t,playerWon){
+ let next=t;
+ while(!next.complete){
+  const player=tournamentMatch(next);
+  if(player&&typeof playerWon!=="boolean")return next;
+  const round=next.round;
+  for(const m of next.matches.filter(m=>!m.winner)){
+   const human=m.a==="player"||m.b==="player";
+   next=recordTournamentResult(next,m.id,human?(playerWon?"player":m.a==="player"?m.b:m.a):tournamentSimWinner(next,m),!human);
+  }
+  playerWon=undefined;
+  if(next.round===round||tournamentMatch(next))return next;
+ }
+ return next;
+}
+export function playerColor(choice,seed){if(!["w","b","random"].includes(choice))throw Error("Choose White, Black or Random.");return choice==="random"?(seed>>>0)%2?"b":"w":choice;}
+export function startPlayerChess(side,level,seed){let g=initialChess();if(side==="b")g=playChess(g,botMove(g,level,seed));return g;}
+export function playerWon(game,side){return game?.winner===side;}
+export function tournamentBotMatch(t,id){return !t||t.complete?null:t.matches.find(m=>m.id===id&&!m.winner&&m.a!=="player"&&m.b!=="player")||null;}
+export const tournamentBotSeed=(t,m)=>(t.seed+Math.imul(m.id,0x9e3779b1))>>>0;
+export function tournamentBotPly(game,level,seed){if(game.winner)return game;const m=botMove(game,level,seed+(game.turn==="w"?91:0));return m?playChess(game,m):game;}
+export function chessUnlocks(r,game,level,tournamentChampion=false,side="w"){const ids=[];if(playerWon(game,side)){ids.push("bishell");if(r.wins>=10)ids.push("pawny");if(game.last?.captured?.toLowerCase()==="k"&&game.last.piece?.toLowerCase()==="n")ids.push("ninite");if(level>=5&&game.last?.captured?.toLowerCase()==="k"&&game.last.piece?.toLowerCase()==="q")ids.push("quensy");}if(tournamentChampion){ids.push("rookie");if(r.tournaments>=10)ids.push("king-of-the-sea");if(level===10)ids.push(CHESS_TROPHY[0]);}return ids;}

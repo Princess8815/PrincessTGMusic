@@ -1,14 +1,14 @@
 import {accessToken,verifyFirebaseIdentity} from "./rewards.js";
-import {initialChess,botMove,playChess,initialRatings,recordRated,newTournament,tournamentMatch,advanceTournament,chessUnlocks,validLevel,CHESS_TROPHY} from "../../script/chess-core.mjs";
+import {initialChess,botMove,playChess,initialRatings,recordRated,newTournament,tournamentMatch,recordTournamentResult,tournamentSimWinner,tournamentBotMatch,tournamentBotSeed,tournamentBotPly,playerColor,startPlayerChess,playerWon,other,chessUnlocks,validLevel,CHESS_TROPHY} from "../../script/chess-core.mjs";
 const fail=(message,status=400)=>{throw Object.assign(Error(message),{status});};
 const str=stringValue=>({stringValue}),pre=d=>d?{updateTime:d.updateTime}:{exists:false};
 const idOK=s=>typeof s==="string"&&/^[a-z0-9-]{1,64}$/.test(s);
 const unpack=d=>d?JSON.parse(d.fields.payload.stringValue):null;
 const write=(root,path,data,old)=>({update:{name:root+"/"+path,fields:{payload:str(JSON.stringify(data))}},currentDocument:pre(old)});
-const present=(state,extra={})=>({revision:state.revision,ratings:state.ratings,game:state.game,mode:state.mode,level:state.level,tournament:state.tournament,rewards:[],...extra});
+const present=(state,extra={})=>({revision:state.revision,ratings:state.ratings,game:state.game,mode:state.mode,level:state.level,tournament:state.tournament,side:state.side||"w",colorChoice:state.colorChoice||"w",playerMatchId:state.playerMatchId??null,spectator:state.spectator||null,rewards:[],...extra});
 export async function chessWithStorage({read,commit,root,uid,input,seed=()=>crypto.getRandomValues(new Uint32Array(1))[0]}){
  const user="users/"+uid,path=user+"/privateGames/chess";
- if(!input||!["state","start","move","next","resign"].includes(input.action))fail("Unknown chess action.");
+ if(!input||!["state","start","move","next","resign","bot-watch","bot-step","bot-simulate"].includes(input.action))fail("Unknown chess action.");
  for(let attempt=0;attempt<4;attempt++){
   const [account,old]=await Promise.all([read(user),read(path)]);
   if(!account?.updateTime||(account.fields?.status?.stringValue||"active")!=="active"||account.fields?.role?.stringValue==="banned")fail("Active verified account required.",403);
@@ -18,36 +18,68 @@ export async function chessWithStorage({read,commit,root,uid,input,seed=()=>cryp
   if(state.lastRequest===input.requestId)return present(state,{rewards:state.lastRewards||[]});
   if(state.revision!==input.revision)fail("Chess changed in another tab. Reload your match.",409);
   let rewards=[],checks=[];
+  const wasChampion=state.tournament?.complete&&state.tournament.champion==="player";
+  let completedPlayerGame=false;
+  function startGame(){
+   state.seed=seed();state.side=playerColor(state.colorChoice||"w",state.seed);
+   state.game=startPlayerChess(state.side,state.level,state.seed);
+   state.playerMatchId=state.mode==="tournament"?tournamentMatch(state.tournament)?.id??null:null;
+  }
   if(input.action==="start"){
    if(state.game&&!state.game.winner)fail("Finish or resign the current match first.",409);
    if(state.tournament&&!state.tournament.complete)fail("Complete the current tournament first.",409);
    if(!validLevel(input.level)||!["pvb","tournament"].includes(input.mode))fail("Invalid match settings.");
-   state.level=input.level;state.mode=input.mode;state.seed=seed();state.game=initialChess();state.tournament=null;
+   state.level=input.level;state.mode=input.mode;state.seed=seed();state.colorChoice=input.colorChoice??"w";playerColor(state.colorChoice,state.seed);
+   state.tournament=null;state.spectator=null;state.playerMatchId=null;
    if(input.mode==="tournament"){
     state.tournament=newTournament(input.entrants,input.level,input.format,state.seed);
     for(const id of input.entrants){
-     // Only game-earned axolotl documents with a trusted game source qualify.
      const p=user+"/axolotls/"+id,d=await read(p);
      if(!d||!["hanggirl","apple-catcher","cherry-empire","giving-tree","orange-knock-down","peach-panic","shiny-light","chess"].includes(d.fields?.source?.stringValue))fail("Tournament requires seven distinct owned game-earned axolotls.",403);
      checks.push({verify:root+"/"+p,currentDocument:pre(d)});
     }
    }
+   startGame();
   }else if(input.action==="next"){
-   if(state.mode!=="tournament"||!state.tournament||state.tournament.complete||!state.game?.winner||!tournamentMatch(state.tournament))fail("No next tournament match.");
-   state.game=initialChess();state.seed=seed();
+   if(state.mode!=="tournament"||!state.tournament||state.tournament.complete||!state.game?.winner||!tournamentMatch(state.tournament))fail("No next tournament match. Finish the pending bot games first.");
+   startGame();
+  }else if(["bot-watch","bot-step","bot-simulate"].includes(input.action)){
+   if(state.mode!=="tournament"||!state.tournament)fail("No tournament.");
+   const match=tournamentBotMatch(state.tournament,input.matchId);
+   if(!match)fail("This bot match is not pending.",409);
+   if(input.action==="bot-simulate"){
+    state.tournament=recordTournamentResult(state.tournament,match.id,tournamentSimWinner(state.tournament,match),true);
+    if(state.spectator?.matchId===match.id)state.spectator=null;
+   }else if(input.action==="bot-watch"){
+    if(state.spectator&&state.spectator.matchId!==match.id&&!state.spectator.game.winner)fail("Finish or simulate the other watched game first.",409);
+    if(state.spectator?.matchId!==match.id)state.spectator={matchId:match.id,a:match.a,b:match.b,game:initialChess(),seed:tournamentBotSeed(state.tournament,match)};
+   }else{
+    const watch=state.spectator;if(!watch||watch.matchId!==match.id||watch.game.winner)fail("Open the pending bot match first.",409);
+    watch.game=tournamentBotPly(watch.game,state.level,watch.seed);
+    if(watch.game.winner)state.tournament=recordTournamentResult(state.tournament,match.id,watch.game.winner==="w"?match.a:match.b,false);
+   }
   }else{
-   if(!state.game||state.game.winner||state.game.turn!=="w")fail("No active player turn.");
-   if(input.action==="resign")state.game={...state.game,winner:"b",reason:"resigned"};
+   const side=state.side||"w";
+   if(!state.game||state.game.winner||state.game.turn!==side)fail("No active player turn.");
+   if(input.action==="resign")state.game={...state.game,winner:other(side),reason:"resigned"};
    else{
     state.game=playChess(state.game,input.move);
     if(!state.game.winner){const bot=botMove(state.game,state.level,state.seed);if(!bot)fail("No bot move.");state.game=playChess(state.game,bot);}
    }
    if(state.game.winner){
-    state.ratings=recordRated(state.ratings,state.level,state.game.winner==="w");
-    let champion=false;
-    if(state.tournament){state.tournament=advanceTournament(state.tournament,state.game.winner==="w");champion=state.tournament.complete&&state.tournament.champion==="player";if(champion)state.ratings.tournaments++;}
-    for(const id of chessUnlocks(state.ratings,state.game,state.level,champion)){const p=user+"/"+(id===CHESS_TROPHY[0]?"trophies/":"axolotls/")+id;if(!await read(p))rewards.push(id);}
+    completedPlayerGame=true;
+    state.ratings=recordRated(state.ratings,state.level,playerWon(state.game,side));
+    if(state.tournament){
+     const m=tournamentMatch(state.tournament);if(!m)fail("No pending player match.");
+     state.playerMatchId=m.id;
+     state.tournament=recordTournamentResult(state.tournament,m.id,playerWon(state.game,side)?"player":m.a==="player"?m.b:m.a,false);
+    }
    }
+  }
+  const champion=!wasChampion&&state.tournament?.complete&&state.tournament.champion==="player";
+  if(champion)state.ratings.tournaments++;
+  for(const id of chessUnlocks(state.ratings,completedPlayerGame?state.game:null,state.level,champion,state.side||"w")){
+   const p=user+"/"+(id===CHESS_TROPHY[0]?"trophies/":"axolotls/")+id;if(!await read(p))rewards.push(id);
   }
   state.revision++;state.lastRequest=input.requestId;state.lastRewards=rewards;
   const writes=[{verify:root+"/"+user,currentDocument:pre(account)},write(root,path,state,old),...checks];
