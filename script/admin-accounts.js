@@ -1,6 +1,6 @@
 import {publicError,withErrorCode} from "./site-errors.js";
 import {ageStatus} from "./account-registration.mjs";
-import {memberStatus} from "./digital-packs-core.mjs";
+import {effectiveMembership,activeMembershipStaff} from "./staff-membership-core.mjs";
 
 import { auth, db, usingLocalFirebaseEmulators } from "./firebase.js";
 
@@ -46,8 +46,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!section) return;
 
   let accounts = [];
-  let registrations=new Map(),memberships=new Map(),membershipKnown=false;
-  function membershipLabel(uid){if(!membershipKnown)return "Membership unknown";return memberStatus(memberships.get(uid)?.expiresAt?.toMillis?.()??null).status==="paid"?"Paid":"Free";}
+  let registrations=new Map(),memberships=new Map(),membershipOverrides=new Map(),membershipKnown=false;
+  function membershipLabel(uid){if(!membershipKnown)return "Membership unknown";const a=accounts.find(x=>x.uid===uid),m=effectiveMembership(memberships.get(uid)?.expiresAt?.toMillis?.()??null,membershipOverrides.get(uid)?.mode,activeMembershipStaff(a));return (m.status==="paid"?"Paid":"Free")+(m.override!=="actual"?" (admin test)":"");}
+  async function loadMembershipLabels(){try{const [records,overrides]=await Promise.all([getDocsFromServer(collection(db,"memberships")),getDocsFromServer(collection(db,"staffMembershipOverrides"))]);memberships=new Map(records.docs.map(d=>[d.id,d.data()]));membershipOverrides=new Map(overrides.docs.map(d=>[d.id,d.data()]));membershipKnown=true;}catch(error){memberships.clear();membershipOverrides.clear();membershipKnown=false;}}
   function ageLabel(uid){
     const date=registrations.get(uid)?.birthDate?.toDate?.();
     return ageStatus(date?date.toISOString().slice(0,10):null);
@@ -249,7 +250,7 @@ async function verifyManager() {
       const ageRecords=await getDocsFromServer(collection(db,"accountRegistration"));
       registrations=new Map(ageRecords.docs.map(d=>[d.id,d.data()]));
     }catch(error){registrations.clear();console.warn("Age flags unavailable",error?.code);}
-    try{const records=await getDocsFromServer(collection(db,"memberships"));memberships=new Map(records.docs.map(d=>[d.id,d.data()]));membershipKnown=true;}catch(error){memberships.clear();membershipKnown=false;}
+    await loadMembershipLabels();
     accounts = snapshot.docs.map(userDoc => ({
       uid: userDoc.id,
       ...userDoc.data()
@@ -625,6 +626,7 @@ await updateDoc(targetRef, {
     const selected=accounts.find(a=>a.uid===selectedUid);
     if(selected)currentStatus.textContent=describeStatus(selected)+" | "+ageLabel(selectedUid)+" | "+membershipLabel(selectedUid);
   }
+  document.addEventListener("ptg:membership-override-changed",async()=>{await loadMembershipLabels();renderSearch();const selected=accounts.find(a=>a.uid===selectedUid);if(selected)currentStatus.textContent=describeStatus(selected)+" | "+ageLabel(selectedUid)+" | "+membershipLabel(selectedUid);});
   setInterval(refreshAgeFlags,60000);
   window.addEventListener("focus",refreshAgeFlags);
 

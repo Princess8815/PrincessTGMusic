@@ -152,12 +152,40 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    // Paid status is derived from a trusted expiration timestamp, never a role.
-    function isPaidMember(uid) {
-      return isOwner(uid)
-        && exists(/databases/$(database)/documents/memberships/$(uid))
+    // Membership purchase expiry stays Worker-authoritative. Staff can test
+    // their own effective membership without editing payment records.
+    function purchasedMembershipActive(uid) {
+      return exists(/databases/$(database)/documents/memberships/$(uid))
         && get(/databases/$(database)/documents/memberships/$(uid)).data.expiresAt is timestamp
         && get(/databases/$(database)/documents/memberships/$(uid)).data.expiresAt > request.time;
+    }
+    function staffMembershipMode(uid) {
+      return isStaff() && exists(/databases/$(database)/documents/staffMembershipOverrides/$(uid))
+        ? get(/databases/$(database)/documents/staffMembershipOverrides/$(uid)).data.get("mode", "actual")
+        : "actual";
+    }
+    function isPaidMember(uid) {
+      let mode = staffMembershipMode(uid);
+      return isOwner(uid) && (mode == "paid" || (mode != "free" && purchasedMembershipActive(uid)));
+    }
+    function validStaffMembershipOverride(uid) {
+      return isOwner(uid) && isStaff()
+        && request.resource.data.keys().hasOnly(["mode", "updatedAt"])
+        && request.resource.data.keys().hasAll(["mode", "updatedAt"])
+        && request.resource.data.mode in ["actual", "paid", "free"]
+        && request.resource.data.updatedAt == request.time;
+    }
+    match /staffMembershipOverrides/{uid} {
+      allow get: if isOwner(uid) || isStaff();
+      allow list: if isStaff();
+      allow create, update: if validStaffMembershipOverride(uid);
+      allow delete: if false;
+    }
+    match /staffTestMembershipOverrides/{uid} {
+      allow get: if isOwner(uid);
+      allow list: if false;
+      allow create, update: if validStaffMembershipOverride(uid);
+      allow delete: if false;
     }
     match /memberships/{uid} {
       allow get: if isOwner(uid) || isStaff();

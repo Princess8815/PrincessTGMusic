@@ -28,6 +28,7 @@
   <script type="module" src="../script/admin-edit-songs.js"></script>
   <script type="module" src="../script/admin-delete-songs.js"></script>
   <script type="module" src="../script/admin-accounts.js"></script>
+  <script type="module" src="../script/admin-self-membership.js"></script>
   <script type="module" src="../script/admin-inbox.js"></script>
   <script type="module" src="../script/admin-newsletter.js"></script>
   <script type="module" src="../script/admin-tabs.js"></script>
@@ -1305,6 +1306,15 @@
                role="tabpanel"
                aria-labelledby="admin-main-tab-accounts"
                hidden>
+
+        <section class="admin-card dp-self-test" id="admin-self-membership" hidden>
+          <h2>My membership (admin testing)</h2>
+          <p>Switch your own membership between Paid and Free to test the member experience. This does not change your admin permissions, purchased time, Star Coins or any other account.</p>
+          <p><strong>Effective membership:</strong> <span id="admin-self-membership-badge" class="dp-membership-badge">Checking…</span></p>
+          <p id="admin-self-membership-note"></p>
+          <div class="dp-actions"><button type="button" id="admin-self-membership-toggle" aria-pressed="false" disabled>Switch self to Paid</button><button type="button" id="admin-self-membership-reset" class="dp-secondary" disabled>Restore actual membership</button></div>
+          <p id="admin-self-membership-message" role="status" aria-live="polite"></p>
+        </section>
 
         <section class="admin-card"
                  id="account-management"
