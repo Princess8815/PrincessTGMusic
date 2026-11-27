@@ -7,7 +7,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {
-  sendSiteVerification,refreshSiteVerification,verificationError
+  sendSiteVerification,verificationError,bindVerificationCooldown
 } from "./email-verification.js";
 import {getPlaylists,ensurePlaylists,createPlaylist,addToPlaylistControl,songLink} from "./music-playlists.js";
 import {loadAllSongs} from "./song-data.js";
@@ -191,6 +191,7 @@ async function api(action,args={}){
 const $=id=>document.getElementById(id);
 const folders=["inbox","sent","compose"];
 const tab=$("profile-tab-mail");
+const updateMailResend=bindVerificationCooldown($("mail-send-verification"),$("mail-resend-countdown"));
 let view="inbox",selectedId="",selectedRecipient=null;
 let messages={inbox:[],sent:[]},cursors={inbox:null,sent:null};
 let renderedBox="inbox",share=null,images=[],catalog=null,recipientRequest=0;
@@ -201,6 +202,7 @@ function updateMailVerification(user){
   $("mail-verification-gate").hidden=!user||verified;
   $("mail-verified-content").hidden=!user||!verified;
   $("mail-verification-status").textContent=verified?"":"";
+  updateMailResend();
   return verified;
 }
 const setStatus=(message,isError=false)=>{
@@ -702,37 +704,18 @@ $("mail-compose-form").addEventListener("submit",async event=>{
 $("mail-send-verification").addEventListener("click",async()=>{
   const user=auth.currentUser;
   if(!user)return;
-  $("mail-send-verification").disabled=true;
+  if($("mail-send-verification").disabled)return;
   try{
     const result=await sendSiteVerification(user);
     if(auth.currentUser?.uid!==user.uid)return;
     $("mail-verification-status").textContent=result.alreadyVerified
-      ? "Your email is already verified. Click I've verified my email to unlock Site Mail."
-      : "Verification email requested. Check your inbox and spam folder.";
+      ? "Your email is already verified. Refresh this page if Site Mail is still locked."
+      : "Verification email requested. Check your inbox and spam folder, then refresh this page after verifying.";
   }catch(error){
     if(auth.currentUser?.uid!==user.uid)return;
     console.error("Site Mail verification request rejected:",error?.code||"unknown",error);
     $("mail-verification-status").textContent=verificationError(error);
-  }finally{$("mail-send-verification").disabled=false;}
-});
-$("mail-check-verification").addEventListener("click",async()=>{
-  const user=auth.currentUser;
-  if(!user)return;
-  $("mail-check-verification").disabled=true;
-  try{
-    const verified=await refreshSiteVerification(user);
-    if(!verified){
-      $("mail-verification-status").textContent=
-        publicError(null,"PTG-109");
-      return;
-    }
-    updateMailVerification(user);
-    setStatus("Email verified. Welcome to Site Mail!");
-    void refreshFolder("inbox");
-    applyShareIntent();
-  }catch(error){
-    $("mail-verification-status").textContent="Could not check verification: "+verificationError(error);
-  }finally{$("mail-check-verification").disabled=false;}
+  }
 });
 tab.addEventListener("click",()=>{
   if(view!=="compose"&&auth.currentUser&&isMailVerified(auth.currentUser))
