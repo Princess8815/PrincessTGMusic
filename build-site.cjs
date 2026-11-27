@@ -2,14 +2,14 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const OLD = "https://princess8815.github.io/PrincessTGMusic";
-const DEST = "https://princesstgcreations.pages.dev";
+const DEST = "https://princesstg-creations.com";
 const PUBLIC = ["index.html","404.html","ads.txt","albums","arts","audioPlayer","data","images","pages","script","styles"];
 function legacyTarget(location) {
   if (location.origin !== "https://princess8815.github.io") return null;
   const base = "/PrincessTGMusic";
   if (location.pathname !== base && !location.pathname.startsWith(base + "/")) return null;
   // Assign pathname on a fixed origin rather than interpreting arbitrary input as a URL.
-  const target = new URL("https://princesstgcreations.pages.dev/");
+  const target = new URL("https://princesstg-creations.com/");
   target.pathname = location.pathname.slice(base.length) || "/";
   target.search = location.search;
   target.hash = location.hash;
@@ -26,7 +26,7 @@ function updateMetadata(html) {
   return html.replace(/<(?:meta|link)\b[^>]*>/gi, tag => {
     if (!/\b(?:property|name)\s*=\s*["'](?:og:(?:url|image(?::secure_url)?)|twitter:(?:url|image(?::src)?))["']/i.test(tag) &&
         !/\brel\s*=\s*["']canonical["']/i.test(tag)) return tag;
-    return tag.replace(/\b(content|href)(\s*=\s*["'])(https:\/\/princess8815\.github\.io\/PrincessTGMusic)(?=\/|["'?#])/gi,
+    return tag.replace(/\b(content|href)(\s*=\s*["'])(https:\/\/(?:princess8815\.github\.io\/PrincessTGMusic|princesstgcreations\.pages\.dev))(?=\/|["'?#])/gi,
       (_,attr,separator)=>attr+separator+DEST);
   });
 }
