@@ -125,3 +125,6 @@
 #receipt-panel button{margin:6px;min-height:44px;padding:10px 18px}
 
 .store-recovery-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.store-visit-friend .store-friend span{display:block}.store-main #restore-tide-claim{margin:6px 0;padding:0;min-height:44px;border:0;background:none;color:inherit;font:inherit;text-decoration:underline}
+
+.store-products{grid-template-columns:repeat(auto-fill,minmax(min(132px,100%),132px));grid-auto-rows:196px;justify-content:start}.store-card{height:196px;min-height:196px;overflow:hidden;border-color:var(--ptg-border,#747095)}.store-icon-open img,.store-icon-open .store-cover{width:100%;max-width:108px;aspect-ratio:1;object-fit:cover}.store-card .store-icon-open{flex:1;min-height:0}.store-icon-title{flex-shrink:0}.store-card .store-icon-add{flex-shrink:0}.shop-pagination{display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}.shop-pagination[hidden]{display:none!important}
+@media(max-width:480px){.store-products{grid-template-columns:repeat(auto-fill,minmax(min(112px,100%),112px));grid-auto-rows:204px}.store-card{height:204px;min-height:204px}.store-icon-open img,.store-icon-open .store-cover{max-width:92px}}

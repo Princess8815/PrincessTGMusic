@@ -10,3 +10,12 @@
 .dp-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:14px 0}.dp-fields label{display:grid;gap:5px}.dp-fields input,.dp-fields textarea,.dp-fields select{box-sizing:border-box;width:100%;min-width:0;padding:8px;border-radius:7px;border:1px solid #8d9eb5;background:var(--ptg-tertiary,#17263c);color:var(--ptg-text,#fff);font:inherit}.dp-fields .dp-wide{grid-column:1/-1}.dp-fields .dp-check{display:flex;align-items:center}.dp-check input{width:auto}
 .dp-membership-badge{display:inline-block;border-radius:20px;padding:5px 12px;background:#59667b;color:#fff;font-weight:700}.dp-membership-badge[data-membership=paid]{background:#6650a1;color:#fff}.dp-membership p{margin:7px 0}.dp-order-result{white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:550px){.dp-section{padding:13px}.dp-grid{grid-template-columns:repeat(auto-fit,minmax(145px,1fr))}.dp-card{padding:12px}}
+
+.shop-nav{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px;overflow:visible}
+.dp-grid{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(min(216px,100%),216px))!important;grid-auto-rows:236px;justify-content:start;align-items:stretch;gap:12px;overflow:visible!important;max-height:none!important}
+.dp-card{box-sizing:border-box;width:100%;height:236px;max-height:none;min-height:236px;overflow:hidden;gap:5px;padding:14px}
+.dp-card h3{height:2.6em;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.dp-card p{height:2.5em;line-height:1.25;overflow-wrap:anywhere}.dp-card .dp-price{margin:0}.dp-card .dp-pack-icon{font-size:1.6rem}.dp-card .dp-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:auto}.dp-card button{padding:6px;min-height:38px}.dp-section{overflow:visible;max-height:none}
+.shop-pagination{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:10px 0}.shop-pagination[hidden]{display:none!important}
+.shop-pagination span{font-size:.86rem;font-weight:600}.shop-pagination button{min-height:38px}.dp-grid>.dp-muted{grid-column:1/-1}
+@media(max-width:550px){.dp-grid{grid-template-columns:repeat(auto-fill,minmax(min(155px,100%),155px))!important;grid-auto-rows:244px;gap:8px}.dp-card{height:244px;min-height:244px;padding:10px}.dp-card h3{font-size:.95rem}.dp-card .dp-price{font-size:1.25rem}.dp-card button{font-size:.8rem}}

@@ -1,0 +1,1 @@
+const q=new URLSearchParams(location.search);if(q.has("digitalReturn")||q.has("digitalCancel")||location.hash==="#digital-packs"){const u=new URL("membership-store.html",location.href);for(const [k,v] of q)if(["digitalReturn","digitalCancel","session_id"].includes(k))u.searchParams.set(k,v);location.replace(u.href);}

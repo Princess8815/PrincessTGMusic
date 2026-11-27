@@ -5,15 +5,15 @@ import {collection,doc,onSnapshot,query,where} from "https://www.gstatic.com/fir
 import {mergeTypes,validImage,validPrice} from "./starlight-model.mjs";
 const $=id=>document.getElementById(id),list=$("sl-items"),status=$("sl-status"),endpoint="https://princesstg-cd-store-live.transgirl1991.workers.dev/starlight/buy";
 const el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
-let items=[],types=mergeTypes([]),owned=new Set(),balance=null,selected="",loaded=false,busy=false,epoch=0,stops=[],catalogError=false,ownershipReady=false;
+let items=[],types=mergeTypes([]),owned=new Set(),balance=null,selected="",loaded=false,busy=false,epoch=0,stops=[],catalogError=false,ownershipReady=false,page=0;const pageSize=12;
 function render(){
  const nav=$("sl-categories");nav.replaceChildren();
  const visible=types.filter(t=>items.some(i=>i.typeId===t.id));
  if(selected&&!visible.some(t=>t.id===selected))selected="";
- for(const t of [{id:"",name:"All"},...visible]){const b=el("button",t.name);b.type="button";b.setAttribute("aria-pressed",String(selected===t.id));b.onclick=()=>{selected=t.id;render();};nav.append(b);}
+ for(const t of [{id:"",name:"All"},...visible]){const b=el("button",t.name);b.type="button";b.setAttribute("aria-pressed",String(selected===t.id));b.onclick=()=>{selected=t.id;page=0;render();};nav.append(b);}
  list.replaceChildren();
- for(const item of items.filter(x=>!selected||x.typeId===selected)){
-  if(!validImage(item.image)||!validPrice(item.price))continue;
+ const filtered=items.filter(x=>(!selected||x.typeId===selected)&&validImage(x.image)&&validPrice(x.price)),pages=Math.max(1,Math.ceil(filtered.length/pageSize));page=Math.max(0,Math.min(page,pages-1));const pager=$("starlight-pages");pager.hidden=pages<=1;pager.querySelector("[data-page-prev]").disabled=page===0;pager.querySelector("[data-page-next]").disabled=page>=pages-1;pager.querySelector("[data-page-label]").textContent="Page "+(page+1)+" of "+pages+" · "+filtered.length+" items";
+ for(const item of filtered.slice(page*pageSize,(page+1)*pageSize)){
   const card=el("article");card.className="sl-card";const img=el("img");img.src=item.image;img.alt=item.name;img.loading="lazy";
   const price=el("p",item.price.toLocaleString()+" Star Coin"+(item.price===1?"":"s"));price.className="sl-cost";
   const isOwned=owned.has(item.id),eligible=!!auth.currentUser?.emailVerified&&!usingLocalFirebaseEmulators,ready=balance!==null&&ownershipReady;
@@ -45,4 +45,5 @@ onAuthStateChanged(auth,user=>{
  stops.push(onSnapshot(doc(db,"users",user.uid,"wallets","starCoins"),{includeMetadataChanges:true},s=>{if(current!==epoch||s.metadata.fromCache||s.metadata.hasPendingWrites)return;balance=s.data()?.balance??0;render();},()=>{balance=null;render();}));
  stops.push(onSnapshot(collection(db,"users",user.uid,"starlightCollectibles"),{includeMetadataChanges:true},s=>{if(current!==epoch||s.metadata.fromCache||s.metadata.hasPendingWrites)return;owned=new Set(s.docs.map(d=>d.id));ownershipReady=true;render();},()=>{ownershipReady=false;render();}));
 });
+$("starlight-pages").querySelector("[data-page-prev]").onclick=()=>{page--;render();};$("starlight-pages").querySelector("[data-page-next]").onclick=()=>{page++;render();};
 $("sl-login").onclick=()=>$("auth-open")?.click();render();

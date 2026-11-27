@@ -9,7 +9,7 @@ const read=(storage,key,fallback)=>{try{return JSON.parse(storage.getItem(key)||
 const write=(storage,key,value)=>{try{storage.setItem(key,JSON.stringify(value));return true;}catch{return false;}};
 const remove=(storage,key)=>{try{storage.removeItem(key);}catch{}};
 let products=new Map(),titles=new Map(),cart=new Map(),config=null,stripe=null,elements=null,paymentElement=null,order=null,busy=false,catalogReady=false;
-let selectedCategory="",selectedAlbum="";
+let selectedCategory="",selectedAlbum="",productPage=0;const productPageSize=24;
 let paymentReady=false,paymentMayProceed=false,configFailed=false,claimBusy=false;
 let receiptKind=null,shippingQuote=null;
 function clearShippingQuote(){shippingQuote=null;const panel=$("shipping-rate-panel");if(panel)panel.hidden=true;$("quote-button").textContent=config?.carrierShipping?"Find shipping services":"Calculate shipping and tax";}
@@ -106,7 +106,7 @@ function refreshAlbumOptions(){
  select.value=selectedAlbum;
 }
 function chooseCategory(key){
- selectedCategory=key;
+ selectedCategory=key;productPage=0;
  $("store-category-select").value=key;
  for(const button of $("store-category-tabs").querySelectorAll("button"))button.setAttribute("aria-pressed",String(button.dataset.category===key));
  refreshAlbumOptions();renderProducts();
@@ -121,12 +121,12 @@ function mountCatalogFilters(){
  refreshAlbumOptions();
 }
 $("store-category-select").onchange=e=>chooseCategory(e.target.value);
-$("store-album-select").onchange=e=>{selectedAlbum=e.target.value;renderProducts();};
+$("store-album-select").onchange=e=>{selectedAlbum=e.target.value;productPage=0;renderProducts();};
 function renderProducts(){
  const root=$("store-products"),featuredRoot=$("store-featured-products");
  root.replaceChildren();featuredRoot.replaceChildren();
  const visible=filterCDs([...products.values()],selectedCategory,selectedAlbum).sort((a,b)=>a.albumName.localeCompare(b.albumName)||a.volume-b.volume);
- const featured=visible.filter(p=>p.featured),regular=visible.filter(p=>!p.featured);
+ const ordered=[...visible.filter(p=>p.featured),...visible.filter(p=>!p.featured)],pages=Math.max(1,Math.ceil(ordered.length/productPageSize));productPage=Math.max(0,Math.min(productPage,pages-1));const slice=ordered.slice(productPage*productPageSize,(productPage+1)*productPageSize),featured=slice.filter(p=>p.featured),regular=slice.filter(p=>!p.featured);const pager=$("physical-pages");pager.hidden=pages<=1;pager.querySelector("[data-page-prev]").disabled=productPage===0;pager.querySelector("[data-page-next]").disabled=productPage>=pages-1;pager.querySelector("[data-page-label]").textContent="Page "+(productPage+1)+" of "+pages;
  $("store-featured-section").hidden=!featured.length;
  $("store-regular-section").hidden=!!featured.length&&!regular.length;
  $("store-regular-title").hidden=!featured.length||!regular.length;
@@ -136,6 +136,7 @@ function renderProducts(){
  if(!visible.length){const empty=el("p",products.size?"No products match this selection.":"No products are listed for sale yet.");empty.className="store-grid-empty";root.append(empty);}
  updateControls();
 }
+$("physical-pages").querySelector("[data-page-prev]").onclick=()=>{productPage--;renderProducts();};$("physical-pages").querySelector("[data-page-next]").onclick=()=>{productPage++;renderProducts();};
 async function loadCatalog(){
  try{
   const [{db},{collection,getDocs}]=await Promise.all([import("./firebase.js"),import("https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js")]);
