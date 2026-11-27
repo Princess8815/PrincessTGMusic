@@ -285,7 +285,7 @@ async function status(env,b,ctx){
 async function body(req,max=20000){const raw=await req.text();if(raw.length>max)fail("Request too large.",413);try{return JSON.parse(raw);}catch{fail("Invalid JSON.");}}
 export default {
  async fetch(req,env,ctx){
-  const url=new URL(req.url),origin=req.headers.get("Origin")||"",allowed=(env.ALLOWED_ORIGINS||"").split(",").map(x=>x.trim()).includes(origin)||(["/surveys/submit","/owner/terminal-commands","/digital-packs"].includes(url.pathname)&&surveyPreviewOrigin(env,origin))||(["/games/chess","/games/hanggirl","/games/apple-catcher","/games/cherry-empire","/games/peach-panic","/games/giving-tree","/games/orange-knock-down","/games/orange-editor","/games/shiny-light","/games/shiny-light-editor"].includes(url.pathname)&&hanggirlOrigin(env,origin))||(url.pathname==="/starlight/buy"&&starlightOrigin(env,origin))||(url.pathname==="/owner/email-verification"&&ownerVerificationOrigin(env,origin))||(url.pathname==="/auth/email-verification"&&verificationPreviewOrigin(env,origin));
+  const url=new URL(req.url),origin=req.headers.get("Origin")||"",allowed=(env.ALLOWED_ORIGINS||"").split(",").map(x=>x.trim()).includes(origin)||(["/surveys/submit","/owner/terminal-commands","/digital-packs"].includes(url.pathname)&&surveyPreviewOrigin(env,origin))||(["/games/chess","/games/hanggirl","/games/apple-catcher","/games/cherry-empire","/games/peach-panic","/games/giving-tree","/games/orange-knock-down","/games/orange-editor","/games/shiny-light","/games/shiny-light-editor"].includes(url.pathname)&&hanggirlOrigin(env,origin))||(url.pathname==="/starlight/buy"&&starlightOrigin(env,origin))||(url.pathname==="/owner/email-verification"&&ownerVerificationOrigin(env,origin))||(["/auth/email-verification","/auth/email-verification/status"].includes(url.pathname)&&verificationPreviewOrigin(env,origin));
   const headers={"Content-Type":"application/json","Cache-Control":"no-store","Vary":"Origin"};
   if(allowed)Object.assign(headers,{"Access-Control-Allow-Origin":origin,"Access-Control-Allow-Methods":"GET, POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type"});
   const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers});
@@ -311,6 +311,7 @@ export default {
    if(url.pathname==="/starlight/buy")return json(await buyStarlight(env,b));
    if(url.pathname==="/owner/terminal-commands")return json(await ownerTools(env,b));
    if(url.pathname==="/owner/email-verification")return json(await ownerVerification(env,b));
+   if(url.pathname==="/auth/email-verification/status")return json(await sendMemberVerification(env,b,req.headers.get("CF-Connecting-IP")||"",origin,true));
    if(url.pathname==="/auth/email-verification")return json(await sendMemberVerification(env,b,req.headers.get("CF-Connecting-IP")||"",origin));
    if(url.pathname==="/shipping-quotes")return json(await shippingQuote(env,b));
    if(url.pathname==="/shipping-admin")return json(await shippingAdmin(env,b));

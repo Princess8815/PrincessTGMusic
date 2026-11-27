@@ -7,7 +7,7 @@ import {TERMS_VERSION,PRIVACY_VERSION,registrationError} from "./account-registr
 import { saveUserIfChanged } from "./user-data.js";
 import {hasSiteVerificationAccess,refreshSiteVerificationAccess} from "./verification-access.js";
 import {
-  sendSiteVerification,refreshSiteVerification,verificationError
+  sendSiteVerification,refreshSiteVerification,verificationError,bindVerificationCooldown
 } from "./email-verification.js";
 import {
   verifyStaff,
@@ -146,7 +146,8 @@ if (!container) {
           <p class="auth-verify-address">Verification email: <strong id="auth-verify-email"></strong></p>
           <p id="auth-verify-message" role="status" aria-live="polite"></p>
           <div class="auth-verify-actions">
-            <button type="button" id="auth-resend-verification" class="auth-primary">Send / resend verification email</button>
+            <button type="button" id="auth-resend-verification" class="auth-primary" disabled>Resend verification email</button>
+            <p id="auth-resend-countdown" class="auth-provider-note" role="status"></p>
             <p class="auth-provider-note">After verifying your email, refresh this page to unlock member features.</p>
             <button type="button" id="auth-verify-later" class="auth-text-button">Verify later</button>
             <button type="button" id="auth-use-another" class="auth-text-button">Use another account</button>
@@ -285,6 +286,7 @@ adminButton.addEventListener("click", async () => {
   let lastAutomaticCheckAt=0;
   let automaticCheckPending=false;
   const verifyPanel = $("auth-verify-panel");
+  const updateResend=bindVerificationCooldown($("auth-resend-verification"),$("auth-resend-countdown"));
   const googleGroup = $("auth-google-group");
   const googleButton = $("auth-google");
   const googleProvider = new GoogleAuthProvider();
@@ -342,6 +344,7 @@ adminButton.addEventListener("click", async () => {
     else if(!$("auth-verify-message").textContent)$("auth-verify-message").textContent="Check your inbox or spam folder. You can verify later.";
     $("auth-open").hidden = false;
     $("auth-open").textContent = "Verify Email";
+    updateResend();
   }
 
   function syncAuthBar(user) {
@@ -410,12 +413,6 @@ adminButton.addEventListener("click", async () => {
   }
 
   async function sendVerification(user,automatic=false) {
-    const now=Date.now();
-    if(user.uid===lastVerificationUid && now-lastVerificationEmailAt<60000) {
-      $("auth-verify-message").textContent =
-        "A verification request was recently accepted for this account. Check your inbox and Spam folder. You can retry after 60 seconds.";
-      return;
-    }
     try {
       const sent=await sendSiteVerification(user);
       if(auth.currentUser?.uid!==user.uid)return;
@@ -543,9 +540,8 @@ adminButton.addEventListener("click", async () => {
     const user=auth.currentUser;
     if(!user || user.emailVerified)return;
     const button=$("auth-resend-verification");
-    button.disabled=true;
-    try{await sendVerification(user);}
-    finally{button.disabled=false;}
+    if(button.disabled)return;
+    await sendVerification(user);
   });
 
   $("auth-use-another").addEventListener("click",async()=>{

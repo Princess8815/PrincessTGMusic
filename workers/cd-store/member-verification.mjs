@@ -18,6 +18,23 @@ AND (SELECT COUNT(*) FROM verification_sends WHERE uid=? AND created>?)<5
 AND (SELECT COUNT(*) FROM verification_sends WHERE email_hash=? AND created>?)<5
 AND (?='' OR (SELECT COUNT(*) FROM verification_sends WHERE ip_hash=? AND created>?)<20)
 AND (SELECT COUNT(*) FROM verification_sends WHERE created>?)<80`;
+// Read-only status mirrors every rolling window enforced by the atomic INSERT.
+export const STATUS_SQL=`SELECT
+ (SELECT created FROM verification_sends WHERE uid=? ORDER BY created DESC LIMIT 1) AS uid_latest,
+ (SELECT created FROM verification_sends WHERE email_hash=? ORDER BY created DESC LIMIT 1) AS email_latest,
+ (SELECT created FROM verification_sends WHERE uid=? ORDER BY created DESC LIMIT 1 OFFSET 4) AS uid_daily,
+ (SELECT created FROM verification_sends WHERE email_hash=? ORDER BY created DESC LIMIT 1 OFFSET 4) AS email_daily,
+ (SELECT created FROM verification_sends WHERE ip_hash=? AND ip_hash!='' ORDER BY created DESC LIMIT 1 OFFSET 19) AS ip_hourly,
+ (SELECT created FROM verification_sends ORDER BY created DESC LIMIT 1 OFFSET 79) AS global_daily`;
+export function verificationWait(row,now){
+ const limits={uid_latest:60000,email_latest:60000,uid_daily:DAY,email_daily:DAY,ip_hourly:HOUR,global_daily:DAY};
+ return Math.max(0,...Object.entries(limits).map(([key,window])=>row?.[key]==null?0:Number(row[key])+window-now));
+}
+export async function verificationCooldown(db,uid,email,ip,now=Date.now()){
+ const emailHash=await hash(email.trim().toLowerCase()),ipHash=ip?await hash(ip):"";
+ const row=await db.prepare(STATUS_SQL).bind(uid,emailHash,uid,emailHash,ipHash).first();
+ return {retryAfterMs:verificationWait(row,now)};
+}
 export async function reserveVerification(db,uid,email,ip,now=Date.now()){
  const emailHash=await hash(email.trim().toLowerCase()),ipHash=ip?await hash(ip):"";
  const result=await db.prepare(RESERVE_SQL).bind(crypto.randomUUID(),uid,emailHash,ipHash,now,
@@ -55,7 +72,7 @@ export function memberActionLink(link,env,origin,optIn){
  destination.hash=new URLSearchParams({oobCode:code}).toString();
  return destination.href;
 }
-export async function sendMemberVerification(env,input,ip,origin=""){
+export async function sendMemberVerification(env,input,ip,origin="",statusOnly=false){
  if(env.STORE_MODE!=="live"||!env.FIREBASE_PROJECT||env.REWARD_FIREBASE_PROJECT!==env.FIREBASE_PROJECT||!env.RESEND_API_KEY||!env.VERIFICATION_FROM||!env.ORDERS)fail("Email verification is temporarily unavailable.",503);
  const project=env.FIREBASE_PROJECT,idToken=input?.idToken;
  const uid=await verifyFirebaseIdentity(project,idToken);
@@ -69,8 +86,15 @@ const reason = String(details?.error?.message || "").match(/^[A-Z][A-Z0-9_]+/)?.
 console.warn("Verification Firebase API failed", action, response.status, reason);fail("Email verification is temporarily unavailable.",503);}
   return response.json();
  };
- return deliverVerification({uid,claims,ip,
- lookup:async uid=>(await call("lookup",{localId:[uid]})).users?.find(u=>u.localId===uid),
+ const lookup=async uid=>(await call("lookup",{localId:[uid]})).users?.find(u=>u.localId===uid);
+ if(statusOnly){
+  const user=await lookup(uid);
+  if(!user||user.disabled||!user.email||user.email!==claims.email||Number(user.validSince||0)>claims.auth_time)fail("Sign in again to verify your current email.",401);
+  if(user.emailVerified===true)return {alreadyVerified:true,retryAfterMs:0};
+  return {alreadyVerified:false,...await verificationCooldown(env.ORDERS,uid,user.email,ip)};
+ }
+ const result=await deliverVerification({uid,claims,ip,
+ lookup,
  reserve:(uid,email,ip)=>reserveVerification(env.ORDERS,uid,email,ip),
  generate:async email=>(await call("sendOobCode",{requestType:"VERIFY_EMAIL",email,returnOobLink:true})).oobLink,
  send:async(email,link)=>{
@@ -79,4 +103,6 @@ console.warn("Verification Firebase API failed", action, response.status, reason
   const receipt=await response.json();if(typeof receipt.id!=="string")fail("Email delivery could not be confirmed.",503);
   console.info("Verification email accepted by Resend",receipt.id);
  }});
+ // Reservation occurred before sending, so this conservative local timer cannot expire too early.
+ return {...result,retryAfterMs:result.accepted?60000:0};
 }

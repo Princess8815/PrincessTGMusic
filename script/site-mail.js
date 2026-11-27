@@ -7,7 +7,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {
-  sendSiteVerification,verificationError
+  sendSiteVerification,verificationError,bindVerificationCooldown
 } from "./email-verification.js";
 import {getPlaylists,ensurePlaylists,createPlaylist,addToPlaylistControl,songLink} from "./music-playlists.js";
 import {loadAllSongs} from "./song-data.js";
@@ -191,6 +191,7 @@ async function api(action,args={}){
 const $=id=>document.getElementById(id);
 const folders=["inbox","sent","compose"];
 const tab=$("profile-tab-mail");
+const updateMailResend=bindVerificationCooldown($("mail-send-verification"),$("mail-resend-countdown"));
 let view="inbox",selectedId="",selectedRecipient=null;
 let messages={inbox:[],sent:[]},cursors={inbox:null,sent:null};
 let renderedBox="inbox",share=null,images=[],catalog=null,recipientRequest=0;
@@ -201,6 +202,7 @@ function updateMailVerification(user){
   $("mail-verification-gate").hidden=!user||verified;
   $("mail-verified-content").hidden=!user||!verified;
   $("mail-verification-status").textContent=verified?"":"";
+  updateMailResend();
   return verified;
 }
 const setStatus=(message,isError=false)=>{
@@ -702,7 +704,7 @@ $("mail-compose-form").addEventListener("submit",async event=>{
 $("mail-send-verification").addEventListener("click",async()=>{
   const user=auth.currentUser;
   if(!user)return;
-  $("mail-send-verification").disabled=true;
+  if($("mail-send-verification").disabled)return;
   try{
     const result=await sendSiteVerification(user);
     if(auth.currentUser?.uid!==user.uid)return;
@@ -713,7 +715,7 @@ $("mail-send-verification").addEventListener("click",async()=>{
     if(auth.currentUser?.uid!==user.uid)return;
     console.error("Site Mail verification request rejected:",error?.code||"unknown",error);
     $("mail-verification-status").textContent=verificationError(error);
-  }finally{$("mail-send-verification").disabled=false;}
+  }
 });
 tab.addEventListener("click",()=>{
   if(view!=="compose"&&auth.currentUser&&isMailVerified(auth.currentUser))

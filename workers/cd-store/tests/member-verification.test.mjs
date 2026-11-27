@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {deliverVerification,verificationMessage,verificationPreviewOrigin,memberActionLink,RESERVE_SQL} from "../member-verification.mjs";
+import {deliverVerification,verificationMessage,verificationPreviewOrigin,memberActionLink,RESERVE_SQL,STATUS_SQL,verificationWait} from "../member-verification.mjs";
 const link="https://music-and-poetry.firebaseapp.com/__/auth/action?mode=verifyEmail&oobCode=test";
 function setup(overrides={}){
  const calls=[];const account={email:"member@yahoo.com",emailVerified:false,validSince:"5"};
@@ -50,4 +50,14 @@ test("custom action links stay on trusted origins without query secrets",()=>{
  assert.equal(memberActionLink(link,env,"https://untrusted.example.com",true),link);
  assert.equal(memberActionLink(link,env,env.VERIFICATION_PREVIEW_ORIGIN,false),link);
  assert.equal(new URL(memberActionLink(link,env,env.VERIFICATION_PREVIEW_ORIGIN,true)).origin,env.VERIFICATION_PREVIEW_ORIGIN);
+});
+
+test("cooldown reflects the longest active rolling limit",()=>{
+ const now=100000000;
+ assert.equal(verificationWait({},now),0);
+ assert.equal(verificationWait({uid_latest:now-15000},now),45000);
+ assert.equal(verificationWait({email_latest:now-60000},now),0);
+ assert.equal(verificationWait({uid_latest:now-10000,email_daily:now-86400000+120000},now),120000);
+ assert.equal(verificationWait({ip_hourly:now-3600000+70000,global_daily:now-86400000+90000},now),90000);
+ assert.match(STATUS_SQL,/OFFSET 79/);
 });
