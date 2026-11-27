@@ -49,3 +49,5 @@ body.sl-page-expanded{overflow:hidden}
 .sl-main:is(:fullscreen,.sl-expanded) .sl-grid{--tile-size:64px;max-width:none;width:min(calc(100% - 8px),calc(var(--w) * var(--tile-size)),calc(65dvh * var(--w) / var(--h)))}
 .sl-main:is(:fullscreen,.sl-expanded) .sl-playfield{padding:8px}.sl-main:is(:fullscreen,.sl-expanded) .sl-play-hint{margin-bottom:7px}
 @media(max-width:760px){.sl-grid{--tile-size:47px}.sl-playfield{padding:10px 5px}.sl-grid .sl-cell{font-size:clamp(8px,calc(60cqw / var(--w)),28px)}.sl-main:is(:fullscreen,.sl-expanded){padding:6px 8px}.sl-main:is(:fullscreen,.sl-expanded) .sl-hud strong{font-size:1rem}.sl-main:is(:fullscreen,.sl-expanded) .sl-grid{--tile-size:55px}}
+
+.sl-grid .sl-drag-ghost{position:absolute;display:block;transform:translate(-50%,-50%);pointer-events:none;z-index:6;opacity:.88;filter:drop-shadow(0 3px 4px #000a)}

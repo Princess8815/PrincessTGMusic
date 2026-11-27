@@ -28,10 +28,10 @@ export function tileLabel(t){
 export function renderGrid(el,map,board,view,selected,onSelect,controls={}){
  el.replaceChildren();el.style.setProperty("--w",map.width);el.style.setProperty("--h",map.height);
  const interactive=typeof controls.onMove==="function",cells=[];
- let gesture=null,suppressClick=false;
+ let gesture=null,suppressClick=false,ghost=null;
  function clearGesture(){
   for(const cell of cells)cell.classList.remove("sl-drag-source","sl-drop-ok","sl-drop-no");
-  el.classList.remove("sl-dragging");gesture=null;
+  el.classList.remove("sl-dragging");ghost?.remove();ghost=null;gesture=null;
  }
  function targetAt(event){
   const rect=el.getBoundingClientRect(),x=event.clientX-rect.left-el.clientLeft,y=event.clientY-rect.top-el.clientTop;
@@ -50,6 +50,8 @@ export function renderGrid(el,map,board,view,selected,onSelect,controls={}){
    if(gesture?.id!==event.pointerId)return;
    if(!gesture.dragged&&Math.hypot(event.clientX-gesture.x,event.clientY-gesture.y)<6)return;
    gesture.dragged=true;suppressClick=true;el.classList.add("sl-dragging");b.classList.add("sl-drag-source");
+   if(!ghost){ghost=document.createElement("span");ghost.className="sl-drag-ghost";ghost.setAttribute("aria-hidden","true");ghost.dataset.tile=t.type;const piece=b.querySelector(".sl-piece");if(piece)ghost.append(piece.cloneNode(true));el.append(ghost);}
+   const rect=el.getBoundingClientRect();ghost.style.left=(event.clientX-rect.left-el.clientLeft)+"px";ghost.style.top=(event.clientY-rect.top-el.clientTop)+"px";ghost.style.width=b.offsetWidth+"px";ghost.style.height=b.offsetHeight+"px";
    for(const cell of cells)cell.classList.remove("sl-drop-ok","sl-drop-no");
    const to=targetAt(event);if(to>=0&&to!==t.i)cells[to]?.classList.add(dropError(t.i,to)?"sl-drop-no":"sl-drop-ok");
   });
@@ -79,6 +81,7 @@ export function renderGrid(el,map,board,view,selected,onSelect,controls={}){
   const label=tileLabel(t)+ (map.stars.includes(i)?", star":"")+(map.coin===i?", Star Coin":"");
   const hint=interactive&&t?(ROTATABLE.has(t.type)?" · Click to rotate":"")+(MOVABLE.has(t.type)?" · Drag or use arrow keys to slide":""):"";
   b.title=label+hint;b.setAttribute("aria-label","Row "+(Math.floor(i/map.width)+1)+", column "+(i%map.width+1)+": "+label+hint);
+  b.addEventListener("pointerdown",()=>{if(!gesture)suppressClick=false;});
   b.onclick=event=>{if(suppressClick&&event.detail!==0){suppressClick=false;return;}onSelect(i);};
   if(interactive&&t){if(MOVABLE.has(t.type))attachDrag(b,t);if(ROTATABLE.has(t.type))b.classList.add("sl-rotatable");}
   if(t){
