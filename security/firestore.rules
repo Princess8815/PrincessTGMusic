@@ -166,6 +166,10 @@ service cloud.firestore {
     }
     match /digitalPackConfig/{id} { allow read, write: if false; }
     match /digitalOrders/{id} { allow read, write: if false; }
+    match /digitalTestPackConfig/{id} { allow read, write: if false; }
+    match /digitalTestOrders/{id} { allow read, write: if false; }
+    match /digitalTestMemberships/{id} { allow read, write: if false; }
+    match /digitalTestWallets/{id} { allow read, write: if false; }
 
     function validAuth(uid) {
       return request.auth != null

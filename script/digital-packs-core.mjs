@@ -29,6 +29,6 @@ export function extendMembership(expiresAt,days,now=Date.now()){
  const end=base+days*DAY_MS;ok(Number.isSafeInteger(end)&&end<253402300799000,"Membership duration limit reached.");
  return end;
 }
-export function receiptMatches(order,session,intent){
- return !!order&&session?.id===order.sessionId&&session.mode==="payment"&&session.livemode===true&&session.status==="complete"&&session.payment_status==="paid"&&session.currency==="usd"&&session.client_reference_id===order.id&&session.metadata?.digital_order_id===order.id&&session.amount_subtotal===order.pack.priceCents&&Number.isSafeInteger(session.amount_total)&&session.amount_total>=order.pack.priceCents&&session.automatic_tax?.status==="complete"&&intent?.id===session.payment_intent&&intent.livemode===true&&intent.status==="succeeded"&&intent.currency==="usd"&&intent.amount_received===session.amount_total&&intent.metadata?.digital_order_id===order.id;
+export function receiptMatches(order,session,intent,mode="live"){
+ return !!order&&session?.id===order.sessionId&&session.mode==="payment"&&session.livemode===(mode==="live")&&session.status==="complete"&&session.payment_status==="paid"&&session.currency==="usd"&&session.client_reference_id===order.id&&session.metadata?.digital_order_id===order.id&&session.amount_subtotal===order.pack.priceCents&&Number.isSafeInteger(session.amount_total)&&session.amount_total>=order.pack.priceCents&&session.automatic_tax?.status==="complete"&&intent?.id===session.payment_intent&&intent.livemode===(mode==="live")&&intent.status==="succeeded"&&intent.currency==="usd"&&intent.amount_received===session.amount_total&&intent.metadata?.digital_order_id===order.id;
 }
