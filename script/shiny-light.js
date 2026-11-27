@@ -42,7 +42,7 @@ async function send(kind,extra={},retry=false){
   const data=await callShiny(action,false,uid);if(e!==epoch)return;
   forget(uid);state=data.state;wallet=data.wallet;view=data.view;selected=-1;
   status((data.message||"Ready.")+(data.rewards?.length?" Discovered: "+data.rewards.join(", ")+"!":""));
- }catch(error){if(e!==epoch)return;failed=action;status(error.message+" Retry save to recover the same action.");}
+ }catch(error){if(e!==epoch)return;if([400,401,403,404,413].includes(error.status)){forget(uid);failed=null;status(error.message+" Refresh or choose another action.");}else{failed=action;status(error.message+" Retry save to recover the same action.");}}
  finally{if(e===epoch){busy=false;draw();}}
 }
 $("sl-login").onclick=()=>document.getElementById("auth-open")?.click();

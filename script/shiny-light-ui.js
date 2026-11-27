@@ -6,7 +6,7 @@ export async function callShiny(action,editor=false,uid=auth.currentUser?.uid){
  const user=auth.currentUser;if(!user||user.uid!==uid||!user.emailVerified||usingLocalFirebaseEmulators)throw Error("Sign in with a verified live account.");
  const idToken=await user.getIdToken();if(auth.currentUser?.uid!==uid)throw Error("Account changed.");
  const res=await fetch(endpoint+(editor?"shiny-light-editor":"shiny-light"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({idToken,...action})});
- const data=await res.json().catch(()=>({}));if(!res.ok)throw Error(data.error||"Puzzle service unavailable.");return data;
+ const data=await res.json().catch(()=>({}));if(!res.ok)throw Object.assign(Error(data.error||"Puzzle service unavailable."),{status:res.status});return data;
 }
 const icons={source:"Shiny",fruit:"🍌",coloredFruit:"🍌",mirror:"/",movingMirror:"/",oneWay:"/",movingOneWay:"/",linked:"/",barrier:"▉",movingBarrier:"▉",ice:"▧",button:"●",buttonDoor:"▣",tee:"⊥",movingTee:"⊥",cross:"✚",movingCross:"✚",dampener:"−",movingDampener:"−",amplifier:"+",movingAmplifier:"+",lightDoor:"▣",portal:"◎",rotatingPortal:"◉",changer:"◆",movingChanger:"◆",colorDoor:"▣",blackHole:"⬤",filter:"◈",movingFilter:"◈",combiner:"⊕",invertedDoor:"▣",continuous:"◍",multiDoor:"▣"};
 export const name=t=>FEATURES.find(f=>f.id===t)?.name||t;

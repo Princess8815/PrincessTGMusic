@@ -19,7 +19,8 @@ async function getMap(read,level){
 }
 async function startLevel(read,state,level){
  state.level=level;state.map=await getMap(read,level);state.board=initialBoard(state.map);
- state.won=false;state.stars=[];state.lastBlack=false;
+ const first=settleLight(state.map,state.board);state.board=first.board;
+ state.won=false;state.stars=[];state.lastBlack=!!first.black;
  return state;
 }
 function view(state){
@@ -58,7 +59,7 @@ export async function shinyGameAction({read,commit,root,uid,input,rng=random,clo
   const state=record?structuredClone(record.state):await startLevel(read,{revision:0,cleared:0,totalStars:0,generation:0},1);
   let coins=0,rewards=[],message="Ready.",historyWrite=null,rendered=null;
   if(kind==="retry"){
-   state.board=initialBoard(state.map);state.won=false;state.stars=[];state.lastBlack=false;message="Level reset.";
+   const first=settleLight(state.map,initialBoard(state.map));state.board=first.board;state.won=false;state.stars=[];state.lastBlack=!!first.black;message="Level reset.";
   }else if(kind==="resetCampaign"){
    state.cleared=0;state.totalStars=0;state.generation++;await startLevel(read,state,1);message="Campaign and stars reset. Wallet and previously earned collectibles kept.";
   }else if(kind==="next"||kind==="selectLevel"){

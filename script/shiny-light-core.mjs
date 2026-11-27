@@ -156,24 +156,27 @@ export function applyMove(map,board,action){
 // then only mirror orientations are scrambled. Procedural levels are fallbacks,
 // so staff-authored maps can override any number.
 function rng(seed){let x=seed>>>0;return ()=>{x=(x+0x6d2b79f5)>>>0;let t=x;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;};}
-export function proceduralDesign(level,milestones=defaultMilestones(),solution=false){
+export function proceduralDesign(level,milestones=defaultMilestones(),solution=false,allowBranch=true){
  assert(int(level,1,MAX_LEVEL),"Invalid level.");
  const random=rng(Math.imul(level,0x9e3779b1)),diff=difficulty(level);
  const size=Math.min(15,Math.max(3,3+Math.floor(Math.log2(level))+(diff==="hard"?2:diff==="super-hard"?4:0)));
  const w=size,h=size,n=w*h,rows=Math.min(h,level===1?2:diff==="super-hard"?h:diff==="hard"?Math.max(3,h-1):Math.max(2,Math.ceil(h/2)+Math.floor(random()*2)));
- const flip=random()<.5,vertical=random()<.5;
- const transform=(x,y)=>{if(flip)x=w-1-x;return vertical?x*w+y:y*w+x;};
+ const flip=random()<.5,vertical=random()<.5,offset=rows<h?Math.floor(random()*(h-rows+1)):0;
+ const transform=(x,y)=>{if(flip)x=w-1-x;y+=offset;return vertical?x*w+y:y*w+x;};
  const route=[];
  for(let y=0;y<rows;y++){for(let j=0;j<w;j++){const x=y%2===0?j:w-1-j;route.push(transform(x,y));}}
  const direction=(a,b)=>[0,1,2,3].find(d=>neighbor(a,d,w,h)===b);
  const tiles=[{i:route[0],type:"source",dir:direction(route[0],route[1]),power:3}],turns=[],straights=[];
  for(let k=1;k<route.length-1;k++){
   const i=route[k],d=direction(route[k-1],i),out=direction(i,route[k+1]);
-  if(d!==out){const dir=reflect(d,0)===out?0:1;turns.push({i,type:"mirror",dir:solution?dir:dir^1});}
+  if(d!==out){const dir=reflect(d,0)===out?0:1;turns.push({i,type:"mirror",dir:solution?dir:dir^1,solutionDir:dir,incoming:d,outgoing:out});}
   else straights.push(i);
  }
  tiles.push(...turns,{i:route.at(-1),type:"fruit"});
  const free=[...straights],allowed=t=>milestones[t]<=level;
+ // Linked mirrors are scrambled together so a common rotation can solve them.
+ if(allowed("linked")&&level%6===0&&turns.length>=2)for(const t of turns.slice(0,2)){t.type="linked";t.id="L";}
+ for(const t of turns){if(t.type!=="mirror")continue;if(allowed("movingMirror")&&random()<.22){t.type="movingMirror";t.axis=random()<.5?"h":"v";}else if(allowed("oneWay")&&level%3===0&&t.incoming%2===t.solutionDir){t.type="oneWay";t.dir=solution?t.incoming:mod(t.incoming+1);}}
  // Insert compatible feature chains in route order, preserving the known solution.
  const take=(type,props={})=>{if(!free.length||!allowed(type))return false;tiles.push({i:free.shift(),type,...props});return true;};
  if(level%4===0&&allowed("button")&&allowed("buttonDoor")&&free.length>=3){take("button",{id:"A"});take("buttonDoor",{id:"A"});}
@@ -181,13 +184,35 @@ export function proceduralDesign(level,milestones=defaultMilestones(),solution=f
  if(level%3===1&&allowed("changer")&&allowed("colorDoor")&&free.length>=4){take("changer",{color:1});take("changer",{color:2});take("colorDoor",{color:3});if(allowed("coloredFruit")&&free.length)take("coloredFruit",{color:3});}
  if(level%5===0&&allowed("continuous")&&allowed("multiDoor")&&free.length>=3){take("continuous",{id:"B"});take("multiDoor",{color:0,power:1,buttons:["B"]});}
  if(level%7===0&&allowed("filter")&&allowed("changer")&&free.length>=3){take("changer",{color:4});take("filter",{color:4});}
- // Add extra fruit on route and barriers off route. The path remains solvable.
+ // Adjacent portal ends on a straight section leave the intended route intact.
+ if(allowed("portal")&&level%5===1){
+  for(let k=0;k<free.length-1;k++){const a=free[k],b=free[k+1],ia=route.indexOf(a),ib=route.indexOf(b);
+   if(ib===ia+1&&direction(route[ia-1],a)===direction(a,b)&&direction(a,b)===direction(b,route[ib+1])){
+    const type=allowed("rotatingPortal")&&level%2===0?"rotatingPortal":"portal";
+    tiles.push({i:a,type,id:"P",dir:0},{i:b,type,id:"P",dir:0});free.splice(k,2);break;
+   }
+  }
+ }
+ const routeSet=new Set(route),extraBeam=new Set(),branchTargets=[];
+ // A crossbeam on a straight segment keeps the main path and adds a side
+ // branch outside the route; this can carry an extra banana or star.
+ if(allowBranch&&allowed("cross")&&level%3===2){
+  for(let k=0;k<free.length;k++){const i=free[k],at=route.indexOf(i),d=direction(route[at-1],i);
+   const side=[mod(d+1),mod(d-1)].find(s=>{const j=neighbor(i,s,w,h);return j>=0&&!routeSet.has(j);});
+   if(side===undefined)continue;
+   let j=neighbor(i,side,w,h);while(j>=0&&!routeSet.has(j)){extraBeam.add(j);j=neighbor(j,side,w,h);}
+   // Both outgoing directions may cross the route; the original solution is
+   // still valid only if it remains stable (verified by generator tests).
+   if(extraBeam.size){const target=[...extraBeam].at(-1);branchTargets.push(target);tiles.push({i,type:allowed("movingCross")&&level%2?"movingCross":"cross",axis:"h"},{i:target,type:"fruit"});free.splice(k,1);break;}
+  }
+ }
  if(free.length>2&&level>2)tiles.push({i:free[Math.floor(free.length/2)],type:"fruit"});
- const routeSet=new Set(route);
- if(allowed("barrier"))for(let i=0;i<n;i++)if(!routeSet.has(i)&&random()<(diff==="super-hard"?.45:diff==="hard"?.3:.12))tiles.push({i,type:"barrier"});
- const positions=route.slice(1),stars=[positions[Math.floor((positions.length-1)*.2)],positions[Math.floor((positions.length-1)*.55)],positions.at(-1)];
+ if(allowed("barrier"))for(let i=0;i<n;i++)if(!routeSet.has(i)&&!extraBeam.has(i)&&random()<(diff==="super-hard"?.45:diff==="hard"?.3:.12))tiles.push({i,type:"barrier"});
+ const positions=route.slice(1),stars=[positions[Math.floor((positions.length-1)*.2)],positions[Math.floor((positions.length-1)*.55)],branchTargets[0]??positions.at(-1)];
  const coin=level%5===0?positions[Math.floor((positions.length-1)*.8)]:null;
- return validateDesign({title:"Banana beams "+level,width:w,height:h,tiles,stars,coin},level,milestones);
+ const design=validateDesign({title:"Banana beams "+level,width:w,height:h,tiles,stars,coin},level,milestones);
+ if(allowBranch&&branchTargets.length){const solved={...design,tiles:design.tiles.map(t=>{const turn=turns.find(x=>x.i===t.i);return turn?{...t,dir:t.type==="oneWay"?turn.incoming:turn.solutionDir}:t;})};const result=settleLight(solved,initialBoard(solved));if(!result.won||result.stars.length!==3)return proceduralDesign(level,milestones,solution,false);}
+ return design;
 }
 export const shinyChance=level=>level>10?.01:0;
 export const fruiterChance=level=>Math.min(1,(1+.25*(level-1))/10000);
