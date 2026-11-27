@@ -4,3 +4,5 @@
 .chess-area-panel{display:grid;gap:16px;min-width:0}.chess-area-tabs{display:flex;flex-wrap:wrap;gap:8px}.chess-area-tabs button{flex:1;min-width:120px}.chess-area-tabs button[aria-selected=true]{outline:2px solid #b794f4;outline-offset:-2px}.academy-associate-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.academy-degree button{width:100%;margin-top:8px}.academy-professor h3{margin:0 0 4px}
 
 #academy-practice{scroll-margin-top:90px}#academy-feedback.academy-error{border-color:#d97706;background:#d9770618}#academy-connection-actions{margin-bottom:14px}
+
+.academy-test-tools{border:2px solid #b48b42;padding:12px;border-radius:12px;margin:12px 0;background:#b48b4218}.academy-test-tools p{margin:6px 0}

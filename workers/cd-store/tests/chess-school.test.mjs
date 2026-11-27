@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {LESSONS,DEGREES,PROFESSOR_ID,position,coach,initialCourse,courseAction,publicCourse,quizView} from "../../../script/chess-school-core.mjs";
+import {LESSONS,DEGREES,COURSES,WIGGLEWORTS_ID,PROFESSOR_ID,position,coach,initialCourse,courseAction,publicCourse,quizView} from "../../../script/chess-school-core.mjs";
 import {moves,moveKey,playChess,botMove} from "../../../script/chess-core.mjs";
 import {schoolWithStorage,chessDiplomaWrite} from "../chess-school.mjs";
 import {SCHOOL_MEDALS,CHESS_DIPLOMA_ID,diplomaTitle} from "../../../script/chess-school-awards.mjs";
@@ -62,4 +62,29 @@ test("diploma upgrades replace the same record and never downgrade",async()=>{
   old={fields:w.update.fields,updateTime:String(rank)};
  }
  assert.equal(await chessDiplomaWrite({read,root,user,rank:1}),null);assert.equal(await chessDiplomaWrite({read,root,user,rank:4}),null);assert.equal(diplomaTitle(4),"PhD in Chess Diploma");
+});
+
+test("Bachelor’s strategy exercises are legal and exam is fixed at level four",()=>{
+ const b=COURSES.bachelors;
+ assert.equal(b.LESSONS.length,12);assert.equal(b.EXAM_LEVEL,4);
+ for(const l of b.LESSONS)for(const e of [l.example,...l.exercises])assert.ok(moves(position(e[0])).some(m=>moveKey(m)===e[2]),l.title+": "+e[2]);
+ let s=b.initialCourse();assert.throws(()=>b.courseAction(s,{action:"exam-start"}));s.best.fill(80);s=b.courseAction(s,{action:"exam-start"});assert.equal(b.publicCourse(s).exam.level,4);assert.throws(()=>b.courseAction(s,{action:"hint"}));
+});
+test("Bachelor’s requires server-confirmed Associate’s and upgrades diploma only after real win",async()=>{
+ const root="docs",uid="u",user="users/u",a=user+"/privateGames/chess-school-associates",b=user+"/privateGames/chess-school-bachelors",dip=user+"/diplomas/chess";
+ const pack=s=>({updateTime:"v",fields:{payload:{stringValue:JSON.stringify(s)}}});
+ const data=new Map([[user,{updateTime:"u",fields:{role:{stringValue:"owner"}}}]]);
+ const read=async p=>data.get(p)||null;let commits=0;
+ const commit=async writes=>{commits++;for(const w of writes)if(w.update)data.set(w.update.name.slice(root.length+1),{updateTime:"v"+commits,fields:w.update.fields});return true;};
+ const call=input=>schoolWithStorage({read,commit,root,uid,input:{school:"bachelors",...input}});
+ await assert.rejects(()=>call({action:"state"}));
+ let assoc=COURSES.associates.initialCourse();assoc.best.fill(100);data.set(a,pack(assoc));await assert.rejects(()=>call({action:"state"}));
+ assert.equal((await call({action:"catalog"})).associateCompleted,false);assert.equal(commits,0);
+ assoc.exam.passed=true;data.set(a,pack(assoc));data.set(dip,{updateTime:"d",fields:{rank:{integerValue:"1"}}});
+ assert.equal((await call({action:"catalog"})).associateCompleted,true);assert.equal(commits,0);
+ await assert.rejects(()=>call({action:"state",adminTest:true}));assert.equal(commits,0);
+ let state=await call({action:"state"});assert.equal(state.exam.level,4);
+ const course=COURSES.bachelors;let s=course.initialCourse();s.best.fill(100);s=course.courseAction(s,{action:"exam-start"});s.exam.game=position("k7/8/1QK5/8/8/8/8/8 w - -");data.set(b,pack(s));
+ const result=await call({action:"move",move:"b6b7",revision:s.revision,requestId:"test-win"});assert.equal(result.completed,true);assert.equal(data.get(dip).fields.rank.integerValue,"2");assert.ok(data.has(user+"/axolotls/"+WIGGLEWORTS_ID));assert.equal(data.get(a).fields.payload.stringValue,JSON.stringify(assoc));
+ const count=commits;await call({action:"move",move:"b6b7",revision:s.revision,requestId:"test-win"});assert.equal(commits,count);
 });
