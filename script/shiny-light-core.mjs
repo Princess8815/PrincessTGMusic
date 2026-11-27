@@ -87,7 +87,7 @@ function trace(map,board,continuous,combined){
   edges.set(from+":"+i+":"+c,{from,to:i,color:c,power:p});
   if(type==="source"||type==="barrier")continue;
   if(type==="blackHole"){black=true;continue;}
-  if(type==="ice"){const j=neighbor(i,d,w,h);if(axisOK(t.axis,d)&&j>=0&&!tiles[j]&&!map.stars.includes(j)&&map.coin!==j&&!pushes.has(i))pushes.set(i,j);continue;}
+  if(type==="ice"){const j=neighbor(i,d,w,h);if(axisOK(t.axis,d)&&j>=0&&!tiles[j]&&!pushes.has(i))pushes.set(i,j);continue;}
   if(type==="buttonDoor"&&!active.has(t.id)||type==="invertedDoor"&&active.has(t.id)||type==="lightDoor"&&p<t.power||type==="colorDoor"&&c!==t.color||type==="multiDoor"&&(p<t.power||t.color!==0&&c!==t.color||!t.buttons.every(id=>active.has(id))))continue;
   if(type==="oneWay"&&d!==t.dir)continue;
   illuminate(i,c,p);
@@ -112,14 +112,15 @@ function trace(map,board,continuous,combined){
   }
   send(i,d,c,p);
  }
- return {black,coin,fruit:[...fruit].sort((a,b)=>a-b),stars:[...stars].sort((a,b)=>a-b),lit,edges,latch,switches,pushes,inputs};
+ return {black,coin,steps,fruit:[...fruit].sort((a,b)=>a-b),stars:[...stars].sort((a,b)=>a-b),lit,edges,latch,switches,pushes,inputs};
 }
 
 export function settleLight(map,input){
- let board={tiles:input.tiles.map(t=>({...t})),latched:[...input.latched]},continuous=[],combined=[],seen=new Set();
+ let board={tiles:input.tiles.map(t=>({...t})),latched:[...input.latched]},continuous=[],combined=[],seen=new Set(),work=0;
  for(let pass=0;pass<32;pass++){
   const a=trace(map,board,continuous,combined);
-  if(a.unstable)return {board,unstable:true,won:false,stars:[],coin:false,edges:[],lit:[],fruit:[]};
+  work+=a.steps||0;
+  if(a.unstable||work>12000)return {board:input,unstable:true,won:false,stars:[],coin:false,edges:[],lit:[],fruit:[]};
   if(a.black)return {board:initialBoard(map),black:true,won:false,stars:[],coin:false,edges:[],lit:[],fruit:[]};
   const latched=[...a.latch].sort(),nextContinuous=[...a.switches].sort(),nextCombined=[];
   for(const [i,dirs] of a.inputs){if(dirs.size<2)continue;let c=0,p=0;for(const [cc,pp] of dirs.values()){c|=cc;p+=pp;}nextCombined.push([i,c,Math.min(MAX_POWER,p)]);}
@@ -133,7 +134,7 @@ export function settleLight(map,input){
   board.latched=latched;continuous=nextContinuous;combined=nextCombined;
   const key=JSON.stringify([board.tiles.map(t=>t.i),latched,continuous,combined]);if(seen.has(key))break;seen.add(key);
  }
- return {board,unstable:true,won:false,stars:[],coin:false,edges:[],lit:[],fruit:[]};
+ return {board:input,unstable:true,won:false,stars:[],coin:false,edges:[],lit:[],fruit:[]};
 }
 export function applyMove(map,board,action){
  const next={tiles:board.tiles.map(t=>({...t})),latched:[...board.latched]};
@@ -147,7 +148,7 @@ export function applyMove(map,board,action){
  }else if(action.kind==="move"){
   assert(MOVABLE.has(t.type)&&int(action.dir,0,3)&&axisOK(t.axis,action.dir),"Move along this tile's marked axis only.");
   const j=neighbor(t.i,action.dir,map.width,map.height);
-  assert(j>=0&&!next.tiles.some(x=>x.i===j)&&!map.stars.includes(j)&&map.coin!==j,"Destination is occupied.");
+  assert(j>=0&&!next.tiles.some(x=>x.i===j),"Destination is occupied.");
   t.i=j;
  }else throw Error("Unknown puzzle action.");
  return settleLight(map,next);

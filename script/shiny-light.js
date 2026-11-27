@@ -16,7 +16,7 @@ function draw(){
  $("sl-rotate").disabled=!play||!ROTATABLE.has(tile?.type);
  for(const [id,d] of [["sl-left",3],["sl-right",1],["sl-up",0],["sl-down",2]]){
   const j=state?neighbor(selected,d,state.map.width,state.map.height):-1;
-  $(id).disabled=!play||!MOVABLE.has(tile?.type)||(tile.axis==="h"?d%2!==1:d%2!==0)||j<0||state.board.tiles.some(t=>t.i===j)||state.map.stars.includes(j)||state.map.coin===j;
+  $(id).disabled=!play||!MOVABLE.has(tile?.type)||(tile.axis==="h"?d%2!==1:d%2!==0)||j<0||state.board.tiles.some(t=>t.i===j);
  }
  $("sl-check").disabled=!play;$("sl-next").hidden=!state?.won||state.level===MAX_LEVEL;$("sl-next").disabled=!ready();
  $("sl-selection").textContent=tile?tileLabel(tile):"Select a mirror or movable tile.";
