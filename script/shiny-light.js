@@ -1,7 +1,7 @@
 import {auth,usingLocalFirebaseEmulators} from "./firebase.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {watchStaffRole} from "./staff-auth.js";
-import {MAX_LEVEL,MOVABLE,ROTATABLE,difficulty,neighbor} from "./shiny-light-core.mjs";
+import {MAX_LEVEL,MOVABLE,ROTATABLE,difficulty} from "./shiny-light-core.mjs";
 import {$,callShiny,renderGrid,renderGuide,tileLabel} from "./shiny-light-ui.js";
 let state=null,wallet=0,view=null,selected=-1,busy=false,failed=null,epoch=0,page=0,pickerBusy=false;
 const key=uid=>"ptg-shiny-pending-v1:"+uid;
@@ -13,13 +13,8 @@ function draw(){
  $("sl-login").hidden=eligible();$("sl-resend").hidden=!failed;$("sl-resend").disabled=busy;
  for(const id of ["sl-picker","sl-retry","sl-reset"])$(id).disabled=!ready();
  $("sl-refresh").disabled=!eligible()||busy||!!failed;
- $("sl-rotate").disabled=!play||!ROTATABLE.has(tile?.type);
- for(const [id,d] of [["sl-left",3],["sl-right",1],["sl-up",0],["sl-down",2]]){
-  const j=state?neighbor(selected,d,state.map.width,state.map.height):-1;
-  $(id).disabled=!play||!MOVABLE.has(tile?.type)||(tile.axis==="h"?d%2!==1:d%2!==0)||j<0||state.board.tiles.some(t=>t.i===j);
- }
  $("sl-check").disabled=!play;$("sl-next").hidden=!state?.won||state.level===MAX_LEVEL;$("sl-next").disabled=!ready();
- $("sl-selection").textContent=tile?tileLabel(tile):"Select a mirror or movable tile.";
+ $("sl-selection").textContent=tile?tileLabel(tile):"Tap a mirror to turn it. Drag arrow-marked pieces to slide them.";
  if(!state){$("sl-grid").replaceChildren();for(const id of ["sl-level","sl-fruit","sl-stars","sl-total","sl-wallet","sl-difficulty"])$(id).textContent="–";return;}
  $("sl-level").textContent=state.level;
  $("sl-fruit").textContent=(view?.fruit?.length||0)+"/"+state.board.tiles.filter(t=>["fruit","coloredFruit"].includes(t.type)).length;
@@ -28,7 +23,12 @@ function draw(){
  $("sl-difficulty").textContent=difficulty(state.level).replace("-"," ");
  const next=difficulty(state.level+1);$("sl-next").className=next==="normal"?"":"sl-"+next;
  $("sl-next").textContent="Next level"+(next==="normal"?"":" · "+next.replace("-"," "));
- renderGrid($("sl-grid"),state.map,state.board,view,selected,i=>{if(busy)return;selected=i;draw();});
+ renderGrid($("sl-grid"),state.map,state.board,view,selected,i=>{
+  if(!ready()||state.won)return;
+  const t=state.board.tiles.find(t=>t.i===i);
+  if(ROTATABLE.has(t?.type)){send("rotate",{i});return;}
+  selected=i;draw();
+ },play?{onMove:(i,to)=>send("move",{i,to}),onError:status}:{});
 }
 function stash(uid,a){try{localStorage.setItem(key(uid),JSON.stringify(a));}catch{}}
 function restore(uid){try{return JSON.parse(localStorage.getItem(key(uid))||"null");}catch{return null;}}
@@ -47,11 +47,21 @@ async function send(kind,extra={},retry=false){
 }
 $("sl-login").onclick=()=>document.getElementById("auth-open")?.click();
 $("sl-refresh").onclick=()=>send("state");$("sl-resend").onclick=()=>failed&&send(failed.kind,{},true);
-$("sl-rotate").onclick=()=>send("rotate",{i:selected});$("sl-check").onclick=()=>send("check");
-for(const [id,dir] of [["sl-left",3],["sl-right",1],["sl-up",0],["sl-down",2]])$(id).onclick=()=>send("move",{i:selected,dir});
+$("sl-check").onclick=()=>send("check");
 $("sl-retry").onclick=()=>send("retry");$("sl-next").onclick=()=>send("next");
 $("sl-reset").onclick=()=>{if(ready()&&confirm("Reset all Banana Beams levels and stars? Your wallet and collectibles stay, and previously earned coin rewards cannot be claimed again."))send("resetCampaign");};
-$("sl-full").onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.querySelector(".sl-main").requestFullscreen();}catch{status("Fullscreen is unavailable in this browser.");}};
+const arena=document.querySelector(".sl-main");
+function fullLabel(){const full=document.fullscreenElement===arena||arena.classList.contains("sl-expanded");$("sl-full").textContent=full?"Exit fullscreen":"⛶ Fullscreen";$("sl-full").setAttribute("aria-pressed",String(full));}
+function expanded(on){arena.classList.toggle("sl-expanded",on);document.body.classList.toggle("sl-page-expanded",on);fullLabel();}
+$("sl-full").onclick=async()=>{
+ if(arena.classList.contains("sl-expanded")){expanded(false);return;}
+ if(document.fullscreenElement===arena){await document.exitFullscreen();return;}
+ try{if(!arena.requestFullscreen)throw Error("Unsupported");await arena.requestFullscreen();}
+ catch{expanded(true);}
+ fullLabel();
+};
+document.addEventListener("fullscreenchange",fullLabel);document.addEventListener("keydown",event=>{if(event.key==="Escape"&&arena.classList.contains("sl-expanded"))expanded(false);});
+fullLabel();
 async function pick(p){
  if(!ready()||pickerBusy)return;const uid=auth.currentUser.uid,e=epoch;pickerBusy=true;
  page=Math.max(0,Math.min(Math.floor(state.cleared/30),p));$("sl-page-status").textContent="Loading…";$("sl-levels").replaceChildren();

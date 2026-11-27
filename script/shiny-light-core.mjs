@@ -2,7 +2,7 @@
 export const MAX_LEVEL=1000000, MAX_POWER=9;
 export const SHINY_AXOLOTLS=[["shiny","Shiny","#fff2a0","#f9b64c","star"]];
 export const FEATURES=[
- ["source","Light source",1],["fruit","Banana",1],["mirror","Mirror",1],["barrier","Barrier",2],
+ ["source","Light source",1],["fruit","Banana",1],["mirror","Mirror",1],["barrier","Barrier",2],["glassWall","Clear glass wall",3],["movingGlassWall","Movable glass wall",7],
  ["ice","Light-pushed ice",4],["button","Button",6],["buttonDoor","Button door",6],
  ["tee","T-beam splitter",9],["cross","Crossbeam splitter",12],["dampener","Dampener",15],
  ["amplifier","Amplifier",17],["lightDoor","Light door",18],["portal","Portal",21],
@@ -16,9 +16,9 @@ export const FEATURES=[
  ["movingDampener","Movable dampener",16],["movingAmplifier","Movable amplifier",19]
 ].map(([id,name,level])=>({id,name,level}));
 export const TYPES=FEATURES.map(f=>f.id);
-export const MOVABLE=new Set(["movingMirror","movingTee","movingCross","movingOneWay","movingBarrier","movingChanger","movingFilter","movingDampener","movingAmplifier"]);
+export const MOVABLE=new Set(["movingGlassWall","movingMirror","movingTee","movingCross","movingOneWay","movingBarrier","movingChanger","movingFilter","movingDampener","movingAmplifier"]);
 export const ROTATABLE=new Set(["mirror","movingMirror","oneWay","movingOneWay","linked"]);
-const baseType=t=>({movingMirror:"mirror",movingTee:"tee",movingCross:"cross",movingOneWay:"oneWay",movingBarrier:"barrier",movingChanger:"changer",movingFilter:"filter",movingDampener:"dampener",movingAmplifier:"amplifier"}[t]||t);
+const baseType=t=>({movingGlassWall:"glassWall",movingMirror:"mirror",movingTee:"tee",movingCross:"cross",movingOneWay:"oneWay",movingBarrier:"barrier",movingChanger:"changer",movingFilter:"filter",movingDampener:"dampener",movingAmplifier:"amplifier"}[t]||t);
 const DX=[0,1,0,-1],DY=[-1,0,1,0],mod=n=>(n+4)%4;
 const int=(n,a,b)=>Number.isInteger(n)&&n>=a&&n<=b;
 const assert=(ok,m)=>{if(!ok)throw Error(m);};
@@ -136,6 +136,17 @@ export function settleLight(map,input){
  }
  return {board:input,unstable:true,won:false,stars:[],coin:false,edges:[],lit:[],fruit:[]};
 }
+// Every cell in a slide must be empty. The same check is used for pointer
+// previews and authoritative Worker moves. A glass wall is solid to pieces.
+export function slideDestination(map,board,from,to){
+ assert(int(from,0,map.width*map.height-1)&&int(to,0,map.width*map.height-1)&&from!==to,"Choose an empty destination.");
+ const t=board.tiles.find(t=>t.i===from);assert(t&&MOVABLE.has(t.type),"This piece cannot be moved by hand.");
+ const w=map.width,dx=to%w-from%w,dy=Math.floor(to/w)-Math.floor(from/w);
+ assert(t.axis==="h"?dy===0&&dx!==0:dx===0&&dy!==0,"Slide along the marked axis only.");
+ const step=dx?Math.sign(dx):Math.sign(dy)*w,occupied=new Set(board.tiles.map(t=>t.i));
+ for(let i=from+step;;i+=step){assert(!occupied.has(i),"A piece or wall blocks the path.");if(i===to)break;}
+ return to;
+}
 export function applyMove(map,board,action){
  const next={tiles:board.tiles.map(t=>({...t})),latched:[...board.latched]};
  if(action.kind==="check")return settleLight(map,next);
@@ -146,10 +157,8 @@ export function applyMove(map,board,action){
   const group=t.type==="linked"?next.tiles.filter(x=>x.type==="linked"&&x.id===t.id):[t];
   for(const x of group)x.dir=mod(x.dir+1);
  }else if(action.kind==="move"){
-  assert(MOVABLE.has(t.type)&&int(action.dir,0,3)&&axisOK(t.axis,action.dir),"Move along this tile's marked axis only.");
-  const j=neighbor(t.i,action.dir,map.width,map.height);
-  assert(j>=0&&!next.tiles.some(x=>x.i===j),"Destination is occupied.");
-  t.i=j;
+  const to=action.to!==undefined?action.to:(int(action.dir,0,3)?neighbor(t.i,action.dir,map.width,map.height):-1);
+  t.i=slideDestination(map,next,t.i,to);
  }else throw Error("Unknown puzzle action.");
  return settleLight(map,next);
 }
@@ -185,6 +194,7 @@ export function proceduralDesign(level,milestones=defaultMilestones(),solution=f
  if(level%3===1&&allowed("changer")&&allowed("colorDoor")&&free.length>=4){take("changer",{color:1});take("changer",{color:2});take("colorDoor",{color:3});if(allowed("coloredFruit")&&free.length)take("coloredFruit",{color:3});}
  if(level%5===0&&allowed("continuous")&&allowed("multiDoor")&&free.length>=3){take("continuous",{id:"B"});take("multiDoor",{color:0,power:1,buttons:["B"]});}
  if(level%7===0&&allowed("filter")&&allowed("changer")&&free.length>=3){take("changer",{color:4});take("filter",{color:4});}
+ if(level%3===0&&free.length>2&&allowed("glassWall"))take("glassWall");
  // Adjacent portal ends on a straight section leave the intended route intact.
  if(allowed("portal")&&level%5===1){
   for(let k=0;k<free.length-1;k++){const a=free[k],b=free[k+1],ia=route.indexOf(a),ib=route.indexOf(b);

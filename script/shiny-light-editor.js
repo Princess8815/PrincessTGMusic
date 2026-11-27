@@ -3,7 +3,7 @@ import {FEATURES,TYPES,COLORS,MOVABLE,ROTATABLE,difficulty,defaultMilestones,val
 import {$,callShiny,renderGrid,tileLabel} from "./shiny-light-ui.js";
 let map={title:"New puzzle",width:5,height:5,tiles:[],stars:[],coin:null},milestones=defaultMilestones(),loaded=1,selected=-1,test=null,view=null,busy=false;
 const msg=t=>$("se-status").textContent=t;
-const testIds=["se-stop","se-rotate","se-left","se-right","se-up","se-down","se-check","se-test-reset"];
+const testIds=["se-stop","se-check","se-test-reset"];
 const label=(value,text)=>{const o=document.createElement("option");o.value=value;o.textContent=text;return o;};
 for(const [id,title] of [["inspect","Inspect existing tile"],["erase","Erase tile / overlays"],["star","Star overlay"],["coin","Star Coin overlay"],...FEATURES.map(f=>[f.id,f.name])])$("se-tool").append(label(id,title));
 for(let i=0;i<COLORS.length;i++)$("se-color").append(label(i,COLORS[i]));$("se-tool").value="mirror";
@@ -11,14 +11,13 @@ function render(){
  $("se-test").hidden=!!test;for(const id of testIds)$(id).hidden=!test;
  for(const id of ["se-load","se-delete","se-publish","se-resize","se-import","se-export","se-save-milestones"])$(id).disabled=busy||!!test;
  if(test){
-  const t=test.board.tiles.find(t=>t.i===selected);$("se-rotate").disabled=!ROTATABLE.has(t?.type);
-  for(const [id,d] of [["se-left",3],["se-right",1],["se-up",0],["se-down",2]])$(id).disabled=!MOVABLE.has(t?.type)||(t.axis==="h"?d%2!==1:d%2!==0);
+  const t=test.board.tiles.find(t=>t.i===selected);
   $("se-test-status").textContent=(view?.black?"Black hole! Board reset.":view?.unstable?"Unstable circuit.":view?.won?"Solved!":"Practice")+(view?" · "+view.stars.length+"/3 stars · "+view.fruit.length+" lit bananas":"")+(t?" · "+tileLabel(t):"");
  }
- renderGrid($("se-grid"),map,test?test.board:{tiles:map.tiles,latched:[]},test?view:null,selected,cell);
+ renderGrid($("se-grid"),map,test?test.board:{tiles:map.tiles,latched:[]},test?view:null,selected,cell,test?{onMove:(i,to)=>act("move",{i,to}),onError:m=>$("se-test-status").textContent=m}:{});
 }
 function cell(i){
- selected=i;if(test){render();return;}
+ selected=i;if(test){const t=test.board.tiles.find(t=>t.i===i);if(ROTATABLE.has(t?.type)){act("rotate",{i});return;}render();return;}
  const tool=$("se-tool").value,idx=map.tiles.findIndex(t=>t.i===i),t=map.tiles[idx];
  if(tool==="inspect"){
   if(t){$("se-dir").value=t.dir??0;$("se-axis").value=t.axis??"h";$("se-color").value=t.color??1;$("se-power").value=t.power??1;$("se-id").value=t.id??"A";$("se-buttons").value=(t.buttons||[]).join(",");}
@@ -47,11 +46,10 @@ $("se-delete").onclick=()=>run(async()=>{const n=level();if(!confirm("Remove off
 $("se-save-milestones").onclick=()=>run(async()=>{const next=validateMilestones(Object.fromEntries([...$("se-milestones").querySelectorAll("input")].map(i=>[i.dataset.feature,Number(i.value)])));if(!confirm("Save unlocks? Existing official levels may need editing if a feature becomes locked."))return;await callShiny({action:"milestones",milestones:next},true);milestones=next;msg("Unlock schedule saved.");});
 $("se-import").onclick=()=>{try{showMap(validateDesign(JSON.parse($("se-json").value),level(),milestones,false));msg("Imported locally. Publish to save.");}catch(e){msg(e.message);}};
 $("se-export").onclick=()=>{$("se-json").value=JSON.stringify(fields(),null,2);msg("Level JSON ready to copy.");};
-function startTest(){const d=validateDesign(fields(),level(),milestones);map=d;test= {board:initialBoard(d)};view=null;selected=-1;render();}
+function startTest(){const d=validateDesign(fields(),level(),milestones);map=d;view=settleLight(d,initialBoard(d));test={board:view.board};selected=-1;render();}
 $("se-test").onclick=()=>{try{startTest();msg("Practice only. No Star Coins, stars or collectibles are awarded.");}catch(e){msg(e.message);}};
 $("se-stop").onclick=()=>{test=null;view=null;selected=-1;$("se-test-status").textContent="";render();};
-$("se-test-reset").onclick=()=>{test.board=initialBoard(map);view=null;selected=-1;render();};
+$("se-test-reset").onclick=()=>{view=settleLight(map,initialBoard(map));test.board=view.board;selected=-1;render();};
 function act(kind,extra={}){if(!test)return;try{const r=applyMove(map,test.board,{kind,...extra});test.board=r.board;view=r;selected=-1;render();}catch(e){$("se-test-status").textContent=e.message;}}
-$("se-rotate").onclick=()=>act("rotate",{i:selected});$("se-check").onclick=()=>act("check");
-for(const [id,dir] of [["se-left",3],["se-right",1],["se-up",0],["se-down",2]])$(id).onclick=()=>act("move",{i:selected,dir});
+$("se-check").onclick=()=>act("check");
 if(await guardStaffPage({redirectURL:"shiny-light.html"})){showMilestones();showMap(map);await load();}

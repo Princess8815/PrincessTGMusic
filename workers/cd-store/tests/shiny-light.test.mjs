@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {defaultMilestones,validateDesign,proceduralDesign,initialBoard,settleLight,applyMove,difficulty,shinyChance,fruiterChance} from "../../../script/shiny-light-core.mjs";
+import {defaultMilestones,validateDesign,proceduralDesign,initialBoard,settleLight,applyMove,slideDestination,difficulty,shinyChance,fruiterChance} from "../../../script/shiny-light-core.mjs";
 import {shinyGameAction,shinyEditorAction} from "../shiny-light.mjs";
 const tile=(i,type,more={})=>({i,type,...more});
 const map=(tiles,stars=[1,2,3],coin=null,w=5,h=5)=>validateDesign({title:"test",width:w,height:h,tiles,stars,coin},1000,defaultMilestones(),false);
@@ -63,4 +63,20 @@ test("trusted reward commits are idempotent, replay/reset cannot duplicate coins
  r=await call("check",3,2);assert.equal(r.state.totalStars,2);assert.equal(r.coins,0);assert.equal(r.wallet,11);
  assert.equal(Number(docs.get(wp).fields.balance.integerValue),11);
  await assert.rejects(()=>shinyEditorAction({read,commit,root,uid,input:{action:"config"}}),/Administrator/);
+});
+
+test("glass walls transmit beams but block sliding pieces and light-pushed ice",()=>{
+ const d=map([tile(0,"source",{dir:1}),tile(2,"glassWall"),tile(4,"fruit"),tile(10,"movingMirror",{axis:"h"}),tile(13,"glassWall")],[1,2,3]);
+ assert.equal(light(d).won,true);
+ assert.equal(slideDestination(d,initialBoard(d),10,12),12);
+ assert.throws(()=>slideDestination(d,initialBoard(d),10,14));
+ assert.throws(()=>slideDestination(d,initialBoard(d),10,15));
+ assert.throws(()=>slideDestination(d,initialBoard(d),2,3));
+ assert.equal(applyMove(d,initialBoard(d),{kind:"move",i:10,to:12}).board.tiles.find(x=>x.type==="movingMirror").i,12);
+ const ice=map([tile(0,"source",{dir:1}),tile(1,"ice",{axis:"h"}),tile(3,"glassWall"),tile(4,"fruit")],[5,6,7]);
+ assert.equal(light(ice).board.tiles.find(x=>x.type==="ice").i,2);
+ assert.equal(light(ice).won,false);
+ const movable=map([tile(0,"source",{dir:1}),tile(2,"movingGlassWall",{axis:"h"}),tile(4,"fruit")],[1,2,3]);
+ assert.equal(light(movable).won,true);
+ assert.equal(applyMove(movable,initialBoard(movable),{kind:"move",i:2,to:3}).board.tiles.find(x=>x.type==="movingGlassWall").i,3);
 });
