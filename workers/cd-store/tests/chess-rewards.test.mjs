@@ -11,10 +11,10 @@ function fixture(mode="free"){
 }
 test("difficulty-scaled server payouts for black player, Free and Paid; retry never credits twice",async()=>{
  for(const [member,multiplier] of [["free",1],["actual",2]])for(const level of [1,5,10]){
-  const f=fixture(member),game={...initialChess(),board:Array(64).fill(""),turn:"b",castle:""};game.board[0]="k";game.board[55]="r";game.board[63]="K";
+  const f=fixture(member),game={...initialChess(),board:Array(64).fill(""),turn:"b",castle:""};game.board[42]="k";game.board[41]="q";game.board[56]="K";
   f.save({revision:3,ratings:initialRatings(),mode:"pvb",level,side:"b",game,seed:1,pendingCoins:5});
-  const req={action:"move",requestId:"win",revision:3,move:{from:55,to:63}};
-  const d=await f.call(req),expected=chessDifficultyCoins(35,level)*multiplier;assert.equal(d.coinAward,expected);assert.equal(f.coins,expected);assert.equal(d.ratings.wins,1);assert.equal(d.game.winner,"b");
+  const req={action:"move",requestId:"win",revision:3,move:{from:41,to:49}};
+  const d=await f.call(req),expected=chessDifficultyCoins(35,level)*multiplier;assert.equal(d.coinAward,expected);assert.equal(f.coins,expected);assert.equal(d.ratings.wins,1);assert.equal(d.game.winner,"b");assert.equal(d.game.reason,"checkmate");
   assert.equal((await f.call(req)).coinAward,expected);assert.equal(f.coins,expected);
  }
 });
@@ -40,4 +40,13 @@ test("server ignores tournament color preference; resume and next match use assi
   d=await f.call({action:"next",revision:d.revision,requestId:"next",colorChoice:choice});
   assert.equal(d.side,tournamentColor(next,"player"));assert.equal(d.game.turn,d.side);
  }
+});
+
+test("server rejects self-check and awards trapped stalemate same as checkmate",async()=>{
+ const f=fixture(),g={...initialChess(),board:Array(64).fill(""),castle:""};g.board[60]="K";g.board[0]="k";g.board[4]="r";g.board[52]="R";
+ f.save({revision:1,ratings:initialRatings(),mode:"pvb",level:1,side:"w",game:g,seed:1});
+ let rejected=false;try{await f.call({action:"move",requestId:"illegal",revision:1,move:{from:52,to:51}});}catch{rejected=true;}assert.ok(rejected);assert.equal(f.coins,0);
+ const s={...initialChess(),board:Array(64).fill(""),castle:""};s.board[0]="k";s.board[18]="K";s.board[10]="Q";
+ f.save({revision:2,ratings:initialRatings(),mode:"pvb",level:1,side:"w",game:s,seed:1,pendingCoins:0});
+ const d=await f.call({action:"move",requestId:"stalemate",revision:2,move:{from:10,to:17}});assert.equal(d.game.reason,"stalemate");assert.equal(d.coinAward,30);assert.equal(f.coins,30);
 });

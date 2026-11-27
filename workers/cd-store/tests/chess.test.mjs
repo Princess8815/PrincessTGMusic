@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {newTournament,tournamentMatch,advanceTournament,initialChess,moves,playChess,botMove,initialRatings,recordRated,chessUnlocks,CHESS_TROPHY,recordTournamentResult,tournamentBotMatch,tournamentBotPly,tournamentBotSeed,playerColor,startPlayerChess,tournamentColor,assignTournamentColors} from "../../../script/chess-core.mjs";
+import {newTournament,tournamentMatch,advanceTournament,initialChess,moves,playChess,botMove,initialRatings,recordRated,chessUnlocks,CHESS_TROPHY,recordTournamentResult,tournamentBotMatch,tournamentBotPly,tournamentBotSeed,playerColor,startPlayerChess,tournamentColor,assignTournamentColors,inCheck,attacked,chessMatchCoins} from "../../../script/chess-core.mjs";
 const ids=["a","b","c","d","e","f","g"];
 function finish(t,decide){let playerGames=0;while(!t.complete){assert.ok(tournamentMatch(t));t=advanceTournament(t,decide(t,playerGames++));assert.ok(playerGames<=10);}return t;}
 test("real 3GG: minimum three games, 16 or 17 total, all feeds and reset valid",()=>{
@@ -23,10 +23,10 @@ test("single elimination ends after one loss and three wins earn championship",(
  const t=newTournament(ids,10,"single",1);assert.equal(advanceTournament(t,false).complete,true);const win=finish(t,()=>true);assert.equal(win.champion,"player");assert.equal(win.history.flatMap(r=>r.matches).length,7);
 });
 test("reject duplicate or insufficient entrants",()=>{assert.throws(()=>newTournament(ids.slice(1),1,"3gg",1));assert.throws(()=>newTournament([...ids.slice(1),"b"],1,"3gg",1));assert.throws(()=>newTournament([...ids.slice(1),"player"],1,"3gg",1));});
-test("chess moves, king capture, bot levels and Elo",()=>{let g=initialChess();assert.equal(moves(g).length,20);for(let l=1;l<=10;l++){const m=botMove(g,l,234);assert.ok(moves(g).some(x=>x.from===m.from&&x.to===m.to&&x.promotion===m.promotion));}g={...g,board:Array(64).fill(""),castle:""};g.board[0]="k";g.board[8]="R";g.board[63]="K";g=playChess(g,{from:8,to:0});assert.equal(g.winner,"w");const r=recordRated(initialRatings(),1,true);assert.ok(r.pvb>1000);assert.ok(chessUnlocks({...r,tournaments:1},g,10,true).includes(CHESS_TROPHY[0]));assert.ok(!chessUnlocks(r,g,9,true).includes(CHESS_TROPHY[0]));});
+test("chess moves, checkmate, bot levels and Elo",()=>{let g=initialChess();assert.equal(moves(g).length,20);for(let l=1;l<=10;l++){const m=botMove(g,l,234);assert.ok(moves(g).some(x=>x.from===m.from&&x.to===m.to&&x.promotion===m.promotion));}g={...g,board:Array(64).fill(""),castle:""};g.board[0]="k";g.board[18]="K";g.board[17]="Q";g=playChess(g,{from:17,to:9});assert.equal(g.winner,"w");assert.equal(g.reason,"checkmate");assert.equal(g.board[0],"k");const r=recordRated(initialRatings(),1,true);assert.ok(r.pvb>1000);assert.ok(chessUnlocks({...r,tournaments:1},g,10,true).includes(CHESS_TROPHY[0]));assert.ok(!chessUnlocks(r,g,9,true).includes(CHESS_TROPHY[0]));});
 
 test("interactive bracket waits for all current matches; watching and simulating feed same bracket",()=>{let t=newTournament(ids,1,"3gg",5);const human=tournamentMatch(t),bot=t.matches.find(m=>m!==human);t=recordTournamentResult(t,human.id,"player");assert.equal(t.round,0);assert.equal(tournamentMatch(t),null);assert.ok(tournamentBotMatch(t,bot.id));let g=initialChess();const seed=tournamentBotSeed(t,bot);g=tournamentBotPly(g,1,seed);assert.equal(g.plies,1);for(const m of t.matches.filter(m=>!m.winner))t=recordTournamentResult(t,m.id,m.a,m.id!==bot.id);assert.equal(t.round,1);assert.ok(t.history[0].matches.every(m=>m.winner));assert.throws(()=>recordTournamentResult(t,bot.id,bot.a));});
-test("black player starts after legal white bot move and color choice is deterministic",()=>{const g=startPlayerChess("b",1,12);assert.equal(g.plies,1);assert.equal(g.turn,"b");assert.equal(startPlayerChess("w",1,12).plies,0);assert.equal(playerColor("random",1),"b");assert.equal(playerColor("random",2),"w");const r=initialRatings(),win={winner:"b",last:{captured:"K",piece:"n"}};assert.ok(chessUnlocks(r,win,5,false,"b").includes("ninite"));});
+test("black player starts after legal white bot move and color choice is deterministic",()=>{const g=startPlayerChess("b",1,12);assert.equal(g.plies,1);assert.equal(g.turn,"b");assert.equal(startPlayerChess("w",1,12).plies,0);assert.equal(playerColor("random",1),"b");assert.equal(playerColor("random",2),"w");const r=initialRatings(),win={winner:"b",reason:"checkmate",last:{captured:"",piece:"n"}};assert.ok(chessUnlocks(r,win,5,false,"b").includes("ninite"));});
 
 test("tournament colors are assigned and stable, championship reset reverses colors",()=>{
  let resets=0,whiteStarts=0,blackStarts=0;
@@ -42,3 +42,37 @@ test("tournament colors are assigned and stable, championship reset reverses col
  }
  assert.ok(whiteStarts>0&&blackStarts>0&&resets===80);
 });
+
+const pos=(pieces,turn="w",castle="",ep=-1)=>{const s={...initialChess(),board:Array(64).fill(""),turn,castle,ep};for(const [square,p] of Object.entries(pieces)){s.board[(8-Number(square[1]))*8+"abcdefgh".indexOf(square[0])]=p;}return s;};
+const idx=s=>(8-Number(s[1]))*8+"abcdefgh".indexOf(s[0]);
+const move=(s,a,b,promotion="")=>playChess(s,{from:idx(a),to:idx(b),promotion});
+const can=(s,a,b)=>moves(s).some(m=>m.from===idx(a)&&m.to===idx(b));
+test("normal starting legal move counts at depths one through three",()=>{
+ const perft=(s,d)=>d===0?1:moves(s).reduce((n,m)=>n+perft(playChess(s,m),d-1),0);
+ const s=initialChess();assert.equal(perft(s,1),20);assert.equal(perft(s,2),400);assert.equal(perft(s,3),8902);
+});
+test("king cannot enter check, kings cannot touch, and pinned pieces cannot expose king",()=>{
+ let s=pos({e1:"K",a8:"k",e8:"r",e2:"R"});assert.ok(!can(s,"e2","d2"));assert.ok(can(s,"e2","e3"));
+ s=pos({e1:"K",e3:"k",a8:"r"});assert.ok(!can(s,"e1","e2"));assert.ok(!can(s,"e1","d2"));
+ s=pos({e1:"K",a8:"k",d8:"r"});assert.ok(!can(s,"e1","d1"));
+ assert.throws(()=>move(s,"e1","d1"));
+});
+test("check must be answered, king capture prohibited, and castling through check prohibited",()=>{
+ let s=pos({e1:"K",a8:"k",e8:"r",a1:"R"});assert.ok(inCheck(s));assert.ok(!can(s,"a1","a2"));
+ s=pos({e1:"K",h1:"R",a8:"k",f8:"r"},"w","K");assert.ok(!can(s,"e1","g1"));
+ s=pos({e1:"K",h1:"R",a8:"k",g8:"r"},"w","K");assert.ok(!can(s,"e1","g1"));
+ s=pos({e1:"K",h1:"R",a8:"k",e8:"r"},"w","K");assert.ok(!can(s,"e1","g1"));
+ s=pos({e1:"K",h1:"R",a8:"k"},"w","K");assert.ok(can(s,"e1","g1"));assert.equal(move(s,"e1","g1").board[idx("f1")],"R");
+ s=pos({h1:"K",a8:"k",a7:"R"});assert.ok(!can(s,"a7","a8"));
+});
+test("en passant cannot expose king; legal en passant and all four promotions remain available",()=>{
+ let s=pos({h5:"K",a8:"k",a5:"r",g5:"P",f5:"p"},"w","",idx("f6"));assert.ok(!can(s,"g5","f6"));
+ s=pos({h1:"K",a8:"k",g5:"P",f5:"p"},"w","",idx("f6"));assert.ok(can(s,"g5","f6"));assert.equal(move(s,"g5","f6").board[idx("f5")],"");
+ s=pos({h1:"K",h8:"k",a7:"P"});assert.equal(moves(s).filter(m=>m.from===idx("a7")&&m.to===idx("a8")).length,4);
+});
+test("Fool's mate and trapped stalemate both win and pay virtual king reward",()=>{
+ let s=initialChess();for(const [a,b] of [["f2","f3"],["e7","e5"],["g2","g4"],["d8","h4"]])s=move(s,a,b);
+ assert.equal(s.reason,"checkmate");assert.equal(s.winner,"b");assert.equal(s.board[idx("e1")],"K");assert.equal(chessMatchCoins(0,s,"b"),30);assert.equal(chessMatchCoins(0,s,"w"),0);
+ s=pos({a8:"k",c6:"K",c7:"Q"});s=move(s,"c7","b6");assert.equal(s.reason,"stalemate");assert.equal(s.winner,"w");assert.equal(chessMatchCoins(0,s,"w"),30);
+});
+test("all ten bots respond to check with legal moves",()=>{const s=pos({e1:"K",a8:"k",e8:"r",a1:"R"});for(let l=1;l<=10;l++){const m=botMove(s,l,123);assert.ok(moves(s).some(x=>x.from===m.from&&x.to===m.to&&x.promotion===m.promotion));assert.ok(!inCheck(playChess(s,m),"w"));}});

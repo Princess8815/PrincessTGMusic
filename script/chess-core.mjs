@@ -1,7 +1,7 @@
-// King-capture chess: check is not a restriction; trapped side loses.
+// Normal chess move legality. Checkmate and stalemate count as virtual king captures.
 export const CHESS_AXOLOTLS=[["rookie","Rookie","#b4dcf9","#5294c8","crown"],["bishell","Bishell","#f4cf9f","#b77e50","shell"],["pawny","Pawny","#d7dbea","#9298b7","bow"],["ninite","Ninite","#c8a8ed","#7865bf","star"],["king-of-the-sea","King of the Sea","#65cbd7","#247caa","crown"],["quensy","Quensy","#f6a5cf","#be478c","crown"]];
 export const CHESS_TROPHY=["chess-master","Chess Master","Win an eight-player tournament at difficulty 10."];
-export const CHESS_UNLOCKS={rookie:"Win any tournament.",bishell:"Win your first rated PvB match.",pawny:"Win 10 rated PvB matches.",ninite:"Capture a king with a knight in rated play.","king-of-the-sea":"Win 10 tournaments.",quensy:"Capture a king with a queen at difficulty 5 or higher."};
+export const CHESS_UNLOCKS={rookie:"Win any tournament.",bishell:"Win your first rated PvB match.",pawny:"Win 10 rated PvB matches.",ninite:"Deliver a winning checkmate or stalemate with a knight move in rated play.","king-of-the-sea":"Win 10 tournaments.",quensy:"Deliver a winning checkmate or stalemate with a queen move at difficulty 5 or higher."};
 export const BOT_ELO=[300,500,700,900,1100,1300,1500,1700,1900,2100];
 export const validLevel=n=>Number.isInteger(n)&&n>=1&&n<=10;
 export const other=c=>c==="w"?"b":"w";
@@ -10,30 +10,51 @@ export const square=i=>"abcdefgh"[i%8]+(8-(i>>3));
 export function initialChess(){return {board:[..."rnbqkbnrpppppppp",...Array(32).fill(""),..."PPPPPPPPRNBQKBNR"],turn:"w",castle:"KQkq",ep:-1,plies:0,quiet:0,winner:null,reason:null,last:null};}
 const inside=(r,c)=>r>=0&&r<8&&c>=0&&c<8;
 const diag=[[-1,-1],[-1,1],[1,-1],[1,1]],ortho=[[-1,0],[1,0],[0,-1],[0,1]],knight=[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
-export function moves(s){
+// Attack detection is independent of legal moves (including attacks by pinned pieces).
+export function attacked(s,target,by){
+ if(target<0)return false;
+ const b=s.board,r=target>>3,c=target%8;
+ const piece=k=>by==="w"?k.toUpperCase():k;
+ const pawnRow=r+(by==="w"?1:-1);
+ for(const dc of [-1,1])if(inside(pawnRow,c+dc)&&b[pawnRow*8+c+dc]===piece("p"))return true;
+ for(const [dr,dc] of knight)if(inside(r+dr,c+dc)&&b[(r+dr)*8+c+dc]===piece("n"))return true;
+ for(const [dr,dc] of [...diag,...ortho]){
+  for(let n=1;n<=7;n++){
+   const rr=r+dr*n,cc=c+dc*n;if(!inside(rr,cc))break;
+   const p=b[rr*8+cc];if(!p)continue;
+   if(color(p)===by&&(p===piece("q")||p===piece(dr&&dc?"b":"r")||n===1&&p===piece("k")))return true;
+   break;
+  }
+ }
+ return false;
+}
+export function inCheck(s,side=s.turn){const king=s.board.indexOf(side==="w"?"K":"k");return king<0||attacked(s,king,other(side));}
+function pseudo(s){
  if(s.winner)return [];const out=[],b=s.board;
  for(let f=0;f<64;f++){const p=b[f];if(color(p)!==s.turn)continue;const r=f>>3,c=f%8,k=p.toLowerCase();
- const add=(rr,cc,flag="")=>{if(!inside(rr,cc))return;const t=rr*8+cc;if(color(b[t])===s.turn)return;if(k==="p"&&(rr===0||rr===7)){for(const promotion of ["q","r","b","n"])out.push({from:f,to:t,promotion,flag});}else out.push({from:f,to:t,promotion:"",flag});};
+ const add=(rr,cc,flag="")=>{if(!inside(rr,cc))return;const t=rr*8+cc;if(color(b[t])===s.turn||b[t]?.toLowerCase()==="k")return;if(k==="p"&&(rr===0||rr===7)){for(const promotion of ["q","r","b","n"])out.push({from:f,to:t,promotion,flag});}else out.push({from:f,to:t,promotion:"",flag});};
  if(k==="p"){const d=s.turn==="w"?-1:1;if(inside(r+d,c)&&!b[(r+d)*8+c]){add(r+d,c);if(r===(s.turn==="w"?6:1)&&!b[(r+2*d)*8+c])add(r+2*d,c,"double");}
  for(const dc of [-1,1])if(inside(r+d,c+dc)){const t=(r+d)*8+c+dc;if(b[t]&&color(b[t])!==s.turn)add(r+d,c+dc);else if(t===s.ep&&!b[t]&&b[r*8+c+dc]===(s.turn==="w"?"p":"P"))add(r+d,c+dc,"ep");}}
  else{const dirs=k==="n"?knight:k==="b"?diag:k==="r"?ortho:[...diag,...ortho];for(const [dr,dc] of dirs)for(let n=1;n<=7;n++){const rr=r+dr*n,cc=c+dc*n;if(!inside(rr,cc))break;const t=rr*8+cc;if(color(b[t])===s.turn)break;add(rr,cc);if(b[t]||k==="k"||k==="n")break;}
- if(k==="k"&&f===(s.turn==="w"?60:4)){const king=s.turn==="w"?"K":"k",queen=s.turn==="w"?"Q":"q",rook=s.turn==="w"?"R":"r";if(s.castle.includes(king)&&b[f+3]===rook&&!b[f+1]&&!b[f+2])add(r,6,"castle");if(s.castle.includes(queen)&&b[f-4]===rook&&!b[f-1]&&!b[f-2]&&!b[f-3])add(r,2,"castle");}}
+ if(k==="k"&&f===(s.turn==="w"?60:4)&&!inCheck(s)){const king=s.turn==="w"?"K":"k",queen=s.turn==="w"?"Q":"q",rook=s.turn==="w"?"R":"r";if(s.castle.includes(king)&&b[f+3]===rook&&!b[f+1]&&!b[f+2]&&!attacked(s,f+1,other(s.turn)))add(r,6,"castle");if(s.castle.includes(queen)&&b[f-4]===rook&&!b[f-1]&&!b[f-2]&&!b[f-3]&&!attacked(s,f-1,other(s.turn)))add(r,2,"castle");}}
  }return out;
 }
+export function moves(s){return pseudo(s).filter(m=>!inCheck(raw(s,m),s.turn));}
+function hasLegalMove(s){return pseudo(s).some(m=>!inCheck(raw(s,m),s.turn));}
 export const moveKey=m=>square(m.from)+square(m.to)+(m.promotion||"");
 const V={p:100,n:320,b:330,r:500,q:900,k:20000};
 export function material(s,c){return s.board.reduce((sum,p)=>sum+(color(p)===c?V[p.toLowerCase()]:0),0);}
 function raw(s,m){const b=s.board.slice(),p=b[m.from],captured=b[m.to],turn=other(s.turn);b[m.from]="";b[m.to]=m.promotion?(s.turn==="w"?m.promotion.toUpperCase():m.promotion):p;if(m.flag==="ep")b[m.to+(s.turn==="w"?8:-8)]="";if(m.flag==="castle"){const rf=m.to>m.from?m.from+3:m.from-4,rt=m.to>m.from?m.from+1:m.from-1;b[rt]=b[rf];b[rf]="";}
  let castle=s.castle;const drop=chars=>{for(const c of chars)castle=castle.replace(c,"");};if(p==="K")drop("KQ");if(p==="k")drop("kq");const rights={0:"q",7:"k",56:"Q",63:"K"};drop((rights[m.from]||"")+(rights[m.to]||""));
- return {board:b,turn,castle,ep:m.flag==="double"?(m.from+m.to)/2:-1,plies:s.plies+1,quiet:p.toLowerCase()==="p"||captured||m.flag==="ep"?0:s.quiet+1,winner:captured.toLowerCase()==="k"?s.turn:null,reason:captured.toLowerCase()==="k"?"king-captured":null,last:{...m,piece:p,captured}};
+ return {board:b,turn,castle,ep:m.flag==="double"?(m.from+m.to)/2:-1,plies:s.plies+1,quiet:p.toLowerCase()==="p"||captured||m.flag==="ep"?0:s.quiet+1,winner:null,reason:null,last:{...m,piece:p,captured}};
 }
-export function playChess(s,request){const m=moves(s).find(x=>x.from===request?.from&&x.to===request?.to&&x.promotion===(request.promotion||""));if(!m)throw Error("Illegal move.");const n=raw(s,m);if(!n.winner&&!moves(n).length){n.winner=s.turn;n.reason="trapped";}if(!n.winner&&(n.quiet>=100||n.plies>=400)){const diff=material(n,"w")-material(n,"b"),mob=moves({...n,turn:"w"}).length-moves({...n,turn:"b"}).length;n.winner=diff>0?"w":diff<0?"b":mob>0?"w":mob<0?"b":s.turn;n.reason="move-limit";}return n;}
+export function playChess(s,request){const m=moves(s).find(x=>x.from===request?.from&&x.to===request?.to&&x.promotion===(request.promotion||""));if(!m)throw Error("Illegal move.");const n=raw(s,m);if(!hasLegalMove(n)){n.winner=s.turn;n.reason=inCheck(n)?"checkmate":"stalemate";}if(!n.winner&&(n.quiet>=100||n.plies>=400)){const diff=material(n,"w")-material(n,"b"),mob=moves({...n,turn:"w"}).length-moves({...n,turn:"b"}).length;n.winner=diff>0?"w":diff<0?"b":mob>0?"w":mob<0?"b":s.turn;n.reason="move-limit";}return n;}
 function score(s,c){let v=0;for(let i=0;i<64;i++){const p=s.board[i];if(!p)continue;const sign=color(p)===c?1:-1,center=7-Math.abs((i>>3)-3.5)-Math.abs(i%8-3.5);v+=sign*(V[p.toLowerCase()]+(p.toLowerCase()==="k"?-center:3*center));}return v;}
 function rng32(n){let x=n>>>0||1;return ()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return (x>>>0)/4294967296;};}
 export function botMove(s,level,seed=1){if(!validLevel(level))throw Error("Invalid difficulty.");const legal=moves(s);if(!legal.length)return null;const rand=rng32((seed+s.plies*2654435761)>>>0);if(level===1||level===2&&rand()<.55||level===3&&rand()<.25)return legal[Math.floor(rand()*legal.length)];
  const root=s.turn,depth=[0,1,1,2,2,2,3,3,3,4][level-1],limit=[0,100,150,250,350,600,900,1300,2200,3600][level-1];let nodes=0;
  const order=(state,list)=>list.sort((a,b)=>(V[state.board[b.to]?.toLowerCase()]||0)-(V[state.board[a.to]?.toLowerCase()]||0));
- function search(state,d,a,b){nodes++;if(state.winner)return state.winner===root?100000-state.plies:-100000+state.plies;if(d<=0||nodes>=limit)return score(state,root);const ms=order(state,moves(state));if(!ms.length)return state.turn===root?-99999:99999;const max=state.turn===root;let best=max?-Infinity:Infinity;for(const m of ms){const v=search(raw(state,m),d-1,a,b);if(max){best=Math.max(best,v);a=Math.max(a,best);}else{best=Math.min(best,v);b=Math.min(b,best);}if(b<=a||nodes>=limit)break;}return best;}
+ function search(state,d,a,b){nodes++;if(state.winner)return state.winner===root?100000-state.plies:-100000+state.plies;if(d<=0||nodes>=limit){if(!hasLegalMove(state))return state.turn===root?-99999+state.plies:99999-state.plies;return score(state,root);}const ms=order(state,moves(state));if(!ms.length)return state.turn===root?-99999:99999;const max=state.turn===root;let best=max?-Infinity:Infinity;for(const m of ms){const v=search(raw(state,m),d-1,a,b);if(max){best=Math.max(best,v);a=Math.max(a,best);}else{best=Math.min(best,v);b=Math.min(b,best);}if(b<=a||nodes>=limit)break;}return best;}
  let best=legal[0],value=-Infinity;for(const m of order(s,legal)){const v=search(raw(s,m),depth-1,-Infinity,Infinity)+(level<5?rand()*70:rand()*3);if(v>value){best=m;value=v;}if(nodes>=limit)break;}return best;
 }
 export const expectedScore=(a,b)=>1/(1+10**((b-a)/400));
@@ -129,7 +150,7 @@ export function playerWon(game,side){return game?.winner===side;}
 export function tournamentBotMatch(t,id){return !t||t.complete?null:t.matches.find(m=>m.id===id&&!m.winner&&m.a!=="player"&&m.b!=="player")||null;}
 export const tournamentBotSeed=(t,m)=>(t.seed+Math.imul(m.id,0x9e3779b1))>>>0;
 export function tournamentBotPly(game,level,seed){if(game.winner)return game;const m=botMove(game,level,seed+(game.turn==="w"?91:0));return m?playChess(game,m):game;}
-export function chessUnlocks(r,game,level,tournamentChampion=false,side="w"){const ids=[];if(playerWon(game,side)){ids.push("bishell");if(r.wins>=10)ids.push("pawny");if(game.last?.captured?.toLowerCase()==="k"&&game.last.piece?.toLowerCase()==="n")ids.push("ninite");if(level>=5&&game.last?.captured?.toLowerCase()==="k"&&game.last.piece?.toLowerCase()==="q")ids.push("quensy");}if(tournamentChampion){ids.push("rookie");if(r.tournaments>=10)ids.push("king-of-the-sea");if(level===10)ids.push(CHESS_TROPHY[0]);}return ids;}
+export function chessUnlocks(r,game,level,tournamentChampion=false,side="w"){const ids=[];if(playerWon(game,side)){ids.push("bishell");if(r.wins>=10)ids.push("pawny");if(kingVictory(game)&&game.last?.piece?.toLowerCase()==="n")ids.push("ninite");if(level>=5&&kingVictory(game)&&game.last?.piece?.toLowerCase()==="q")ids.push("quensy");}if(tournamentChampion){ids.push("rookie");if(r.tournaments>=10)ids.push("king-of-the-sea");if(level===10)ids.push(CHESS_TROPHY[0]);}return ids;}
 
 // Capture earnings are capped per naturally completed rated game. A resignation forfeits pending captures.
 export const CHESS_CAPTURE_COINS=Object.freeze({p:1,n:3,b:3,r:5,q:9,k:10});
@@ -137,7 +158,8 @@ export const CHESS_CAPTURE_CAP=60;
 export const CHESS_WIN_COINS=20;
 export const CHESS_TOURNAMENT_COINS=50;
 export const captureCoins=piece=>CHESS_CAPTURE_COINS[piece?.toLowerCase()]||0;
-export const chessMatchCoins=(pending,game,side)=>game?.winner&&game.reason!=="resigned"?Math.min(CHESS_CAPTURE_CAP,Math.max(0,pending||0))+(game.winner===side?CHESS_WIN_COINS:0):0;
+export const kingVictory=game=>["checkmate","stalemate","king-captured","trapped"].includes(game?.reason);
+export const chessMatchCoins=(pending,game,side)=>game?.winner&&game.reason!=="resigned"?Math.min(CHESS_CAPTURE_CAP,Math.max(0,pending||0))+(game.winner===side?CHESS_WIN_COINS+(["checkmate","stalemate"].includes(game.reason)?CHESS_CAPTURE_COINS.k:0):0):0;
 
 // Level 1 pays the base reward; each higher level adds 25% (level 10 = 3.25×).
 export function chessDifficultyCoins(base,level){if(!validLevel(level)||!Number.isSafeInteger(base)||base<0)throw Error("Invalid chess reward.");return Math.round(base*(level+3)/4);}
