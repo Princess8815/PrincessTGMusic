@@ -29,6 +29,7 @@
   <script type="module" src="../script/admin-delete-songs.js"></script>
   <script type="module" src="../script/admin-accounts.js"></script>
   <script type="module" src="../script/admin-self-membership.js"></script>
+  <script type="module" src="../script/admin-advertisements.js"></script>
   <script type="module" src="../script/admin-inbox.js"></script>
   <script type="module" src="../script/admin-newsletter.js"></script>
   <script type="module" src="../script/admin-tabs.js"></script>
@@ -377,6 +378,7 @@
                 aria-controls="admin-main-panel-surveys" aria-selected="false">Surveys</button>
         <button type="button" role="tab" id="admin-main-tab-store" data-admin-tab="store" aria-controls="admin-main-panel-store" aria-selected="false">Store</button>
         <button type="button" role="tab" id="admin-main-tab-games" data-admin-tab="games" aria-controls="admin-main-panel-games" aria-selected="false">Games</button>
+        <button type="button" role="tab" id="admin-main-tab-advertisements" data-admin-tab="advertisements" aria-controls="admin-main-panel-advertisements" aria-selected="false">Advertisements</button>
       </nav>
 
       <!-- MAIL TAB -->
@@ -1314,6 +1316,7 @@
           <p id="admin-self-membership-note"></p>
           <div class="dp-actions"><button type="button" id="admin-self-membership-toggle" aria-pressed="false" disabled>Switch to Free</button></div>
           <p id="admin-self-membership-message" role="status" aria-live="polite"></p>
+          <div id="admin-test-banner" class="ptg-test-banner" aria-label="Simulated advertisement" hidden><strong>AD HERE</strong><small>Test banner · no real ads</small></div>
         </section>
 
         <section class="admin-card"
@@ -1523,6 +1526,28 @@
         </div></div>
       </section></section>
 <section id="admin-main-panel-games" class="admin-main-panel" role="tabpanel" aria-labelledby="admin-main-tab-games" hidden><nav class="admin-subtabs" aria-label="games management" role="tablist"><button type="button" role="tab" id="admin-main-tab-orange" data-admin-subtab="games:orange" aria-selected="true">Orange Knock Down</button><button type="button" role="tab" id="admin-main-tab-shiny" data-admin-subtab="games:shiny" aria-selected="false">Banana Beams</button></nav><section id="admin-main-panel-orange" class="admin-subpanel" data-admin-subpanel="games:orange" role="tabpanel" aria-labelledby="admin-main-tab-orange" ><div class="admin-card"><h2>Orange Knock Down campaign</h2><p>Publish official levels and choose which level introduces each mechanic. Existing attempts remain unchanged.</p><p><a href="orange-level-editor.html?official=1">Open official level editor</a></p><form id="orange-unlock-form"><div id="orange-unlock-fields"></div><button type="submit" id="orange-unlock-save" disabled>Save unlock schedule</button></form><p id="orange-admin-status" role="status"></p></div></section><section id="admin-main-panel-shiny" class="admin-subpanel" data-admin-subpanel="games:shiny" role="tabpanel" aria-labelledby="admin-main-tab-shiny" hidden><div class="admin-card"><h2>Shiny’s Banana Beams campaign</h2><p>Manage official levels, grid dimensions and feature unlocks. Test puzzle layouts without rewards.</p><p><a href="shiny-light-editor.html">Open Banana Beams level editor</a></p></div></section></section>
+<section id="admin-main-panel-advertisements" class="admin-main-panel" role="tabpanel" aria-labelledby="admin-main-tab-advertisements" hidden>
+ <div class="admin-card ptg-ad-admin">
+  <h2>Advertisement Management</h2><p id="ad-config-environment"></p>
+  <p><strong>Provider:</strong> Google AdSense · PTG Universal Banner</p>
+  <p><strong>Actual ad serving:</strong> Locked off. Provider approval, consent, privacy review and live integration are required. Future-ad switches save intentions only; they cannot request ads or issue coins.</p>
+  <p id="ad-config-status" role="status" aria-live="polite">Checking settings…</p>
+  <form id="ad-config-form">
+   <fieldset id="ad-config-fields" disabled>
+    <legend>Banner and game ad settings</legend>
+    <label class="ad-check"><input type="checkbox" id="ad-test-banners"> Show AD HERE test banners</label>
+    <label class="ad-check"><input type="checkbox" id="ad-real-requested"> Enable real advertisements (planned)</label>
+    <label class="ad-check"><input type="checkbox" id="ad-interstitials-requested"> Enable game interstitials (planned)</label>
+    <label class="ad-check"><input type="checkbox" id="ad-rewarded-requested"> Enable rewarded advertisements (planned)</label>
+    <div class="ad-timing"><label>Completed levels between game ads<input type="number" id="ad-levels" min="5" max="100" step="1" required></label><label>Minimum minutes between game ads<input type="number" id="ad-minutes" min="10" max="1440" step="1" required></label></div>
+    <p>Paid membership exemption is always enabled. Interstitials may only occur at natural breaks. Rewarded ads must be optional; no rewards are awarded in this phase.</p>
+    <details><summary>Individual banner page settings (36 routes)</summary><div class="ad-page-grid" id="ad-page-controls"></div></details>
+    <div class="form-actions"><button type="submit" id="ad-config-save">Save settings</button><button type="button" id="ad-config-reset" class="secondary">Discard edits</button></div>
+   </fieldset>
+  </form>
+  <p><a href="https://adsense.google.com/" target="_blank" rel="noopener noreferrer">AdSense dashboard and Privacy &amp; messaging</a> · <a href="https://developers.google.com/ad-placement/docs/signup" target="_blank" rel="noopener noreferrer">Apply for H5 Games Ads</a></p>
+ </div>
+</section>
 <section id="admin-main-panel-surveys" class="admin-main-panel survey-admin"
                role="tabpanel" aria-labelledby="admin-main-tab-surveys" hidden>
         <div class="admin-card">

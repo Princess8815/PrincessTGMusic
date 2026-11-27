@@ -378,3 +378,6 @@ async function attachAccountVisibility(special){
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});
 else init();
+
+// Start mock placements independently of navigation initialization.
+void import("./banner-ads.js").then(m=>m.startTestBanner()).catch(error=>console.warn("[PTG test banner] load failed",error));

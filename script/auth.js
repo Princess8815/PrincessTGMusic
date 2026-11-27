@@ -30,6 +30,9 @@ import {
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 
+// Independent mock placement startup; module guards against duplicates.
+void import("./banner-ads.js").then(m=>m.startTestBanner()).catch(error=>console.warn("[PTG test banner] load failed",error));
+
 const termsURL=new URL("../pages/terms-of-service.html",import.meta.url).href;
 const privacyURL=new URL("../pages/privacy-policy.html",import.meta.url).href;
 function registrationFields(prefix){
