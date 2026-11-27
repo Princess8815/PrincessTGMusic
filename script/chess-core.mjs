@@ -56,8 +56,28 @@ export function newTournament(owned,level,format,seed){
  if(!Array.isArray(owned)||owned.length!==7||new Set(owned).size!==7||owned.some(x=>typeof x!=="string"||x==="player"||!/^[a-z0-9-]{1,64}$/.test(x))||!validLevel(level)||!["single","3gg"].includes(format))throw Error("Choose seven distinct owned game axolotls.");
  const entrants=["player",...owned],random=rng32(seed);
  for(let i=entrants.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[entrants[i],entrants[j]]=[entrants[j],entrants[i]];}
- return {version:2,level,format,seed,entrants,round:0,matches:[0,2,4,6].map(i=>({id:1+i/2,a:entrants[i],b:entrants[i+1],winner:null})),history:[],champion:null,complete:false};
+ const t={version:2,level,format,seed,entrants,round:0,matches:[0,2,4,6].map(i=>({id:1+i/2,a:entrants[i],b:entrants[i+1],winner:null})),history:[],champion:null,complete:false};
+ return assignTournamentColors(t);
 }
+// Assign colors as soon as pairings are known, independent of board startup.
+function colorTie(seed,id){let x=(seed+Math.imul(id,0x9e3779b1))>>>0;x=Math.imul(x^(x>>>16),0x85ebca6b);x=Math.imul(x^(x>>>13),0xc2b2ae35);return ((x^(x>>>16))>>>0)%2===0;}
+export function assignTournamentColors(t){
+ const balance=new Map(t.entrants.map(id=>[id,0]));
+ const past=t.history.flatMap(r=>r.matches);
+ for(const m of past){if(m.white&&m.black){balance.set(m.white,(balance.get(m.white)||0)+1);balance.set(m.black,(balance.get(m.black)||0)-1);}}
+ for(const m of t.matches){
+  if(m.white&&m.black)continue;
+  if(m.id===17&&t.format==="3gg"){
+   const final=past.find(x=>x.id===16);
+   if(final?.white&&final?.black){m.white=final.black;m.black=final.white;continue;}
+  }
+  const a=balance.get(m.a)||0,b=balance.get(m.b)||0;
+  const aWhite=a!==b?a<b:colorTie(t.seed,m.id);
+  m.white=aWhite?m.a:m.b;m.black=aWhite?m.b:m.a;
+ }
+ return t;
+}
+export function tournamentColor(m,id){if(!m||![m.white,m.black].includes(id))throw Error("Tournament color not assigned.");return m.white===id?"w":"b";}
 export function tournamentMatch(t){return !t||t.complete?null:t.matches.find(m=>!m.winner&&(m.a==="player"||m.b==="player"))||null;}
 const loser=m=>m.winner===m.a?m.b:m.a;
 function make3ggWave(t){
@@ -84,7 +104,7 @@ export function recordTournamentResult(t,id,winner,simulated=false){
   if(last.id===17||last.id===16&&last.winner===last.a){next.complete=true;next.champion=last.winner;return next;}
   next.round++;next.matches=make3ggWave(next);
  }
- return next;
+ return assignTournamentColors(next);
 }
 // Compatibility helper for automated bracket scenarios. Interactive play uses
 // recordTournamentResult and waits for explicit bot-game choices.

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {newTournament,tournamentMatch,advanceTournament,initialChess,moves,playChess,botMove,initialRatings,recordRated,chessUnlocks,CHESS_TROPHY,recordTournamentResult,tournamentBotMatch,tournamentBotPly,tournamentBotSeed,playerColor,startPlayerChess} from "../../../script/chess-core.mjs";
+import {newTournament,tournamentMatch,advanceTournament,initialChess,moves,playChess,botMove,initialRatings,recordRated,chessUnlocks,CHESS_TROPHY,recordTournamentResult,tournamentBotMatch,tournamentBotPly,tournamentBotSeed,playerColor,startPlayerChess,tournamentColor,assignTournamentColors} from "../../../script/chess-core.mjs";
 const ids=["a","b","c","d","e","f","g"];
 function finish(t,decide){let playerGames=0;while(!t.complete){assert.ok(tournamentMatch(t));t=advanceTournament(t,decide(t,playerGames++));assert.ok(playerGames<=10);}return t;}
 test("real 3GG: minimum three games, 16 or 17 total, all feeds and reset valid",()=>{
@@ -27,3 +27,18 @@ test("chess moves, king capture, bot levels and Elo",()=>{let g=initialChess();a
 
 test("interactive bracket waits for all current matches; watching and simulating feed same bracket",()=>{let t=newTournament(ids,1,"3gg",5);const human=tournamentMatch(t),bot=t.matches.find(m=>m!==human);t=recordTournamentResult(t,human.id,"player");assert.equal(t.round,0);assert.equal(tournamentMatch(t),null);assert.ok(tournamentBotMatch(t,bot.id));let g=initialChess();const seed=tournamentBotSeed(t,bot);g=tournamentBotPly(g,1,seed);assert.equal(g.plies,1);for(const m of t.matches.filter(m=>!m.winner))t=recordTournamentResult(t,m.id,m.a,m.id!==bot.id);assert.equal(t.round,1);assert.ok(t.history[0].matches.every(m=>m.winner));assert.throws(()=>recordTournamentResult(t,bot.id,bot.a));});
 test("black player starts after legal white bot move and color choice is deterministic",()=>{const g=startPlayerChess("b",1,12);assert.equal(g.plies,1);assert.equal(g.turn,"b");assert.equal(startPlayerChess("w",1,12).plies,0);assert.equal(playerColor("random",1),"b");assert.equal(playerColor("random",2),"w");const r=initialRatings(),win={winner:"b",last:{captured:"K",piece:"n"}};assert.ok(chessUnlocks(r,win,5,false,"b").includes("ninite"));});
+
+test("tournament colors are assigned and stable, championship reset reverses colors",()=>{
+ let resets=0,whiteStarts=0,blackStarts=0;
+ for(const format of ["single","3gg"])for(let seed=1;seed<=80;seed++){
+  let t=newTournament(ids,1,format,seed);const first=tournamentMatch(t);
+  if(tournamentColor(first,"player")==="w")whiteStarts++;else blackStarts++;
+  while(!t.complete){
+   const old=JSON.stringify(t);assert.equal(JSON.stringify(assignTournamentColors(JSON.parse(old))),old);
+   for(const m of t.matches){assert.notEqual(m.white,m.black);assert.ok([m.a,m.b].includes(m.white));assert.ok([m.a,m.b].includes(m.black));assert.equal(tournamentColor(m,m.white),"w");assert.equal(tournamentColor(m,m.black),"b");}
+   for(const m of t.matches.filter(m=>!m.winner))t=recordTournamentResult(t,m.id,m.id===16?m.b:m.a);
+  }
+  if(format==="3gg"){const ms=t.history.flatMap(r=>r.matches),final=ms.find(m=>m.id===16),reset=ms.find(m=>m.id===17);assert.ok(reset);assert.equal(reset.white,final.black);assert.equal(reset.black,final.white);resets++;}
+ }
+ assert.ok(whiteStarts>0&&blackStarts>0&&resets===80);
+});

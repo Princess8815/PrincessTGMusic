@@ -1,6 +1,6 @@
 import {gameCoinAward} from "./game-coin-rewards.mjs";
 import {accessToken,verifyFirebaseIdentity} from "./rewards.js";
-import {initialChess,botMove,playChess,initialRatings,recordRated,newTournament,tournamentMatch,recordTournamentResult,tournamentSimWinner,tournamentBotMatch,tournamentBotSeed,tournamentBotPly,playerColor,startPlayerChess,playerWon,other,chessUnlocks,validLevel,CHESS_TROPHY,captureCoins,chessMatchCoins,CHESS_CAPTURE_CAP,CHESS_TOURNAMENT_COINS,chessDifficultyCoins} from "../../script/chess-core.mjs";
+import {initialChess,botMove,playChess,initialRatings,recordRated,newTournament,tournamentMatch,recordTournamentResult,tournamentSimWinner,tournamentBotMatch,tournamentBotSeed,tournamentBotPly,playerColor,startPlayerChess,playerWon,other,chessUnlocks,validLevel,CHESS_TROPHY,captureCoins,chessMatchCoins,CHESS_CAPTURE_CAP,CHESS_TOURNAMENT_COINS,chessDifficultyCoins,assignTournamentColors,tournamentColor} from "../../script/chess-core.mjs";
 const fail=(message,status=400)=>{throw Object.assign(Error(message),{status});};
 const str=stringValue=>({stringValue}),pre=d=>d?{updateTime:d.updateTime}:{exists:false};
 const idOK=s=>typeof s==="string"&&/^[a-z0-9-]{1,64}$/.test(s);
@@ -14,6 +14,16 @@ export async function chessWithStorage({read,commit,root,uid,input,preview=false
   const [account,old]=await Promise.all([read(user),read(path)]);
   if(!account?.updateTime||(account.fields?.status?.stringValue||"active")!=="active"||account.fields?.role?.stringValue==="banned")fail("Active verified account required.",403);
   const prior=unpack(old),state=prior?JSON.parse(JSON.stringify(prior)):{revision:0,ratings:initialRatings(),game:null,mode:null,level:null,tournament:null,seed:1};
+  // Preserve already-started legacy boards' color; assign only missing colors.
+  if(state.tournament&&!state.tournament.complete){
+   for(const m of state.tournament.matches){
+    if(m.white&&m.black)continue;
+    if(m.id===state.playerMatchId&&(m.a==="player"||m.b==="player")){
+     const opponent=m.a==="player"?m.b:m.a;m.white=(state.side||"w")==="w"?"player":opponent;m.black=m.white==="player"?opponent:"player";
+    }else if(m.id===state.spectator?.matchId){m.white=state.spectator.a;m.black=state.spectator.b;}
+   }
+   assignTournamentColors(state.tournament);
+  }
   if(input.action==="state")return present(state);
   if(!idOK(input.requestId)||!Number.isSafeInteger(input.revision))fail("Refresh chess first.");
   if(state.lastRequest===input.requestId)return present(state,{rewards:state.lastRewards||[],coinAward:state.lastCoinAward||0});
@@ -22,15 +32,17 @@ export async function chessWithStorage({read,commit,root,uid,input,preview=false
   const wasChampion=state.tournament?.complete&&state.tournament.champion==="player";
   let completedPlayerGame=false;
   function startGame(){
-   state.seed=seed();state.side=playerColor(state.colorChoice||"w",state.seed);
+   state.seed=seed();
+   const match=state.mode==="tournament"?tournamentMatch(state.tournament):null;
+   state.side=match?tournamentColor(match,"player"):playerColor(state.colorChoice||"w",state.seed);
    state.game=startPlayerChess(state.side,state.level,state.seed);state.pendingCoins=0;state.matchCoins=0;
-   state.playerMatchId=state.mode==="tournament"?tournamentMatch(state.tournament)?.id??null:null;
+   state.playerMatchId=match?.id??null;
   }
   if(input.action==="start"){
    if(state.game&&!state.game.winner)fail("Finish or resign the current match first.",409);
    if(state.tournament&&!state.tournament.complete)fail("Complete the current tournament first.",409);
    if(!validLevel(input.level)||!["pvb","tournament"].includes(input.mode))fail("Invalid match settings.");
-   state.level=input.level;state.mode=input.mode;state.seed=seed();state.colorChoice=input.colorChoice??"w";playerColor(state.colorChoice,state.seed);
+   state.level=input.level;state.mode=input.mode;state.seed=seed();state.colorChoice=input.mode==="tournament"?"assigned":input.colorChoice??"w";if(input.mode!=="tournament")playerColor(state.colorChoice,state.seed);
    state.tournament=null;state.spectator=null;state.playerMatchId=null;
    if(input.mode==="tournament"){
     state.tournament=newTournament(input.entrants,input.level,input.format,state.seed);
@@ -53,11 +65,11 @@ export async function chessWithStorage({read,commit,root,uid,input,preview=false
     if(state.spectator?.matchId===match.id)state.spectator=null;
    }else if(input.action==="bot-watch"){
     if(state.spectator&&state.spectator.matchId!==match.id&&!state.spectator.game.winner)fail("Finish or simulate the other watched game first.",409);
-    if(state.spectator?.matchId!==match.id)state.spectator={matchId:match.id,a:match.a,b:match.b,game:initialChess(),seed:tournamentBotSeed(state.tournament,match)};
+    if(state.spectator?.matchId!==match.id)state.spectator={matchId:match.id,a:match.white,b:match.black,game:initialChess(),seed:tournamentBotSeed(state.tournament,match)};
    }else{
     const watch=state.spectator;if(!watch||watch.matchId!==match.id||watch.game.winner)fail("Open the pending bot match first.",409);
     watch.game=tournamentBotPly(watch.game,state.level,watch.seed);
-    if(watch.game.winner)state.tournament=recordTournamentResult(state.tournament,match.id,watch.game.winner==="w"?match.a:match.b,false);
+    if(watch.game.winner)state.tournament=recordTournamentResult(state.tournament,match.id,watch.game.winner==="w"?watch.a:watch.b,false);
    }
   }else{
    const side=state.side||"w";
