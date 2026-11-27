@@ -83,7 +83,7 @@ function render(){
  renderBracket();renderRatings();
 }
 function queueBot(){
- clearTimeout(botTimer);if(paused||busy)return;
+ clearTimeout(botTimer);if($("ch-play-panel")?.hidden||paused||busy)return;
  const spectator=watching?remote?.spectator:null;
  const delay=Number($("ch-speed").value)||2000,ticket=serial;
  if(spectator&&!spectator.game.winner){botTimer=setTimeout(()=>{if(ticket===serial&&!paused&&watching)void send("bot-step",{matchId:spectator.matchId});},delay);return;}
@@ -106,6 +106,7 @@ $("ch-promotion-cancel").onclick=()=>$("ch-promotion").close();$("ch-mode").onch
 $("ch-show-bracket").onclick=()=>{if(!remote?.tournament){message("Start or resume a tournament to see the full bracket.");return;}renderBracket();$("ch-bracket-panel").scrollIntoView({block:"start",behavior:"smooth"});};
 $("ch-close-bracket").onclick=()=>$("ch-board-section").scrollIntoView({block:"start",behavior:"smooth"});
 $("ch-speed").onchange=queueBot;
+window.addEventListener("princesstg:chess-area",()=>{if($("ch-play-panel")?.hidden){clearTimeout(botTimer);if($("ch-promotion").open)$("ch-promotion").close();}else queueBot();});
 for(const [id,prop] of [["ch-light","--ch-light"],["ch-dark","--ch-dark"]])$(id).oninput=()=>$("ch-board").style.setProperty(prop,$(id).value);
 for(const id of ["ch-player-avatar","ch-bot-avatar","ch-white-avatar","ch-pvp-avatar","ch-level","ch-tournament-level"])$(id).onchange=render;
 const trophyLi=document.createElement("li");trophyLi.textContent=CHESS_TROPHY[1]+": "+CHESS_TROPHY[2];$("ch-unlocks").append(trophyLi);

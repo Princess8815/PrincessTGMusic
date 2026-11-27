@@ -17,7 +17,20 @@ function renderExample(){
  for(let i=0;i<64;i++){const cell=element("div","");cell.className="ch-square ptg-theme-exempt"+(((i>>3)+i%8)%2?" dark":"")+(color(g.board[i])==="b"?" black-piece":"")+(move&&(examplePlayed?move.to:move.from)===i?" selected":"");const piece=element("span",G[g.board[i]]||"");piece.className="ch-piece";cell.append(piece);if(i%8===0){const rank=element("span",square(i)[1]);rank.className="ch-coord ch-rank";cell.append(rank);}if(i>=56){const file=element("span",square(i)[0]);file.className="ch-coord ch-file";cell.append(file);}board.append(cell);}
  board.setAttribute("aria-label",e[1]+" "+(examplePlayed?"After move.":"Before move."));
 }
-const degreeGrid=$("academy-degrees");for(const [name,description,available] of DEGREES){const card=element("article","");card.className="academy-degree"+(available?" active":"");card.append(element("h3",name),element("p",description),element("p",available?"Open for enrollment":"Coming later"));degreeGrid.append(card);}
+const degreeGrid=$("academy-degrees");degreeGrid.replaceChildren();
+function openAssociates(open){
+ $("academy-associates").hidden=!open;
+ $("academy-programs").hidden=open;
+ if(!open&&$("academy-promotion").open)$("academy-promotion").close();
+}
+for(const [name,description,available,instructor] of DEGREES){
+ const card=element("article","");card.className="academy-degree"+(available?" active":"");
+ card.append(element("h3",name),element("p",description),element("p",instructor?"Instructor: "+instructor:"Instructor to be announced"));
+ const button=element("button",available?"Enter course":"Coming later");button.type="button";button.disabled=!available;
+ if(available)button.onclick=()=>openAssociates(true);
+ card.append(button);degreeGrid.append(card);
+}
+$("academy-back-degrees").onclick=()=>openAssociates(false);
 $("academy-example-move").onclick=()=>{examplePlayed=true;renderExample();};
 $("academy-example-reset").onclick=()=>{examplePlayed=false;renderExample();};
 $("academy-begin").onclick=()=>send("begin");

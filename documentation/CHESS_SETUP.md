@@ -18,3 +18,6 @@ The new school reuses the chess game area and existing legal engine. Four degree
 
 ### Associate’s final exam
 After all 15 lesson quizzes are passed, the final exam unlocks. The learner plays White against Professor Squiggles at fixed bot difficulty 1, from a full starting position, with no coaching, move rejections based on strategy, or takebacks. The existing game engine and house rules determine the winner. A loss or resignation permits unlimited retakes with lesson grades retained. The active exam is saved and resumable; the diploma and professor reward require a server-confirmed win as well as passing coursework. Module medals retain their original milestones. No Elo or coin rewards are awarded for exam matches.
+
+### In-game school navigation
+Chess School is a tab of pages/chess.html, not a separate game. The legacy learn-chess.html redirects to chess.html#school; Board Games lists only Axolotl Chess. Degree selection is independent of the Associate’s classroom; Professor Squiggles is assigned only to the Associate’s, and future instructors are unassigned. Switching to school pauses normal bot timers without resetting matches, and returning resumes normal scheduled play. Course state persists as before. No backend changes required for the navigation itself.

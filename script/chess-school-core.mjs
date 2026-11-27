@@ -2,7 +2,7 @@ import {initialChess,moves,playChess,botMove,inCheck,moveKey} from "./chess-core
 import {position,coach,coachHint,LESSONS as OLD} from "./chess-academy-core.mjs";
 export {position,coach};
 export const PASS=80,COURSE_VERSION=1,PROFESSOR_ID="professor-squiggles";
-export const DEGREES=[["Associate’s","Learn chess from zero to independent play.",true],["Bachelor’s","Intermediate strategy and opening study.",false],["Master’s","Advanced calculation and positional play.",false],["PhD","Expert research and chess mastery.",false]];
+export const DEGREES=[["Associate’s","Learn chess from zero to independent play.",true,"Professor Squiggles"],["Bachelor’s","Intermediate strategy and opening study.",false,null],["Master’s","Advanced calculation and positional play.",false,null],["PhD","Expert research and chess mastery.",false,null]];
 export const SCHOOL_TROPHIES=[
  ["chess-school-foundations","Chess Foundations Medal","Complete the Foundations module.",6],
  ["chess-school-rulebook","Chess Rules Scholar","Complete the Rules and Endings module.",12],
