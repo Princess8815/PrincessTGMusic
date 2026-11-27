@@ -3,6 +3,7 @@ import {auth,db,usingLocalFirebaseEmulators} from "./firebase.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {collection,doc,onSnapshot,query,where} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 import {mergeTypes,validImage,validPrice} from "./starlight-model.mjs";
+import {isElementalDragon,dragonPerksLabel} from "./starlight-dragons.mjs";
 const $=id=>document.getElementById(id),list=$("sl-items"),status=$("sl-status"),endpoint="https://princesstg-cd-store-live.transgirl1991.workers.dev/starlight/buy";
 const el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
 let items=[],types=mergeTypes([]),owned=new Set(),balance=null,selected="",loaded=false,busy=false,epoch=0,stops=[],catalogError=false,ownershipReady=false,page=0;const pageSize=12;
@@ -14,12 +15,12 @@ function render(){
  list.replaceChildren();
  const filtered=items.filter(x=>(!selected||x.typeId===selected)&&validImage(x.image)&&validPrice(x.price)),pages=Math.max(1,Math.ceil(filtered.length/pageSize));page=Math.max(0,Math.min(page,pages-1));const pager=$("starlight-pages");pager.hidden=pages<=1;pager.querySelector("[data-page-prev]").disabled=page===0;pager.querySelector("[data-page-next]").disabled=page>=pages-1;pager.querySelector("[data-page-label]").textContent="Page "+(page+1)+" of "+pages+" · "+filtered.length+" items";
  for(const item of filtered.slice(page*pageSize,(page+1)*pageSize)){
-  const card=el("article");card.className="sl-card";const img=el("img");img.src=item.image;img.alt=item.name;img.loading="lazy";
+  const card=el("article");card.className="sl-card"+(isElementalDragon(item)?" sl-dragon":"");const img=el("img");img.src=item.image;img.alt=item.name;img.loading="lazy";
   const price=el("p",item.price.toLocaleString()+" Star Coin"+(item.price===1?"":"s"));price.className="sl-cost";
   const isOwned=owned.has(item.id),eligible=!!auth.currentUser?.emailVerified&&!usingLocalFirebaseEmulators,ready=balance!==null&&ownershipReady;
   const b=el("button",isOwned?"Owned":!eligible?"Sign in / verify email":!ready?"Checking account…":balance<item.price?"Not enough Star Coins":"Buy collectible");
   b.type="button";b.disabled=busy||isOwned||!eligible||!ready||balance<item.price;b.onclick=()=>buy(item);
-  card.append(img,el("h3",item.name),el("p",types.find(t=>t.id===item.typeId)?.name||"Collectible"),price,b);list.append(card);
+  card.append(img,el("h3",item.name),el("p",isElementalDragon(item)?dragonPerksLabel:types.find(t=>t.id===item.typeId)?.name||"Collectible"),price,b);list.append(card);
  }
  if(!busy&&!catalogError&&!status.dataset.purchase)status.textContent=!loaded?"Loading the catalog…":!items.length?"No collectibles listed yet. Check back soon.":"";
 }

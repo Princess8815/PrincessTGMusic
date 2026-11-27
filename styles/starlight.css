@@ -33,3 +33,5 @@
 #diploma-grid>.school-diploma{box-sizing:border-box;width:100%;max-width:320px;aspect-ratio:320/220;min-width:0;overflow:hidden;border-radius:5px;line-height:0}
 #diploma-grid .school-diploma svg{display:block;width:100%;height:100%}
 #diploma-grid .school-diploma-locked{filter:grayscale(1);opacity:.65}
+
+.sl-card.sl-dragon img{background:transparent;object-fit:contain}.sl-dragon h3{color:var(--ptg-highlight)}

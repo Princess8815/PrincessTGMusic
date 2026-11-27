@@ -3,6 +3,7 @@ import {auth,db} from "./firebase.js";
 import {onAuthStateChanged} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
 import {collection,onSnapshot,query,where} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 import {mergeTypes,validImage,earnedOnlyType} from "./starlight-model.mjs";
+import {isElementalDragon,dragonPerksLabel} from "./starlight-dragons.mjs";
 import {STORE_AXOLOTL_CLUE,attachReefClue} from "./reef-clues.mjs";
 const $=id=>document.getElementById(id),nav=$("sl-collection-tabs"),grid=$("sl-owned-grid"),section=$("sl-owned-section");
 if(nav&&grid&&section){
@@ -17,9 +18,9 @@ if(nav&&grid&&section){
   const missing=selected==="axolotls"&&loaded&&auth.currentUser?catalog.filter(i=>i.typeId==="axolotls"&&!ownedIds.has(i.id)):[];
   $("sl-owned-heading").textContent=builtIn?"Starlight Store purchases":tabs.find(t=>t.id===selected)?.name||"Collection";
   section.hidden=builtIn&&!found.length&&!missing.length&&!error;grid.replaceChildren();
-  for(const item of found){const card=document.createElement("article");card.className="sl-card";
+  for(const item of found){const card=document.createElement("article");card.className="sl-card"+(isElementalDragon(item)?" sl-dragon":"");
    if(validImage(item.image)){const img=document.createElement("img");img.src=item.image;img.alt=item.name;img.loading="lazy";card.append(img);}
-   const title=document.createElement("h3");title.textContent=item.name;const label=document.createElement("p");label.textContent="Collected";card.append(title,label);grid.append(card);}
+   const title=document.createElement("h3");title.textContent=item.name;const label=document.createElement("p");label.textContent=isElementalDragon(item)?"Collected · "+dragonPerksLabel:"Collected";card.append(title,label);grid.append(card);}
   for(const item of missing){const card=document.createElement("article");card.className="sl-card reef-store-locked";
    const art=document.createElement("div");art.className="reef-card-art reef-mystery";art.textContent="?";
    const heading=document.createElement("h3");heading.textContent="???";const label=document.createElement("p");label.textContent="Not yet collected";

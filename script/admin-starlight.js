@@ -1,7 +1,8 @@
 
-import {db} from "./firebase.js";
-import {collection,doc,onSnapshot,setDoc,serverTimestamp} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
-import {watchStaffRole} from "./staff-auth.js";
+import {db,usingLocalFirebaseEmulators} from "./firebase.js";
+import {collection,doc,onSnapshot,setDoc,serverTimestamp,runTransaction} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+import {watchStaffRole,verifyStaff} from "./staff-auth.js";
+import {DRAGON_TYPE,validateDragonImport} from "./starlight-dragons.mjs";
 import {mergeTypes,validName,validPrice,validImage,earnedOnlyType} from "./starlight-model.mjs";
 const $=id=>document.getElementById(id),status=$("sl-admin-status"),body=$("sl-admin-body"),typeForm=$("sl-type-form"),itemForm=$("sl-item-form"),packForm=$("sl-pack-form");
 let allowed=false,epoch=0,stops=[],custom=[],items=[],packs=[],busy=false;
@@ -25,9 +26,45 @@ async function imageFor(input,existing){
 const nameOf=key=>{const n=$("sl-"+key+"-name").value.trim();if(!validName(n))throw Error("Enter a name (1–80 characters).");return n;};
 const priceOf=key=>{const n=Number($("sl-"+key+"-price").value);if(!validPrice(n))throw Error("Enter a whole-number Star Coin price (1–100,000,000).");return n;};
 async function save(form,work){if(!allowed||busy)return;const current=epoch;busy=true;form.querySelector("button[type=submit]").disabled=true;report("Saving…");try{const result=await work(()=>allowed&&epoch===current);if(epoch===current)report(result);}catch(e){if(epoch===current)report(e.message||"Save failed.");}finally{if(epoch===current){busy=false;form.querySelector("button[type=submit]").disabled=false;}}}
+// The supplied catalog contains the optimized transparent artwork. Import only as verified staff.
+const dragonForm=document.createElement("form");
+dragonForm.innerHTML='<fieldset><legend>Elemental Dragon collection</legend><p>Import the six-dragon catalog. Existing item IDs are preserved, so repeating the import will never reset prices or ownership.</p><label>Dragon catalog JSON<input type="file" accept=".json,application/json" required></label><button type="submit">Publish six dragons</button><p role="status" aria-live="polite"></p></fieldset>';
+itemForm.after(dragonForm);
+dragonForm.onsubmit=event=>{
+ event.preventDefault();
+ void save(dragonForm,async current=>{
+  const note=dragonForm.querySelector('[role="status"]'),file=dragonForm.querySelector("input").files?.[0];
+  if(!file||file.size>2000000)throw Error("Choose the dragon catalog JSON under 2 MB.");
+  const rows=validateDragonImport(JSON.parse(await file.text()));
+  if(!current()||!await verifyStaff()||!current())throw Error("Staff access required.");
+  const target=usingLocalFirebaseEmulators?"local Firebase emulator":"LIVE Firebase";
+  if(!confirm("Publish up to six dragons to "+target+"? Existing items are not overwritten. No Star Coins will be charged."))return "Dragon import canceled.";
+  const type=doc(db,"starlightTypes",DRAGON_TYPE);
+  // Existing rules use exists(), so create the type before the item transaction.
+  await runTransaction(db,async tx=>{
+   const old=await tx.get(type);if(!current())throw Error("Staff session changed.");
+   if(old.exists()){if(old.data().name!=="Dragons")throw Error("The Dragons category ID is already in use.");}
+   else tx.set(type,{name:"Dragons",updatedAt:serverTimestamp()});
+  });
+  const result=await runTransaction(db,async tx=>{
+   const refs=rows.map(row=>doc(db,"starlightItems",row.id));
+   const snapshots=await Promise.all(refs.map(ref=>tx.get(ref)));
+   if(!current())throw Error("Staff session changed.");
+   let added=0;
+   snapshots.forEach((snap,index)=>{
+    const {id,...row}=rows[index];
+    if(snap.exists()){if(snap.data().typeId!==DRAGON_TYPE)throw Error("Collectible ID already in use: "+id);return;}
+    tx.set(refs[index],{...row,updatedAt:serverTimestamp()});added++;
+   });
+   return added;
+  });
+  const msg=result+" dragons published; "+(rows.length-result)+" existing items preserved.";
+  if(current()){note.textContent=msg;dragonForm.reset();}return msg;
+ });
+};
 $("sl-type-edit").onchange=()=>{$("sl-type-name").value=custom.find(t=>t.id===$("sl-type-edit").value)?.name||"";};$("sl-item-edit").onchange=loadItem;$("sl-pack-edit").onchange=loadPack;
 for(const key of ["item","pack"]){$("sl-"+key+"-image").onchange=async()=>{const current=epoch,input=$("sl-"+key+"-image"),f=input.files?.[0];try{if(f){const value=await imageFor(input,null);if(allowed&&current===epoch&&input.files?.[0]===f)preview(key,value);}}catch(e){if(current===epoch)report(e.message);}};}
 typeForm.onsubmit=e=>{e.preventDefault();void save(typeForm,async current=>{const name=nameOf("type"),key=$("sl-type-edit").value||id();if(types().some(t=>t.id!==key&&t.name.toLowerCase()===name.toLowerCase()))throw Error("That tab already exists.");if(!current())return "";await setDoc(doc(db,"starlightTypes",key),{name,updatedAt:serverTimestamp()});if(current()&&!$("sl-type-edit").value){typeForm.reset();}return "Collection tab saved.";});};
 itemForm.onsubmit=e=>{e.preventDefault();void save(itemForm,async current=>{const key=$("sl-item-edit").value||id(),old=items.find(x=>x.id===key),name=nameOf("item"),price=priceOf("item"),typeId=old?.typeId||$("sl-item-type").value,active=$("sl-item-active").checked;if(earnedOnlyType(typeId)||!types().some(t=>t.id===typeId))throw Error("Choose a purchasable collection type.");const image=await imageFor($("sl-item-image"),old?.image);if(!current())return "";await setDoc(doc(db,"starlightItems",key),{name,price,typeId,image,active,updatedAt:serverTimestamp()});if(current()&&!old){itemForm.reset();loadItem();}return active?"Collectible published.":"Collectible saved and hidden from the store.";});};
 packForm.onsubmit=e=>{e.preventDefault();void save(packForm,async current=>{const key=$("sl-pack-edit").value||id(),old=packs.find(x=>x.id===key),name=nameOf("pack"),price=priceOf("pack"),cardsPerPack=Number($("sl-pack-count").value),cardIds=[...$("sl-pack-pool").querySelectorAll("input:checked")].map(x=>x.value);if(!Number.isInteger(cardsPerPack)||cardsPerPack<1||cardsPerPack>20||cardIds.length<cardsPerPack||cardIds.length>100)throw Error("Select enough distinct cards (max 100), with 1–20 cards per pack.");const image=await imageFor($("sl-pack-image"),old?.image);if(!current())return "";await setDoc(doc(db,"starlightPacks",key),{name,price,image,cardsPerPack,cardIds,status:"draft",updatedAt:serverTimestamp()});if(current()&&!old){packForm.reset();loadPack();}return "Pack draft saved. Sales and opening are not enabled yet.";});};
-watchStaffRole(value=>{const next=value===true;if(next===allowed)return;allowed=next;const current=++epoch;busy=false;stops.forEach(s=>s());stops=[];body.hidden=!allowed;custom=[];items=[];packs=[];for(const f of [typeForm,itemForm,packForm]){f.reset();f.querySelector("button[type=submit]").disabled=false;}$("sl-item-type").disabled=false;preview("item","");preview("pack","");refresh();if(!allowed){report("Staff access required.");return;}report("Manage your catalog and future packs.");for(const [name,assign] of [["starlightTypes",v=>custom=v],["starlightItems",v=>items=v],["starlightPacks",v=>packs=v]])stops.push(onSnapshot(collection(db,name),s=>{if(current!==epoch)return;assign(s.docs.map(d=>({...d.data(),id:d.id})).sort((a,b)=>a.name.localeCompare(b.name)));refresh();},()=>{if(current===epoch)report("Catalog unavailable. Publish the updated Firestore rules.");}));});
+watchStaffRole(value=>{const next=value===true;if(next===allowed)return;allowed=next;const current=++epoch;busy=false;stops.forEach(s=>s());stops=[];body.hidden=!allowed;custom=[];items=[];packs=[];for(const f of [typeForm,itemForm,packForm,dragonForm]){f.reset();f.querySelector("button[type=submit]").disabled=false;}$("sl-item-type").disabled=false;preview("item","");preview("pack","");refresh();if(!allowed){report("Staff access required.");return;}report("Manage your catalog and future packs.");for(const [name,assign] of [["starlightTypes",v=>custom=v],["starlightItems",v=>items=v],["starlightPacks",v=>packs=v]])stops.push(onSnapshot(collection(db,name),s=>{if(current!==epoch)return;assign(s.docs.map(d=>({...d.data(),id:d.id})).sort((a,b)=>a.name.localeCompare(b.name)));refresh();},()=>{if(current===epoch)report("Catalog unavailable. Publish the updated Firestore rules.");}));});
