@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const OLD = "https://princess8815.github.io/PrincessTGMusic";
 const DEST = "https://princesstgcreations.pages.dev";
-const PUBLIC = ["index.html","404.html","albums","arts","audioPlayer","data","images","pages","script","styles"];
+const PUBLIC = ["index.html","404.html","ads.txt","albums","arts","audioPlayer","data","images","pages","script","styles"];
 function legacyTarget(location) {
   if (location.origin !== "https://princess8815.github.io") return null;
   const base = "/PrincessTGMusic";

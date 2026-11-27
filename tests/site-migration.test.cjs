@@ -34,15 +34,19 @@ const root=fs.mkdtempSync(path.join(os.tmpdir(),"ptg-migration-"));
 try {
  for(const dir of ["albums","arts","audioPlayer","data","images","pages","script","styles"])fs.mkdirSync(path.join(root,dir));
  for(const file of ["index.html","404.html","pages/store.html"])fs.writeFileSync(path.join(root,file),original);
+ const ads = "google.com, pub-1234567890123456, DIRECT, f08c47fec0942fa0\n";
+ fs.writeFileSync(path.join(root,"ads.txt"),ads);
  fs.writeFileSync(path.join(root,"images","asset.png"),"asset");
  fs.writeFileSync(path.join(root,"script","unused.bak"),"backup");
  fs.mkdirSync(path.join(root,"workers"));fs.writeFileSync(path.join(root,"workers","private.js"),"private");
  assert.equal(build("legacy",root),3);
+ assert.equal(fs.readFileSync(path.join(root,"dist/ads.txt"),"utf8"),ads);
  assert.ok(fs.readFileSync(path.join(root,"dist/pages/store.html"),"utf8").includes("location.replace"));
  assert.equal(fs.readFileSync(path.join(root,"dist/images/asset.png"),"utf8"),"asset");
  assert.ok(!fs.existsSync(path.join(root,"dist/script/unused.bak")));
  assert.ok(!fs.existsSync(path.join(root,"dist/workers")));
  assert.equal(build("cloudflare",root),3);
+ assert.equal(fs.readFileSync(path.join(root,"dist/ads.txt"),"utf8"),ads);
  assert.ok(fs.readFileSync(path.join(root,"dist/pages/store.html"),"utf8").includes("checkout.js"));
  assert.equal(fs.readFileSync(path.join(root,"pages/store.html"),"utf8"),original);
 }finally{fs.rmSync(root,{recursive:true,force:true});}
