@@ -103,7 +103,7 @@ L("Tactics, defense and material",[
 OLD[6].exercises.slice(1),OLD[6].quiz),
 L("Graduation laboratory",[
 "You have learned all six pieces, special moves, king safety, notation, basic openings and game endings. Review any lesson if you need more practice. During the final laboratory, find legal safe moves, watch for threats, and coordinate your pieces.",
-"Complete the board exercises, then a coached match and cumulative quiz. Squiggles will let you try again when a move creates a serious tactical problem. This is a beginner course, not an official chess rating or accredited degree."
+"Complete the board exercises, then a coached match and cumulative quiz. To graduate, you must also win a full unassisted difficulty-1 exam match against Professor Squiggles. Squiggles will let you try again when a move creates a serious tactical problem. This is a beginner course, not an official chess rating or accredited degree."
 ],E("k7/8/1QK5/8/8/8/8/8 w - -","Example: queen b6 to b7 is checkmate.","b6b7","Check all of Black’s possible responses."),
 [OLD[7].exercises[0],E("4k3/8/8/3q4/8/8/3R4/4K3 w - -","Find the safe capture of the queen.","d2d5","Rook on d2 can capture up the file."),E("4k3/8/8/3pP3/8/8/8/4K3 w - d6","Show that you remember en passant.","e5d6","Capture on the passed square."),E("4k3/8/8/8/8/8/8/4K2R w K -","Show that you remember castling.","e1g1","King two squares toward the rook.")],
 [Q("Which piece alone can jump normally?","Knight","Rook","Bishop","Queen"),Q("Can a move leave your own king in check?","No","Yes","Only when capturing","Only if ahead in material"),Q("A pawn on rank 8 must become?","Queen, rook, bishop or knight","A king","A pawn","Any enemy piece"),Q("Standard stalemate means?","Draw","Checkmate","A captured king","A win for trapping side"),Q("What is a useful opening plan?","Center, development and king safety","Move the queen every turn","Ignore opponent threats","Move all edge pawns"),Q("What does N mean in notation?","Knight","King","Pawn","Queen"),Q("When can you capture en passant?","Immediately after a qualifying double step","Any future turn","Only after castling","After promotion"),Q("Can you castle through an attacked square?","No","Yes","Only if rook is safe","Only queenside"),Q("What is a fork?","One piece attacking multiple targets","A draw","A pawn double step","A rook move"),Q("What ends standard chess with a winner on the board?","Checkmate","Stalemate","Capturing all pawns","A check alone")],"",{level:3,turns:12,opening:false})
@@ -111,16 +111,40 @@ L("Graduation laboratory",[
 export const MODULES=[["Foundations",0,7],["Rules and Endings",7,12],["Independent Play",12,15]];
 // Foundations reward includes the king; all milestones use counts, not score totals.
 SCHOOL_TROPHIES[0][3]=7;
+export const EXAM_LEVEL=1;
+export const graduated=s=>passed(s)&&s.exam?.passed===true;
 export const passed=(s,n=LESSONS.length)=>s.best.slice(0,n).length===n&&s.best.slice(0,n).every(g=>Number.isFinite(g)&&g>=PASS);
-export function initialCourse(){return {version:COURSE_VERSION,revision:0,unlocked:0,best:LESSONS.map(()=>null),attempts:LESSONS.map(()=>0),lesson:0,exercise:0,phase:"study",match:null,quizAttempt:0,feedback:"Welcome to Chess School! Read the lesson, watch the example, then practice.",lastGrade:null};}
+export function initialCourse(){return {version:COURSE_VERSION,revision:0,unlocked:0,best:LESSONS.map(()=>null),attempts:LESSONS.map(()=>0),lesson:0,exercise:0,phase:"study",match:null,quizAttempt:0,feedback:"Welcome to Chess School! Read the lesson, watch the example, then practice.",lastGrade:null,exam:{attempts:0,passed:false,game:null,result:null,seed:0}};}
 function shuffle(n,seed){const a=Array.from({length:n},(_,i)=>i);let x=seed>>>0||1;for(let i=n-1;i>0;i--){x^=x<<13;x^=x>>>17;x^=x<<5;const j=(x>>>0)%(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
 export function quizView(s){return LESSONS[s.lesson].quiz.map((q,i)=>({question:q[0],options:shuffle(4,Math.imul(s.quizAttempt+1,7919)+i*101+s.lesson*37).map(j=>({id:j,label:q[j+1]}))}));}
-export function publicCourse(s){const l=LESSONS[s.lesson],ex=s.phase==="exercise"?l.exercises[s.exercise]:null;return {version:s.version,revision:s.revision,unlocked:s.unlocked,best:s.best,attempts:s.attempts,lesson:s.lesson,exercise:s.exercise,exerciseCount:l.exercises.length,phase:s.phase,feedback:s.feedback,lastGrade:s.lastGrade,completed:passed(s),board:ex?position(ex[0]):s.phase==="match"?s.match.game:null,prompt:ex?.[1]||null,match:s.phase==="match"?{turns:s.match.turns,target:l.match.turns,mistakes:s.match.mistakes}:null,quiz:s.phase==="quiz"?quizView(s).map(q=>({question:q.question,options:q.options.map(o=>({label:o.label}))})):null};}
+export function publicCourse(s){const l=LESSONS[s.lesson],ex=s.phase==="exercise"?l.exercises[s.exercise]:null;return {version:s.version,revision:s.revision,unlocked:s.unlocked,best:s.best,attempts:s.attempts,lesson:s.lesson,exercise:s.exercise,exerciseCount:l.exercises.length,phase:s.phase,feedback:s.feedback,lastGrade:s.lastGrade,completed:graduated(s),examUnlocked:passed(s),exam:{level:EXAM_LEVEL,attempts:s.exam?.attempts||0,passed:s.exam?.passed===true,result:s.exam?.result||null,active:!!s.exam?.game&&!s.exam.game.winner&&!s.exam.result},board:ex?position(ex[0]):s.phase==="match"?s.match.game:s.phase==="exam"?s.exam.game:null,prompt:ex?.[1]||null,match:s.phase==="match"?{turns:s.match.turns,target:l.match.turns,mistakes:s.match.mistakes}:null,quiz:s.phase==="quiz"?quizView(s).map(q=>({question:q.question,options:q.options.map(o=>({label:o.label}))})):null};}
 export function courseAction(prior,input){
  const s=JSON.parse(JSON.stringify(prior)),l=LESSONS[s.lesson],action=input.action;
+ s.exam??={attempts:0,passed:false,game:null,result:null,seed:0};
  const enterQuiz=()=>{s.phase="quiz";s.quizAttempt++;s.feedback="Time for your quiz. Score at least 80% to pass.";};
  const afterExercises=()=>{if(l.match){s.phase="match";s.match={game:initialChess(),turns:0,mistakes:0,seed:Math.imul(s.revision+1,347)+s.lesson};s.feedback="Guided match: consider your opponent’s threats before moving.";}else enterQuiz();};
- if(action==="lesson"){if(!Number.isInteger(input.lesson)||input.lesson<0||input.lesson>=LESSONS.length||input.lesson>s.unlocked)throw Error("Pass the previous lesson first.");s.lesson=input.lesson;s.exercise=0;s.phase="study";s.match=null;s.lastGrade=null;s.feedback="Read the lesson and try the example before beginning practice.";}
+ if(action==="exam-start"){
+  if(!passed(s))throw Error("Pass every lesson before attempting the final exam.");
+  if(s.exam.passed)throw Error("You already graduated.");
+  if(!s.exam.game||s.exam.result){s.exam.attempts++;s.exam.game=initialChess();s.exam.result=null;s.exam.seed=Math.imul(s.revision+1,7919)^Math.imul(s.exam.attempts,347);}
+  s.phase="exam";s.feedback="Final exam: defeat Professor Squiggles at difficulty 1. Play as White; no coaching or takebacks.";
+ }
+ else if(action==="exam-resign"){
+  if(s.phase!=="exam"||!s.exam.game||s.exam.result)throw Error("No active exam.");
+  s.exam.result="resigned";s.phase="exam-results";s.feedback="Exam not passed. You can retry without repeating lessons.";
+ }
+ else if(action==="move"&&s.phase==="exam"){
+  const g=s.exam.game;
+  if(!g||g.winner||s.exam.result||g.turn!=="w")throw Error("No active exam move.");
+  const m=moves(g).find(x=>moveKey(x)===input.move);
+  if(!m)throw Error("Illegal move. Keep your king safe.");
+  let next=playChess(g,m);
+  if(!next.winner){const bot=botMove(next,EXAM_LEVEL,s.exam.seed);if(!bot)throw Error("No bot move.");next=playChess(next,bot);}
+  s.exam.game=next;
+  if(next.winner){s.exam.passed=next.winner==="w";s.exam.result=s.exam.passed?"won":"lost";s.phase="exam-results";s.feedback=s.exam.passed?"Congratulations! You defeated Professor Squiggles and earned your Associate’s in Chess.":"Professor Squiggles won this attempt. Review any lesson and try again.";}
+  else s.feedback=inCheck(next)?"You are in check.":"Your turn.";
+ }
+ else if(action==="lesson"){if(!Number.isInteger(input.lesson)||input.lesson<0||input.lesson>=LESSONS.length||input.lesson>s.unlocked)throw Error("Pass the previous lesson first.");s.lesson=input.lesson;s.exercise=0;s.phase="study";s.match=null;s.lastGrade=null;s.feedback="Read the lesson and try the example before beginning practice.";}
  else if(action==="begin"&&s.phase==="study"){s.phase="exercise";s.feedback="Try the exercises. Ask Squiggles if you need a clue.";}
  else if(action==="hint"){if(s.phase==="exercise")s.feedback=l.exercises[s.exercise][3];else if(s.phase==="match")s.feedback=coachHint(s.match.game,l.match.opening);else throw Error("Hints are available during practice.");}
  else if(action==="move"&&s.phase==="exercise"){const e=l.exercises[s.exercise],g=position(e[0]),m=moves(g).find(x=>moveKey(x)===input.move);if(!m||moveKey(m)!==e[2])s.feedback="Not quite. "+e[3]+" Try again.";else{s.exercise++;s.feedback="Nicely done!";if(s.exercise===l.exercises.length)afterExercises();}}
@@ -137,7 +161,7 @@ export function courseAction(prior,input){
  else if(action==="quiz"&&s.phase==="quiz"){
   if(!Array.isArray(input.answers)||input.answers.length!==l.quiz.length||input.answers.some(x=>!Number.isInteger(x)||x<0||x>3))throw Error("Answer every question.");
   const view=quizView(s),results=l.quiz.map((q,i)=>({question:q[0],correct:view[i].options[input.answers[i]].id===0,answer:q[1]}));
-  const grade=Math.round(results.filter(r=>r.correct).length/results.length*100);s.lastGrade={grade,results};s.attempts[s.lesson]++;s.best[s.lesson]=Math.max(s.best[s.lesson]??0,grade);if(grade>=PASS)s.unlocked=Math.max(s.unlocked,Math.min(LESSONS.length-1,s.lesson+1));s.phase="results";s.feedback=grade>=PASS?"You passed! Continue or try again to improve your grade.":"Review the lesson, then retry. You need 80% to advance.";
+  const grade=Math.round(results.filter(r=>r.correct).length/results.length*100);s.lastGrade={grade,results};s.attempts[s.lesson]++;s.best[s.lesson]=Math.max(s.best[s.lesson]??0,grade);if(grade>=PASS)s.unlocked=Math.max(s.unlocked,Math.min(LESSONS.length-1,s.lesson+1));s.phase="results";s.feedback=grade>=PASS?(passed(s)?"All lessons passed! Your final exam is now available.":"You passed! Continue or try again to improve your grade."):"Review the lesson, then retry. You need 80% to advance.";
  }
  else if(action==="retry-quiz"&&s.phase==="results")enterQuiz();
  else throw Error("Complete the current section first.");

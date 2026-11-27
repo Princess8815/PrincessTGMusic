@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {LESSONS,DEGREES,SCHOOL_TROPHIES,PROFESSOR_ID,position,coach,initialCourse,courseAction,publicCourse,quizView} from "../../../script/chess-school-core.mjs";
-import {moves,moveKey,playChess} from "../../../script/chess-core.mjs";
+import {moves,moveKey,playChess,botMove} from "../../../script/chess-core.mjs";
 import {schoolWithStorage} from "../chess-school.mjs";
 const answers=s=>quizView(s).map(q=>q.options.findIndex(o=>o.id===0));
 test("four degrees, only Associate’s open; all examples and exercises use legal moves",()=>{
@@ -30,8 +30,25 @@ test("graduation earns three trophies and professor once, with old course preser
   for(const e of LESSONS[i].exercises)await send("move",{move:e[2]});
   let tries=0;while(d.phase==="match"||d.phase==="match-retry"){if(d.phase==="match-retry")await send("retry-match");else await send("move",{move:moveKey(coach(d.board,LESSONS[i].match.opening)[0].m)});assert.ok(++tries<=80);}
   const saved=JSON.parse(data.get(path).fields.payload.stringValue);await send("quiz",{answers:answers(saved)});
-  assert.equal(d.best[i],100);assert.equal(grants,SCHOOL_TROPHIES.filter(t=>t[3]<=i+1).length+(i===LESSONS.length-1?1:0));
+  assert.equal(d.best[i],100);assert.equal(grants,SCHOOL_TROPHIES.filter(t=>t[3]<=i+1&&t[0]!=="chess-associates-diploma").length);
  }
+ assert.equal(d.completed,false);assert.equal(grants,2);assert.equal(d.examUnlocked,true);
+ await send("exam-start");assert.equal(d.phase,"exam");assert.equal(d.exam.level,1);assert.equal(d.exam.attempts,1);
+ await assert.rejects(()=>call({action:"hint",revision:d.revision,requestId:"hint-forbidden"}));
+ await send("exam-resign");assert.equal(d.completed,false);assert.equal(grants,2);
+ await send("exam-start");assert.equal(d.exam.attempts,2);
+ // Full legal match against the actual level-one engine, using a stronger engine for White.
+ let tries=0;while(d.phase==="exam"){const move=botMove(d.board,5,123);assert.ok(move);await send("move",{move:moveKey(move)});assert.ok(++tries<=200);}
  assert.equal(d.completed,true);assert.equal(grants,4);assert.ok(data.has(user+"/axolotls/"+PROFESSOR_ID));assert.equal(data.get(legacy).fields.payload.stringValue,"old progress");
  await call(last);assert.equal(grants,4);
+});
+
+test("exam locked until all lessons pass; no hints; losing never graduates",()=>{
+ let s=initialCourse();assert.throws(()=>courseAction(s,{action:"exam-start"}));
+ s.best.fill(80);s=courseAction(s,{action:"exam-start"});assert.equal(publicCourse(s).completed,false);
+ assert.throws(()=>courseAction(s,{action:"hint"}));assert.throws(()=>courseAction(s,{action:"move",move:"e2e5"}));
+ s.exam.game=position("k7/8/1QK5/8/8/8/8/8 w - -");s=courseAction(s,{action:"move",move:"b6b7"});
+ assert.equal(publicCourse(s).completed,true);assert.equal(s.exam.result,"won");
+ let loss=initialCourse();loss.best.fill(80);loss=courseAction(loss,{action:"exam-start"});loss=courseAction(loss,{action:"exam-resign"});
+ assert.equal(publicCourse(loss).completed,false);assert.equal(loss.exam.result,"resigned");
 });
