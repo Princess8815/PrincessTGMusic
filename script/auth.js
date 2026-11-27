@@ -147,6 +147,7 @@ if (!container) {
           <p id="auth-verify-message" role="status" aria-live="polite"></p>
           <div class="auth-verify-actions">
             <button type="button" id="auth-resend-verification" class="auth-primary">Send / resend verification email</button>
+            <p class="auth-provider-note">After verifying your email, refresh this page to unlock member features.</p>
             <button type="button" id="auth-verify-later" class="auth-text-button">Verify later</button>
             <button type="button" id="auth-use-another" class="auth-text-button">Use another account</button>
           </div>
@@ -338,7 +339,7 @@ adminButton.addEventListener("click", async () => {
     $("auth-heading").textContent = "Verify Your Email";
     $("auth-verify-email").textContent = user.email || "your email address";
     if (text) $("auth-verify-message").textContent = text;
-    else if(!$("auth-verify-message").textContent)$("auth-verify-message").textContent="Check your inbox or spam folder. Your account will update automatically after verification. You can verify later.";
+    else if(!$("auth-verify-message").textContent)$("auth-verify-message").textContent="Check your inbox or spam folder. You can verify later.";
     $("auth-open").hidden = false;
     $("auth-open").textContent = "Verify Email";
   }
@@ -421,8 +422,8 @@ adminButton.addEventListener("click", async () => {
       lastVerificationEmailAt=Date.now();
       lastVerificationUid=user.uid;
       $("auth-verify-message").textContent = sent.alreadyVerified
-        ? "This account is already verified. Your access will refresh automatically."
-        : "Verification email requested. Check your inbox and spam folder. Your access will update automatically.";
+        ? "This account is already verified. Refresh the page if your access has not updated."
+        : "Verification email requested. Check your inbox and spam folder.";
     } catch (error) {
       console.error("Firebase verification request rejected:",error?.code||"unknown",error);
       if(auth.currentUser?.uid!==user.uid)return;

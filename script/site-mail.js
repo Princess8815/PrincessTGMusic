@@ -707,8 +707,8 @@ $("mail-send-verification").addEventListener("click",async()=>{
     const result=await sendSiteVerification(user);
     if(auth.currentUser?.uid!==user.uid)return;
     $("mail-verification-status").textContent=result.alreadyVerified
-      ? "Your email is already verified. Site Mail access will update automatically."
-      : "Verification email requested. Check your inbox and spam folder. Site Mail access will update automatically.";
+      ? "Your email is already verified. Refresh this page if Site Mail is still locked."
+      : "Verification email requested. Check your inbox and spam folder, then refresh this page after verifying.";
   }catch(error){
     if(auth.currentUser?.uid!==user.uid)return;
     console.error("Site Mail verification request rejected:",error?.code||"unknown",error);

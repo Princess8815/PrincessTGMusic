@@ -15,7 +15,7 @@ async function verify(){
  try{
   await applyActionCode(auth,code);
   title.textContent="Email verified!";
-  status.textContent="Your email is verified! Your account access updates automatically. Return to your original website tab or use the button below.";
+  status.textContent="Your email is verified! Return to your original website tab and refresh the page to unlock member features, or use the button below.";
   // Only a signal: receiving tabs must reload Firebase to confirm actual access.
   try{localStorage.setItem("princesstg:verification-complete",String(Date.now()));}catch{}
  }catch(error){fail(error);}
