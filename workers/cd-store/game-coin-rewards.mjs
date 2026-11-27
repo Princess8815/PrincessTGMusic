@@ -16,8 +16,8 @@ export function multiplyGameCoins(coins,multiplier){
 }
 // The HTTP router passes the already-allowed Origin separately from JSON input.
 export const gameRewardPreview=origin=>!!origin&&origin!=="https://princesstgcreations.pages.dev";
-export async function gameCoinAward({read,root,uid,account,coins,clock=Date.now,preview=false}){
- if(coins<=0)return {coins:multiplyGameCoins(coins,1),checks:[]};
+export const GAME_REWARD_REVISION="membership-rewards-v3";
+export async function gameRewardContext({read,root,uid,account,clock=Date.now,preview=false}){
  const staff=["admin","owner"].includes(account?.fields?.role?.stringValue);
  const path=(staff?(preview?"staffTestMembershipOverrides/":"staffMembershipOverrides/"):"memberships/")+encodeURIComponent(uid);
  const doc=await read(path);
@@ -25,5 +25,13 @@ export async function gameCoinAward({read,root,uid,account,coins,clock=Date.now,
  // A concurrent renewal or staff toggle causes the existing game transaction
  // to retry, rather than crediting a stale membership snapshot.
  const checks=[{verify:root+"/"+path,currentDocument:doc?{updateTime:doc.updateTime}:{exists:false}}];
- return {coins:multiplyGameCoins(coins,multiplier),checks};
+ return {multiplier,checks,source:staff?(preview?"staffTestMembershipOverrides":"staffMembershipOverrides"):"memberships",environment:preview?"preview":"live",revision:GAME_REWARD_REVISION,membership:multiplier===2?"paid":"free"};
+}
+export async function gameCoinAward({coins,...ctx}){
+ if(coins<=0)return {coins:multiplyGameCoins(coins,1),checks:[]};
+ const context=await gameRewardContext(ctx);
+ return {...context,coins:multiplyGameCoins(coins,context.multiplier)};
+}
+export function publicRewardContext({multiplier,source,environment,revision,membership}){
+ return {multiplier,source,environment,revision,membership};
 }

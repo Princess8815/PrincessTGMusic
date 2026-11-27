@@ -1,4 +1,4 @@
-import {gameCoinAward} from "./game-coin-rewards.mjs";
+import {gameCoinAward,gameRewardContext,publicRewardContext} from "./game-coin-rewards.mjs";
 
 import {accessToken,verifyFirebaseIdentity} from "./rewards.js";
 import {initialState,begin,guess,abandon,publicState,DIFFICULTIES} from "./hanggirl-core.mjs";
@@ -12,9 +12,9 @@ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
 // Only the live game service can change real balances, including from approved previews.
 export async function playHanggirl(env,input,preview=false){
  if(env.STORE_MODE!=="live"||!env.FIREBASE_PROJECT||env.REWARD_FIREBASE_PROJECT!==env.FIREBASE_PROJECT)fail("Hanggirl reward service is not configured.",503);
- if(!input||!["state","start","guess","abandon"].includes(input.action))fail("Unknown game action.");
+ if(!input||!["state","start","guess","abandon","reward-status"].includes(input.action))fail("Unknown game action.");
  const {action,roundId,letter,difficulty}=input;
- if(action!=="state"&&!uuid.test(roundId||""))fail("Invalid round ID.");
+ if(!["state","reward-status"].includes(action)&&!uuid.test(roundId||""))fail("Invalid round ID.");
  if(action==="start"&&!DIFFICULTIES.includes(difficulty))fail("Choose a difficulty.");
  if(action==="guess"&&(typeof letter!=="string"||!/^[a-z]$/.test(letter)))fail("Guess a single letter.");
  const uid=await verifyFirebaseIdentity(env.FIREBASE_PROJECT,input.idToken,true);
@@ -29,27 +29,43 @@ export async function playHanggirl(env,input,preview=false){
   if(!r.ok)fail("Game storage unavailable. Try again.",503);
   return r.json();
  };
+ const commit=async writes=>{
+  const result=await fetch(origin+":commit",{method:"POST",headers,body:JSON.stringify({writes})});
+  if(result.ok)return true;
+  if([409,412].includes(result.status))return false;
+  const error=await result.json().catch(()=>({}));
+  if(["ABORTED","FAILED_PRECONDITION","ALREADY_EXISTS"].includes(error.error?.status))return false;
+  fail("Game save failed. Your reward has not been confirmed; retry.",503);
+ };
+ return hanggirlWithStorage({read,commit,root,uid,input,preview,pickWord:(difficulty,recent)=>chooseWord(difficulty,recent,env)});
+}
+export async function hanggirlWithStorage({read,commit,root,uid,input,preview=false,pickWord,clock=Date.now}){
+ const {action,roundId,letter,difficulty}=input;
+ const accountPath="users/"+encodeURIComponent(uid),statePath=accountPath+"/privateGames/hanggirl";
  for(let attempt=0;attempt<4;attempt++){
   const account=await read(accountPath);
   if(!account||!account.updateTime||(account.fields?.status?.stringValue||"active")!=="active")fail("An active verified account is required.",403);
+  if(action==="reward-status")return publicRewardContext(await gameRewardContext({read,root,uid,account,preview,clock}));
   const stored=await read(statePath),state=unpack(stored)||initialState();
   if(action==="state")return publicState(state);
   let next=state;
   if(action==="start"){
    if(state.round?.id===roundId||state.round?.status==="playing")return publicState(state);
-   next=begin(state,difficulty,await chooseWord(difficulty,state.recent,env),roundId);
+   next=begin(state,difficulty,await pickWord(difficulty,state.recent),roundId);
   }else{
    if(!state.round||state.round.id!==roundId)return publicState(state);
    next=action==="guess"?guess(state,letter):abandon(state);
   }
   if(next===state)return publicState(state);
   const writes=[
-   {update:{name:root+"/"+statePath,fields:fields(next)},currentDocument:stored?{updateTime:stored.updateTime}:{exists:false}},
+   {update:{name:root+"/"+statePath,fields:{}},currentDocument:stored?{updateTime:stored.updateTime}:{exists:false}},
    {update:{name:root+"/"+accountPath,fields:{}},updateMask:{fieldPaths:[]},currentDocument:{updateTime:account.updateTime}}
   ];
   if(next.round.status==="won"&&state.round.status==="playing"){
-   const award=await gameCoinAward({read,root,uid,account,coins:next.round.awarded,preview});
-   next.round.awarded=award.coins;writes.push(...award.checks);
+   const award=await gameCoinAward({read,root,uid,account,coins:next.round.awarded,preview,clock});
+   // Client expectations only reject mismatches; they never choose the payout.
+   if(input.expectedMultiplier!==undefined&&input.expectedMultiplier!==award.multiplier)fail("Membership changed or does not match the game server. Check reward status before retrying the final letter.",409);
+   next.round.awarded=award.coins;next.round.rewardMembership=award.membership;writes.push(...award.checks);
    writes.push({update:{name:root+"/"+accountPath+"/wallets/starCoins",fields:fields({currency:"starCoins"})},updateMask:{fieldPaths:["currency"]},updateTransforms:[{fieldPath:"balance",increment:{integerValue:String(next.round.awarded)}}]});
    for(const item of next.round.unlocks){
     const path=accountPath+"/"+item.type+"/"+item.id;
@@ -57,13 +73,9 @@ export async function playHanggirl(env,input,preview=false){
     if(!await read(path))writes.push({update:{name:root+"/"+path,fields:{foundAt:{timestampValue:new Date().toISOString()},source:{stringValue:"hanggirl"}}},currentDocument:{exists:false}});
    }
   }
-  const result=await fetch(origin+":commit",{method:"POST",headers,body:JSON.stringify({writes})});
-  if(result.ok)return publicState(next);
-  if([409,412].includes(result.status))continue;
-  // Firestore can report a failed precondition as HTTP 400.
-  const error=await result.json().catch(()=>({}));
-  if(["ABORTED","FAILED_PRECONDITION","ALREADY_EXISTS"].includes(error.error?.status))continue;
-  fail("Game save failed. Your reward has not been confirmed; retry.",503);
+  // Encode the final multiplied reward, not the pre-multiplier state.
+  writes[0].update.fields=fields(next);
+  if(await commit(writes))return publicState(next);
  }
  fail("Game changed in another tab. Retry to refresh.",409);
 }

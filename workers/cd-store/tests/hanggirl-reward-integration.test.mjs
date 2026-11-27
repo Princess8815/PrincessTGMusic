@@ -1,0 +1,20 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {hanggirlWithStorage} from "../hanggirl.mjs";
+test("Hanggirl real storage path respects preview Free, verifies Paid and stores final award exactly once",async()=>{
+ const root="docs",uid="staff",user="users/staff",state=user+"/privateGames/hanggirl",wallet=user+"/wallets/starCoins";
+ const docs=new Map([[user,{updateTime:"a",fields:{role:{stringValue:"owner"},status:{stringValue:"active"}}}],["staffTestMembershipOverrides/staff",{updateTime:"f",fields:{mode:{stringValue:"free"}}}],["staffMembershipOverrides/staff",{updateTime:"p",fields:{mode:{stringValue:"actual"}}}]]);
+ let credits=0,commits=0,version=0;
+ const read=async path=>docs.get(path)||null;
+ const commit=async writes=>{commits++;for(const w of writes){if(w.verify){const d=docs.get(w.verify.slice(root.length+1));assert.equal(d?.updateTime,w.currentDocument.updateTime);continue;}if(!w.update)continue;const path=w.update.name.slice(root.length+1);if(path===wallet){credits+=Number(w.updateTransforms[0].increment.integerValue);continue;}if(path===user)continue;docs.set(path,{fields:w.update.fields,updateTime:String(++version)});}return true;};
+ const call=(action,params={},preview=true)=>hanggirlWithStorage({read,commit,root,uid,input:{action,...params},preview,pickWord:async()=>"cry"});
+ const free=await call("reward-status");assert.equal(free.multiplier,1);assert.equal(free.source,"staffTestMembershipOverrides");assert.equal(commits,0);
+ assert.equal((await call("reward-status",{},false)).multiplier,2);
+ const roundId="one";await call("start",{roundId,difficulty:"easy"});await call("guess",{roundId,letter:"c",expectedMultiplier:1});await call("guess",{roundId,letter:"r",expectedMultiplier:1});
+ await assert.rejects(()=>call("guess",{roundId,letter:"y",expectedMultiplier:2}));assert.equal(credits,0);
+ const won=await call("guess",{roundId,letter:"y",expectedMultiplier:1});assert.equal(won.round.awarded,10);assert.equal(credits,10);assert.equal((await call("state")).round.awarded,10);
+ assert.equal((await call("guess",{roundId,letter:"y",expectedMultiplier:1})).round.awarded,10);assert.equal(credits,10);
+ docs.set("staffTestMembershipOverrides/staff",{updateTime:"p2",fields:{mode:{stringValue:"actual"}}});
+ const round2="two";await call("start",{roundId:round2,difficulty:"easy"});for(const letter of "cry")await call("guess",{roundId:round2,letter,expectedMultiplier:2});
+ assert.equal(credits,30);assert.equal((await call("state")).round.awarded,20);
+});
