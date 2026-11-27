@@ -4,6 +4,27 @@ service cloud.firestore {
 
   match /databases/{database}/documents {
 
+    // Public, non-sensitive advertisement configuration. Only the active owner
+    // may write the two fixed environment documents. No provider or wallet writes.
+    match /advertisementSettings/{environment} {
+      function validAdSettings() {
+        let d = request.resource.data;
+        return d.keys().hasAll(["testBanners","realAdsRequested","interstitialsRequested","rewardedRequested","levelsBetween","minutesBetween","disabledPaths","updatedAt"])
+          && d.keys().hasOnly(["testBanners","realAdsRequested","interstitialsRequested","rewardedRequested","levelsBetween","minutesBetween","disabledPaths","updatedAt"])
+          && d.testBanners is bool && d.realAdsRequested is bool
+          && d.interstitialsRequested is bool && d.rewardedRequested is bool
+          && d.levelsBetween is int && d.levelsBetween >= 5 && d.levelsBetween <= 100
+          && d.minutesBetween is int && d.minutesBetween >= 10 && d.minutesBetween <= 1440
+          && d.disabledPaths is list && d.disabledPaths.size() <= 36
+          && d.disabledPaths.toSet().size() == d.disabledPaths.size()
+          && d.disabledPaths.hasOnly(["/","/audioPlayer","/albums","/arts/artsLanding","/pages/poems-home","/pages/releases","/pages/about-the-author","/pages/fruity-paradice","/pages/roadmap","/audioPlayer/pages/song","/albums/album","/albums/braking-the-roolz","/albums/empowerment","/albums/fight-for-love","/albums/fire-and-peace","/albums/god-s-love","/albums/hope","/albums/moving-on","/albums/music-from-the-year","/albums/pride","/arts/herobrine/chapter1","/arts/herobrine/chapter2","/arts/herobrine/chapter3","/pages/apple-catcher","/pages/cherry-empire","/pages/giving-tree","/pages/hanggirl","/pages/orange-knock-down","/pages/peach-panic","/pages/shiny-light","/pages/store","/pages/membership-store","/pages/star-coin-store","/pages/starlight-store","/pages/challenges","/pages/accidental-songwriters-challenge"])
+          && d.updatedAt == request.time;
+      }
+      allow get: if environment in ["live","preview"];
+      allow list, delete: if false;
+      allow create, update: if environment in ["live","preview"] && isOwnerManager() && validAdSettings();
+    }
+
     // BEGIN Research & Surveys: trusted writes, anonymous staff results.
     match /researchSurveys/{surveyId}/responses/{responseId} {
       allow get, list: if isStaff();
