@@ -3,6 +3,7 @@ import { createPlayer,movePlayer,MOVE_KEYS } from "./player.js";
 import { WorldRenderer } from "./renderer.js";
 import { Inventory } from "./inventory.js";
 import { ToolSlot } from "./tools.js";
+import { Equipment,EquipmentHUD } from "./equipment.js";
 import { VitalsHUD } from "./stats.js";
 
 export class VillageGame {
@@ -46,11 +47,14 @@ export class VillageGame {
           this.inventory=new Inventory(document.getElementById("inventory-bar"),document.getElementById("selected-item"),world.items,()=>{
             this.audio.playEffect("select");if(!this.inventoryDialog.open)this.canvas.focus();
           });
-          this.tools=new ToolSlot(world.items,tool=>{
+          this.player.equipment=new Equipment(world.items);
+          this.tools=new ToolSlot(this.player.equipment,tool=>{
             this.player.tool=tool;
+            this.equipmentHUD?.render();
           },()=>{
-            this.audio.playEffect("select");this.canvas.focus();
+            this.audio.playEffect("select");if(!this.inventoryDialog.open)this.canvas.focus();
           });
+          this.equipmentHUD=new EquipmentHUD(this.player.equipment,this.tools);
           document.getElementById("map-name").textContent=world.name;
         }
       }
@@ -79,7 +83,7 @@ export class VillageGame {
     if(!this.active||!this.inventory||document.querySelector("dialog[open]:not(#inventory-dialog)"))return;
     this.clearKeys();
     if(this.inventoryDialog.open)this.inventoryDialog.close();
-    else this.inventory.open();
+    else {this.equipmentHUD.render();this.inventory.open();}
     this.audio.playEffect("select");
   }
   keyDown(event) {
@@ -87,6 +91,7 @@ export class VillageGame {
     if(event.key.toLowerCase()==="i"&&!document.querySelector("dialog[open]:not(#inventory-dialog)")){
       event.preventDefault();if(!event.repeat)this.toggleInventory();return;
     }
+    if(this.inventoryDialog.open&&event.key.toLowerCase()==="t"){event.preventDefault();if(!event.repeat)this.tools.cycle();return;}
     if(this.paused())return;
     if(event.target instanceof HTMLElement&&["INPUT","SELECT","TEXTAREA"].includes(event.target.tagName)) return;
     const key=event.key.toLowerCase();

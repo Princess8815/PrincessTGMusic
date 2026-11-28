@@ -46,3 +46,7 @@ Walk with WASD or arrows, interact with E, select slots with 1–9 or 0. Invento
 ## Tree variants and expanded inventory
 - T = regular tree; O = oak tree. Both are solid, with separate treeType values for future harvesting. Existing tree positions are preserved.
 - I opens/closes the shared inventory dialog. Three rows of ten, with the first row unlocked and mirrored in the hotbar. The other 20 slots are locked and cannot receive items. unlockNextRow() is available for future progression; no unlock method is exposed to players yet.
+
+## Equipment inventory
+- I opens equipment above the original 30-slot storage. Twelve gear slots: head, chest, legs, boots, gloves, offhand, ammo, sword, hatchet, pickaxe, hoe and watering can.
+- script/equipment.js owns the loadout and slot compatibility; starter tools live here, and the T hotbar uses this same loadout. Click a tool in equipment to activate it. Armor/offhand/ammo start empty; equipping future drops and stat effects are not implemented yet.

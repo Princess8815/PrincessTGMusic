@@ -73,6 +73,16 @@
   </section>
   <dialog id="inventory-dialog" class="game-dialog inventory-dialog" aria-labelledby="inventory-title">
     <div class="inventory-header"><div><h2 id="inventory-title">Inventory</h2><p id="inventory-capacity">10 / 30 slots unlocked</p></div><button type="button" id="close-inventory" class="inventory-close">Close (I)</button></div>
+    <section class="equipment-inventory" aria-labelledby="equipment-title">
+      <div class="equipment-heading"><h3 id="equipment-title">Equipment</h3><span>Tools: T to switch</span></div>
+      <div class="equipment-layout">
+        <div class="equipment-group"><h4>Armor &amp; accessories</h4><div id="armor-grid" class="gear-grid" role="group" aria-label="Armor, offhand and ammo slots"></div></div>
+        <div class="equipment-portrait"><img src="images/pink.svg" alt="Your axolotl"></div>
+        <div class="equipment-group"><h4>Tools</h4><div id="tools-grid" class="gear-grid" role="group" aria-label="Tool equipment slots"></div></div>
+      </div>
+      <p id="equipment-detail" class="inventory-detail" aria-live="polite">Active tool: Rusty Sword</p>
+    </section>
+    <h3 class="storage-title">Item storage</h3>
     <p class="inventory-help">The first row is your hotbar. Locked rows are reserved for future expansions.</p>
     <div id="inventory-grid" class="inventory-grid" role="group" aria-label="Inventory, 30 slots"></div>
     <p id="inventory-detail" class="inventory-detail" aria-live="polite">Slot 1: Empty</p>

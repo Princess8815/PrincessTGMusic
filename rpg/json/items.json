@@ -42,7 +42,8 @@
     "toolType": "sword",
     "tier": 1,
     "source": "Starter equipment",
-    "status": "Equippable"
+    "status": "Equippable",
+    "equipmentSlot": "sword"
   },
   "rusty_hatchet": {
     "name": "Rusty Hatchet",
@@ -52,7 +53,8 @@
     "toolType": "hatchet",
     "tier": 1,
     "source": "Starter equipment",
-    "status": "Equippable"
+    "status": "Equippable",
+    "equipmentSlot": "hatchet"
   },
   "rusty_pickaxe": {
     "name": "Rusty Pickaxe",
@@ -62,7 +64,8 @@
     "toolType": "pickaxe",
     "tier": 1,
     "source": "Starter equipment",
-    "status": "Equippable"
+    "status": "Equippable",
+    "equipmentSlot": "pickaxe"
   },
   "rusty_hoe": {
     "name": "Rusty Hoe",
@@ -72,7 +75,8 @@
     "toolType": "hoe",
     "tier": 1,
     "source": "Starter equipment",
-    "status": "Equippable"
+    "status": "Equippable",
+    "equipmentSlot": "hoe"
   },
   "rusty_watering_can": {
     "name": "Rusty Watering Can",
@@ -82,6 +86,7 @@
     "toolType": "watering_can",
     "tier": 1,
     "source": "Starter equipment",
-    "status": "Equippable"
+    "status": "Equippable",
+    "equipmentSlot": "watering_can"
   }
 }

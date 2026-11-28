@@ -1,9 +1,8 @@
-// Permanent equipment, independent of inventory. IDs identify specific upgrade tiers.
-export const TOOL_ORDER=["rusty_sword","rusty_hatchet","rusty_pickaxe","rusty_hoe","rusty_watering_can"];
+// The hotbar tool is a view of the equipment loadout, never a duplicate item.
+import { TOOL_TYPES } from "./equipment.js";
 export class ToolSlot {
-  constructor(items,onEquip,onCycle) {
-    this.items=items;
-    this.order=TOOL_ORDER.filter(id=>items[id]?.category==="Tool");
+  constructor(equipment,onEquip,onCycle){
+    this.equipment=equipment;this.order=TOOL_TYPES.filter(type=>equipment.item(type));
     if(!this.order.length)throw Error("No starter tools configured");
     this.index=0;
     this.button=document.getElementById("tool-slot");
@@ -15,9 +14,15 @@ export class ToolSlot {
     this.icon.addEventListener("error",()=>{this.icon.hidden=true;this.fallback.hidden=false;});
     this.render();
   }
-  get currentId(){return this.order[this.index];}
-  get current(){return this.items[this.currentId];}
-  cycle(){this.index=(this.index+1)%this.order.length;this.render();this.onCycle?.();}
+  get currentType(){return this.order[this.index];}
+  get currentId(){return this.equipment.get(this.currentType)?.id;}
+  get current(){return this.equipment.item(this.currentType);}
+  selectType(type){
+    const index=this.order.indexOf(type);
+    if(index<0||!this.equipment.item(type))return false;
+    this.index=index;this.render();this.onCycle?.();return true;
+  }
+  cycle(){return this.selectType(this.order[(this.index+1)%this.order.length]);}
   render(){
     const tool=this.current;
     this.fallback.textContent=tool.icon||"—";
