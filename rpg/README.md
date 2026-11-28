@@ -50,3 +50,8 @@ Walk with WASD or arrows, interact with E, select slots with 1–9 or 0. Invento
 ## Equipment inventory
 - I opens equipment above the original 30-slot storage. Twelve gear slots: head, chest, legs, boots, gloves, offhand, ammo, sword, hatchet, pickaxe, hoe and watering can.
 - script/equipment.js owns the loadout and slot compatibility; starter tools live here, and the T hotbar uses this same loadout. Click a tool in equipment to activate it. Armor/offhand/ammo start empty; equipping future drops and stat effects are not implemented yet.
+
+## Tree harvesting
+- tree-types.json defines 15 species, their unique tile codes, art, hardness and one-log drops. Only regular and oak are placed on existing maps. Regular trees drop Wood.
+- Face an adjacent tree, select the hatchet with T and press E once per hit. Rusty strength is 1, default regular hardness is 3. Each hit costs 1 stamina; zero instantly resets to 10 during alpha. Felled tiles become grass and drop a collectible log. Boundary forest walls are protected.
+- Admin → Games → Axolotl RPG → Tree hardness saves overrides to Firestore rpgTreeTypes. Deploy security/firestore.rules before using the editor. New world loads use server overrides or fall back to defaults if offline. Existing running worlds retain their initial hardness.

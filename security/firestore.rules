@@ -4,6 +4,21 @@ service cloud.firestore {
 
   match /databases/{database}/documents {
 
+    // Public RPG balance settings; only active staff can modify known tree types.
+    match /rpgTreeTypes/{treeId} {
+      allow get, list: if true;
+      allow create, update: if isStaff()
+        && treeId in ['regular', 'oak', 'birch', 'willow', 'maple', 'dark_oak', 'blood', 'magic', 'axolotl', 'pine', 'crystal', 'golden', 'cherry', 'frost', 'ancient']
+        && request.resource.data.keys().hasAll(['hardness','updatedAt'])
+        && request.resource.data.keys().hasOnly(['hardness','updatedAt'])
+        && request.resource.data.hardness is int
+        && request.resource.data.hardness >= 1
+        && request.resource.data.hardness <= 100000
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+
+
     // Public, non-sensitive advertisement configuration. Only the active owner
     // may write the two fixed environment documents. No provider or wallet writes.
     match /advertisementSettings/{environment} {

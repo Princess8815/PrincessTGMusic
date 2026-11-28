@@ -6,7 +6,7 @@ function line(c,x,y,x2,y2,color,width=2) { c.strokeStyle=color;c.lineWidth=width
 function round(c,x,y,w,h,r,color) { c.fillStyle=color;c.beginPath();c.roundRect(x,y,w,h,r);c.fill(); }
 
 export class WorldRenderer {
-  constructor(canvas) { this.canvas=canvas; this.ctx=canvas.getContext("2d"); this.toolImages=new Map(); }
+  constructor(canvas) { this.canvas=canvas; this.ctx=canvas.getContext("2d"); this.toolImages=new Map(); this.treeImages=new Map(); }
   resize() {
     const rect=this.canvas.getBoundingClientRect();
     const dpr=Math.min(devicePixelRatio||1,2);
@@ -29,7 +29,9 @@ export class WorldRenderer {
     const foreground=[];
     for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
       const tile=world.tiles[y][x]; this.drawGround(c,world,x,y,t,tile,time);
-      if (["T","O","H","R","S"].includes(tile)) foreground.push({y:(y+.8)*t,draw:()=>this.drawObstacle(c,x*t,y*t,t,tile,x,y)});
+      const tree=world.treeByTile?.[tile];
+      if(tree)foreground.push({y:(y+.8)*t,draw:()=>this.drawTree(c,tree,x*t,y*t,t,x,y)});
+      else if (["H","R","S"].includes(tile)) foreground.push({y:(y+.8)*t,draw:()=>this.drawObstacle(c,x*t,y*t,t,tile,x,y)});
     }
     for(const building of world.buildings||[]) {
       foreground.push({y:(building.y+building.height)*t,draw:()=>this.drawFarmhouse(c,building,t)});
@@ -42,6 +44,12 @@ export class WorldRenderer {
     foreground.push({y:player.y+9,draw:()=>this.drawAxolotl(c,player.x,player.y,player.facing,player.moving?Math.sin(player.walkTime*15)*2:0,false,player.tool)});
     foreground.sort((a,b)=>a.y-b.y).forEach(entry=>entry.draw());
     c.restore();
+  }
+  drawTree(c,tree,x,y,t,tx,ty){
+    let img=this.treeImages.get(tree.id);
+    if(!img){img=new Image();img.src=new URL("../"+tree.iconAsset,import.meta.url).href;this.treeImages.set(tree.id,img);}
+    if(img.complete&&img.naturalWidth)c.drawImage(img,x-t*.19,y-t*.48,t*1.38,t*1.48);
+    else this.drawObstacle(c,x,y,t,tree.tile==="O"?"O":"T",tx,ty);
   }
   drawGround(c,world,x,y,t,tile,time) {
     const px=x*t,py=y*t;

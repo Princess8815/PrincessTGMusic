@@ -1,0 +1,107 @@
+{
+  "regular": {
+    "name": "Regular Tree",
+    "tile": "T",
+    "hardness": 3,
+    "dropItem": "wood",
+    "iconAsset": "images/trees/regular.svg"
+  },
+  "oak": {
+    "name": "Oak Tree",
+    "tile": "O",
+    "hardness": 5,
+    "dropItem": "oak_log",
+    "iconAsset": "images/trees/oak.svg"
+  },
+  "birch": {
+    "name": "Birch Tree",
+    "tile": "b",
+    "hardness": 4,
+    "dropItem": "birch_log",
+    "iconAsset": "images/trees/birch.svg"
+  },
+  "willow": {
+    "name": "Willow Tree",
+    "tile": "y",
+    "hardness": 5,
+    "dropItem": "willow_log",
+    "iconAsset": "images/trees/willow.svg"
+  },
+  "maple": {
+    "name": "Maple Tree",
+    "tile": "m",
+    "hardness": 6,
+    "dropItem": "maple_log",
+    "iconAsset": "images/trees/maple.svg"
+  },
+  "dark_oak": {
+    "name": "Dark Oak Tree",
+    "tile": "d",
+    "hardness": 8,
+    "dropItem": "dark_oak_log",
+    "iconAsset": "images/trees/dark_oak.svg"
+  },
+  "blood": {
+    "name": "Blood Tree",
+    "tile": "v",
+    "hardness": 12,
+    "dropItem": "blood_log",
+    "iconAsset": "images/trees/blood.svg"
+  },
+  "magic": {
+    "name": "Magic Tree",
+    "tile": "q",
+    "hardness": 15,
+    "dropItem": "magic_log",
+    "iconAsset": "images/trees/magic.svg"
+  },
+  "axolotl": {
+    "name": "Axolotl Tree",
+    "tile": "x",
+    "hardness": 20,
+    "dropItem": "axolotl_log",
+    "iconAsset": "images/trees/axolotl.svg"
+  },
+  "pine": {
+    "name": "Pine Tree",
+    "tile": "n",
+    "hardness": 5,
+    "dropItem": "pine_log",
+    "iconAsset": "images/trees/pine.svg"
+  },
+  "crystal": {
+    "name": "Crystal Tree",
+    "tile": "c",
+    "hardness": 25,
+    "dropItem": "crystal_log",
+    "iconAsset": "images/trees/crystal.svg"
+  },
+  "golden": {
+    "name": "Golden Tree",
+    "tile": "k",
+    "hardness": 18,
+    "dropItem": "golden_log",
+    "iconAsset": "images/trees/golden.svg"
+  },
+  "cherry": {
+    "name": "Cherry Blossom Tree",
+    "tile": "j",
+    "hardness": 7,
+    "dropItem": "cherry_log",
+    "iconAsset": "images/trees/cherry.svg"
+  },
+  "frost": {
+    "name": "Frost Tree",
+    "tile": "z",
+    "hardness": 10,
+    "dropItem": "frost_log",
+    "iconAsset": "images/trees/frost.svg"
+  },
+  "ancient": {
+    "name": "Ancient Tree",
+    "tile": "a",
+    "hardness": 30,
+    "dropItem": "ancient_log",
+    "iconAsset": "images/trees/ancient.svg"
+  }
+}

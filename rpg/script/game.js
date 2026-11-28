@@ -5,6 +5,7 @@ import { Inventory } from "./inventory.js";
 import { ToolSlot } from "./tools.js";
 import { Equipment,EquipmentHUD } from "./equipment.js";
 import { VitalsHUD } from "./stats.js";
+import { targetTree,chopTree } from "./tree-system.js";
 
 export class VillageGame {
   constructor(audio) {
@@ -103,8 +104,17 @@ export class VillageGame {
   }
   notify(text) { this.message.textContent=text;this.messageUntil=performance.now()+3500; }
   interact() {
+    const tree=targetTree(this.world,this.player);
+    if(tree&&this.player.tool?.toolType==="hatchet"){
+      const result=chopTree(this.world,this.player,tree);
+      if(!result.ok){this.notify(result.reason);return;}
+      this.audio.playEffect(result.felled?"tree-fall":"chop");
+      this.vitals.render(this.player.stats);
+      this.notify(result.felled?tree.name+" felled! "+this.world.items[result.item].name+" dropped.":tree.name+" · "+result.remaining+" / "+result.max+" hardness");
+      return;
+    }
     const object=nearestObject(this.world,this.player);
-    if(!object){this.notify("Move closer to an object to interact.");return;}
+    if(!object){this.notify(tree?"Equip a hatchet with T to cut this tree.":"Move closer to an object to interact.");return;}
     if(object.type==="sign"||object.type==="npc"){
       this.notify(object.text);this.audio.playEffect("interact");return;
     }
@@ -127,8 +137,11 @@ export class VillageGame {
     const terrain=terrainAt(this.world,this.player.x,this.player.y).name;
     if(this.terrain.textContent!==terrain)this.terrain.textContent=terrain;
     const object=nearestObject(this.world,this.player);
-    this.prompt.hidden=!object;
-    if(object)this.prompt.textContent="E · "+(object.type==="sign"?"Read sign":object.type==="npc"?"Talk":object.type==="chest"?"Open chest":"Collect "+this.world.items[object.item].name);
+    const tree=targetTree(this.world,this.player);
+    this.prompt.hidden=!object&&!tree;
+    if(tree&&this.player.tool?.toolType==="hatchet")this.prompt.textContent=tree.protected?"Protected boundary tree":"E · Chop "+tree.name+" ("+tree.remaining+"/"+tree.maxHardness+")";
+    else if(object)this.prompt.textContent="E · "+(object.type==="sign"?"Read sign":object.type==="npc"?"Talk":object.type==="chest"?"Open chest":"Collect "+this.world.items[object.item].name);
+    else if(tree)this.prompt.textContent="T · Equip hatchet";
     if(now>this.messageUntil)this.message.textContent="";
     this.frame=requestAnimationFrame(time=>this.tick(time));
   }

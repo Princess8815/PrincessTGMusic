@@ -35,6 +35,7 @@
   <script type="module" src="../script/admin-tabs.js"></script>
   <script type="module" src="../script/admin-orange-levels.js"></script>
   <script type="module" src="../rpg/script/admin-items.js"></script>
+  <script type="module" src="../rpg/script/admin-trees.js"></script>
   <link rel="stylesheet" href="../rpg/styles/admin-items.css">
   <script type="module" src="../script/admin-starlight.js"></script><link rel="stylesheet" href="../styles/starlight.css">
   <script type="module" src="../script/admin-code.js"></script>
@@ -1542,6 +1543,18 @@
       </div>
       <p id="rpg-item-count" role="status"></p>
       <div class="rpg-item-table-wrap"><table class="rpg-item-table"><thead><tr><th scope="col">Item</th><th scope="col">ID</th><th scope="col">Category</th><th scope="col">Source</th><th scope="col">Status</th></tr></thead><tbody id="rpg-item-rows"></tbody></table></div>
+    </div>
+  </div>
+  <div class="admin-card rpg-admin">
+    <h2>Tree hardness editor</h2>
+    <p id="rpg-tree-status" role="status" aria-live="polite">Verifying staff access…</p>
+    <div id="rpg-tree-content" hidden>
+      <p>Set the starting hardness for every tree species. Changes affect new game sessions. New species are not automatically placed on maps.</p>
+      <div class="rpg-item-filters"><label>Search trees<input type="search" id="rpg-tree-search" placeholder="Name or ID"></label><button type="button" id="rpg-tree-refresh">Reload settings</button></div>
+      <form id="rpg-tree-form">
+        <div class="rpg-item-table-wrap"><table class="rpg-item-table"><thead><tr><th scope="col">Tree design</th><th scope="col">Species</th><th scope="col">Hardness</th><th scope="col">Default</th><th scope="col">Drop</th><th scope="col">Map status</th></tr></thead><tbody id="rpg-tree-rows"></tbody></table></div>
+        <button id="rpg-tree-save" type="submit" disabled>Save hardness changes</button>
+      </form>
     </div>
   </div>
 </section></section>

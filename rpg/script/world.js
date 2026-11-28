@@ -1,3 +1,5 @@
+import { loadTreeTypes } from "./tree-config.js";
+import { initializeTrees } from "./tree-system.js";
 // World coordinates are pixels; JSON positions are tile indices.
 export const TERRAIN = {
   G: { name:"Grass", solid:false, speed:1 },
@@ -18,29 +20,30 @@ async function readJson(url) {
   return response.json();
 }
 export async function loadWorld() {
-  const [map,farm,items] = await Promise.all([
+  const [map,farm,items,types] = await Promise.all([
     readJson(new URL("../json/maps/willowfin.json",import.meta.url)),
     readJson(new URL("../json/maps/farm.json",import.meta.url)),
-    readJson(new URL("../json/items.json",import.meta.url))
+    readJson(new URL("../json/items.json",import.meta.url)),
+    loadTreeTypes()
   ]);
   for (const region of [map,farm]) {
     if (!region.tiles.every(row=>row.length===region.width) || region.tiles.length!==region.height) throw new Error("Invalid map dimensions");
   }
   if (map.width!==farm.width || map.tileSize!==farm.tileSize) throw new Error("Incompatible region dimensions");
   // The farm is directly north. Shift the original village's tile coordinates by its height.
-  return {
+  return initializeTrees({
     ...map, items, height:map.height+farm.height,
     tiles:[...farm.tiles,...map.tiles],
     spawn:{...map.spawn,y:map.spawn.y+farm.height},
     regions:[{name:farm.name,startY:0,endY:farm.height},{name:map.name,startY:farm.height,endY:farm.height+map.height}],
     buildings:[...farm.buildings],
     objects:[...farm.objects,...map.objects.map(object=>({...object,y:object.y+farm.height}))].map(object=>({...object,collected:false}))
-  };
+  },types);
 }
 export function tileAt(world,x,y) {
   return world.tiles[Math.floor(y/world.tileSize)]?.[Math.floor(x/world.tileSize)] ?? "W";
 }
-export function terrainAt(world,x,y) { return TERRAIN[tileAt(world,x,y)] ?? TERRAIN.W; }
+export function terrainAt(world,x,y) { const tile=tileAt(world,x,y);const tree=world.treeByTile?.[tile];return tree?{name:tree.name,solid:true,speed:0,treeType:tree.id}:TERRAIN[tile]??TERRAIN.W; }
 export function centerOf(world,object) {
   return {x:(object.x+.5)*world.tileSize,y:(object.y+.5)*world.tileSize};
 }

@@ -54,7 +54,8 @@
     "tier": 1,
     "source": "Starter equipment",
     "status": "Equippable",
-    "equipmentSlot": "hatchet"
+    "equipmentSlot": "hatchet",
+    "strength": 1
   },
   "rusty_pickaxe": {
     "name": "Rusty Pickaxe",
@@ -88,5 +89,103 @@
     "source": "Starter equipment",
     "status": "Equippable",
     "equipmentSlot": "watering_can"
+  },
+  "oak_log": {
+    "name": "Oak Log",
+    "icon": "🪵",
+    "category": "Material",
+    "source": "Oak Tree chopping",
+    "status": "Available"
+  },
+  "birch_log": {
+    "name": "Birch Log",
+    "icon": "🪵",
+    "category": "Material",
+    "source": "Birch Tree chopping",
+    "status": "Not on map"
+  },
+  "willow_log": {
+    "name": "Willow Log",
+    "icon": "🪵",
+    "category": "Material",
+    "source": "Willow Tree chopping",
+    "status": "Not on map"
+  },
+  "maple_log": {
+    "name": "Maple Log",
+    "icon": "🪵",
+    "category": "Material",
+    "source": "Maple Tree chopping",
+    "status": "Not on map"
+  },
+  "dark_oak_log": {
+    "name": "Dark Oak Log",
+    "icon": "🪵",
+    "category": "Material",
+    "source": "Dark Oak Tree chopping",
+    "status": "Not on map"
+  },
+  "blood_log": {
+    "name": "Blood Log",
+    "icon": "🪵",
+    "category": "Material",
+    "source": "Blood Tree chopping",
+    "status": "Not on map"
+  },
+  "magic_log": {
+    "name": "Magic Log",
+    "icon": "🪵",
+    "category": "Material",
+    "source": "Magic Tree chopping",
+    "status": "Not on map"
+  },
+  "axolotl_log": {
+    "name": "Axolotl Log",
+    "icon": "🪵",
+    "category": "Material",
+    "source": "Axolotl Tree chopping",
+    "status": "Not on map"
+  },
+  "pine_log": {
+    "name": "Pine Log",
+    "icon": "🪵",
+    "category": "Material",
+    "source": "Pine Tree chopping",
+    "status": "Not on map"
+  },
+  "crystal_log": {
+    "name": "Crystal Log",
+    "icon": "🪵",
+    "category": "Material",
+    "source": "Crystal Tree chopping",
+    "status": "Not on map"
+  },
+  "golden_log": {
+    "name": "Golden Log",
+    "icon": "🪵",
+    "category": "Material",
+    "source": "Golden Tree chopping",
+    "status": "Not on map"
+  },
+  "cherry_log": {
+    "name": "Cherry Blossom Log",
+    "icon": "🪵",
+    "category": "Material",
+    "source": "Cherry Blossom Tree chopping",
+    "status": "Not on map"
+  },
+  "frost_log": {
+    "name": "Frost Log",
+    "icon": "🪵",
+    "category": "Material",
+    "source": "Frost Tree chopping",
+    "status": "Not on map"
+  },
+  "ancient_log": {
+    "name": "Ancient Log",
+    "icon": "🪵",
+    "category": "Material",
+    "source": "Ancient Tree chopping",
+    "status": "Not on map"
   }
 }
