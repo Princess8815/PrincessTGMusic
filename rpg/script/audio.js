@@ -24,7 +24,6 @@ export class RpgAudio {
     this.nextStepTime = 0;
     this.timer = null;
     this.hidden = document.hidden;
-    this.resumePromise = null;
     this.unlocked = false;
     this.supported = Boolean(AudioContextClass);
   }
@@ -41,10 +40,10 @@ export class RpgAudio {
     }
   }
 
-  // Call from an actual user gesture; multiple rapid clicks share a resume.
+  // Attempt on page load, and retry directly during a trusted user gesture.
+  // A blocked autoplay resume can remain pending, so never reuse it on a click.
   unlock() {
     if (!this.supported || this.hidden) return Promise.resolve(false);
-    if (this.resumePromise) return this.resumePromise;
     try {
       if (!this.context) {
         this.context = new AudioContextClass();
@@ -63,7 +62,7 @@ export class RpgAudio {
         this.startScheduler();
         return Promise.resolve(true);
       }
-      this.resumePromise = this.context.resume().then(() => {
+      return this.context.resume().then(() => {
         if (this.hidden) {
           this.context.suspend().catch(() => {});
           return false;
@@ -71,8 +70,7 @@ export class RpgAudio {
         this.unlocked = this.context.state === "running";
         if (this.unlocked) this.startScheduler();
         return this.unlocked;
-      }).catch(() => false).finally(() => { this.resumePromise = null; });
-      return this.resumePromise;
+      }).catch(() => false);
     } catch (error) {
       console.warn("RPG audio unavailable.", error);
       return Promise.resolve(false);
@@ -84,8 +82,8 @@ export class RpgAudio {
     if (hidden) {
       this.stopScheduler();
       if (this.context?.state === "running") this.context.suspend().catch(() => {});
-    } else if (this.unlocked) {
-      // A previous user gesture has already enabled audio.
+    } else {
+      // Also retry when a menu opened in a background tab becomes visible.
       this.unlock();
     }
   }

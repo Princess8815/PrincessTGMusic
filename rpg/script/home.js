@@ -68,12 +68,24 @@ async function loadMenuConfig() {
   } catch (error) { console.warn("Using built-in menu text.", error); }
 }
 
-// A real user gesture is required by browser autoplay policies.
-// Retry on subsequent interactions if the browser initially blocks audio.
+// Start immediately; browsers may require a trusted gesture before playing.
+let audioNoticeTimer;
 function activateAudio() {
+  if (!audio.supported) {
+    audioStatus.textContent = "Audio is unavailable in this browser.";
+    return Promise.resolve(false);
+  }
+  clearTimeout(audioNoticeTimer);
+  audioNoticeTimer = setTimeout(() => {
+    if (audio.context?.state !== "running" && !document.hidden) {
+      audioStatus.textContent = "Click anywhere to enable audio (browser autoplay restriction).";
+    }
+  }, 1200);
   return audio.unlock().then(ready => {
-    if (ready) audioStatus.textContent = "";
-    else audioStatus.textContent = audio.supported ? "Interact again to enable audio." : "Audio is unavailable in this browser.";
+    if (ready || audio.context?.state === "running") {
+      clearTimeout(audioNoticeTimer);
+      audioStatus.textContent = "";
+    }
     return ready;
   });
 }
@@ -85,6 +97,7 @@ document.addEventListener("click", event => {
     : button?.hasAttribute("data-close") ? "close" : null;
   activateAudio().then(ready => { if (ready && effect) audio.playEffect(effect); });
 }, true);
+document.addEventListener("pointerup", () => activateAudio(), true);
 document.addEventListener("keydown", event => {
   if (!event.repeat) activateAudio();
 }, true);
@@ -102,9 +115,18 @@ lightingInput.addEventListener("change", () => { saveSettings(); audio.playEffec
 musicInput.addEventListener("input", saveSettings);
 soundInput.addEventListener("input", saveSettings);
 soundInput.addEventListener("change", () => audio.playEffect("select"));
-document.addEventListener("visibilitychange", () => audio.setHidden(document.hidden));
+document.addEventListener("visibilitychange", () => {
+  audio.setHidden(document.hidden);
+  if (!document.hidden) activateAudio();
+});
 window.addEventListener("pagehide", () => audio.setHidden(true));
-window.addEventListener("pageshow", () => audio.setHidden(document.hidden));
+window.addEventListener("pageshow", event => {
+  if (event.persisted) {
+    audio.setHidden(document.hidden);
+    if (!document.hidden) activateAudio();
+  }
+});
 
 applySettings(loadSettings());
+activateAudio();
 loadMenuConfig();

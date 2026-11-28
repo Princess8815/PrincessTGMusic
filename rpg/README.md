@@ -14,5 +14,5 @@ No inline JavaScript or CSS. No external dependencies. Play Game opens a develop
 - script/audio.js: reusable Web Audio engine, independent music/effects channels, and menu sounds.
 - script/village-music.js: original looping village composition (notes and chords).
 - Volume preferences share the existing browser-local menu settings. Defaults: music 55%, effects 70%.
-- Audio starts on the first interaction, follows browser autoplay rules, and suspends while the tab is hidden.
+- Audio attempts to start as soon as the menu loads. If the browser blocks autoplay, the first click, pointer release or keypress retries playback. Audio suspends while the tab is hidden.
 - No downloads or external audio libraries are needed. New game sound effects can use the same audio engine.
