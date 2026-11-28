@@ -48,3 +48,18 @@ body.in-game { overflow:hidden; }
 .vital-bar::-moz-progress-bar{background:var(--vital-color);border-radius:4px;}
 .game-message{top:1rem;max-width:min(36vw,440px);}
 @media(max-width:700px){.game-message{top:12rem;max-width:90vw;}.game-hud-left{width:min(210px,54vw);}.player-vitals{padding:.5rem .6rem;}.vital-bar{height:11px;}}
+
+/* Three inventory rows, sharing the same data as the ten-slot hotbar. */
+.inventory-dialog{width:min(94vw,720px);max-width:720px;padding:clamp(.75rem,3vw,1.5rem);}
+.inventory-header{display:flex;justify-content:space-between;align-items:center;gap:.5rem;}
+.inventory-header h2{margin:0;}
+.inventory-header p,.inventory-help,.inventory-detail{font-size:.85rem;color:#e1e8d5;margin:.4rem 0;}
+.inventory-close{background:#28585b;color:#fff1cf;border:1px solid #d7ba80;border-radius:7px;padding:.5rem .75rem;cursor:pointer;}
+.inventory-grid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:clamp(3px,1vw,8px);margin:.8rem 0;}
+.inventory-grid .inventory-slot{min-height:0;}
+.inventory-slot.locked{background:#203336;border-color:#536363;cursor:not-allowed;color:#809090;opacity:.7;}
+.inventory-lock{display:block;position:absolute;width:34%;height:28%;left:33%;top:43%;border-radius:3px;background:#8b9b97;}
+.inventory-lock::before{content:"";position:absolute;width:60%;height:80%;left:20%;bottom:85%;border:2px solid #8b9b97;border-bottom:0;border-radius:50% 50% 0 0;}
+.inventory-lock::after{content:"";position:absolute;width:12%;height:35%;left:44%;top:28%;background:#203336;border-radius:2px;}
+.inventory-grid .slot-number{font-size:clamp(.48rem,1.5vw,.75rem);}
+@media(max-width:520px){.game-actions{flex-wrap:wrap;justify-content:flex-end;max-width:46vw;}.inventory-help{font-size:.75rem;}}

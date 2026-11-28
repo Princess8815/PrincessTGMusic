@@ -1,5 +1,5 @@
 import { centerOf } from "./world.js";
-const COLORS={G:"#8fb875",P:"#d9bf8c",W:"#518fa5",B:"#b99463",T:"#80aa70",H:"#a1bd80",R:"#8fb875",F:"#b2c792",L:"#8ab06e",S:"#8fb875"};
+const COLORS={G:"#8fb875",P:"#d9bf8c",W:"#518fa5",B:"#b99463",T:"#80aa70",O:"#80aa70",H:"#a1bd80",R:"#8fb875",F:"#b2c792",L:"#8ab06e",S:"#8fb875"};
 function noise(x,y,seed=0) { const n=Math.sin(x*127.1+y*311.7+seed*74.7)*43758.5453; return n-Math.floor(n); }
 function ellipse(c,x,y,rx,ry,color) { c.fillStyle=color;c.beginPath();c.ellipse(x,y,rx,ry,0,0,Math.PI*2);c.fill(); }
 function line(c,x,y,x2,y2,color,width=2) { c.strokeStyle=color;c.lineWidth=width;c.beginPath();c.moveTo(x,y);c.lineTo(x2,y2);c.stroke(); }
@@ -29,7 +29,7 @@ export class WorldRenderer {
     const foreground=[];
     for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
       const tile=world.tiles[y][x]; this.drawGround(c,world,x,y,t,tile,time);
-      if (["T","H","R","S"].includes(tile)) foreground.push({y:(y+.8)*t,draw:()=>this.drawObstacle(c,x*t,y*t,t,tile,x,y)});
+      if (["T","O","H","R","S"].includes(tile)) foreground.push({y:(y+.8)*t,draw:()=>this.drawObstacle(c,x*t,y*t,t,tile,x,y)});
     }
     for(const building of world.buildings||[]) {
       foreground.push({y:(building.y+building.height)*t,draw:()=>this.drawFarmhouse(c,building,t)});
@@ -72,6 +72,21 @@ export class WorldRenderer {
     if(tile==="T"){
       ellipse(c,mx,my+15,23,12,"#456d514d");round(c,mx-5,my,10,22,3,"#84664a");
       ellipse(c,mx,my-6,24,25,"#376d55");ellipse(c,mx-8,my-12,15,17,"#4c9165");ellipse(c,mx+7,my-14,15,16,"#72a76a");ellipse(c,mx-3,my-18,11,10,"#92bc78");
+    }else if(tile==="O"){
+      // Oak: wider crown, thicker trunk, warmer leaf highlights.
+      ellipse(c,mx,my+15,25,13,"#456d514d");
+      round(c,mx-7,my-1,14,23,4,"#77543b");
+      line(c,mx-3,my+7,mx-11,my-4,"#77543b",5);
+      line(c,mx+4,my+5,mx+12,my-5,"#77543b",5);
+      ellipse(c,mx,my-6,27,23,"#526f38");
+      ellipse(c,mx-12,my-7,16,16,"#668a43");
+      ellipse(c,mx+12,my-9,16,18,"#77994b");
+      ellipse(c,mx-3,my-17,18,16,"#8da85a");
+      ellipse(c,mx+7,my-23,9,7,"#a9ba68");
+      for(let i=0;i<4;i++){
+        const a=mx-14+noise(tx,ty,i+51)*28,b=my-14+noise(tx,ty,i+61)*17;
+        ellipse(c,a,b,2.6,3.3,"#a88a4e");
+      }
     }else if(tile==="S"){
       ellipse(c,mx,my+5,17,7,"#456d5140");
       line(c,mx-14,my+8,mx+11,my-9,"#694d35",5);

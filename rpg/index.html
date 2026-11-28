@@ -37,7 +37,7 @@
     <footer><span id="version-label">Development build</span><span>PrincessTGCreations</span></footer>
   </main>
   <section id="game-screen" class="game-screen" aria-label="Axolotl RPG gameplay" hidden>
-    <canvas id="world-canvas" tabindex="0" aria-label="Top-down village map. Use WASD or arrow keys to move, E to interact, T to switch tools."></canvas>
+    <canvas id="world-canvas" tabindex="0" aria-label="Top-down village map. Use WASD or arrow keys to move, E to interact, T to switch tools, I for inventory."></canvas>
     <header class="game-hud">
       <div class="game-hud-left">
       <div class="location-panel"><span class="game-kicker">Willowfin region</span><h2 id="map-name">Willowfin Village</h2><p id="terrain-label">Grass</p></div>
@@ -52,12 +52,12 @@
         </div>
       </section>
       </div>
-      <div class="game-actions"><button type="button" id="game-options">Options</button><button type="button" id="exit-game">Main Menu</button></div>
+      <div class="game-actions"><button type="button" id="open-inventory">Inventory (I)</button><button type="button" id="game-options">Options</button><button type="button" id="exit-game">Main Menu</button></div>
     </header>
     <div id="game-message" class="game-message" role="status" aria-live="polite"></div>
     <div id="interaction-prompt" class="interaction-prompt" hidden></div>
     <div class="game-bottom">
-      <p class="game-controls">WASD / Arrow keys · E interact · T switch tool · 1–0 select item</p>
+      <p class="game-controls">WASD / Arrow keys · E interact · T switch tool · I inventory · 1–0 select item</p>
       <div class="equipment-bar">
         <button type="button" id="tool-slot" class="tool-slot" aria-label="Switch equipped tool" title="Switch tool (T)">
           <span class="slot-number">T</span>
@@ -71,6 +71,12 @@
     </div>
     <div id="game-loading" class="game-loading" hidden><p id="game-loading-message">Loading village…</p><button type="button" id="retry-game">Retry</button></div>
   </section>
+  <dialog id="inventory-dialog" class="game-dialog inventory-dialog" aria-labelledby="inventory-title">
+    <div class="inventory-header"><div><h2 id="inventory-title">Inventory</h2><p id="inventory-capacity">10 / 30 slots unlocked</p></div><button type="button" id="close-inventory" class="inventory-close">Close (I)</button></div>
+    <p class="inventory-help">The first row is your hotbar. Locked rows are reserved for future expansions.</p>
+    <div id="inventory-grid" class="inventory-grid" role="group" aria-label="Inventory, 30 slots"></div>
+    <p id="inventory-detail" class="inventory-detail" aria-live="polite">Slot 1: Empty</p>
+  </dialog>
   <dialog id="options-dialog" class="game-dialog" aria-labelledby="options-title">
     <h2 id="options-title">Options</h2>
     <label class="setting"><span>Animate the village</span><input id="motion-setting" type="checkbox" checked></label>

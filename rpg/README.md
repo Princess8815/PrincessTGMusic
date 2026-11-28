@@ -42,3 +42,7 @@ Walk with WASD or arrows, interact with E, select slots with 1–9 or 0. Invento
 ## Player vitals
 - script/stats.js: starting health and stamina are both 10/10. Includes bounded damage, healing, stamina spending and restoration functions plus HUD synchronization.
 - No passive drain, regeneration, damage sources or death behavior yet. Walking and switching tools do not consume stamina.
+
+## Tree variants and expanded inventory
+- T = regular tree; O = oak tree. Both are solid, with separate treeType values for future harvesting. Existing tree positions are preserved.
+- I opens/closes the shared inventory dialog. Three rows of ten, with the first row unlocked and mirrored in the hotbar. The other 20 slots are locked and cannot receive items. unlockNextRow() is available for future progression; no unlock method is exposed to players yet.

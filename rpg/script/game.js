@@ -20,6 +20,10 @@ export class VillageGame {
     this.terrain=document.getElementById("terrain-label");
     this.location=document.getElementById("map-name");
     this.vitals=new VitalsHUD();
+    this.inventoryDialog=document.getElementById("inventory-dialog");
+    document.getElementById("open-inventory").addEventListener("click",()=>this.toggleInventory());
+    document.getElementById("close-inventory").addEventListener("click",()=>this.inventoryDialog.close());
+    this.inventoryDialog.addEventListener("close",()=>{this.clearKeys();if(this.active)this.canvas.focus();});
     window.addEventListener("keydown",event=>this.keyDown(event));
     window.addEventListener("keyup",event=>this.keys.delete(event.key.toLowerCase()));
     window.addEventListener("blur",()=>this.clearKeys());
@@ -40,7 +44,7 @@ export class VillageGame {
         if(!this.world) {
           this.world=world;this.player=createPlayer(world);
           this.inventory=new Inventory(document.getElementById("inventory-bar"),document.getElementById("selected-item"),world.items,()=>{
-            this.audio.playEffect("select");this.canvas.focus();
+            this.audio.playEffect("select");if(!this.inventoryDialog.open)this.canvas.focus();
           });
           this.tools=new ToolSlot(world.items,tool=>{
             this.player.tool=tool;
@@ -64,14 +68,26 @@ export class VillageGame {
   }
   leave() {
     this.active=false;this.clearKeys();
+    if(this.inventoryDialog.open)this.inventoryDialog.close();
     if(this.frame!==null) cancelAnimationFrame(this.frame);
     this.frame=null;this.screen.hidden=true;document.body.classList.remove("in-game");
     document.querySelector(".home").hidden=false;document.querySelector(".village").hidden=false;
     document.getElementById("play-button").focus();
   }
   paused() { return document.hidden||Boolean(document.querySelector("dialog[open]")); }
+  toggleInventory(){
+    if(!this.active||!this.inventory||document.querySelector("dialog[open]:not(#inventory-dialog)"))return;
+    this.clearKeys();
+    if(this.inventoryDialog.open)this.inventoryDialog.close();
+    else this.inventory.open();
+    this.audio.playEffect("select");
+  }
   keyDown(event) {
-    if(!this.active||!this.world||this.paused()||event.ctrlKey||event.metaKey||event.altKey) return;
+    if(!this.active||!this.world||document.hidden||event.ctrlKey||event.metaKey||event.altKey)return;
+    if(event.key.toLowerCase()==="i"&&!document.querySelector("dialog[open]:not(#inventory-dialog)")){
+      event.preventDefault();if(!event.repeat)this.toggleInventory();return;
+    }
+    if(this.paused())return;
     if(event.target instanceof HTMLElement&&["INPUT","SELECT","TEXTAREA"].includes(event.target.tagName)) return;
     const key=event.key.toLowerCase();
     if(MOVE_KEYS.has(key)){event.preventDefault();this.keys.add(key);return;}
