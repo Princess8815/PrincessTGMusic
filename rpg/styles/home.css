@@ -32,3 +32,16 @@ footer { display:flex; flex-wrap:wrap; justify-content:space-between; width:min(
 .setting select { background:#17363b; color:var(--cream); border:1px solid #94aba6; border-radius:6px; padding:.4rem; }
 @media(max-width:600px) { .menu-area { padding-top:70px; } .portrait { position:absolute; top:0; width:105px; } .portrait-left { left:calc(50% - 115px); } .portrait-right { right:calc(50% - 115px); } }
 @media(prefers-reduced-motion:reduce) { .menu-button { transition:none; } }
+
+/* Independent audio controls. Override the checkbox-only dimensions for ranges. */
+.audio-settings { min-width:0; margin:.25rem 0 1rem; padding:1rem 0 0; border:0; border-top:1px solid #ffffff25; }
+.audio-settings legend { padding:0 .5rem 0 0; color:#f5cf82; font-weight:750; }
+.volume-setting { margin:0 0 1rem; }
+.volume-heading { display:flex; justify-content:space-between; align-items:baseline; gap:1rem; margin-bottom:.4rem; }
+.volume-heading output { color:#f5cf82; font-variant-numeric:tabular-nums; }
+.volume-setting input[type="range"] { display:block; width:100%; height:1.5rem; margin:0; accent-color:#f5cf82; cursor:pointer; }
+.audio-hint,.audio-status { color:#e4dbbf; font-size:.75rem; line-height:1.4; }
+.audio-hint { margin:0; }
+.audio-status { margin:.8rem 0 0; }
+.audio-status:empty { display:none; }
+.game-dialog { max-height:calc(100vh - 2rem); max-height:calc(100dvh - 2rem); overflow-y:auto; }

@@ -6,7 +6,7 @@
   <title>Axolotl RPG</title>
   <link rel="stylesheet" href="styles/home.css">
   <link rel="stylesheet" href="styles/village.css">
-  <script src="script/home.js" defer></script>
+  <script type="module" src="script/home.js"></script>
 </head>
 <body>
   <div class="village" aria-hidden="true">
@@ -28,6 +28,7 @@
         <p class="menu-caption">Your story begins here</p>
         <button class="menu-button primary" id="play-button" type="button">Play Game</button>
         <button class="menu-button" id="options-button" type="button">Options</button>
+        <p id="audio-status" class="audio-status" role="status">Music starts after your first interaction.</p>
         <a class="site-link" href="../index.html">Return to PrincessTGCreations</a>
       </div>
       <img class="portrait portrait-right" src="images/mint.svg" alt="Mint green adventurer axolotl">
@@ -40,6 +41,24 @@
     <label class="setting">Village lighting
       <select id="lighting-setting"><option value="day">Daylight</option><option value="evening">Twilight</option></select>
     </label>
+    <fieldset class="audio-settings">
+      <legend>Audio</legend>
+      <div class="volume-setting">
+        <div class="volume-heading">
+          <label for="music-volume">Music volume</label>
+          <output id="music-volume-value" for="music-volume">55%</output>
+        </div>
+        <input type="range" id="music-volume" min="0" max="100" step="1" value="55">
+      </div>
+      <div class="volume-setting">
+        <div class="volume-heading">
+          <label for="sound-volume">Sound effects volume</label>
+          <output id="sound-volume-value" for="sound-volume">70%</output>
+        </div>
+        <input type="range" id="sound-volume" min="0" max="100" step="1" value="70">
+      </div>
+      <p class="audio-hint">Set either slider to 0% to mute that channel.</p>
+    </fieldset>
     <button class="menu-button primary" type="button" data-close="options-dialog">Done</button>
   </dialog>
   <dialog id="play-dialog" class="game-dialog" aria-labelledby="play-title">
