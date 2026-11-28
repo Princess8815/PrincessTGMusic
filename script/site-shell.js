@@ -241,7 +241,7 @@ function buildSidebar(){
       link.innerHTML=ICONS[icon]||ICONS.home;
       const name=document.createElement("span");name.textContent=label;link.append(name);
       if(group.title==="Games and More"&&["pages/hanggirl.html","rpg/index.html"].includes(path)){
-        const beta=document.createElement("span");beta.className="game-beta";beta.textContent="Beta";name.append(" ",beta);
+        const beta=document.createElement("span");beta.className="game-beta";beta.textContent=path==="rpg/index.html"?"Alpha":"Beta";name.append(" ",beta);
       }
       if(isCurrent(path))link.setAttribute("aria-current","page");
       if(access){link.hidden=true;special[access]=link;}
