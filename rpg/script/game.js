@@ -3,6 +3,7 @@ import { createPlayer,movePlayer,MOVE_KEYS } from "./player.js";
 import { WorldRenderer } from "./renderer.js";
 import { Inventory } from "./inventory.js";
 import { ToolSlot } from "./tools.js";
+import { VitalsHUD } from "./stats.js";
 
 export class VillageGame {
   constructor(audio) {
@@ -18,6 +19,7 @@ export class VillageGame {
     this.retry=document.getElementById("retry-game");
     this.terrain=document.getElementById("terrain-label");
     this.location=document.getElementById("map-name");
+    this.vitals=new VitalsHUD();
     window.addEventListener("keydown",event=>this.keyDown(event));
     window.addEventListener("keyup",event=>this.keys.delete(event.key.toLowerCase()));
     window.addEventListener("blur",()=>this.clearKeys());
@@ -49,6 +51,7 @@ export class VillageGame {
         }
       }
       if(!this.active) return;
+      this.vitals.render(this.player.stats);
       this.loading.hidden=true;this.canvas.focus();
       this.notify("Follow the north path to your house and farm.");
       this.lastTime=performance.now();
@@ -97,6 +100,7 @@ export class VillageGame {
     if(!this.paused())movePlayer(this.player,this.world,this.keys,dt);
     else {this.clearKeys();this.player.moving=false;}
     this.renderer.draw(this.world,this.player,now/1000);
+    this.vitals.render(this.player.stats);
     const region=regionAt(this.world,this.player.y);
     if(this.location.textContent!==region)this.location.textContent=region;
     const terrain=terrainAt(this.world,this.player.x,this.player.y).name;

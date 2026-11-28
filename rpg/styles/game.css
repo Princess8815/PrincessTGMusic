@@ -34,3 +34,17 @@ body.in-game { overflow:hidden; }
 .game-bottom{width:min(96vw,760px);}
 .interaction-prompt{bottom:clamp(120px,20vw,178px);}
 .game-heading h1 .game-beta{display:inline-block;vertical-align:middle;font:700 clamp(.65rem,1.5vw,1rem)/1.2 system-ui,sans-serif;letter-spacing:.045em;text-shadow:none;border:1px solid #e7bf79;border-radius:5px;background:#f4d393;color:#3b3527;padding:.25em .55em;margin-left:.35em;}
+
+/* Player vitals are independent of the location and inventory systems. */
+.game-hud-left{display:grid;gap:.5rem;width:min(240px,50vw);min-width:0;}
+.player-vitals{background:#173a3eea;border:1px solid #d7ba80;border-radius:12px;padding:.65rem .8rem;box-shadow:0 4px 16px #132f3266;display:grid;gap:.55rem;}
+.vital-row{display:grid;grid-template-columns:1fr auto;gap:.25rem .5rem;font-size:.78rem;font-weight:700;}
+.vital-row output{font-variant-numeric:tabular-nums;color:#fff1cf;}
+.vital-bar{grid-column:1/-1;width:100%;height:13px;appearance:none;border:1px solid #ffffff40;border-radius:5px;overflow:hidden;background:#102c30;accent-color:var(--vital-color);}
+.health-bar{--vital-color:#e66c76;}
+.stamina-bar{--vital-color:#8fce83;}
+.vital-bar::-webkit-progress-bar{background:#102c30;}
+.vital-bar::-webkit-progress-value{background:var(--vital-color);border-radius:4px;}
+.vital-bar::-moz-progress-bar{background:var(--vital-color);border-radius:4px;}
+.game-message{top:1rem;max-width:min(36vw,440px);}
+@media(max-width:700px){.game-message{top:12rem;max-width:90vw;}.game-hud-left{width:min(210px,54vw);}.player-vitals{padding:.5rem .6rem;}.vital-bar{height:11px;}}

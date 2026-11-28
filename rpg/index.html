@@ -39,7 +39,19 @@
   <section id="game-screen" class="game-screen" aria-label="Axolotl RPG gameplay" hidden>
     <canvas id="world-canvas" tabindex="0" aria-label="Top-down village map. Use WASD or arrow keys to move, E to interact, T to switch tools."></canvas>
     <header class="game-hud">
+      <div class="game-hud-left">
       <div class="location-panel"><span class="game-kicker">Willowfin region</span><h2 id="map-name">Willowfin Village</h2><p id="terrain-label">Grass</p></div>
+      <section class="player-vitals" aria-label="Player stats">
+        <div class="vital-row">
+          <label for="health-bar">Health</label><output id="health-value" for="health-bar">10 / 10</output>
+          <progress id="health-bar" class="vital-bar health-bar" max="10" value="10">10 / 10</progress>
+        </div>
+        <div class="vital-row">
+          <label for="stamina-bar">Stamina</label><output id="stamina-value" for="stamina-bar">10 / 10</output>
+          <progress id="stamina-bar" class="vital-bar stamina-bar" max="10" value="10">10 / 10</progress>
+        </div>
+      </section>
+      </div>
       <div class="game-actions"><button type="button" id="game-options">Options</button><button type="button" id="exit-game">Main Menu</button></div>
     </header>
     <div id="game-message" class="game-message" role="status" aria-live="polite"></div>

@@ -38,3 +38,7 @@ Walk with WASD or arrows, interact with E, select slots with 1–9 or 0. Invento
 - script/tools.js: dedicated tool slot, T/click cycles Rusty Sword → Rusty Hatchet → Rusty Pickaxe → Rusty Hoe → Rusty Watering Can → Rusty Sword.
 - Tool icons are in images/tools/. Definitions are in json/items.json and appear in the admin catalogue. toolType and tier identify future upgrade paths.
 - Tools are permanent starter equipment and never consume inventory slots. They are displayed beside the player, but tool actions are not implemented yet.
+
+## Player vitals
+- script/stats.js: starting health and stamina are both 10/10. Includes bounded damage, healing, stamina spending and restoration functions plus HUD synchronization.
+- No passive drain, regeneration, damage sources or death behavior yet. Walking and switching tools do not consume stamina.

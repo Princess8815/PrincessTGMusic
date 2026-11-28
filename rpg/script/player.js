@@ -1,7 +1,8 @@
 import { centerOf,canOccupy,terrainAt } from "./world.js";
+import { createStats } from "./stats.js";
 export const MOVE_KEYS = new Set(["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright"]);
 export function createPlayer(world) {
-  return {...centerOf(world,world.spawn), radius:11, speed:170, facing:"down", moving:false, walkTime:0};
+  return {...centerOf(world,world.spawn), radius:11, speed:170, facing:"down", moving:false, walkTime:0, stats:createStats()};
 }
 export function movePlayer(player,world,keys,dt) {
   const has=(a,b)=>keys.has(a)||keys.has(b);
