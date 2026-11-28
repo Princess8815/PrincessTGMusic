@@ -10,14 +10,28 @@ service cloud.firestore {
       allow create, update: if isStaff()
         && treeId in ['regular', 'oak', 'birch', 'willow', 'maple', 'dark_oak', 'blood', 'magic', 'axolotl', 'pine', 'crystal', 'golden', 'cherry', 'frost', 'ancient']
         && request.resource.data.keys().hasAll(['hardness','updatedAt'])
-        && request.resource.data.keys().hasOnly(['hardness','updatedAt'])
+        && request.resource.data.keys().hasOnly(['hardness','woodcuttingXp','updatedAt'])
         && request.resource.data.hardness is int
         && request.resource.data.hardness >= 1
         && request.resource.data.hardness <= 100000
+        && (!request.resource.data.keys().hasAny(['woodcuttingXp']) || (request.resource.data.woodcuttingXp is int && request.resource.data.woodcuttingXp >= 0 && request.resource.data.woodcuttingXp <= 1000000))
         && request.resource.data.updatedAt == request.time;
       allow delete: if false;
     }
 
+
+    match /rpgSkillSettings/{skillId} {
+      allow get, list: if true;
+      allow create, update: if isStaff()
+        && skillId in ['attack','strength','defense','health','woodcutting','mining','smithing','crafting']
+        && request.resource.data.keys().hasAll(['startLevel','baseXp','growthPercent','updatedAt'])
+        && request.resource.data.keys().hasOnly(['startLevel','baseXp','growthPercent','updatedAt'])
+        && request.resource.data.startLevel is int && request.resource.data.startLevel >= 1 && request.resource.data.startLevel <= 30
+        && request.resource.data.baseXp is int && request.resource.data.baseXp >= 1 && request.resource.data.baseXp <= 100000
+        && request.resource.data.growthPercent is int && request.resource.data.growthPercent >= 1 && request.resource.data.growthPercent <= 100
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
 
     // Public, non-sensitive advertisement configuration. Only the active owner
     // may write the two fixed environment documents. No provider or wallet writes.

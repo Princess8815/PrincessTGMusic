@@ -1,3 +1,4 @@
+import { loadSkillSettings } from "./skill-config.js";
 import { loadTreeTypes } from "./tree-config.js";
 import { initializeTrees } from "./tree-system.js";
 // World coordinates are pixels; JSON positions are tile indices.
@@ -20,11 +21,12 @@ async function readJson(url) {
   return response.json();
 }
 export async function loadWorld() {
-  const [map,farm,items,types] = await Promise.all([
+  const [map,farm,items,types,skillSettings] = await Promise.all([
     readJson(new URL("../json/maps/willowfin.json",import.meta.url)),
     readJson(new URL("../json/maps/farm.json",import.meta.url)),
     readJson(new URL("../json/items.json",import.meta.url)),
-    loadTreeTypes()
+    loadTreeTypes(),
+    loadSkillSettings()
   ]);
   for (const region of [map,farm]) {
     if (!region.tiles.every(row=>row.length===region.width) || region.tiles.length!==region.height) throw new Error("Invalid map dimensions");
@@ -32,7 +34,7 @@ export async function loadWorld() {
   if (map.width!==farm.width || map.tileSize!==farm.tileSize) throw new Error("Incompatible region dimensions");
   // The farm is directly north. Shift the original village's tile coordinates by its height.
   return initializeTrees({
-    ...map, items, height:map.height+farm.height,
+    ...map, items, skillSettings, height:map.height+farm.height,
     tiles:[...farm.tiles,...map.tiles],
     spawn:{...map.spawn,y:map.spawn.y+farm.height},
     regions:[{name:farm.name,startY:0,endY:farm.height},{name:map.name,startY:farm.height,endY:farm.height+map.height}],

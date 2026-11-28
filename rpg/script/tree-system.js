@@ -1,8 +1,10 @@
 // Per-tree remaining hardness is independent of the shared type definitions.
 export const HARDNESS_MAX=100000;
 export function validHardness(n){return Number.isInteger(n)&&n>=1&&n<=HARDNESS_MAX;}
+export const TREE_XP_MAX=1000000;
+export function validTreeXp(n){return Number.isInteger(n)&&n>=0&&n<=TREE_XP_MAX;}
 export function applyHardnessOverrides(defaults,overrides={}){
-  return Object.fromEntries(Object.entries(defaults).map(([id,t])=>[id,{...t,hardness:validHardness(overrides[id]?.hardness)?overrides[id].hardness:t.hardness}]));
+  return Object.fromEntries(Object.entries(defaults).map(([id,t])=>[id,{...t,hardness:validHardness(overrides[id]?.hardness)?overrides[id].hardness:t.hardness,woodcuttingXp:validTreeXp(overrides[id]?.woodcuttingXp)?overrides[id].woodcuttingXp:t.woodcuttingXp}]));
 }
 export function initializeTrees(world,types){
   world.treeTypes=types;

@@ -36,6 +36,7 @@
   <script type="module" src="../script/admin-orange-levels.js"></script>
   <script type="module" src="../rpg/script/admin-items.js"></script>
   <script type="module" src="../rpg/script/admin-trees.js"></script>
+  <script type="module" src="../rpg/script/admin-skills.js"></script>
   <link rel="stylesheet" href="../rpg/styles/admin-items.css">
   <script type="module" src="../script/admin-starlight.js"></script><link rel="stylesheet" href="../styles/starlight.css">
   <script type="module" src="../script/admin-code.js"></script>
@@ -1546,14 +1547,26 @@
     </div>
   </div>
   <div class="admin-card rpg-admin">
-    <h2>Tree hardness editor</h2>
+    <h2>Tree hardness and XP editor</h2>
     <p id="rpg-tree-status" role="status" aria-live="polite">Verifying staff access…</p>
     <div id="rpg-tree-content" hidden>
-      <p>Set the starting hardness for every tree species. Changes affect new game sessions. New species are not automatically placed on maps.</p>
+      <p>Set the starting hardness and woodcutting XP reward for every tree species. Changes affect new game sessions. New species are not automatically placed on maps.</p>
       <div class="rpg-item-filters"><label>Search trees<input type="search" id="rpg-tree-search" placeholder="Name or ID"></label><button type="button" id="rpg-tree-refresh">Reload settings</button></div>
       <form id="rpg-tree-form">
-        <div class="rpg-item-table-wrap"><table class="rpg-item-table"><thead><tr><th scope="col">Tree design</th><th scope="col">Species</th><th scope="col">Hardness</th><th scope="col">Default</th><th scope="col">Drop</th><th scope="col">Map status</th></tr></thead><tbody id="rpg-tree-rows"></tbody></table></div>
-        <button id="rpg-tree-save" type="submit" disabled>Save hardness changes</button>
+        <div class="rpg-item-table-wrap"><table class="rpg-item-table"><thead><tr><th scope="col">Tree design</th><th scope="col">Species</th><th scope="col">Hardness</th><th scope="col">XP per tree</th><th scope="col">Defaults (hardness / XP)</th><th scope="col">Drop</th><th scope="col">Map status</th></tr></thead><tbody id="rpg-tree-rows"></tbody></table></div>
+        <button id="rpg-tree-save" type="submit" disabled>Save tree settings</button>
+      </form>
+    </div>
+  </div>
+  <div class="admin-card rpg-admin">
+    <h2>Skill and XP settings</h2>
+    <p id="rpg-skill-status" role="status" aria-live="polite">Verifying staff access…</p>
+    <div id="rpg-skill-content" hidden>
+      <p>Configure each skill's starting level and XP curve. Growth is the percentage increase in XP cost for each successive level. Changes apply to fresh game sessions, not active characters.</p>
+      <div class="rpg-item-filters"><button type="button" id="rpg-skill-refresh">Reload settings</button><button type="button" id="rpg-skill-defaults">Restore default values</button></div>
+      <form id="rpg-skill-form">
+        <div class="rpg-item-table-wrap"><table class="rpg-item-table"><thead><tr><th scope="col">Skill</th><th scope="col">Starting level</th><th scope="col">Base XP (level 1 → 2)</th><th scope="col">Growth %</th><th scope="col">Starting total XP</th><th scope="col">XP to next level</th></tr></thead><tbody id="rpg-skill-rows"></tbody></table></div>
+        <button type="submit" id="rpg-skill-save" disabled>Save skill settings</button>
       </form>
     </div>
   </div>

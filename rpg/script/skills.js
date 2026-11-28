@@ -51,40 +51,59 @@ export const SKILLS=[
     "startLevel": 1
   }
 ];
-export function xpCost(level){
+export function defaultSkillSettings(){
+  return Object.fromEntries(SKILLS.map(s=>[s.id,{startLevel:s.startLevel,baseXp:BASE_XP,growthPercent:10}]));
+}
+export function validSkillSettings(s){
+  return Number.isInteger(s?.startLevel)&&s.startLevel>=1&&s.startLevel<=30
+    &&Number.isInteger(s.baseXp)&&s.baseXp>=1&&s.baseXp<=100000
+    &&Number.isInteger(s.growthPercent)&&s.growthPercent>=1&&s.growthPercent<=100;
+}
+export function mergeSkillSettings(overrides={}){
+  const defaults=defaultSkillSettings();
+  for(const id of Object.keys(defaults))if(validSkillSettings(overrides[id])){
+    const {startLevel,baseXp,growthPercent}=overrides[id];
+    defaults[id]={startLevel,baseXp,growthPercent};
+  }
+  return defaults;
+}
+const DEFAULT_CURVE={baseXp:BASE_XP,growthPercent:10};
+export function xpCost(level,curve=DEFAULT_CURVE){
   if(!Number.isSafeInteger(level)||level<1)return Infinity;
-  const cost=Math.ceil(BASE_XP*XP_GROWTH**(level-1)-1e-9);
+  const cost=Math.ceil(curve.baseXp*(1+curve.growthPercent/100)**(level-1)-1e-9);
   return Number.isSafeInteger(cost)?cost:Infinity;
 }
-export function xpForLevel(level){
+export function xpForLevel(level,curve=DEFAULT_CURVE){
   if(!Number.isSafeInteger(level)||level<1)return Infinity;
   let total=0;
   for(let l=1;l<level;l++){
-    total+=xpCost(l);
+    total+=xpCost(l,curve);
     if(!Number.isSafeInteger(total))return Infinity;
   }
   return total;
 }
-export function levelForXp(xp){
+export function levelForXp(xp,curve=DEFAULT_CURVE){
   if(!Number.isSafeInteger(xp)||xp<0)return 1;
   let level=1,total=0;
-  while(Number.isSafeInteger(total+xpCost(level))&&xp>=total+xpCost(level)){
-    total+=xpCost(level);level++;
+  while(Number.isSafeInteger(total+xpCost(level,curve))&&xp>=total+xpCost(level,curve)){
+    total+=xpCost(level,curve);level++;
   }
   return level;
 }
-export function createSkills(){
-  return Object.fromEntries(SKILLS.map(s=>[s.id,{xp:xpForLevel(s.startLevel),level:s.startLevel}]));
+export function createSkills(settings=defaultSkillSettings()){
+  const config=mergeSkillSettings(settings);
+  return Object.fromEntries(SKILLS.map(s=>{const curve=config[s.id];return [s.id,{xp:xpForLevel(curve.startLevel,curve),level:curve.startLevel,curve}];}));
 }
 export function skillProgress(skill){
-  const level=levelForXp(skill.xp),start=xpForLevel(level),next=xpForLevel(level+1);
+  const curve=skill.curve??DEFAULT_CURVE;
+  const level=levelForXp(skill.xp,curve),start=xpForLevel(level,curve),next=xpForLevel(level+1,curve);
   return {level,totalXp:skill.xp,nextLevelXp:next,remaining:next-skill.xp,progress:skill.xp-start,required:next-start};
 }
 export function awardXp(skills,id,amount){
   if(!Object.hasOwn(skills,id)||!Number.isSafeInteger(amount)||amount<=0)return null;
   const skill=skills[id],before=skill.level;
   if(!Number.isSafeInteger(skill.xp+amount))return null;
-  skill.xp+=amount;skill.level=levelForXp(skill.xp);
+  skill.xp+=amount;skill.level=levelForXp(skill.xp,skill.curve??DEFAULT_CURVE);
   return {id,amount,before,level:skill.level,leveledUp:skill.level>before};
 }
 const fmt=n=>Number.isFinite(n)?n.toLocaleString():"Maximum";

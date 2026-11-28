@@ -61,3 +61,6 @@ Walk with WASD or arrows, interact with E, select slots with 1–9 or 0. Invento
 - The first level costs 100 XP; each successive cost is ceil(100 × 1.1^(level−1)), accumulated across levels. Hover/focus/click reveals total XP and remaining XP. No arbitrary gameplay level cap (safe integer arithmetic limits apply).
 - Tree definitions carry independent woodcuttingXp rewards, starting at 10 for regular and 15 for oak. XP is awarded once when a tree falls, not per hit or when collecting logs. Hardness overrides do not alter XP rewards.
 - Only woodcutting is trainable for now. Skills persist in the current session, not across page refresh. Health level does not yet alter HP; other skills do not yet affect gameplay.
+
+## Admin skill balancing
+- Admin → Games → Axolotl RPG → Skill and XP settings: starting level, base XP, and whole-percent growth per skill, with calculated starting XP and next-level cost. Tree hardness editor also supports XP per felled tree (0 disables XP). Defaults remain unchanged. Public balance definitions are staff-writable only; existing hardness-only documents remain readable. Deploy updated Firestore rules. Settings are loaded once per fresh session; no account saves or individual player XP editor yet.
