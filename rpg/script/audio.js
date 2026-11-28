@@ -10,8 +10,6 @@ const EFFECTS = {
   open:   [[72,0,.10],[76,.065,.13]],
   close:  [[76,0,.09],[72,.06,.13]],
   select: [[79,0,.09]],
-  chop: [[48,0,.10],[43,.025,.12]],
-  "tree-fall": [[48,0,.12],[40,.09,.18],[33,.18,.3]],
   pickup: [[76,0,.08],[84,.075,.16],[88,.15,.19]],
   interact: [[67,0,.12],[72,.08,.18]],
   play:   [[72,0,.14],[76,.09,.14],[79,.18,.16],[84,.27,.32]]
@@ -144,6 +142,10 @@ export class RpgAudio {
   // Available to future game screens as well as the home menu.
   playEffect(name) {
     if (this.hidden || this.context?.state !== "running" || this.effectsVolume === 0) return;
+    if (name === "chop" || name === "tree-fall") {
+      this.woodcut(name === "tree-fall");
+      return;
+    }
     const effect = EFFECTS[name];
     if (!effect) return;
     const at = this.context.currentTime + .005;
@@ -151,6 +153,62 @@ export class RpgAudio {
       this.note(this.effectsBus, pitch, at + offset, length, .19, "triangle", .008);
       this.note(this.effectsBus, pitch + 12, at + offset, length * .65, .025, "sine", .008);
     }
+  }
+
+  // Short filtered noise bursts and a damped wooden resonance, not musical notes.
+  // Every swing has an axe impact; the last also has a crack and falling branches.
+  woodcut(felled) {
+    const at = this.context.currentTime + .005;
+    const variation = .90 + Math.random() * .20;
+    this.woodNoise(at, .105, 920 * variation, .85, .45, "bandpass");
+    this.woodNoise(at, .035, 2700 * variation, .65, .24, "highpass");
+    this.woodThump(at, 165 * variation, .16, .36);
+    if (felled) {
+      this.woodNoise(at + .11, .20, 1500, .8, .33, "bandpass");
+      this.woodNoise(at + .24, .34, 700, .7, .26, "lowpass");
+      this.woodNoise(at + .40, .22, 1900, .7, .16, "bandpass");
+      this.woodThump(at + .48, 78, .25, .42);
+    }
+  }
+
+  woodNoise(at, duration, frequency, q, volume, type) {
+    const ctx = this.context;
+    const length = Math.ceil(ctx.sampleRate * duration);
+    const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1;
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    const filter = ctx.createBiquadFilter();
+    filter.type = type;
+    filter.frequency.value = frequency;
+    filter.Q.value = q;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(.0001, at);
+    gain.gain.exponentialRampToValueAtTime(volume, at + .003);
+    gain.gain.exponentialRampToValueAtTime(.0001, at + duration);
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.effectsBus);
+    source.onended = () => { source.disconnect(); filter.disconnect(); gain.disconnect(); };
+    source.start(at);
+  }
+
+  woodThump(at, frequency, duration, volume) {
+    const ctx = this.context;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(frequency, at);
+    osc.frequency.exponentialRampToValueAtTime(frequency * .58, at + duration);
+    gain.gain.setValueAtTime(.0001, at);
+    gain.gain.exponentialRampToValueAtTime(volume, at + .004);
+    gain.gain.exponentialRampToValueAtTime(.0001, at + duration);
+    osc.connect(gain);
+    gain.connect(this.effectsBus);
+    osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+    osc.start(at);
+    osc.stop(at + duration + .01);
   }
 
   note(bus, pitch, at, duration, loudness, waveform, attack) {
