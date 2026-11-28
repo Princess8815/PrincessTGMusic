@@ -7,3 +7,5 @@
 .rpg-item-table th,.rpg-item-table td{padding:.65rem .75rem;border-bottom:1px solid #8885;white-space:nowrap;}
 .rpg-item-table th{font-weight:700;}
 .rpg-item-table tbody tr:hover{background:#8881;}
+
+.rpg-item-icon{width:28px;height:28px;object-fit:contain;vertical-align:middle;margin-right:.45rem;}

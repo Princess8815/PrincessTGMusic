@@ -33,5 +33,55 @@
     "category": "Currency",
     "source": "Treasure chest",
     "status": "Available"
+  },
+  "rusty_sword": {
+    "name": "Rusty Sword",
+    "icon": "⚔️",
+    "iconAsset": "images/tools/rusty_sword.svg",
+    "category": "Tool",
+    "toolType": "sword",
+    "tier": 1,
+    "source": "Starter equipment",
+    "status": "Equippable"
+  },
+  "rusty_hatchet": {
+    "name": "Rusty Hatchet",
+    "icon": "🪓",
+    "iconAsset": "images/tools/rusty_hatchet.svg",
+    "category": "Tool",
+    "toolType": "hatchet",
+    "tier": 1,
+    "source": "Starter equipment",
+    "status": "Equippable"
+  },
+  "rusty_pickaxe": {
+    "name": "Rusty Pickaxe",
+    "icon": "⛏️",
+    "iconAsset": "images/tools/rusty_pickaxe.svg",
+    "category": "Tool",
+    "toolType": "pickaxe",
+    "tier": 1,
+    "source": "Starter equipment",
+    "status": "Equippable"
+  },
+  "rusty_hoe": {
+    "name": "Rusty Hoe",
+    "icon": "🌱",
+    "iconAsset": "images/tools/rusty_hoe.svg",
+    "category": "Tool",
+    "toolType": "hoe",
+    "tier": 1,
+    "source": "Starter equipment",
+    "status": "Equippable"
+  },
+  "rusty_watering_can": {
+    "name": "Rusty Watering Can",
+    "icon": "💧",
+    "iconAsset": "images/tools/rusty_watering_can.svg",
+    "category": "Tool",
+    "toolType": "watering_can",
+    "tier": 1,
+    "source": "Starter equipment",
+    "status": "Equippable"
   }
 }

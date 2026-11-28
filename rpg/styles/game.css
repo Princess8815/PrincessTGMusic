@@ -25,3 +25,12 @@ body.in-game { overflow:hidden; }
 .interaction-prompt { position:absolute; bottom:clamp(95px,17vw,155px); left:50%; transform:translateX(-50%); padding:.45rem .85rem; font-size:.85rem; white-space:nowrap; pointer-events:none; }
 .game-loading { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); padding:1.25rem; text-align:center; min-width:min(80vw,280px); }
 @media(max-width:520px) { .game-hud { inset:.5rem .5rem auto; } .location-panel { padding:.45rem .6rem; } .game-actions { gap:.25rem; } .game-actions button { padding:.45rem .5rem; font-size:.7rem; } .game-message { top:5.5rem; } }
+
+.equipment-bar{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,10fr);gap:clamp(4px,1vw,10px);align-items:center;}
+.tool-slot{position:relative;min-width:0;aspect-ratio:1;padding:0;background:linear-gradient(#725c3e,#463e36);border:2px solid #f3cf87;border-radius:6px;color:#fff1cf;cursor:pointer;display:grid;place-items:center;}
+.tool-slot img{width:72%;height:72%;object-fit:contain;pointer-events:none;}
+#tool-fallback{font-size:clamp(.75rem,3vw,1.8rem);}
+.equipped-tool{font-size:clamp(.65rem,1.8vw,.85rem);color:#ffe098;margin:.35rem 0 .1rem;font-weight:700;}
+.game-bottom{width:min(96vw,760px);}
+.interaction-prompt{bottom:clamp(120px,20vw,178px);}
+.game-heading h1 .game-beta{display:inline-block;vertical-align:middle;font:700 clamp(.65rem,1.5vw,1rem)/1.2 system-ui,sans-serif;letter-spacing:.045em;text-shadow:none;border:1px solid #e7bf79;border-radius:5px;background:#f4d393;color:#3b3527;padding:.25em .55em;margin-left:.35em;}

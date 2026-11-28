@@ -6,7 +6,7 @@ function line(c,x,y,x2,y2,color,width=2) { c.strokeStyle=color;c.lineWidth=width
 function round(c,x,y,w,h,r,color) { c.fillStyle=color;c.beginPath();c.roundRect(x,y,w,h,r);c.fill(); }
 
 export class WorldRenderer {
-  constructor(canvas) { this.canvas=canvas; this.ctx=canvas.getContext("2d"); }
+  constructor(canvas) { this.canvas=canvas; this.ctx=canvas.getContext("2d"); this.toolImages=new Map(); }
   resize() {
     const rect=this.canvas.getBoundingClientRect();
     const dpr=Math.min(devicePixelRatio||1,2);
@@ -39,7 +39,7 @@ export class WorldRenderer {
       const p=centerOf(world,object);
       foreground.push({y:p.y+10,draw:()=>this.drawObject(c,world,object,p,time)});
     }
-    foreground.push({y:player.y+9,draw:()=>this.drawAxolotl(c,player.x,player.y,player.facing,player.moving?Math.sin(player.walkTime*15)*2:0,false)});
+    foreground.push({y:player.y+9,draw:()=>this.drawAxolotl(c,player.x,player.y,player.facing,player.moving?Math.sin(player.walkTime*15)*2:0,false,player.tool)});
     foreground.sort((a,b)=>a.y-b.y).forEach(entry=>entry.draw());
     c.restore();
   }
@@ -126,7 +126,7 @@ export class WorldRenderer {
     c.font="23px system-ui, sans-serif";c.textAlign="center";c.textBaseline="middle";c.fillText(world.items[o.item]?.icon||"?",x,y-4+bob);
     ellipse(c,x+13,y-15+bob,2,2,"#fff1ab");
   }
-  drawAxolotl(c,x,y,facing,bob,npc) {
+  drawAxolotl(c,x,y,facing,bob,npc,tool=null) {
     ellipse(c,x,y+10,17,7,"#324f4c55");
     c.save();c.translate(x,y+bob);
     c.rotate(({down:0,left:Math.PI/2,up:Math.PI,right:-Math.PI/2})[facing]||0);
@@ -141,6 +141,11 @@ export class WorldRenderer {
     ellipse(c,0,6,15,12,skin);ellipse(c,0,10,10,6,npc?"#d8f0cc":"#ffdedb");
     ellipse(c,-6,7,2.3,3,"#25353b");ellipse(c,6,7,2.3,3,"#25353b");
     c.strokeStyle="#805168";c.lineWidth=1.3;c.beginPath();c.arc(0,10,3,0,Math.PI);c.stroke();
+    if(tool?.iconAsset){
+      let image=this.toolImages.get(tool.iconAsset);
+      if(!image){image=new Image();image.src=new URL("../"+tool.iconAsset,import.meta.url).href;this.toolImages.set(tool.iconAsset,image);}
+      if(image.complete&&image.naturalWidth)c.drawImage(image,12,-7,25,25);
+    }
     c.restore();
   }
 }

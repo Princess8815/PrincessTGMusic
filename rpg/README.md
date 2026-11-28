@@ -33,3 +33,8 @@ Walk with WASD or arrows, interact with E, select slots with 1–9 or 0. Invento
 - json/maps/farm.json: separate 36 × 22 tile region joined to the north of the village at runtime.
 - F = farmhouse footprint (solid), L = tall grass (walkable), S = sticks (solid). All new farm features are decorative; no clearing, harvesting, planting or house entry yet.
 - Admin > Games > Axolotl RPG > Item Catalogue reads the same json/items.json used by the game. Categories and source are metadata, not gameplay mechanics. The admin interface is role-gated; runtime item definitions are public static assets, not secret data.
+
+## Starter equipment
+- script/tools.js: dedicated tool slot, T/click cycles Rusty Sword → Rusty Hatchet → Rusty Pickaxe → Rusty Hoe → Rusty Watering Can → Rusty Sword.
+- Tool icons are in images/tools/. Definitions are in json/items.json and appear in the admin catalogue. toolType and tier identify future upgrade paths.
+- Tools are permanent starter equipment and never consume inventory slots. They are displayed beside the player, but tool actions are not implemented yet.

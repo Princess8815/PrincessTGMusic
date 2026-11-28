@@ -2,6 +2,7 @@ import { loadWorld,terrainAt,nearestObject,regionAt } from "./world.js";
 import { createPlayer,movePlayer,MOVE_KEYS } from "./player.js";
 import { WorldRenderer } from "./renderer.js";
 import { Inventory } from "./inventory.js";
+import { ToolSlot } from "./tools.js";
 
 export class VillageGame {
   constructor(audio) {
@@ -39,6 +40,11 @@ export class VillageGame {
           this.inventory=new Inventory(document.getElementById("inventory-bar"),document.getElementById("selected-item"),world.items,()=>{
             this.audio.playEffect("select");this.canvas.focus();
           });
+          this.tools=new ToolSlot(world.items,tool=>{
+            this.player.tool=tool;
+          },()=>{
+            this.audio.playEffect("select");this.canvas.focus();
+          });
           document.getElementById("map-name").textContent=world.name;
         }
       }
@@ -66,6 +72,7 @@ export class VillageGame {
     if(event.target instanceof HTMLElement&&["INPUT","SELECT","TEXTAREA"].includes(event.target.tagName)) return;
     const key=event.key.toLowerCase();
     if(MOVE_KEYS.has(key)){event.preventDefault();this.keys.add(key);return;}
+    if(key==="t"){event.preventDefault();if(!event.repeat)this.tools.cycle();return;}
     if(key==="e"){event.preventDefault();if(!event.repeat)this.interact();return;}
     if(/^[0-9]$/.test(key)){event.preventDefault();if(!event.repeat)this.inventory.select((Number(key)+9)%10);return;}
     if(key==="escape"){event.preventDefault();this.leave();}

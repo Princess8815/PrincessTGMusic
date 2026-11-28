@@ -135,3 +135,6 @@ main>.ptg-public-test-banner{width:100%;max-width:970px;margin:24px auto;min-wid
 @media(max-width:850px){.ptg-public-test-banner{min-height:82px;margin-block:18px!important}.ptg-public-test-banner strong{font-size:1.15rem}body.ptg-shell-ready>.ptg-public-test-banner{width:min(94%,970px)}}
 
 .ptg-ad-admin fieldset{border:0;padding:0;margin:1rem 0;min-width:0}.ptg-ad-admin legend{font-weight:700;margin-bottom:12px}.ptg-ad-admin .ad-check{display:flex;align-items:center;gap:10px;padding:8px 0;overflow-wrap:anywhere}.ptg-ad-admin .ad-check input{width:20px!important;height:20px;flex:none;accent-color:var(--ptg-primary,#9f7bff)}.ptg-ad-admin .ad-timing,.ptg-ad-admin .ad-page-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px;margin:16px 0}.ptg-ad-admin details{margin:16px 0;padding:12px;border:1px solid #727181;border-radius:8px}.ptg-ad-admin summary{cursor:pointer;font-weight:700}.ptg-ad-admin fieldset:disabled{opacity:.75}
+
+/* Game development status */
+.game-beta{display:inline-block;vertical-align:middle;margin-inline-start:.35em;border:1px solid #d6b36e;border-radius:5px;background:#f5d899!important;color:#352b1e!important;font:700 .72rem/1.2 system-ui,sans-serif!important;letter-spacing:.025em;padding:.2em .45em;white-space:nowrap;text-transform:none;text-shadow:none;}

@@ -20,7 +20,7 @@
   <main class="home">
     <header class="game-heading">
       <p class="eyebrow">A little world. A big adventure.</p>
-      <h1>Axolotl <span>RPG</span></h1>
+      <h1>Axolotl <span>RPG</span> <span class="game-beta">Beta</span></h1>
       <p class="subtitle">Welcome to Willowfin Village</p>
     </header>
     <section class="menu-area" aria-label="Main menu">
@@ -37,7 +37,7 @@
     <footer><span id="version-label">Development build</span><span>PrincessTGCreations</span></footer>
   </main>
   <section id="game-screen" class="game-screen" aria-label="Axolotl RPG gameplay" hidden>
-    <canvas id="world-canvas" tabindex="0" aria-label="Top-down village map. Use WASD or arrow keys to move, E to interact."></canvas>
+    <canvas id="world-canvas" tabindex="0" aria-label="Top-down village map. Use WASD or arrow keys to move, E to interact, T to switch tools."></canvas>
     <header class="game-hud">
       <div class="location-panel"><span class="game-kicker">Willowfin region</span><h2 id="map-name">Willowfin Village</h2><p id="terrain-label">Grass</p></div>
       <div class="game-actions"><button type="button" id="game-options">Options</button><button type="button" id="exit-game">Main Menu</button></div>
@@ -45,8 +45,16 @@
     <div id="game-message" class="game-message" role="status" aria-live="polite"></div>
     <div id="interaction-prompt" class="interaction-prompt" hidden></div>
     <div class="game-bottom">
-      <p class="game-controls">WASD / Arrow keys · E interact · 1–0 select item</p>
-      <div id="inventory-bar" class="inventory-bar" role="group" aria-label="Inventory, ten slots"></div>
+      <p class="game-controls">WASD / Arrow keys · E interact · T switch tool · 1–0 select item</p>
+      <div class="equipment-bar">
+        <button type="button" id="tool-slot" class="tool-slot" aria-label="Switch equipped tool" title="Switch tool (T)">
+          <span class="slot-number">T</span>
+          <img id="tool-icon" alt="" hidden>
+          <span id="tool-fallback">—</span>
+        </button>
+        <div id="inventory-bar" class="inventory-bar" role="group" aria-label="Inventory, ten slots"></div>
+      </div>
+      <p id="equipped-tool" class="equipped-tool" aria-live="polite">Equipped tool: Rusty Sword</p>
       <p id="selected-item" class="selected-item" aria-live="polite">Empty slot</p>
     </div>
     <div id="game-loading" class="game-loading" hidden><p id="game-loading-message">Loading village…</p><button type="button" id="retry-game">Retry</button></div>

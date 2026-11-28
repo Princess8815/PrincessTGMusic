@@ -7,7 +7,7 @@ export class Inventory {
   }
   // All-or-nothing insertion: no item disappears if there is insufficient room.
   add(id,quantity=1) {
-    if (!this.items[id]||!Number.isInteger(quantity)||quantity<=0) return false;
+    if (!this.items[id]||this.items[id].category==="Tool"||!Number.isInteger(quantity)||quantity<=0) return false;
     const capacity=this.slots.reduce((n,s)=>n+(!s?99:s.id===id?99-s.quantity:0),0);
     if (capacity<quantity) return false;
     let remaining=quantity;

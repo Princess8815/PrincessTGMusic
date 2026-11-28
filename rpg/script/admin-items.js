@@ -19,8 +19,14 @@ function render() {
   const visible=items.filter(item=>(!category.value||item.category===category.value)&&(!filter.value||item.status===filter.value)&&[item.id,item.name,item.category,item.source,item.status].join(" ").toLowerCase().includes(query));
   rows.replaceChildren(...visible.map(item=>{
     const tr=document.createElement("tr");
-    for(const value of [item.icon+" "+item.name,item.id,item.category,item.source,item.status]){
-      const cell=document.createElement("td");cell.textContent=value;tr.append(cell);
+    for(const value of [item.name,item.id,item.category,item.source,item.status]){
+      const cell=document.createElement("td");
+      if(tr.children.length===0){
+        if(item.iconAsset){const image=document.createElement("img");image.className="rpg-item-icon";image.alt="";image.src=new URL("../"+item.iconAsset,import.meta.url).href;cell.append(image);}
+        else cell.append(item.icon+" ");
+        cell.append(value);
+      }else cell.textContent=value;
+      tr.append(cell);
     }
     return tr;
   }));
@@ -37,7 +43,7 @@ async function load() {
     if(!response.ok)throw Error("Item catalogue unavailable");
     const data=await response.json();
     if(run!==generation)return;
-    items=Object.entries(data).map(([id,item])=>({id,name:item.name||id,icon:item.icon||"",category:item.category||"Uncategorized",source:item.source||"Not specified",status:item.status||"Not specified"})).sort((a,b)=>a.name.localeCompare(b.name));
+    items=Object.entries(data).map(([id,item])=>({id,name:item.name||id,icon:item.icon||"",iconAsset:item.iconAsset||"",category:item.category||"Uncategorized",source:item.source||"Not specified",status:item.status||"Not specified"})).sort((a,b)=>a.name.localeCompare(b.name));
     options(category,items.map(item=>item.category));options(filter,items.map(item=>item.status));
     allowed=true;content.hidden=false;status.textContent="";render();
   }catch(error){if(run===generation)clear("Unable to load item catalogue. Reopen the tab to retry.");console.error(error);}
