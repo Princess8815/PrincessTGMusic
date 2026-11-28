@@ -1,4 +1,4 @@
-import { loadWorld,terrainAt,nearestObject } from "./world.js";
+import { loadWorld,terrainAt,nearestObject,regionAt } from "./world.js";
 import { createPlayer,movePlayer,MOVE_KEYS } from "./player.js";
 import { WorldRenderer } from "./renderer.js";
 import { Inventory } from "./inventory.js";
@@ -16,6 +16,7 @@ export class VillageGame {
     this.loadingMessage=document.getElementById("game-loading-message");
     this.retry=document.getElementById("retry-game");
     this.terrain=document.getElementById("terrain-label");
+    this.location=document.getElementById("map-name");
     window.addEventListener("keydown",event=>this.keyDown(event));
     window.addEventListener("keyup",event=>this.keys.delete(event.key.toLowerCase()));
     window.addEventListener("blur",()=>this.clearKeys());
@@ -43,7 +44,7 @@ export class VillageGame {
       }
       if(!this.active) return;
       this.loading.hidden=true;this.canvas.focus();
-      this.notify("Explore the village! Press E near an object.");
+      this.notify("Follow the north path to your house and farm.");
       this.lastTime=performance.now();
       if(this.frame===null) this.frame=requestAnimationFrame(time=>this.tick(time));
     } catch(error) {
@@ -89,6 +90,8 @@ export class VillageGame {
     if(!this.paused())movePlayer(this.player,this.world,this.keys,dt);
     else {this.clearKeys();this.player.moving=false;}
     this.renderer.draw(this.world,this.player,now/1000);
+    const region=regionAt(this.world,this.player.y);
+    if(this.location.textContent!==region)this.location.textContent=region;
     const terrain=terrainAt(this.world,this.player.x,this.player.y).name;
     if(this.terrain.textContent!==terrain)this.terrain.textContent=terrain;
     const object=nearestObject(this.world,this.player);

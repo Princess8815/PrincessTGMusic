@@ -6,7 +6,10 @@ export const TERRAIN = {
   B: { name:"Wooden bridge", solid:false, speed:1 },
   T: { name:"Tree", solid:true, speed:0 },
   H: { name:"Cottage", solid:true, speed:0 },
-  R: { name:"Rock", solid:true, speed:0 }
+  R: { name:"Rock", solid:true, speed:0 },
+  F: { name:"Farmhouse", solid:true, speed:0 },
+  L: { name:"Tall grass", solid:false, speed:0.85 },
+  S: { name:"Fallen sticks", solid:true, speed:0 }
 };
 async function readJson(url) {
   const response = await fetch(url);
@@ -14,12 +17,24 @@ async function readJson(url) {
   return response.json();
 }
 export async function loadWorld() {
-  const [map,items] = await Promise.all([
+  const [map,farm,items] = await Promise.all([
     readJson(new URL("../json/maps/willowfin.json",import.meta.url)),
+    readJson(new URL("../json/maps/farm.json",import.meta.url)),
     readJson(new URL("../json/items.json",import.meta.url))
   ]);
-  if (!map.tiles.every(row=>row.length===map.width) || map.tiles.length!==map.height) throw new Error("Invalid map dimensions");
-  return { ...map, items, objects:map.objects.map(object=>({...object, collected:false})) };
+  for (const region of [map,farm]) {
+    if (!region.tiles.every(row=>row.length===region.width) || region.tiles.length!==region.height) throw new Error("Invalid map dimensions");
+  }
+  if (map.width!==farm.width || map.tileSize!==farm.tileSize) throw new Error("Incompatible region dimensions");
+  // The farm is directly north. Shift the original village's tile coordinates by its height.
+  return {
+    ...map, items, height:map.height+farm.height,
+    tiles:[...farm.tiles,...map.tiles],
+    spawn:{...map.spawn,y:map.spawn.y+farm.height},
+    regions:[{name:farm.name,startY:0,endY:farm.height},{name:map.name,startY:farm.height,endY:farm.height+map.height}],
+    buildings:[...farm.buildings],
+    objects:[...farm.objects,...map.objects.map(object=>({...object,y:object.y+farm.height}))].map(object=>({...object,collected:false}))
+  };
 }
 export function tileAt(world,x,y) {
   return world.tiles[Math.floor(y/world.tileSize)]?.[Math.floor(x/world.tileSize)] ?? "W";
@@ -49,4 +64,9 @@ export function nearestObject(world,player,range=64) {
     if (d<distance) { nearest=object; distance=d; }
   }
   return nearest;
+}
+
+export function regionAt(world,y) {
+  const tileY=Math.floor(y/world.tileSize);
+  return world.regions.find(region=>tileY>=region.startY&&tileY<region.endY)?.name??world.name;
 }

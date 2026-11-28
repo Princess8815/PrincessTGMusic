@@ -1,5 +1,5 @@
 import { centerOf } from "./world.js";
-const COLORS={G:"#8fb875",P:"#d9bf8c",W:"#518fa5",B:"#b99463",T:"#80aa70",H:"#a1bd80",R:"#8fb875"};
+const COLORS={G:"#8fb875",P:"#d9bf8c",W:"#518fa5",B:"#b99463",T:"#80aa70",H:"#a1bd80",R:"#8fb875",F:"#b2c792",L:"#8ab06e",S:"#8fb875"};
 function noise(x,y,seed=0) { const n=Math.sin(x*127.1+y*311.7+seed*74.7)*43758.5453; return n-Math.floor(n); }
 function ellipse(c,x,y,rx,ry,color) { c.fillStyle=color;c.beginPath();c.ellipse(x,y,rx,ry,0,0,Math.PI*2);c.fill(); }
 function line(c,x,y,x2,y2,color,width=2) { c.strokeStyle=color;c.lineWidth=width;c.beginPath();c.moveTo(x,y);c.lineTo(x2,y2);c.stroke(); }
@@ -29,7 +29,10 @@ export class WorldRenderer {
     const foreground=[];
     for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
       const tile=world.tiles[y][x]; this.drawGround(c,world,x,y,t,tile,time);
-      if (["T","H","R"].includes(tile)) foreground.push({y:(y+.8)*t,draw:()=>this.drawObstacle(c,x*t,y*t,t,tile,x,y)});
+      if (["T","H","R","S"].includes(tile)) foreground.push({y:(y+.8)*t,draw:()=>this.drawObstacle(c,x*t,y*t,t,tile,x,y)});
+    }
+    for(const building of world.buildings||[]) {
+      foreground.push({y:(building.y+building.height)*t,draw:()=>this.drawFarmhouse(c,building,t)});
     }
     for(const object of world.objects) {
       if(object.collected) continue;
@@ -52,6 +55,11 @@ export class WorldRenderer {
     } else if(tile==="B") {
       for(let i=0;i<6;i++){c.fillStyle=i%2?"#cba478":"#b99463";c.fillRect(px+i*8,py,7,t);line(c,px+i*8,py+4,px+i*8,py+t-4,"#886744",1);}
       line(c,px,py+3,px+t,py+3,"#775e40",3);line(c,px,py+t-3,px+t,py+t-3,"#775e40",3);
+    } else if(tile==="L") {
+      for(let i=0;i<12;i++) {
+        const a=px+4+noise(x,y,i+7)*40,b=py+9+noise(x,y,i+29)*35;
+        line(c,a,b,a-4,b-9,"#4f8a50",2);line(c,a,b,a+4,b-12,"#5e9854",2);line(c,a,b,a+1,b-15,"#a8ce77",1.5);
+      }
     } else if(tile==="P") {
       for(let i=0;i<5;i++){ellipse(c,px+noise(x,y,i+1)*t,py+noise(x,y,i+12)*t,1.6,1,"#c0a479");}
     } else {
@@ -64,6 +72,13 @@ export class WorldRenderer {
     if(tile==="T"){
       ellipse(c,mx,my+15,23,12,"#456d514d");round(c,mx-5,my,10,22,3,"#84664a");
       ellipse(c,mx,my-6,24,25,"#376d55");ellipse(c,mx-8,my-12,15,17,"#4c9165");ellipse(c,mx+7,my-14,15,16,"#72a76a");ellipse(c,mx-3,my-18,11,10,"#92bc78");
+    }else if(tile==="S"){
+      ellipse(c,mx,my+5,17,7,"#456d5140");
+      line(c,mx-14,my+8,mx+11,my-9,"#694d35",5);
+      line(c,mx-4,my+1,mx-12,my-8,"#805e3c",3);
+      line(c,mx+2,my-3,mx+12,my+4,"#805e3c",3);
+      line(c,mx-12,my+7,mx+10,my-8,"#bd9561",1.5);
+      line(c,mx-8,my-13,mx+12,my-5,"#8b6641",4);
     }else if(tile==="R"){
       ellipse(c,mx,my+12,19,8,"#456d514d");ellipse(c,mx,my,17,14,"#647d7d");ellipse(c,mx-4,my-4,12,8,"#a0b1a5");line(c,mx-9,my+2,mx+3,my-2,"#778e87");
     }else{
@@ -76,6 +91,30 @@ export class WorldRenderer {
       if(tx%3===2){round(c,x+16,y+27,16,19,4,"#53746b");ellipse(c,x+27,y+39,2,2,"#f8d48e");}
       else {round(c,x+13,y+23,18,12,3,"#f5dc99");line(c,x+22,y+23,x+22,y+35,"#936b55");}
     }
+  }
+  drawFarmhouse(c,b,t) {
+    const x=b.x*t,y=b.y*t,w=b.width*t,h=b.height*t;
+    const mid=x+w/2,base=y+h;
+    // A single building covers its full collision footprint; the doorway is decorative.
+    ellipse(c,mid,base-4,w*.52,16,"#345b4e55");
+    round(c,x+8,y+35,w-16,h-40,8,"#e8c8a0");
+    c.fillStyle="#a47e55";c.fillRect(x+12,base-13,w-24,7);
+    c.fillStyle="#7e5360";c.beginPath();c.moveTo(x-5,y+52);c.lineTo(x+20,y+3);c.lineTo(mid,y-24);c.lineTo(x+w-20,y+3);c.lineTo(x+w+5,y+52);c.closePath();c.fill();
+    c.fillStyle="#b97278";c.beginPath();c.moveTo(x+4,y+42);c.lineTo(x+25,y+5);c.lineTo(mid,y-20);c.lineTo(x+w-25,y+5);c.lineTo(x+w-4,y+42);c.closePath();c.fill();
+    for(let i=0;i<4;i++)line(c,x+20+i*5,y+12+i*9,x+w-20-i*5,y+12+i*9,"#995c68",2);
+    round(c,x+w-61,y-10,22,37,3,"#a78067");round(c,x+w-65,y-14,30,9,3,"#775c54");
+    for(const wx of [x+40,x+w-78]) {
+      round(c,wx,y+70,38,31,4,"#896850");round(c,wx+4,y+74,30,23,3,"#f6e0a5");
+      line(c,wx+19,y+74,wx+19,y+97,"#96734e");line(c,wx+4,y+85,wx+34,y+85,"#96734e");
+      round(c,wx-3,y+101,44,7,3,"#99714b");
+      for(let i=0;i<5;i++)ellipse(c,wx+4+i*8,y+101,4,4,i%2?"#ed9fa9":"#f2d384");
+    }
+    round(c,mid-21,base-54,42,49,7,"#496f66");
+    round(c,mid-16,base-49,32,43,5,"#5a8674");
+    ellipse(c,mid+11,base-24,3,3,"#f6d47c");
+    round(c,mid-29,base-5,58,10,3,"#baa18a");
+    // Door nameplate is visual only; no interaction is registered.
+    round(c,mid-41,y+52,82,17,4,"#8c674e");c.font="bold 10px system-ui";c.textAlign="center";c.textBaseline="middle";c.fillStyle="#fff0cf";c.fillText(b.label,mid,y+60.5);
   }
   drawObject(c,world,o,p,time) {
     const {x,y}=p;

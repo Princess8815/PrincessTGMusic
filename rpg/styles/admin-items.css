@@ -1,0 +1,9 @@
+.rpg-admin [hidden]{display:none!important;}
+.rpg-item-filters{display:flex;align-items:end;gap:.8rem;flex-wrap:wrap;margin:1rem 0;}
+.rpg-item-filters label{display:grid;gap:.35rem;flex:1 1 150px;}
+.rpg-item-filters input,.rpg-item-filters select{width:100%;min-width:0;box-sizing:border-box;}
+.rpg-item-table-wrap{overflow-x:auto;}
+.rpg-item-table{width:100%;border-collapse:collapse;text-align:left;}
+.rpg-item-table th,.rpg-item-table td{padding:.65rem .75rem;border-bottom:1px solid #8885;white-space:nowrap;}
+.rpg-item-table th{font-weight:700;}
+.rpg-item-table tbody tr:hover{background:#8881;}

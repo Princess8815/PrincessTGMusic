@@ -8,9 +8,9 @@
     "y": 11
   },
   "tiles": [
-    "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
-    "TGGGGGGGGGGGGGGGGGGWWWGGGGGGGGGGGGGT",
-    "TGGGGGGGGGGGGGGGGGGWWWGGGGGGGGGGGGGT",
+    "TTTTTTTTPPTTTTTTTTTTTTTTTTTTTTTTTTTT",
+    "TGGGGGGGPPGGGGGGGGGWWWGGGGGGGGGGGGGT",
+    "TGGGGGGGPPGGGGGGGGGWWWGGGGGGGGGGGGGT",
     "TGTGGGGGPPGGGHHHGTGWWWGTGGGGGGWWWWGT",
     "TGGGHHHGPPGGGHHHGGGWWWGGGGGGPGWWWWGT",
     "TGGGHHHGPPGGGGGGRGGWWWGGGTGGPGWWWWGT",
@@ -39,7 +39,7 @@
       "type": "sign",
       "x": 10,
       "y": 10,
-      "text": "Welcome to Willowfin! Cross the bridge to explore the meadow."
+      "text": "Welcome to Willowfin! Follow the north path to your house and farm, or cross the bridge to the meadow."
     },
     {
       "id": "villager",

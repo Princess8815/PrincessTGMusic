@@ -28,3 +28,8 @@ No inline JavaScript or CSS. No external dependencies. Play Game opens the first
 - styles/game.css: gameplay HUD and inventory.
 Tile codes: G grass, P path, W water (solid), B bridge, T tree (solid), H house (solid), R rock (solid).
 Walk with WASD or arrows, interact with E, select slots with 1–9 or 0. Inventory and position remain in memory when returning to the menu; refreshing resets this prototype.
+
+## Northern farm
+- json/maps/farm.json: separate 36 × 22 tile region joined to the north of the village at runtime.
+- F = farmhouse footprint (solid), L = tall grass (walkable), S = sticks (solid). All new farm features are decorative; no clearing, harvesting, planting or house entry yet.
+- Admin > Games > Axolotl RPG > Item Catalogue reads the same json/items.json used by the game. Categories and source are metadata, not gameplay mechanics. The admin interface is role-gated; runtime item definitions are public static assets, not secret data.

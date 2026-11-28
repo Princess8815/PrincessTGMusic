@@ -34,6 +34,8 @@
   <script type="module" src="../script/admin-newsletter.js"></script>
   <script type="module" src="../script/admin-tabs.js"></script>
   <script type="module" src="../script/admin-orange-levels.js"></script>
+  <script type="module" src="../rpg/script/admin-items.js"></script>
+  <link rel="stylesheet" href="../rpg/styles/admin-items.css">
   <script type="module" src="../script/admin-starlight.js"></script><link rel="stylesheet" href="../styles/starlight.css">
   <script type="module" src="../script/admin-code.js"></script>
   <link rel="stylesheet" href="../styles/admin-code.css">
@@ -1525,7 +1527,24 @@
          </fieldset></form>
         </div></div>
       </section></section>
-<section id="admin-main-panel-games" class="admin-main-panel" role="tabpanel" aria-labelledby="admin-main-tab-games" hidden><nav class="admin-subtabs" aria-label="games management" role="tablist"><button type="button" role="tab" id="admin-main-tab-orange" data-admin-subtab="games:orange" aria-selected="true">Orange Knock Down</button><button type="button" role="tab" id="admin-main-tab-shiny" data-admin-subtab="games:shiny" aria-selected="false">Banana Beams</button></nav><section id="admin-main-panel-orange" class="admin-subpanel" data-admin-subpanel="games:orange" role="tabpanel" aria-labelledby="admin-main-tab-orange" ><div class="admin-card"><h2>Orange Knock Down campaign</h2><p>Publish official levels and choose which level introduces each mechanic. Existing attempts remain unchanged.</p><p><a href="orange-level-editor.html?official=1">Open official level editor</a></p><form id="orange-unlock-form"><div id="orange-unlock-fields"></div><button type="submit" id="orange-unlock-save" disabled>Save unlock schedule</button></form><p id="orange-admin-status" role="status"></p></div></section><section id="admin-main-panel-shiny" class="admin-subpanel" data-admin-subpanel="games:shiny" role="tabpanel" aria-labelledby="admin-main-tab-shiny" hidden><div class="admin-card"><h2>Shiny’s Banana Beams campaign</h2><p>Manage official levels, grid dimensions and feature unlocks. Test puzzle layouts without rewards.</p><p><a href="shiny-light-editor.html">Open Banana Beams level editor</a></p></div></section></section>
+<section id="admin-main-panel-games" class="admin-main-panel" role="tabpanel" aria-labelledby="admin-main-tab-games" hidden><nav class="admin-subtabs" aria-label="games management" role="tablist"><button type="button" role="tab" id="admin-main-tab-orange" data-admin-subtab="games:orange" aria-selected="true">Orange Knock Down</button><button type="button" role="tab" id="admin-main-tab-shiny" data-admin-subtab="games:shiny" aria-selected="false">Banana Beams</button><button type="button" role="tab" id="admin-main-tab-rpg" data-admin-subtab="games:rpg" aria-selected="false" aria-controls="admin-main-panel-rpg">Axolotl RPG</button></nav><section id="admin-main-panel-orange" class="admin-subpanel" data-admin-subpanel="games:orange" role="tabpanel" aria-labelledby="admin-main-tab-orange" ><div class="admin-card"><h2>Orange Knock Down campaign</h2><p>Publish official levels and choose which level introduces each mechanic. Existing attempts remain unchanged.</p><p><a href="orange-level-editor.html?official=1">Open official level editor</a></p><form id="orange-unlock-form"><div id="orange-unlock-fields"></div><button type="submit" id="orange-unlock-save" disabled>Save unlock schedule</button></form><p id="orange-admin-status" role="status"></p></div></section><section id="admin-main-panel-shiny" class="admin-subpanel" data-admin-subpanel="games:shiny" role="tabpanel" aria-labelledby="admin-main-tab-shiny" hidden><div class="admin-card"><h2>Shiny’s Banana Beams campaign</h2><p>Manage official levels, grid dimensions and feature unlocks. Test puzzle layouts without rewards.</p><p><a href="shiny-light-editor.html">Open Banana Beams level editor</a></p></div></section>
+<section id="admin-main-panel-rpg" class="admin-subpanel" data-admin-subpanel="games:rpg" role="tabpanel" aria-labelledby="admin-main-tab-rpg" hidden>
+  <div class="admin-card rpg-admin">
+    <h2>Axolotl RPG · Item Catalogue</h2>
+    <p id="rpg-items-status" role="status">Verifying staff access…</p>
+    <div id="rpg-items-content" hidden>
+      <p>Read-only list of every defined inventory item. Changes to the game's item JSON automatically appear here after refresh.</p>
+      <div class="rpg-item-filters">
+        <label>Search items<input id="rpg-item-search" type="search" placeholder="Name, ID, category or source"></label>
+        <label>Category<select id="rpg-item-category"><option value="">All categories</option></select></label>
+        <label>Status<select id="rpg-item-status-filter"><option value="">All statuses</option></select></label>
+        <button id="rpg-item-refresh" type="button">Refresh</button>
+      </div>
+      <p id="rpg-item-count" role="status"></p>
+      <div class="rpg-item-table-wrap"><table class="rpg-item-table"><thead><tr><th scope="col">Item</th><th scope="col">ID</th><th scope="col">Category</th><th scope="col">Source</th><th scope="col">Status</th></tr></thead><tbody id="rpg-item-rows"></tbody></table></div>
+    </div>
+  </div>
+</section></section>
 <section id="admin-main-panel-advertisements" class="admin-main-panel" role="tabpanel" aria-labelledby="admin-main-tab-advertisements" hidden>
  <div class="admin-card ptg-ad-admin">
   <h2>Advertisement Management</h2><p id="ad-config-environment"></p>

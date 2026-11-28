@@ -1,22 +1,37 @@
 {
   "berry": {
     "name": "Wild berries",
-    "icon": "🫐"
+    "icon": "🫐",
+    "category": "Food",
+    "source": "Village forage",
+    "status": "Available"
   },
   "wood": {
     "name": "Wood",
-    "icon": "🪵"
+    "icon": "🪵",
+    "category": "Material",
+    "source": "Village forage",
+    "status": "Available"
   },
   "stone": {
     "name": "Stone",
-    "icon": "🪨"
+    "icon": "🪨",
+    "category": "Material",
+    "source": "Village forage",
+    "status": "Available"
   },
   "flower": {
     "name": "Meadow flower",
-    "icon": "🌼"
+    "icon": "🌼",
+    "category": "Forage",
+    "source": "Meadow forage",
+    "status": "Available"
   },
   "coin": {
     "name": "Village coin",
-    "icon": "🪙"
+    "icon": "🪙",
+    "category": "Currency",
+    "source": "Treasure chest",
+    "status": "Available"
   }
 }
