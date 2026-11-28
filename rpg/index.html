@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Axolotl RPG</title>
+  <link rel="stylesheet" href="styles/home.css">
+  <link rel="stylesheet" href="styles/village.css">
+  <script src="script/home.js" defer></script>
+</head>
+<body>
+  <div class="village" aria-hidden="true">
+    <div class="sky"></div><div class="clouds"></div><div class="landscape"></div>
+    <div class="walker walker-one"><img src="images/pink.svg" alt=""></div>
+    <div class="walker walker-two"><img src="images/mint.svg" alt=""></div>
+    <div class="walker walker-three"><img src="images/gold.svg" alt=""></div>
+    <div class="shade"></div>
+  </div>
+  <main class="home">
+    <header class="game-heading">
+      <p class="eyebrow">A little world. A big adventure.</p>
+      <h1>Axolotl <span>RPG</span></h1>
+      <p class="subtitle">Welcome to Willowfin Village</p>
+    </header>
+    <section class="menu-area" aria-label="Main menu">
+      <img class="portrait portrait-left" src="images/pink.svg" alt="Pink adventurer axolotl">
+      <div class="menu-card">
+        <p class="menu-caption">Your story begins here</p>
+        <button class="menu-button primary" id="play-button" type="button">Play Game</button>
+        <button class="menu-button" id="options-button" type="button">Options</button>
+        <a class="site-link" href="../index.html">Return to PrincessTGCreations</a>
+      </div>
+      <img class="portrait portrait-right" src="images/mint.svg" alt="Mint green adventurer axolotl">
+    </section>
+    <footer><span id="version-label">Development build</span><span>PrincessTGCreations</span></footer>
+  </main>
+  <dialog id="options-dialog" class="game-dialog" aria-labelledby="options-title">
+    <h2 id="options-title">Options</h2>
+    <label class="setting"><span>Animate the village</span><input id="motion-setting" type="checkbox" checked></label>
+    <label class="setting">Village lighting
+      <select id="lighting-setting"><option value="day">Daylight</option><option value="evening">Twilight</option></select>
+    </label>
+    <button class="menu-button primary" type="button" data-close="options-dialog">Done</button>
+  </dialog>
+  <dialog id="play-dialog" class="game-dialog" aria-labelledby="play-title">
+    <h2 id="play-title">Your adventure awaits</h2>
+    <p id="play-message">Willowfin Village is still being built. Gameplay will arrive in a future development stage.</p>
+    <button class="menu-button primary" type="button" data-close="play-dialog">Back to menu</button>
+  </dialog>
+</body>
+</html>

@@ -177,7 +177,8 @@ const GROUPS=[
   {title:"Games and More",links:[
     ["Hanggirl","pages/hanggirl.html","challenges"],
     ["Fruity Paradice","pages/fruity-paradice.html","challenges"],
-    ["Board Games","pages/board-games.html","challenges"]]},
+    ["Board Games","pages/board-games.html","challenges"],
+    ["Axolotl RPG","rpg/index.html","challenges"]]},
   {title:"Research & Surveys",links:[
     ["Surveys","pages/research-surveys.html","docs"]]},
   {title:"Productivity",links:[
