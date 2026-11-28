@@ -5,6 +5,7 @@ import { Inventory } from "./inventory.js";
 import { ToolSlot } from "./tools.js";
 import { Equipment,EquipmentHUD } from "./equipment.js";
 import { VitalsHUD } from "./stats.js";
+import { SkillsHUD,awardXp } from "./skills.js";
 import { targetTree,chopTree } from "./tree-system.js";
 
 export class VillageGame {
@@ -23,6 +24,10 @@ export class VillageGame {
     this.location=document.getElementById("map-name");
     this.vitals=new VitalsHUD();
     this.inventoryDialog=document.getElementById("inventory-dialog");
+    this.skillsDialog=document.getElementById("skills-dialog");
+    document.getElementById("open-skills").addEventListener("click",()=>this.toggleSkills());
+    document.getElementById("close-skills").addEventListener("click",()=>this.skillsDialog.close());
+    this.skillsDialog.addEventListener("close",()=>{this.clearKeys();if(this.active)this.canvas.focus();});
     document.getElementById("open-inventory").addEventListener("click",()=>this.toggleInventory());
     document.getElementById("close-inventory").addEventListener("click",()=>this.inventoryDialog.close());
     this.inventoryDialog.addEventListener("close",()=>{this.clearKeys();if(this.active)this.canvas.focus();});
@@ -45,6 +50,7 @@ export class VillageGame {
         const world=await this.loadPromise;
         if(!this.world) {
           this.world=world;this.player=createPlayer(world);
+          this.skillsHUD=new SkillsHUD(this.player.skills);
           this.inventory=new Inventory(document.getElementById("inventory-bar"),document.getElementById("selected-item"),world.items,()=>{
             this.audio.playEffect("select");if(!this.inventoryDialog.open)this.canvas.focus();
           });
@@ -74,6 +80,7 @@ export class VillageGame {
   leave() {
     this.active=false;this.clearKeys();
     if(this.inventoryDialog.open)this.inventoryDialog.close();
+    if(this.skillsDialog.open)this.skillsDialog.close();
     if(this.frame!==null) cancelAnimationFrame(this.frame);
     this.frame=null;this.screen.hidden=true;document.body.classList.remove("in-game");
     document.querySelector(".home").hidden=false;document.querySelector(".village").hidden=false;
@@ -87,8 +94,18 @@ export class VillageGame {
     else {this.equipmentHUD.render();this.inventory.open();}
     this.audio.playEffect("select");
   }
+  toggleSkills(){
+    if(!this.active||!this.skillsHUD||document.querySelector("dialog[open]:not(#skills-dialog)"))return;
+    this.clearKeys();
+    if(this.skillsDialog.open)this.skillsDialog.close();
+    else {this.skillsHUD.render();this.skillsDialog.showModal();}
+    this.audio.playEffect("select");
+  }
   keyDown(event) {
     if(!this.active||!this.world||document.hidden||event.ctrlKey||event.metaKey||event.altKey)return;
+    if(event.key.toLowerCase()==="k"&&!document.querySelector("dialog[open]:not(#skills-dialog)")){
+      event.preventDefault();if(!event.repeat)this.toggleSkills();return;
+    }
     if(event.key.toLowerCase()==="i"&&!document.querySelector("dialog[open]:not(#inventory-dialog)")){
       event.preventDefault();if(!event.repeat)this.toggleInventory();return;
     }
@@ -110,7 +127,14 @@ export class VillageGame {
       if(!result.ok){this.notify(result.reason);return;}
       this.audio.playEffect(result.felled?"tree-fall":"chop");
       this.vitals.render(this.player.stats);
-      this.notify(result.felled?tree.name+" felled! "+this.world.items[result.item].name+" dropped.":tree.name+" · "+result.remaining+" / "+result.max+" hardness");
+      if(result.felled){
+        const gain=awardXp(this.player.skills,"woodcutting",result.xp);
+        this.skillsHUD.render();
+        const xpText=gain?" +"+gain.amount+" Woodcutting XP":"";
+        const levelText=gain?.leveledUp?" · Level "+gain.level+"!":"";
+        this.notify(tree.name+" felled! "+this.world.items[result.item].name+" dropped."+xpText+levelText);
+        if(gain?.leveledUp)this.audio.playEffect("play");
+      }else this.notify(tree.name+" · "+result.remaining+" / "+result.max+" hardness");
       return;
     }
     const object=nearestObject(this.world,this.player);

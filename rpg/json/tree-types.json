@@ -4,104 +4,119 @@
     "tile": "T",
     "hardness": 3,
     "dropItem": "wood",
-    "iconAsset": "images/trees/regular.svg"
+    "iconAsset": "images/trees/regular.svg",
+    "woodcuttingXp": 10
   },
   "oak": {
     "name": "Oak Tree",
     "tile": "O",
     "hardness": 5,
     "dropItem": "oak_log",
-    "iconAsset": "images/trees/oak.svg"
+    "iconAsset": "images/trees/oak.svg",
+    "woodcuttingXp": 15
   },
   "birch": {
     "name": "Birch Tree",
     "tile": "b",
     "hardness": 4,
     "dropItem": "birch_log",
-    "iconAsset": "images/trees/birch.svg"
+    "iconAsset": "images/trees/birch.svg",
+    "woodcuttingXp": 12
   },
   "willow": {
     "name": "Willow Tree",
     "tile": "y",
     "hardness": 5,
     "dropItem": "willow_log",
-    "iconAsset": "images/trees/willow.svg"
+    "iconAsset": "images/trees/willow.svg",
+    "woodcuttingXp": 15
   },
   "maple": {
     "name": "Maple Tree",
     "tile": "m",
     "hardness": 6,
     "dropItem": "maple_log",
-    "iconAsset": "images/trees/maple.svg"
+    "iconAsset": "images/trees/maple.svg",
+    "woodcuttingXp": 18
   },
   "dark_oak": {
     "name": "Dark Oak Tree",
     "tile": "d",
     "hardness": 8,
     "dropItem": "dark_oak_log",
-    "iconAsset": "images/trees/dark_oak.svg"
+    "iconAsset": "images/trees/dark_oak.svg",
+    "woodcuttingXp": 24
   },
   "blood": {
     "name": "Blood Tree",
     "tile": "v",
     "hardness": 12,
     "dropItem": "blood_log",
-    "iconAsset": "images/trees/blood.svg"
+    "iconAsset": "images/trees/blood.svg",
+    "woodcuttingXp": 36
   },
   "magic": {
     "name": "Magic Tree",
     "tile": "q",
     "hardness": 15,
     "dropItem": "magic_log",
-    "iconAsset": "images/trees/magic.svg"
+    "iconAsset": "images/trees/magic.svg",
+    "woodcuttingXp": 45
   },
   "axolotl": {
     "name": "Axolotl Tree",
     "tile": "x",
     "hardness": 20,
     "dropItem": "axolotl_log",
-    "iconAsset": "images/trees/axolotl.svg"
+    "iconAsset": "images/trees/axolotl.svg",
+    "woodcuttingXp": 60
   },
   "pine": {
     "name": "Pine Tree",
     "tile": "n",
     "hardness": 5,
     "dropItem": "pine_log",
-    "iconAsset": "images/trees/pine.svg"
+    "iconAsset": "images/trees/pine.svg",
+    "woodcuttingXp": 15
   },
   "crystal": {
     "name": "Crystal Tree",
     "tile": "c",
     "hardness": 25,
     "dropItem": "crystal_log",
-    "iconAsset": "images/trees/crystal.svg"
+    "iconAsset": "images/trees/crystal.svg",
+    "woodcuttingXp": 75
   },
   "golden": {
     "name": "Golden Tree",
     "tile": "k",
     "hardness": 18,
     "dropItem": "golden_log",
-    "iconAsset": "images/trees/golden.svg"
+    "iconAsset": "images/trees/golden.svg",
+    "woodcuttingXp": 54
   },
   "cherry": {
     "name": "Cherry Blossom Tree",
     "tile": "j",
     "hardness": 7,
     "dropItem": "cherry_log",
-    "iconAsset": "images/trees/cherry.svg"
+    "iconAsset": "images/trees/cherry.svg",
+    "woodcuttingXp": 21
   },
   "frost": {
     "name": "Frost Tree",
     "tile": "z",
     "hardness": 10,
     "dropItem": "frost_log",
-    "iconAsset": "images/trees/frost.svg"
+    "iconAsset": "images/trees/frost.svg",
+    "woodcuttingXp": 30
   },
   "ancient": {
     "name": "Ancient Tree",
     "tile": "a",
     "hardness": 30,
     "dropItem": "ancient_log",
-    "iconAsset": "images/trees/ancient.svg"
+    "iconAsset": "images/trees/ancient.svg",
+    "woodcuttingXp": 90
   }
 }

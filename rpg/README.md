@@ -55,3 +55,9 @@ Walk with WASD or arrows, interact with E, select slots with 1–9 or 0. Invento
 - tree-types.json defines 15 species, their unique tile codes, art, hardness and one-log drops. Only regular and oak are placed on existing maps. Regular trees drop Wood.
 - Face an adjacent tree, select the hatchet with T and press E once per hit. Rusty strength is 1, default regular hardness is 3. Each hit costs 1 stamina; zero instantly resets to 10 during alpha. Felled tiles become grass and drop a collectible log. Boundary forest walls are protected.
 - Admin → Games → Axolotl RPG → Tree hardness saves overrides to Firestore rpgTreeTypes. Deploy security/firestore.rules before using the editor. New world loads use server overrides or fall back to defaults if offline. Existing running worlds retain their initial hardness.
+
+## Skills
+- script/skills.js: eight skills, cumulative XP, levels, shared reward helper and K skills dialog. Health starts at level 10 with the exact cumulative XP required; all other skills start at 1 and zero XP.
+- The first level costs 100 XP; each successive cost is ceil(100 × 1.1^(level−1)), accumulated across levels. Hover/focus/click reveals total XP and remaining XP. No arbitrary gameplay level cap (safe integer arithmetic limits apply).
+- Tree definitions carry independent woodcuttingXp rewards, starting at 10 for regular and 15 for oak. XP is awarded once when a tree falls, not per hit or when collecting logs. Hardness overrides do not alter XP rewards.
+- Only woodcutting is trainable for now. Skills persist in the current session, not across page refresh. Health level does not yet alter HP; other skills do not yet affect gameplay.

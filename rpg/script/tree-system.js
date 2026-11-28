@@ -13,7 +13,7 @@ export function initializeTrees(world,types){
     if(!def)continue;
     // Map perimeter and inter-region forest walls remain protected.
     const boundary=x===0||x===world.width-1||world.regions.some(r=>y===r.startY||y===r.endY-1);
-    world.trees.set(x+","+y,{x,y,type:def.id,name:def.name,remaining:def.hardness,maxHardness:def.hardness,dropItem:def.dropItem,protected:boundary});
+    world.trees.set(x+","+y,{x,y,type:def.id,name:def.name,remaining:def.hardness,maxHardness:def.hardness,dropItem:def.dropItem,xp:def.woodcuttingXp,protected:boundary});
   }
   return world;
 }
@@ -37,5 +37,5 @@ export function chopTree(world,player,tree){
   world.tiles[tree.y]=row.slice(0,tree.x)+"G"+row.slice(tree.x+1);
   world.trees.delete(tree.x+","+tree.y);
   world.objects.push({id:"tree-drop-"+tree.x+"-"+tree.y,type:"pickup",item:tree.dropItem,quantity:1,x:tree.x,y:tree.y,collected:false});
-  return {ok:true,felled:true,item:tree.dropItem};
+  return {ok:true,felled:true,item:tree.dropItem,xp:tree.xp};
 }
