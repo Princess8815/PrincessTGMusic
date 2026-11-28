@@ -64,3 +64,5 @@ Walk with WASD or arrows, interact with E, select slots with 1–9 or 0. Invento
 
 ## Admin skill balancing
 - Admin → Games → Axolotl RPG → Skill and XP settings: starting level, base XP, and whole-percent growth per skill, with calculated starting XP and next-level cost. Tree hardness editor also supports XP per felled tree (0 disables XP). Defaults remain unchanged. Public balance definitions are staff-writable only; existing hardness-only documents remain readable. Deploy updated Firestore rules. Settings are loaded once per fresh session; no account saves or individual player XP editor yet.
+
+RPG admin controls are organized into Item Catalogue, Trees, and Skills & XP tabs. Tabs preserve unsaved form inputs when switching between sections.

@@ -15,3 +15,10 @@
 #rpg-tree-save{margin-top:.8rem;}
 
 #rpg-skill-save{margin-top:.8rem;}
+
+/* Local tabs within Games → Axolotl RPG. */
+.rpg-admin-tabs{display:flex;gap:.5rem;flex-wrap:wrap;margin:.6rem 0 1rem;}
+.rpg-admin-tabs button{border:1px solid #8c929a;border-radius:8px;padding:.65rem 1rem;background:transparent;color:inherit;font-weight:650;cursor:pointer;}
+.rpg-admin-tabs button[aria-selected="true"]{background:#4d3a73!important;color:#fff!important;border-color:#b5a0de!important;}
+.rpg-admin-tabs button:focus-visible{outline:2px solid #b5a0de;outline-offset:2px;}
+.rpg-admin-panel[hidden]{display:none!important;}
