@@ -1,0 +1,22 @@
+{
+  "berry": {
+    "name": "Wild berries",
+    "icon": "🫐"
+  },
+  "wood": {
+    "name": "Wood",
+    "icon": "🪵"
+  },
+  "stone": {
+    "name": "Stone",
+    "icon": "🪨"
+  },
+  "flower": {
+    "name": "Meadow flower",
+    "icon": "🌼"
+  },
+  "coin": {
+    "name": "Village coin",
+    "icon": "🪙"
+  }
+}

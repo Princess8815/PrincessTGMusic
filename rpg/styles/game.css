@@ -1,0 +1,27 @@
+/* Gameplay is full-screen, separate from the animated home menu. */
+[hidden] { display:none !important; }
+body.in-game { overflow:hidden; }
+.game-screen { position:fixed; inset:0; z-index:2; background:#658e63; color:#fff1cf; font-family:system-ui,sans-serif; }
+#world-canvas { display:block; width:100%; height:100%; outline:none; }
+.game-hud { position:absolute; inset:1rem 1rem auto; display:flex; justify-content:space-between; align-items:flex-start; gap:.6rem; pointer-events:none; }
+.location-panel,.game-actions button,.game-bottom,.game-message,.interaction-prompt,.game-loading { background:#173a3eea; border:1px solid #d7ba80; box-shadow:0 4px 16px #132f3266; border-radius:12px; }
+.location-panel { padding:.65rem 1rem; }
+.game-kicker { font-size:.65rem; letter-spacing:.12em; text-transform:uppercase; color:#f5cf82; }
+.location-panel h2 { font:700 clamp(1rem,3vw,1.6rem) Georgia,serif; margin:.2rem 0; }
+.location-panel p { font-size:.8rem; margin:0; color:#dce9ce; }
+.game-actions { display:flex; gap:.5rem; pointer-events:auto; }
+.game-actions button,.game-loading button { color:#fff1cf; background:#28585b; border:1px solid #d7ba80; border-radius:8px; padding:.65rem .85rem; cursor:pointer; font-weight:650; }
+.game-actions button:hover,.game-loading button:hover { background:#427a77; }
+.game-bottom { position:absolute; bottom:max(.65rem,env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); width:min(96vw,690px); padding:.55rem .65rem; text-align:center; }
+.game-controls,.selected-item { margin:.25rem 0; font-size:clamp(.62rem,1.8vw,.82rem); color:#e1e8d5; }
+.inventory-bar { display:grid; grid-template-columns:repeat(10,minmax(0,1fr)); gap:clamp(2px,.65vw,6px); }
+.inventory-slot { position:relative; min-width:0; padding:0; aspect-ratio:1; border:2px solid #72968b; border-radius:6px; color:#fff1cf; background:linear-gradient(#305b58,#1b3d40); cursor:pointer; }
+.inventory-slot.selected { border-color:#ffe098; box-shadow:0 0 0 1px #e8b86e,inset 0 0 12px #f5cf8233; }
+.slot-number { position:absolute; top:2px; left:4px; font-size:clamp(.45rem,1.3vw,.75rem); color:#d1e0cd; }
+.slot-icon { font-size:clamp(.75rem,3vw,1.8rem); }
+.slot-count { position:absolute; bottom:2px; right:4px; font-size:clamp(.5rem,1.4vw,.8rem); font-weight:800; }
+.game-message { position:absolute; top:6.6rem; left:50%; transform:translateX(-50%); max-width:min(90vw,440px); padding:.6rem 1rem; text-align:center; font-size:.9rem; pointer-events:none; }
+.game-message:empty { display:none; }
+.interaction-prompt { position:absolute; bottom:clamp(95px,17vw,155px); left:50%; transform:translateX(-50%); padding:.45rem .85rem; font-size:.85rem; white-space:nowrap; pointer-events:none; }
+.game-loading { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); padding:1.25rem; text-align:center; min-width:min(80vw,280px); }
+@media(max-width:520px) { .game-hud { inset:.5rem .5rem auto; } .location-panel { padding:.45rem .6rem; } .game-actions { gap:.25rem; } .game-actions button { padding:.45rem .5rem; font-size:.7rem; } .game-message { top:5.5rem; } }

@@ -1,0 +1,115 @@
+{
+  "name": "Willowfin Village",
+  "tileSize": 48,
+  "width": 36,
+  "height": 24,
+  "spawn": {
+    "x": 9,
+    "y": 11
+  },
+  "tiles": [
+    "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+    "TGGGGGGGGGGGGGGGGGGWWWGGGGGGGGGGGGGT",
+    "TGGGGGGGGGGGGGGGGGGWWWGGGGGGGGGGGGGT",
+    "TGTGGGGGPPGGGHHHGTGWWWGTGGGGGGWWWWGT",
+    "TGGGHHHGPPGGGHHHGGGWWWGGGGGGPGWWWWGT",
+    "TGGGHHHGPPGGGGGGRGGWWWGGGTGGPGWWWWGT",
+    "TGGGGGGGPPPPPPPPPPGWWWGGGGGGPGWWWWGT",
+    "TGGGGGGGPPGGGGGGGGGWWWGRGGGGPGWWWWGT",
+    "TGGTGGGGPPGGGGGGGTGWWWGGGGTGPGGGGGGT",
+    "TGGGGGTGPPGGTGGGGGGWWWGGGGGGPGGGGGTT",
+    "TGGRGGGGPPGGGGGGGGGWWWGGGGGGPGGTGGGT",
+    "TPPPPPPPPPPPPPPPPPPBBBPPPPPPPPPPPPPT",
+    "TPPPPPPPPPPPPPPPPPPBBBPPPPPPPPPPPPPT",
+    "TGGGGGGGPPGGGGGGGGGWWWGGGGGGPGGGGRGT",
+    "TGGGHHHGPPGGGHHHGGGWWWGGGGGGPGGGGGTT",
+    "TGGGHHHGPPGGGHHHRGGWWWGGTGGGPGTGGGGT",
+    "TGGGGGGGPPGGGGGGGTGWWWGGGRGGPGGGGGGT",
+    "TGGGGGGGPPGGGGGGGGGWWWGGGGGGPGGGGGGT",
+    "TGGPPPPPPPPPPPPPGGGWWWGGGGTGPGGGGGGT",
+    "TGGGGGGGPPGGGGGGGGGWWWGGGGGGPGGGTGGT",
+    "TGTGGGGGPPGGGGGGTGGWWWGGGGGGPRGGGGGT",
+    "TGGGGGTGPPGGTGGGGGGWWWGGTGGGGGGGGTGT",
+    "TGGGGGGGGGGGGGGGGGGWWWGGGGGGGGGGGGGT",
+    "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT"
+  ],
+  "objects": [
+    {
+      "id": "welcome",
+      "type": "sign",
+      "x": 10,
+      "y": 10,
+      "text": "Welcome to Willowfin! Cross the bridge to explore the meadow."
+    },
+    {
+      "id": "villager",
+      "type": "npc",
+      "x": 7,
+      "y": 13,
+      "text": "Hello, adventurer! Try collecting berries, wood, and stones with E."
+    },
+    {
+      "id": "berries1",
+      "type": "pickup",
+      "item": "berry",
+      "quantity": 3,
+      "x": 12,
+      "y": 7
+    },
+    {
+      "id": "wood1",
+      "type": "pickup",
+      "item": "wood",
+      "quantity": 2,
+      "x": 16,
+      "y": 17
+    },
+    {
+      "id": "stone1",
+      "type": "pickup",
+      "item": "stone",
+      "quantity": 1,
+      "x": 24,
+      "y": 8
+    },
+    {
+      "id": "berries2",
+      "type": "pickup",
+      "item": "berry",
+      "quantity": 2,
+      "x": 31,
+      "y": 16
+    },
+    {
+      "id": "flower1",
+      "type": "pickup",
+      "item": "flower",
+      "quantity": 1,
+      "x": 26,
+      "y": 6
+    },
+    {
+      "id": "wood2",
+      "type": "pickup",
+      "item": "wood",
+      "quantity": 3,
+      "x": 25,
+      "y": 20
+    },
+    {
+      "id": "chest1",
+      "type": "chest",
+      "item": "coin",
+      "quantity": 5,
+      "x": 29,
+      "y": 5
+    },
+    {
+      "id": "meadow-sign",
+      "type": "sign",
+      "x": 29,
+      "y": 11,
+      "text": "Fernfall Meadow. The pond is deep; stay on dry ground."
+    }
+  ]
+}

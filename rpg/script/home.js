@@ -1,5 +1,6 @@
 // Main menu: the audio engine is intentionally in its own module.
 import { RpgAudio } from "./audio.js";
+import { VillageGame } from "./game.js";
 
 const SETTINGS_KEY = "axolotl-rpg:menu-settings";
 const motionInput = document.getElementById("motion-setting");
@@ -8,6 +9,7 @@ const musicInput = document.getElementById("music-volume");
 const soundInput = document.getElementById("sound-volume");
 const audioStatus = document.getElementById("audio-status");
 const audio = new RpgAudio();
+const game = new VillageGame(audio);
 
 function volume(value, fallback) {
   return typeof value === "number" && Number.isFinite(value)
@@ -64,7 +66,6 @@ async function loadMenuConfig() {
     if (!response.ok) throw new Error("Menu config unavailable");
     const config = await response.json();
     if (typeof config.version === "string") document.getElementById("version-label").textContent = config.version;
-    if (typeof config.playMessage === "string") document.getElementById("play-message").textContent = config.playMessage;
   } catch (error) { console.warn("Using built-in menu text.", error); }
 }
 
@@ -93,8 +94,8 @@ function activateAudio() {
 document.addEventListener("click", event => {
   const button = event.target.closest("button");
   const effect = button?.id === "play-button" ? "play"
-    : button?.id === "options-button" ? "open"
-    : button?.hasAttribute("data-close") ? "close" : null;
+    : ["options-button", "game-options"].includes(button?.id) ? "open"
+    : (button?.hasAttribute("data-close") || button?.id === "exit-game") ? "close" : null;
   activateAudio().then(ready => { if (ready && effect) audio.playEffect(effect); });
 }, true);
 document.addEventListener("pointerup", () => activateAudio(), true);
@@ -102,7 +103,16 @@ document.addEventListener("keydown", event => {
   if (!event.repeat) activateAudio();
 }, true);
 
-document.getElementById("play-button").addEventListener("click", () => openDialog("play-dialog"));
+document.getElementById("play-button").addEventListener("click", () => game.enter());
+document.getElementById("game-options").addEventListener("click", () => {
+  game.clearKeys();
+  openDialog("options-dialog");
+});
+document.getElementById("options-dialog").addEventListener("close", () => {
+  if (game.active) game.canvas.focus();
+});
+document.getElementById("exit-game").addEventListener("click", () => game.leave());
+document.getElementById("retry-game").addEventListener("click", () => game.enter());
 document.getElementById("options-button").addEventListener("click", () => openDialog("options-dialog"));
 document.querySelectorAll("[data-close]").forEach(button => {
   button.addEventListener("click", () => document.getElementById(button.dataset.close).close());

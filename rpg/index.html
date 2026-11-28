@@ -6,6 +6,7 @@
   <title>Axolotl RPG</title>
   <link rel="stylesheet" href="styles/home.css">
   <link rel="stylesheet" href="styles/village.css">
+  <link rel="stylesheet" href="styles/game.css">
   <script type="module" src="script/home.js"></script>
 </head>
 <body>
@@ -35,6 +36,21 @@
     </section>
     <footer><span id="version-label">Development build</span><span>PrincessTGCreations</span></footer>
   </main>
+  <section id="game-screen" class="game-screen" aria-label="Axolotl RPG gameplay" hidden>
+    <canvas id="world-canvas" tabindex="0" aria-label="Top-down village map. Use WASD or arrow keys to move, E to interact."></canvas>
+    <header class="game-hud">
+      <div class="location-panel"><span class="game-kicker">Willowfin region</span><h2 id="map-name">Willowfin Village</h2><p id="terrain-label">Grass</p></div>
+      <div class="game-actions"><button type="button" id="game-options">Options</button><button type="button" id="exit-game">Main Menu</button></div>
+    </header>
+    <div id="game-message" class="game-message" role="status" aria-live="polite"></div>
+    <div id="interaction-prompt" class="interaction-prompt" hidden></div>
+    <div class="game-bottom">
+      <p class="game-controls">WASD / Arrow keys · E interact · 1–0 select item</p>
+      <div id="inventory-bar" class="inventory-bar" role="group" aria-label="Inventory, ten slots"></div>
+      <p id="selected-item" class="selected-item" aria-live="polite">Empty slot</p>
+    </div>
+    <div id="game-loading" class="game-loading" hidden><p id="game-loading-message">Loading village…</p><button type="button" id="retry-game">Retry</button></div>
+  </section>
   <dialog id="options-dialog" class="game-dialog" aria-labelledby="options-title">
     <h2 id="options-title">Options</h2>
     <label class="setting"><span>Animate the village</span><input id="motion-setting" type="checkbox" checked></label>
@@ -60,11 +76,6 @@
       <p class="audio-hint">Set either slider to 0% to mute that channel.</p>
     </fieldset>
     <button class="menu-button primary" type="button" data-close="options-dialog">Done</button>
-  </dialog>
-  <dialog id="play-dialog" class="game-dialog" aria-labelledby="play-title">
-    <h2 id="play-title">Your adventure awaits</h2>
-    <p id="play-message">Willowfin Village is still being built. Gameplay will arrive in a future development stage.</p>
-    <button class="menu-button primary" type="button" data-close="play-dialog">Back to menu</button>
   </dialog>
 </body>
 </html>
